@@ -20,8 +20,12 @@ import CreativeABTest from "./pages/CreativeABTest";
 import AudienceOverlap from "./pages/AudienceOverlap";
 import Login from "./pages/Login";
 import AudienceDetail from "./pages/AudienceDetail";
+import CreativeDetail from "./pages/CreativeDetail";
 import FraudEvaluation from "./pages/FraudEvaluation";
 import BudgetStrategy from "./pages/BudgetStrategy";
+import ActivityFeed from "./pages/ActivityFeed";
+import NotificationCenter from "./pages/NotificationCenter";
+import HyperContext from "./pages/HyperContext";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -44,6 +48,7 @@ export default function App() {
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/creatives" element={<Creatives />} />
+                <Route path="/creatives/:id" element={<CreativeDetail />} />
                 <Route path="/audiences" element={<Audiences />} />
                 <Route path="/audiences/:id" element={<AudienceDetail />} />
                 <Route path="/agents" element={<Agents />} />
@@ -60,6 +65,9 @@ export default function App() {
                 <Route path="/forecast" element={<CampaignForecast />} />
                 <Route path="/creative-ab-test" element={<CreativeABTest />} />
                 <Route path="/audience-overlap" element={<AudienceOverlap />} />
+                <Route path="/activity" element={<ActivityFeed />} />
+                <Route path="/notifications" element={<NotificationCenter />} />
+                <Route path="/hyper-context" element={<HyperContext />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
