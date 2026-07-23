@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { ToastProvider } from "./components/Toast";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
@@ -45,6 +46,7 @@ export default function App() {
         path="/*"
         element={
           <AuthGuard>
+            <ToastProvider>
             <Layout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -77,6 +79,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
+            </ToastProvider>
           </AuthGuard>
         }
       />

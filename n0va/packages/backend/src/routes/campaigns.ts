@@ -188,6 +188,48 @@ router.patch(
   })
 );
 
+router.post(
+  "/:id/clone",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const tenantId = req.user!.tenantId;
+
+    if (!DataStore.usingMemory()) {
+      const original = await campaignService.findById(id, tenantId);
+      if (!original) throw new AppError(404, "Campaign not found");
+      const cloned = await campaignService.create({
+        tenantId,
+        name: `${original.name} (Copy)`,
+        type: original.type,
+        budget: original.budget,
+        platforms: original.platforms,
+        goal: original.goal,
+        createdBy: req.user!.userId,
+      });
+      res.status(201).json(cloned);
+    } else {
+      const original = await DataStore.findCampaignById(id, tenantId);
+      if (!original) throw new AppError(404, "Campaign not found");
+      const cloned = await DataStore.createCampaign({
+        tenantId,
+        name: `${original.name} (Copy)`,
+        type: original.type,
+        status: "draft",
+        budget: { ...original.budget, spent: 0, remaining: original.budget?.lifetime || 0 },
+        platforms: [...(original.platforms || [])],
+        goal: original.goal,
+        audiences: [],
+        creatives: [],
+        tags: [...(original.tags || [])],
+        kpis: {},
+        hyperContext: { linkedTasks: [], linkedDocs: [], linkedSheets: [], linkedCalendar: [] },
+        createdBy: req.user!.userId,
+      });
+      res.status(201).json(cloned);
+    }
+  })
+);
+
 router.delete(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

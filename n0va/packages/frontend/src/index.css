@@ -38,3 +38,11 @@
   .badge-paused { @apply badge bg-yellow-900 text-yellow-300; }
   .badge-archived { @apply badge bg-red-900 text-red-300; }
 }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}

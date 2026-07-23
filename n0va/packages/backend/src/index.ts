@@ -22,6 +22,7 @@ import fraudRoutes from "./routes/fraud";
 import optimizerRoutes from "./routes/optimizer";
 import webhookRoutes from "./routes/webhooks";
 import settingsRoutes from "./routes/settings";
+import hyperContextRoutes from "./routes/hypercontext";
 
 const app = express();
 const httpServer = createServer(app);
@@ -58,6 +59,7 @@ app.use("/api/v1/fraud", authMiddleware, tenantMiddleware, fraudRoutes);
 app.use("/api/v1/optimizer", authMiddleware, tenantMiddleware, optimizerRoutes);
 app.use("/api/v1/webhooks", authMiddleware, tenantMiddleware, webhookRoutes);
 app.use("/api/v1/settings", authMiddleware, tenantMiddleware, settingsRoutes);
+app.use("/api/v1/hypercontext", authMiddleware, tenantMiddleware, hyperContextRoutes);
 
 app.use(errorHandler);
 
