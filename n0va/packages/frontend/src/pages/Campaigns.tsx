@@ -31,6 +31,15 @@ export default function Campaigns() {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
+  function toggleSort(field: string) {
+    if (sortBy === field) {
+      setSortDir((d) => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDir("desc");
+    }
+  }
+
   const buildParams = useCallback(() => {
     const params = new URLSearchParams();
     params.set("page", String(page));
@@ -38,8 +47,10 @@ export default function Campaigns() {
     if (search) params.set("search", search);
     if (statusFilter !== "all") params.set("status", statusFilter);
     if (typeFilter !== "all") params.set("type", typeFilter);
+    params.set("sortBy", sortBy);
+    params.set("sortDir", sortDir);
     return params.toString();
-  }, [page, pageSize, search, statusFilter, typeFilter]);
+  }, [page, pageSize, search, statusFilter, typeFilter, sortBy, sortDir]);
 
   const loadCampaigns = useCallback(async () => {
     setLoading(true);
@@ -163,9 +174,15 @@ export default function Campaigns() {
         <div className="space-y-2">
           <div className="flex items-center gap-2 px-4 py-2 text-xs text-gray-500 border-b border-gray-800">
             <button onClick={toggleAll} className="hover:text-white">{selected.size === campaigns.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}</button>
-            <span className="flex-1">Campaign</span>
-            <span className="w-20 text-right">Budget</span>
-            <span className="w-20 text-right">Spent</span>
+            <button className="flex items-center gap-1 flex-1 hover:text-gray-300 text-left" onClick={() => toggleSort("name")}>
+              Campaign <ArrowUpDown className={`w-3 h-3 ${sortBy === "name" ? "text-n0va-400" : "text-gray-600"}`} />
+            </button>
+            <button className="flex items-center gap-1 w-20 justify-end hover:text-gray-300" onClick={() => toggleSort("budget.daily")}>
+              <ArrowUpDown className={`w-3 h-3 ${sortBy === "budget.daily" ? "text-n0va-400" : "text-gray-600"}`} /> Budget
+            </button>
+            <button className="flex items-center gap-1 w-20 justify-end hover:text-gray-300" onClick={() => toggleSort("budget.spent")}>
+              <ArrowUpDown className={`w-3 h-3 ${sortBy === "budget.spent" ? "text-n0va-400" : "text-gray-600"}`} /> Spent
+            </button>
           </div>
           {campaigns.map((campaign) => (
             <div key={campaign._id} className={`card hover:border-gray-700 transition-colors ${selected.has(campaign._id) ? "border-n0va-600/40" : ""}`}>

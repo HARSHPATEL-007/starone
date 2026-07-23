@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
-import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity, RefreshCw, AlertCircle } from "lucide-react";
+import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity, RefreshCw, AlertCircle, Unplug } from "lucide-react";
 
 export default function PlatformDetail() {
   const { id } = useParams();
@@ -15,6 +15,7 @@ export default function PlatformDetail() {
   const [error, setError] = useState<string | null>(null);
   const [executing, setExecuting] = useState<string | null>(null);
   const [execResult, setExecResult] = useState<any>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<any>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -51,6 +52,18 @@ export default function PlatformDetail() {
       setExecResult({ action, result });
     } finally {
       setExecuting(null);
+    }
+  }
+
+  async function handleDisconnect() {
+    if (!disconnectTarget) return;
+    try {
+      await api.platforms.disconnect(disconnectTarget._id || disconnectTarget.id);
+      addToast("success", `Disconnected ${disconnectTarget.label || disconnectTarget.platform}`);
+      setDisconnectTarget(null);
+      loadPlatform();
+    } catch {
+      addToast("error", "Failed to disconnect account");
     }
   }
 
@@ -139,7 +152,7 @@ export default function PlatformDetail() {
             ) : (
               <div className="space-y-2">
                 {connected.map((acct: any) => (
-                  <div key={acct._id || acct.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                  <div key={acct._id || acct.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg group">
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${acct.status === "active" ? "bg-green-400" : acct.status === "error" ? "bg-red-400" : "bg-yellow-400"}`} />
                       <div>
@@ -147,7 +160,12 @@ export default function PlatformDetail() {
                         <p className="text-xs text-gray-500 capitalize">{acct.status}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-500">{acct.credentials?.scopes?.join(", ") || "read, write"}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-500">{acct.credentials?.scopes?.join(", ") || "read, write"}</span>
+                      <button className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 text-xs flex items-center gap-1" onClick={() => setDisconnectTarget(acct)}>
+                        <Unplug className="w-3 h-3" /> Disconnect
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -186,6 +204,19 @@ export default function PlatformDetail() {
           </div>
         </div>
       </div>
+
+      {disconnectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDisconnectTarget(null)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Disconnect Account</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to disconnect <strong className="text-white">{disconnectTarget.label || disconnectTarget.platform}</strong>?</p>
+            <div className="flex justify-end gap-3">
+              <button className="btn-secondary" onClick={() => setDisconnectTarget(null)}>Cancel</button>
+              <button className="btn-danger" onClick={handleDisconnect}>Disconnect</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
