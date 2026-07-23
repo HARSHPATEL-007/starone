@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Check, Settings as SettingsIcon, Shield, Bot, Bell, CreditCard, Sliders } from "lucide-react";
+import { Check, Settings as SettingsIcon, Shield, Bot, Bell, CreditCard, Sliders, Layers, CheckCircle, Clock, Lock } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -18,17 +18,20 @@ interface PricingTier {
 
 export default function SettingsPage() {
   const { addToast } = useToast();
-  const [activeSection, setActiveSection] = useState<"pricing" | "tenant" | "notifications" | "agents">("pricing");
+  const [activeSection, setActiveSection] = useState<"pricing" | "tenant" | "notifications" | "agents" | "modules">("pricing");
   const [pricing, setPricing] = useState<{ tiers: PricingTier[]; bundleDiscounts: any[]; addOns: any[] } | null>(null);
   const [tenantSettings, setTenantSettings] = useState<any>(null);
+  const [moduleData, setModuleData] = useState<{ total: number; modules: string[] } | null>(null);
 
   useEffect(() => {
     Promise.all([
       api.settings.pricing().catch(() => null),
       api.settings.tenant().catch(() => null),
-    ]).then(([p, t]) => {
+      api.settings.modules().catch(() => null),
+    ]).then(([p, t, m]) => {
       setPricing(p);
       setTenantSettings(t);
+      setModuleData(m);
     });
   }, []);
 
@@ -46,6 +49,7 @@ export default function SettingsPage() {
     { id: "tenant" as const, label: "Tenant Settings", icon: Sliders },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
     { id: "agents" as const, label: "Agent Config", icon: Bot },
+    { id: "modules" as const, label: "Modules", icon: Layers },
   ];
 
   return (
@@ -223,6 +227,59 @@ export default function SettingsPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-gray-800">
             <button className="btn-primary" onClick={() => saveSettings("Notification preferences")}>Save Preferences</button>
+          </div>
+        </div>
+      )}
+
+      {activeSection === "modules" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white">N0VA Modules</h3>
+              <p className="text-sm text-gray-500 mt-1">{moduleData?.total || 0} modules available in your workspace</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {(moduleData?.modules || []).map((mod) => {
+              const isActive = mod === "Ads & Marketing";
+              const isCore = ["Core Platform", "Identity", "Security Suite", "Cloud Storage"].includes(mod);
+              const isComing = ["Voice", "Drawings", "Mail", "Meet", "ERP", "Finance", "CRM", "Sign"].includes(mod);
+              return (
+                <div key={mod} className={`card p-4 ${isActive ? "border-n0va-600/40 ring-1 ring-n0va-600/20" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    {isActive ? (
+                      <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+                    ) : isCore ? (
+                      <Shield className="w-5 h-5 text-n0va-400 shrink-0" />
+                    ) : isComing ? (
+                      <Clock className="w-5 h-5 text-yellow-500 shrink-0" />
+                    ) : (
+                      <Layers className="w-5 h-5 text-gray-500 shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{mod}</p>
+                      <p className="text-xs mt-0.5">
+                        {isActive ? (
+                          <span className="text-green-400">Active</span>
+                        ) : isCore ? (
+                          <span className="text-n0va-400">Core</span>
+                        ) : isComing ? (
+                          <span className="text-yellow-500">Coming Soon</span>
+                        ) : (
+                          <span className="text-gray-600">Available</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-4 text-xs text-gray-500 pt-2">
+            <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-400" /> Active</span>
+            <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-n0va-400" /> Core</span>
+            <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5 text-gray-500" /> Available</span>
+            <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-yellow-500" /> Coming Soon</span>
           </div>
         </div>
       )}
