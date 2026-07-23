@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Play, Pause, RotateCcw, Settings, X, TrendingUp, Activity, History, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Bot, Play, Pause, RotateCcw, Settings, X, TrendingUp, Activity, History, Eye, EyeOff, ExternalLink, Search } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
@@ -9,6 +9,7 @@ export default function Agents() {
   const { addToast } = useToast();
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showDefaults, setShowDefaults] = useState(false);
   const [configAgent, setConfigAgent] = useState<any>(null);
   const [configForm, setConfigForm] = useState("");
@@ -89,6 +90,11 @@ export default function Agents() {
         )}
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <input className="input pl-10" placeholder="Search agents by name or type..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -101,7 +107,7 @@ export default function Agents() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {agents.map((agent) => (
+          {agents.filter((a) => !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.type?.toLowerCase().includes(search.toLowerCase())).map((agent) => (
             <div key={agent._id} className={`card border ${agentColors[agent.type] || ""} hover:border-gray-700 transition-colors`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">

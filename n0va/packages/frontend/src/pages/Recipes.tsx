@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X, Search, ExternalLink } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
@@ -8,6 +9,7 @@ export default function Recipes() {
   const { addToast } = useToast();
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [compiling, setCompiling] = useState<string | null>(null);
@@ -103,6 +105,11 @@ export default function Recipes() {
         </button>
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <input className="input pl-10" placeholder="Search recipes..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
       {showForm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="card w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
@@ -184,12 +191,12 @@ export default function Recipes() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {recipes.map((r) => (
+          {recipes.filter((r) => !search || r.name?.toLowerCase().includes(search.toLowerCase())).map((r) => (
             <div key={r._id} className="card relative group">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-white font-semibold">{r.name}</h3>
+                    <Link to={`/recipes/${r._id}`} className="text-white font-semibold hover:text-n0va-400">{r.name}</Link>
                     {r.isCompiled ? (
                       <span className="badge-active flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Compiled</span>
                     ) : (

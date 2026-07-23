@@ -26,6 +26,7 @@ import {
   Layers,
   LogOut,
   HeartPulse,
+  TrendingDown,
 } from "lucide-react";
 
 const navItems = [
@@ -47,6 +48,7 @@ const navItems = [
   { to: "/forecast", icon: TrendingUp, label: "Forecast" },
   { to: "/creative-ab-test", icon: Split, label: "A/B Testing" },
   { to: "/audience-overlap", icon: Target, label: "Overlap Analysis" },
+  { to: "/creative-fatigue", icon: TrendingDown, label: "Fatigue Monitor" },
   { to: "/activity", icon: Activity, label: "Activity Feed" },
   { to: "/notifications", icon: Bell, label: "Notifications" },
   { to: "/hyper-context", icon: Layers, label: "Hyper-Context" },

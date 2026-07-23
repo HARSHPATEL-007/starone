@@ -33,6 +33,7 @@ import CampaignWizard from "./pages/CampaignWizard";
 import PlatformDetail from "./pages/PlatformDetail";
 import PlatformHealth from "./pages/PlatformHealth";
 import RecipeDetail from "./pages/RecipeDetail";
+import CreativeFatigue from "./pages/CreativeFatigue";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -73,6 +74,7 @@ export default function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/connected-accounts" element={<ConnectedAccounts />} />
                 <Route path="/platform-health" element={<PlatformHealth />} />
+                <Route path="/creative-fatigue" element={<CreativeFatigue />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
