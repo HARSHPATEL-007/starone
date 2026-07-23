@@ -4,6 +4,7 @@ import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, 
 import { api } from "../api/client";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
 import { useToast } from "../components/Toast";
+import { SkeletonRow } from "../components/Skeleton";
 import { Link } from "react-router-dom";
 
 const typeIcons: Record<string, any> = {
@@ -110,7 +111,12 @@ export default function NotificationCenter() {
 
       <div className="space-y-2">
         {loading ? (
-          <div className="flex justify-center py-12"><div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" /></div>
+          <>
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Bell className="w-10 h-10 mx-auto mb-2" />

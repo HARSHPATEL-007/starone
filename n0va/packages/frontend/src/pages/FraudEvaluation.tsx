@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { AlertTriangle, CheckCircle, Shield, RefreshCw, Play, Flag, Ban } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { SkeletonTable } from "../components/Skeleton";
 
 interface Flag {
   id: string;
@@ -98,11 +99,7 @@ export default function FraudEvaluation() {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <SkeletonTable rows={6} />;
   }
 
   const unresolved = flags.filter((f) => !f.resolved);

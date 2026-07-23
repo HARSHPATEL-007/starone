@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, Cell, PieChart, Pie } from "recharts";
 import { api } from "../api/client";
 import { TrendingUp, BarChart3, PieChart as PieChartIcon, RefreshCw } from "lucide-react";
+import { SkeletonChart } from "../components/Skeleton";
 
 const MODEL_COLORS: Record<string, string> = {
   first_click: "#8b5cf6",
@@ -42,14 +43,31 @@ export default function AttributionComparison() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <SkeletonChart />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card animate-pulse">
+              <div className="h-3 w-16 bg-gray-800 rounded mb-3" />
+              <div className="h-7 w-20 bg-gray-800 rounded mb-1" />
+              <div className="h-3 w-12 bg-gray-800 rounded" />
+            </div>
+          ))}
+        </div>
+        <SkeletonChart />
       </div>
     );
   }
 
   if (!comparison) {
-    return <div className="text-gray-400 text-center py-12">No attribution data available</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">No attribution data available</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadData}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   const modelEntries = Object.entries(comparison) as [string, any][];

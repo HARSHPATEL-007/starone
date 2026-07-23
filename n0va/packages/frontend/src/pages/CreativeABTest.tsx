@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../api/client";
 import { RefreshCw, CheckCircle, XCircle, MinusCircle } from "lucide-react";
+import { SkeletonCard } from "../components/Skeleton";
 
 interface ABTestVariant {
   id: string;
@@ -51,14 +52,31 @@ export default function CreativeABTest() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <SkeletonCard />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <div className="space-y-6">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (tests.length === 0) {
-    return <div className="text-gray-400 text-center py-12">No A/B test data available</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">No A/B test data available</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadData}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   const currentTest = selectedTest || tests[0];

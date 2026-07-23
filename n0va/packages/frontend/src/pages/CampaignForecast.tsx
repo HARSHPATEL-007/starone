@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend } from "recharts";
 import { api } from "../api/client";
 import { TrendingUp, RefreshCw, DollarSign, Target } from "lucide-react";
+import { SkeletonChart } from "../components/Skeleton";
 
 interface ForecastPoint {
   date: string;
@@ -24,16 +25,20 @@ export default function CampaignForecast() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      api.analytics.overview("60"),
-      api.attribution.models(),
-    ])
-      .then(([analytics, attribution]) => {
-        generateForecast(analytics, attribution);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const [analytics, attribution] = await Promise.all([
+        api.analytics.overview("60"),
+        api.attribution.models(),
+      ]);
+      generateForecast(analytics, attribution);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function generateForecast(analytics: any, attribution: any) {
     const rawDaily = analytics.dailyMetrics || [];
@@ -109,14 +114,35 @@ export default function CampaignForecast() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card animate-pulse">
+              <div className="h-4 w-4 bg-gray-800 rounded mb-3" />
+              <div className="h-3 w-20 bg-gray-800 rounded mb-1" />
+              <div className="h-7 w-16 bg-gray-800 rounded mb-1" />
+              <div className="h-3 w-12 bg-gray-800 rounded" />
+            </div>
+          ))}
+        </div>
+        <SkeletonChart />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
       </div>
     );
   }
 
   if (!forecast) {
-    return <div className="text-gray-400 text-center py-12">No forecast data available</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">No forecast data available</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadData}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   const chartData = [

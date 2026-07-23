@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
+import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 
 type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext";
 
@@ -30,18 +31,26 @@ export default function CampaignDetail() {
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([
-      api.campaigns.get(id),
-      api.analytics.campaign(id).catch(() => null),
-    ])
-      .then(([c, a]) => {
-        setCampaign(c);
-        setAnalytics(a);
-        setEditForm({ name: c.name || "", goal: c.goal || "", daily: c.budget?.daily || 0, lifetime: c.budget?.lifetime || 0 });
-      })
-      .catch(() => addToast("error", "Failed to load campaign"))
-      .finally(() => setLoading(false));
+    loadCampaign();
   }, [id]);
+
+  async function loadCampaign() {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const [c, a] = await Promise.all([
+        api.campaigns.get(id),
+        api.analytics.campaign(id).catch(() => null),
+      ]);
+      setCampaign(c);
+      setAnalytics(a);
+      setEditForm({ name: c.name || "", goal: c.goal || "", daily: c.budget?.daily || 0, lifetime: c.budget?.lifetime || 0 });
+    } catch {
+      addToast("error", "Failed to load campaign");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -98,14 +107,32 @@ export default function CampaignDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="h-5 w-5 bg-gray-800 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonChart />
+        <SkeletonChart />
       </div>
     );
   }
 
   if (!campaign) {
-    return <div className="text-gray-400 text-center py-12">Campaign not found</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">Campaign not found</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadCampaign}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   const liveDaily = mergedAnalytics?.daily || analytics?.daily || [];

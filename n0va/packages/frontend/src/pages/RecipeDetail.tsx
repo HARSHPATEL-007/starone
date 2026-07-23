@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, FileJson, Code, Play, CheckCircle, AlertCircle, Clock, Terminal } from "lucide-react";
+import { ArrowLeft, FileJson, Code, Play, CheckCircle, AlertCircle, Clock, Terminal, RefreshCw } from "lucide-react";
+import { SkeletonCard } from "../components/Skeleton";
 
 export default function RecipeDetail() {
   const { id } = useParams();
@@ -14,13 +15,21 @@ export default function RecipeDetail() {
   const [compileResult, setCompileResult] = useState<any>(null);
 
   useEffect(() => {
+    loadData();
+  }, [id, navigate]);
+
+  async function loadData() {
     if (!id) return;
     setLoading(true);
-    api.recipes.get(id)
-      .then((found) => setRecipe(found))
-      .catch(() => navigate("/recipes"))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    try {
+      const found = await api.recipes.get(id);
+      setRecipe(found);
+    } catch {
+      navigate("/recipes");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleCompile() {
     if (!recipe) return;
@@ -49,14 +58,29 @@ export default function RecipeDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="h-5 w-5 bg-gray-800 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
 
   if (!recipe) {
-    return <div className="text-gray-400 text-center py-12">Recipe not found</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">Recipe not found</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadData}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   return (

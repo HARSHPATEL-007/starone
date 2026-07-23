@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { api } from "../api/client";
 import { TrendingUp, DollarSign, Target, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { SkeletonCard } from "../components/Skeleton";
 
 interface BudgetPlan {
   status: string;
@@ -43,14 +44,29 @@ export default function BudgetStrategy() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
 
   if (!plans) {
-    return <div className="text-gray-400 text-center py-12">No budget data available</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">No budget data available</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadData}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   const strategies = ["conservative", "balanced", "aggressive"] as const;

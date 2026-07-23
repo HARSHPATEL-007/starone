@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
-import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2 } from "lucide-react";
+import { SkeletonCard } from "../components/Skeleton";
+import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw } from "lucide-react";
 
 export default function CreativeDetail() {
   const { id } = useParams();
@@ -16,17 +17,23 @@ export default function CreativeDetail() {
   const [editHeadline, setEditHeadline] = useState("");
 
   useEffect(() => {
+    loadData();
+  }, [id, navigate]);
+
+  async function loadData() {
     if (!id) return;
     setLoading(true);
-    api.creatives.get(id)
-      .then((found) => {
-        setCreative(found);
-        setEditName(found.name);
-        setEditHeadline(found.headline || "");
-      })
-      .catch(() => navigate("/creatives"))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    try {
+      const found = await api.creatives.get(id);
+      setCreative(found);
+      setEditName(found.name);
+      setEditHeadline(found.headline || "");
+    } catch {
+      navigate("/creatives");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -55,14 +62,30 @@ export default function CreativeDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="h-5 w-5 bg-gray-800 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
 
   if (!creative) {
-    return <div className="text-gray-400 text-center py-12">Creative not found</div>;
+    return (
+      <div className="text-gray-400 text-center py-12">
+        <p className="mb-4">Creative not found</p>
+        <button className="btn-secondary flex items-center gap-2 mx-auto" onClick={loadData}>
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
+      </div>
+    );
   }
 
   const perf = creative.performance || { impressions: 0, clicks: 0, ctr: 0 };
