@@ -118,6 +118,54 @@ export const api = {
     creativeMock: () => request<any>("/optimizer/creative/mock"),
     abTest: (type = "creative") => request<any>(`/optimizer/ab-test/${type}`),
   },
+  hypercontext: {
+    tasks: {
+      list: () => request<any[]>("/hypercontext/tasks"),
+      get: (id: string) => request<any>(`/hypercontext/tasks/${id}`),
+      create: (data: Record<string, unknown>) =>
+        request<any>("/hypercontext/tasks", { method: "POST", body: JSON.stringify(data) }),
+      update: (id: string, data: Record<string, unknown>) =>
+        request<any>(`/hypercontext/tasks/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+      delete: (id: string) => request<void>(`/hypercontext/tasks/${id}`, { method: "DELETE" }),
+    },
+    docs: {
+      list: () => request<any[]>("/hypercontext/docs"),
+      get: (id: string) => request<any>(`/hypercontext/docs/${id}`),
+      create: (data: Record<string, unknown>) =>
+        request<any>("/hypercontext/docs", { method: "POST", body: JSON.stringify(data) }),
+      delete: (id: string) => request<void>(`/hypercontext/docs/${id}`, { method: "DELETE" }),
+    },
+    sheets: {
+      list: () => request<any[]>("/hypercontext/sheets"),
+      get: (id: string) => request<any>(`/hypercontext/sheets/${id}`),
+      create: (data: Record<string, unknown>) =>
+        request<any>("/hypercontext/sheets", { method: "POST", body: JSON.stringify(data) }),
+      delete: (id: string) => request<void>(`/hypercontext/sheets/${id}`, { method: "DELETE" }),
+    },
+    calendar: {
+      list: () => request<any[]>("/hypercontext/calendar"),
+      get: (id: string) => request<any>(`/hypercontext/calendar/${id}`),
+      create: (data: Record<string, unknown>) =>
+        request<any>("/hypercontext/calendar", { method: "POST", body: JSON.stringify(data) }),
+      delete: (id: string) => request<void>(`/hypercontext/calendar/${id}`, { method: "DELETE" }),
+    },
+  },
+  notifications: {
+    list: (params?: string) => request<any[]>(`/notifications${params ? `?${params}` : ""}`),
+    unreadCount: () => request<{ count: number }>("/notifications/unread-count"),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/notifications", { method: "POST", body: JSON.stringify(data) }),
+    markRead: (id: string) =>
+      request<any>(`/notifications/${id}/read`, { method: "PATCH" }),
+    markAllRead: () =>
+      request<any>("/notifications/read-all", { method: "PATCH" }),
+    delete: (id: string) => request<void>(`/notifications/${id}`, { method: "DELETE" }),
+  },
+  activity: {
+    list: (params?: string) => request<any[]>(`/activity${params ? `?${params}` : ""}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/activity", { method: "POST", body: JSON.stringify(data) }),
+  },
   webhooks: {
     list: () => request<any[]>("/webhooks"),
     create: (data: Record<string, unknown>) =>

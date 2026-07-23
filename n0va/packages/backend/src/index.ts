@@ -23,6 +23,8 @@ import optimizerRoutes from "./routes/optimizer";
 import webhookRoutes from "./routes/webhooks";
 import settingsRoutes from "./routes/settings";
 import hyperContextRoutes from "./routes/hypercontext";
+import notificationsRoutes from "./routes/notifications";
+import activityRoutes from "./routes/activity";
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,6 +62,8 @@ app.use("/api/v1/optimizer", authMiddleware, tenantMiddleware, optimizerRoutes);
 app.use("/api/v1/webhooks", authMiddleware, tenantMiddleware, webhookRoutes);
 app.use("/api/v1/settings", authMiddleware, tenantMiddleware, settingsRoutes);
 app.use("/api/v1/hypercontext", authMiddleware, tenantMiddleware, hyperContextRoutes);
+app.use("/api/v1/notifications", authMiddleware, tenantMiddleware, notificationsRoutes);
+app.use("/api/v1/activity", authMiddleware, tenantMiddleware, activityRoutes);
 
 app.use(errorHandler);
 

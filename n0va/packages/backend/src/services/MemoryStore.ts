@@ -166,5 +166,63 @@ export class MemoryStore {
       { tenantId: "tenant_001", platform: "google", label: "Google Ads Primary", status: "active", credentials: { scopes: ["read", "write"] }, metadata: { customerId: "123-456-7890" }, createdAt: this.timestamp(), updatedAt: this.timestamp() },
       { tenantId: "tenant_001", platform: "linkedin", label: "LinkedIn B2B", status: "active", credentials: { scopes: ["read", "write"] }, metadata: { accountId: "li_12345" }, createdAt: this.timestamp(), updatedAt: this.timestamp() },
     );
+
+    const activityActions = ["created", "updated", "paused", "approved", "archived", "launched"];
+    const activityEntities = [
+      { type: "campaign", names: ["Summer Sale", "Brand Awareness", "Retargeting Q3", "Prospecting APAC"] },
+      { type: "creative", names: ["Enterprise Hero", "Demo Video", "Customer Carousel"] },
+      { type: "audience", names: ["Enterprise DM", "SaaS Lookalike", "Cart Abandoners"] },
+      { type: "agent", names: ["Budget Agent", "Creative Agent", "Fraud Agent"] },
+      { type: "recipe", names: ["Auto-Budget", "Creative Refresh", "Fraud Auto-Pause"] },
+    ];
+    const users = [
+      { id: "user_001", name: "Jane Doe" },
+      { id: "user_002", name: "John Smith" },
+      { id: "user_003", name: "Alice Wang" },
+    ];
+    for (let i = 0; i < 30; i++) {
+      const entity = activityEntities[Math.floor(Math.random() * activityEntities.length)];
+      const user = users[Math.floor(Math.random() * users.length)];
+      const details = [
+        "Budget increased by 15%", "Tags updated", "Status changed to active",
+        "New variant added", "ROAS threshold adjusted", undefined,
+      ][Math.floor(Math.random() * 6)];
+      this.insert("activities", {
+        tenantId: "tenant_001",
+        action: activityActions[Math.floor(Math.random() * activityActions.length)],
+        entityType: entity.type,
+        entityId: `ent_${i + 1}`,
+        entityName: entity.names[Math.floor(Math.random() * entity.names.length)],
+        details,
+        userId: user.id,
+        userName: user.name,
+        timestamp: new Date(Date.now() - i * 3600000 * (0.5 + Math.random())).toISOString(),
+      });
+    }
+
+    const notificationTypes = ["fraud_alert", "budget_alert", "campaign_update", "agent_status", "system"];
+    const severities = ["error", "warning", "success", "info"];
+    const notificationData = [
+      { title: "Budget Exceeded", message: "Campaign 'Summer Sale' has spent 90% of its budget", type: "budget_alert", severity: "warning", link: "/campaigns" },
+      { title: "Campaign Launched", message: "Brand Awareness campaign is now active across 3 platforms", type: "campaign_update", severity: "success", link: "/campaigns/camp_002" },
+      { title: "Suspicious Activity Detected", message: "Unusual click pattern on 'Retargeting Q3'", type: "fraud_alert", severity: "error", link: "/fraud-evaluation" },
+      { title: "Agent Completed Run", message: "Budget Agent reallocated $2,400 across 4 campaigns", type: "agent_status", severity: "info", link: "/agents" },
+      { title: "ROAS Threshold Reached", message: "Prospecting campaign reached 3.2x ROAS", type: "budget_alert", severity: "success", link: "/campaigns/camp_003" },
+      { title: "Weekly Report Ready", message: "Your weekly performance report is available", type: "system", severity: "info", link: "/analytics" },
+      { title: "Creative Fatigue Detected", message: "2 creatives showing CTR decline", type: "campaign_update", severity: "warning", link: "/creative-ab-test" },
+      { title: "Fraud Flag Resolved", message: "Flag on placement ID 'pl_0472' was auto-resolved", type: "fraud_alert", severity: "info", link: "/fraud-evaluation" },
+    ];
+    for (let i = 0; i < notificationData.length; i++) {
+      const n = notificationData[i];
+      this.insert("notifications", {
+        tenantId: "tenant_001",
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        severity: n.severity,
+        read: i >= 3,
+        link: n.link,
+      });
+    }
   }
 }

@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
-import { Plus, Palette } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft } from "lucide-react";
 import { api } from "../api/client";
+import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
+import { SkeletonCard } from "../components/Skeleton";
 
 export default function Creatives() {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [creatives, setCreatives] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: "", type: "image", headline: "", body: "", cta: "" });
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [form, setForm] = useState({ name: "", type: "image", headline: "", body: "", cta: "", tags: "" });
 
   useEffect(() => { loadCreatives(); }, []);
 
@@ -17,13 +27,55 @@ export default function Creatives() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    await api.creatives.create(form);
-    setShowCreate(false);
-    setForm({ name: "", type: "image", headline: "", body: "", cta: "" });
-    loadCreatives();
+    try {
+      await api.creatives.create({ ...form, tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean) });
+      setShowCreate(false);
+      setForm({ name: "", type: "image", headline: "", body: "", cta: "", tags: "" });
+      addToast("success", "Creative created");
+      loadCreatives();
+    } catch { addToast("error", "Failed to create creative"); }
   }
 
+  async function handleStatus(id: string, status: string) {
+    try {
+      await api.creatives.updateStatus(id, status);
+      addToast("success", `Creative ${status}`);
+      loadCreatives();
+    } catch { addToast("error", `Failed to update`); }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this creative?")) return;
+    try { await api.creatives.delete(id); addToast("success", "Deleted"); loadCreatives(); }
+    catch { addToast("error", "Failed to delete"); }
+  }
+
+  function handleExport() {
+    if (creatives.length === 0) return;
+    const data = creatives.map((c: any) => ({
+      Name: c.name,
+      Type: c.type,
+      Status: c.status,
+      Headline: c.headline || "",
+      CTA: c.cta || "",
+      Impressions: c.performance?.impressions || 0,
+      CTR: c.performance?.ctr || 0,
+      Tags: (c.tags || []).join("; "),
+    }));
+    exportToCsv(data, "creatives_export");
+    addToast("success", "Creatives exported");
+  }
+
+  const filtered = creatives.filter((c) => {
+    if (filterType !== "all" && c.type !== filterType) return false;
+    if (filterStatus !== "all" && c.status !== filterStatus) return false;
+    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const typeIcons: Record<string, any> = { image: Image, video: Video, carousel: Layout, text: AlignLeft };
   const typeColors: Record<string, string> = { image: "text-blue-400", video: "text-purple-400", carousel: "text-orange-400", text: "text-green-400" };
+  const statusBadge: Record<string, string> = { draft: "badge-draft", approved: "badge-active", active: "badge-active", paused: "badge-paused", rejected: "badge-archived", pending_approval: "badge-paused" };
 
   return (
     <div className="space-y-6">
@@ -32,28 +84,56 @@ export default function Creatives() {
           <h1 className="text-2xl font-bold text-white">Creatives</h1>
           <p className="text-gray-500 mt-1">Manage your ad creatives and assets</p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={() => setShowCreate(true)}>
-          <Plus className="w-4 h-4" /> New Creative
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary flex items-center gap-2" onClick={handleExport} disabled={creatives.length === 0}>
+            <Download className="w-4 h-4" /> Export
+          </button>
+          <button className="btn-primary flex items-center gap-2" onClick={() => setShowCreate(true)}>
+            <Plus className="w-4 h-4" /> New Creative
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input className="input pl-10" placeholder="Search creatives..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {["all", "image", "video", "carousel", "text"].map((t) => (
+          <button key={t} className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${filterType === t ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500"}`} onClick={() => setFilterType(t)}>
+            {t === "all" ? "All Types" : t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+        <div className="w-px h-6 bg-gray-800 mx-2" />
+        {["all", "draft", "pending_approval", "approved", "active", "paused", "rejected"].map((s) => (
+          <button key={s} className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${filterStatus === s ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500"}`} onClick={() => setFilterStatus(s)}>
+            {s === "all" ? "All Status" : s.replace("_", " ").charAt(0).toUpperCase() + s.replace("_", " ").slice(1)}
+          </button>
+        ))}
       </div>
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="card w-full max-w-lg mx-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
+          <div className="card w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-white mb-4">Create Creative</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Name</label>
+                <label className="block text-sm text-gray-400 mb-1">Name *</label>
                 <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Type</label>
-                <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  <option value="image">Image</option>
-                  <option value="video">Video</option>
-                  <option value="carousel">Carousel</option>
-                  <option value="text">Text</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Type</label>
+                  <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="carousel">Carousel</option>
+                    <option value="text">Text</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Headline</label>
@@ -61,11 +141,17 @@ export default function Creatives() {
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Body</label>
-                <textarea className="input" rows={3} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+                <textarea className="input" rows={2} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">CTA</label>
-                <input className="input" value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="e.g., Learn More" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">CTA</label>
+                  <input className="input" value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="Learn More" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Tags (comma)</label>
+                  <input className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="tag1, tag2" />
+                </div>
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
@@ -77,29 +163,48 @@ export default function Creatives() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" /></div>
-      ) : creatives.length === 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="card text-center py-12">
           <Palette className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">No creatives yet. Create your first one.</p>
+          <p className="text-gray-400">No creatives match your filters.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {creatives.map((c) => (
-            <div key={c._id} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <span className={`text-xs font-medium uppercase ${typeColors[c.type] || ""}`}>{c.type}</span>
-                <span className="badge-draft">{c.status}</span>
+          {filtered.map((c) => {
+            const TypeIcon = typeIcons[c.type] || Image;
+            return (
+              <div key={c._id} className="card hover:border-gray-700 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <TypeIcon className={`w-4 h-4 ${typeColors[c.type] || ""}`} />
+                    <span className={`text-xs font-medium uppercase ${typeColors[c.type] || ""}`}>{c.type}</span>
+                  </div>
+                  <span className={statusBadge[c.status] || "badge-draft"}>{c.status.replace("_", " ")}</span>
+                </div>
+                <Link to={`/creatives/${c._id}`} className="text-white font-semibold hover:text-n0va-400 mb-1 block">{c.name}</Link>
+                {c.headline && <p className="text-sm text-gray-400 mb-2 line-clamp-2">{c.headline}</p>}
+                {c.cta && <span className="text-xs text-n0va-400 bg-n0va-600/10 px-2 py-0.5 rounded">{c.cta}</span>}
+                {c.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {c.tags.slice(0, 3).map((tag: string) => <span key={tag} className="text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">{tag}</span>)}
+                  </div>
+                )}
+                <div className="mt-3 pt-3 border-t border-gray-800 flex justify-between text-xs text-gray-500">
+                  <span>{c.performance?.impressions?.toLocaleString() || 0} impressions</span>
+                  <span>{c.performance?.ctr?.toFixed(2) || 0}% CTR</span>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  {c.status === "draft" && <button className="btn-primary text-xs py-1 flex-1" onClick={() => handleStatus(c._id, "active")}>Activate</button>}
+                  {c.status === "active" && <button className="btn-secondary text-xs py-1 flex-1" onClick={() => handleStatus(c._id, "paused")}>Pause</button>}
+                  {c.status === "paused" && <button className="btn-primary text-xs py-1 flex-1" onClick={() => handleStatus(c._id, "active")}>Resume</button>}
+                  <button className="btn-secondary text-xs py-1" onClick={() => handleDelete(c._id)}>Delete</button>
+                </div>
               </div>
-              <h3 className="text-white font-semibold mb-1">{c.name}</h3>
-              {c.headline && <p className="text-sm text-gray-400 mb-3">{c.headline}</p>}
-              {c.cta && <span className="text-xs text-n0va-400">{c.cta}</span>}
-              <div className="mt-3 pt-3 border-t border-gray-800 flex justify-between text-xs text-gray-500">
-                <span>{c.performance?.impressions?.toLocaleString() || 0} impressions</span>
-                <span>{c.performance?.ctr?.toFixed(2) || 0}% CTR</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

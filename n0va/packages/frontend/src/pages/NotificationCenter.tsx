@@ -1,25 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Notification } from "../types";
 import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, RefreshCw } from "lucide-react";
+import { api } from "../api/client";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: "n1", tenantId: "tenant_001", type: "budget_alert", title: "Budget Exceeded", message: "Campaign 'Summer Sale' has spent 90% of its budget", severity: "warning", read: false, link: "/campaigns", createdAt: new Date(Date.now() - 600000).toISOString() },
-  { id: "n2", tenantId: "tenant_001", type: "campaign_update", title: "Campaign Launched", message: "Brand Awareness campaign is now active across 3 platforms", severity: "success", read: false, link: "/campaigns/camp_002", createdAt: new Date(Date.now() - 1800000).toISOString() },
-  { id: "n3", tenantId: "tenant_001", type: "fraud_alert", title: "Suspicious Activity Detected", message: "Unusual click pattern detected on 'Retargeting Q3'", severity: "error", read: false, link: "/fraud-evaluation", createdAt: new Date(Date.now() - 3600000).toISOString() },
-  { id: "n4", tenantId: "tenant_001", type: "agent_status", title: "Agent Completed Run", message: "Budget Agent reallocated $2,400 across 4 campaigns", severity: "info", read: true, link: "/agents", createdAt: new Date(Date.now() - 7200000).toISOString() },
-  { id: "n5", tenantId: "tenant_001", type: "budget_alert", title: "ROAS Threshold Reached", message: "Prospecting campaign reached 3.2x ROAS, exceeding 2.5x target", severity: "success", read: true, link: "/campaigns/camp_003", createdAt: new Date(Date.now() - 14400000).toISOString() },
-  { id: "n6", tenantId: "tenant_001", type: "fraud_alert", title: "Flag Resolved", message: "Fraud flag on placement ID 'pl_0472' was auto-resolved", severity: "info", read: true, link: "/fraud-evaluation", createdAt: new Date(Date.now() - 28800000).toISOString() },
-  { id: "n7", tenantId: "tenant_001", type: "system", title: "Weekly Report Ready", message: "Your weekly performance report for Jul 14-20 is available", severity: "info", read: false, link: "/analytics", createdAt: new Date(Date.now() - 43200000).toISOString() },
-  { id: "n8", tenantId: "tenant_001", type: "campaign_update", title: "Creative Fatigue Detected", message: "2 creatives in 'Retargeting Q3' showing CTR decline", severity: "warning", read: false, link: "/creative-ab-test", createdAt: new Date(Date.now() - 86400000).toISOString() },
-];
+import { Link } from "react-router-dom";
 
 const typeIcons: Record<string, any> = {
-  fraud_alert: AlertTriangle,
-  budget_alert: DollarSign,
-  campaign_update: TrendingUp,
-  agent_status: Bot,
-  system: Info,
+  fraud_alert: AlertTriangle, budget_alert: DollarSign,
+  campaign_update: TrendingUp, agent_status: Bot, system: Info,
 };
 
 const severityColors: Record<string, string> = {
@@ -30,34 +18,34 @@ const severityColors: Record<string, string> = {
 };
 
 export default function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [filter, setFilter] = useState<string>("all");
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
   const [showLiveOnly, setShowLiveOnly] = useState(false);
 
   const fraudAlerts = useFraudAlerts();
   const budgetAlerts = useBudgetAlerts();
 
+  useEffect(() => { loadNotifications(); }, []);
+
+  async function loadNotifications() {
+    setLoading(true);
+    try { setNotifications(await api.notifications.list()); } finally { setLoading(false); }
+  }
+
   const liveAlerts = [
     ...fraudAlerts.map((a: any) => ({
       id: `live_fraud_${Date.now()}_${Math.random()}`,
-      tenantId: "tenant_001",
-      type: "fraud_alert" as const,
-      title: "Live Fraud Alert",
+      tenantId: "tenant_001", type: "fraud_alert", title: "Live Fraud Alert",
       message: a.message || a.description || "Suspicious activity detected",
-      severity: "error" as const,
-      read: false,
-      link: "/fraud-evaluation",
+      severity: "error", read: false, link: "/fraud-evaluation",
       createdAt: new Date().toISOString(),
     })),
     ...budgetAlerts.map((a: any) => ({
       id: `live_budget_${Date.now()}_${Math.random()}`,
-      tenantId: "tenant_001",
-      type: "budget_alert" as const,
-      title: "Live Budget Alert",
+      tenantId: "tenant_001", type: "budget_alert", title: "Live Budget Alert",
       message: a.message || "Budget threshold crossed",
-      severity: "warning" as const,
-      read: false,
-      link: "/budget-strategy",
+      severity: "warning", read: false, link: "/budget-strategy",
       createdAt: new Date().toISOString(),
     })),
   ];
@@ -68,16 +56,23 @@ export default function NotificationCenter() {
     if (filter === "unread") return !n.read;
     if (filter !== "all") return n.type === filter;
     return true;
-  });
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  async function markAllRead() {
+    try { await api.notifications.markAllRead(); setNotifications((prev) => prev.map((n) => ({ ...n, read: true }))); }
+    catch { /* ignore */ }
   }
 
-  function dismissNotification(id: string) {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  async function markRead(id: string) {
+    try { await api.notifications.markRead(id); setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, read: true } : n)); }
+    catch { /* ignore */ }
+  }
+
+  async function dismissNotification(id: string) {
+    try { await api.notifications.delete(id); setNotifications((prev) => prev.filter((n) => n._id !== id)); }
+    catch { setNotifications((prev) => prev.filter((n) => n._id !== id)); }
   }
 
   return (
@@ -97,6 +92,9 @@ export default function NotificationCenter() {
           <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={markAllRead}>
             <CheckCheck className="w-3.5 h-3.5" /> Mark All Read
           </button>
+          <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={loadNotifications}>
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </button>
         </div>
       </div>
 
@@ -109,7 +107,9 @@ export default function NotificationCenter() {
       </div>
 
       <div className="space-y-2">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12"><div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" /></div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <Bell className="w-10 h-10 mx-auto mb-2" />
             <p>No notifications</p>
@@ -117,22 +117,28 @@ export default function NotificationCenter() {
         ) : (
           filtered.map((n) => {
             const Icon = typeIcons[n.type] || Info;
+            const itemId = n._id || n.id;
             return (
-              <div key={n.id} className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${n.read ? "border-gray-800 bg-gray-900/50" : "border-gray-700 bg-gray-800/80"} ${severityColors[n.severity] ? "" : ""}`}>
+              <div key={itemId} className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${n.read ? "border-gray-800 bg-gray-900/50" : "border-gray-700 bg-gray-800/80"}`}>
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${severityColors[n.severity]}`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-white font-medium">{n.title}</span>
+                    {n.link ? (
+                      <Link to={n.link} className="text-sm text-white font-medium hover:text-n0va-400">{n.title}</Link>
+                    ) : (
+                      <span className="text-sm text-white font-medium">{n.title}</span>
+                    )}
                     {!n.read && <span className="w-2 h-2 bg-n0va-500 rounded-full" />}
                   </div>
                   <p className="text-sm text-gray-400 mt-0.5">{n.message}</p>
                   <p className="text-xs text-gray-600 mt-1">{getTimeAgo(n.createdAt)}</p>
                 </div>
-                <button onClick={() => dismissNotification(n.id)} className="text-gray-600 hover:text-gray-400 flex-shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {!n.read && <button onClick={() => n._id && markRead(n._id)} className="text-gray-600 hover:text-n0va-400"><CheckCheck className="w-4 h-4" /></button>}
+                  <button onClick={() => n._id ? dismissNotification(n._id) : null} className="text-gray-600 hover:text-gray-400"><X className="w-4 h-4" /></button>
+                </div>
               </div>
             );
           })
