@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Check, Settings as SettingsIcon, Shield, Bot, Bell, CreditCard, Sliders } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 interface PricingTier {
   tier: string;
@@ -15,6 +16,7 @@ interface PricingTier {
 }
 
 export default function SettingsPage() {
+  const { addToast } = useToast();
   const [activeSection, setActiveSection] = useState<"pricing" | "tenant" | "notifications" | "agents">("pricing");
   const [pricing, setPricing] = useState<{ tiers: PricingTier[]; bundleDiscounts: any[]; addOns: any[] } | null>(null);
   const [tenantSettings, setTenantSettings] = useState<any>(null);
@@ -28,6 +30,19 @@ export default function SettingsPage() {
       setTenantSettings(t);
     });
   }, []);
+
+  const saveSettings = useCallback(async (section: string) => {
+    try {
+      await fetch("/api/v1/settings/tenant", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tenantSettings || {}),
+      });
+      addToast("success", `${section} saved`);
+    } catch {
+      addToast("error", `Failed to save ${section}`);
+    }
+  }, [tenantSettings, addToast]);
 
   const sections = [
     { id: "pricing" as const, label: "Pricing & Plans", icon: CreditCard },
@@ -185,7 +200,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-gray-800">
-            <button className="btn-primary">Save Settings</button>
+            <button className="btn-primary" onClick={() => saveSettings("Tenant settings")}>Save Settings</button>
           </div>
         </div>
       )}
@@ -210,7 +225,7 @@ export default function SettingsPage() {
             ))}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-800">
-            <button className="btn-primary">Save Preferences</button>
+            <button className="btn-primary" onClick={() => saveSettings("Notification preferences")}>Save Preferences</button>
           </div>
         </div>
       )}
@@ -257,7 +272,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-gray-800">
-            <button className="btn-primary">Save Agent Config</button>
+            <button className="btn-primary" onClick={() => saveSettings("Agent config")}>Save Agent Config</button>
           </div>
         </div>
       )}

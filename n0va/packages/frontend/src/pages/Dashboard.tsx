@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, AlertTriangle, Target, Bell, Activity } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useNavigate } from "react-router-dom";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
+import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -13,12 +14,14 @@ export default function Dashboard() {
   const [fraudHealth, setFraudHealth] = useState<any>(null);
   const [agents, setAgents] = useState<any[]>([]);
   const [attribution, setAttribution] = useState<any>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   const liveFraudAlerts = useFraudAlerts();
   const liveBudgetAlerts = useBudgetAlerts();
   const liveAlertCount = liveFraudAlerts.length + liveBudgetAlerts.length;
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
     Promise.all([
       api.campaigns.dashboard(),
       fetch("/api/v1/analytics/overview").then((r) => r.json()).catch(() => ({ dailyMetrics: [] })),
@@ -27,22 +30,18 @@ export default function Dashboard() {
       fetch("/api/v1/attribution/models").then((r) => r.json()).catch(() => null),
     ])
       .then(([d, analytics, fraud, agentList, attr]) => {
-        setData(d);
-        setDailyData(analytics.dailyMetrics || []);
-        setFraudHealth(fraud);
-        setAgents(agentList);
-        setAttribution(attr);
+        setData(d); setDailyData(analytics.dailyMetrics || []); setFraudHealth(fraud); setAgents(agentList); setAttribution(attr);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(loadData, 30000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadData]);
 
   const stats = [
     { label: "Active Campaigns", value: data?.activeCampaigns ?? 0, icon: Megaphone, color: "text-n0va-400" },
@@ -53,10 +52,7 @@ export default function Dashboard() {
     { label: "ROAS", value: data?.metrics?.avgRoas?.toFixed(2) ?? "0.00", icon: TrendingUp, color: "text-emerald-400" },
   ];
 
-  const chartData = dailyData.slice(-14).map((d: any) => ({
-    ...d,
-    date: d.date?.substring(5) || d.date,
-  }));
+  const chartData = dailyData.slice(-14).map((d: any) => ({ ...d, date: d.date?.substring(5) || d.date }));
 
   const platformData = [
     { platform: "Meta", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.45 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.52 : 0, roas: 2.8 },
@@ -71,11 +67,23 @@ export default function Dashboard() {
   const criticalFlags = fraudHealth?.criticalFlags || 0;
 
   const agentData = attribution?.models?.data_driven?.platformBreakdown
-    ? Object.entries(attribution.models.data_driven.platformBreakdown).map(([platform, p]: [string, any]) => ({
-        platform,
-        weight: parseFloat((p.weight * 100).toFixed(1)),
-      }))
+    ? Object.entries(attribution.models.data_driven.platformBreakdown).map(([platform, p]: [string, any]) => ({ platform, weight: parseFloat((p.weight * 100).toFixed(1)) }))
     : [];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div><h1 className="text-2xl font-bold text-white">Marketing Dashboard</h1><p className="text-gray-500 mt-1">Real-time overview of your advertising performance</p></div>
+          <div className="animate-spin w-5 h-5 border-2 border-n0va-500 border-t-transparent rounded-full" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i + 6} />)}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><SkeletonChart /><SkeletonChart /></div>
+        <SkeletonChart />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -85,18 +93,18 @@ export default function Dashboard() {
           <p className="text-gray-500 mt-1">Real-time overview of your advertising performance</p>
         </div>
         <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+            <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} className="w-3.5 h-3.5 text-n0va-600 bg-gray-700 border-gray-600 rounded" />
+            Auto (30s)
+          </label>
+          <button className="btn-secondary p-2" onClick={loadData} title="Refresh"><RefreshCw className="w-4 h-4" /></button>
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-500">
-            <kbd className="text-gray-400 bg-gray-700 px-1 rounded">Ctrl</kbd>
-            <span>+</span>
-            <kbd className="text-gray-400 bg-gray-700 px-1 rounded">K</kbd>
-            <span className="ml-1">Search</span>
+            <kbd className="text-gray-400 bg-gray-700 px-1 rounded">Ctrl</kbd><span>+</span><kbd className="text-gray-400 bg-gray-700 px-1 rounded">K</kbd><span className="ml-1">Search</span>
           </div>
           {liveAlertCount > 0 && (
             <button onClick={() => navigate("/notifications")} className="relative">
               <Bell className="w-5 h-5 text-yellow-400" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">
-                {liveAlertCount}
-              </span>
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">{liveAlertCount}</span>
             </button>
           )}
         </div>
@@ -123,7 +131,6 @@ export default function Dashboard() {
           <p className="text-2xl font-bold text-white">{runningAgents}/{agents.length}</p>
           <p className="text-xs text-green-400">{runningAgents > 0 ? `${runningAgents} active` : "No agents running"}</p>
         </div>
-
         <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/war-room")}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-500 uppercase tracking-wider">Fraud Alerts</span>
@@ -132,7 +139,6 @@ export default function Dashboard() {
           <p className={`text-2xl font-bold ${criticalFlags > 0 ? "text-red-400" : "text-white"}`}>{activeFlags}</p>
           <p className="text-xs text-gray-500">{criticalFlags > 0 ? `${criticalFlags} critical` : "All clear"}</p>
         </div>
-
         <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/war-room")}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-500 uppercase tracking-wider">Optimal Strategy</span>
@@ -141,7 +147,6 @@ export default function Dashboard() {
           <p className="text-2xl font-bold text-white">Balanced</p>
           <p className="text-xs text-gray-500">30% max shift per campaign</p>
         </div>
-
         <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/analytics")}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-500 uppercase tracking-wider">Attribution</span>
@@ -160,13 +165,8 @@ export default function Dashboard() {
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-yellow-300 font-medium">
-                {liveAlertCount} live alert{liveAlertCount !== 1 ? "s" : ""} detected
-              </p>
-              <p className="text-xs text-yellow-400/70">
-                {liveFraudAlerts.length > 0 && `${liveFraudAlerts.length} fraud · `}
-                {liveBudgetAlerts.length > 0 && `${liveBudgetAlerts.length} budget`}
-              </p>
+              <p className="text-sm text-yellow-300 font-medium">{liveAlertCount} live alert{liveAlertCount !== 1 ? "s" : ""} detected</p>
+              <p className="text-xs text-yellow-400/70">{liveFraudAlerts.length > 0 && `${liveFraudAlerts.length} fraud · `}{liveBudgetAlerts.length > 0 && `${liveBudgetAlerts.length} budget`}</p>
             </div>
             <button className="btn-secondary text-xs" onClick={() => navigate("/notifications")}>View</button>
           </div>
@@ -196,7 +196,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
-
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">ROAS by Platform</h3>
@@ -236,7 +235,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
         </div>
-
         <div className="card">
           <h3 className="text-lg font-semibold text-white mb-4">Budget Utilization</h3>
           <div className="flex flex-col items-center justify-center h-48">
@@ -245,9 +243,7 @@ export default function Dashboard() {
                 <circle cx="64" cy="64" r="54" fill="none" stroke="#1f2937" strokeWidth="12" />
                 <circle cx="64" cy="64" r="54" fill="none" stroke="#1a6dff" strokeWidth="12" strokeDasharray={`${parseFloat(budgetUtilization) * 3.39} 339`} strokeLinecap="round" />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl font-bold text-white">{budgetUtilization}%</span>
-              </div>
+              <div className="absolute inset-0 flex items-center justify-center"><span className="text-2xl font-bold text-white">{budgetUtilization}%</span></div>
             </div>
             <div className="text-center text-sm text-gray-500">
               <p className="text-white font-medium">${((data?.totalSpent ?? 0) / 1000).toFixed(1)}K</p>
