@@ -149,7 +149,7 @@ router.patch(
     const { id } = req.params;
     const tenantId = req.user!.tenantId;
     const update = req.body;
-    const allowed = ["name", "type", "status", "goal", "platforms", "tags", "kpis", "hyperContext"];
+    const allowed = ["name", "type", "status", "goal", "platforms", "tags", "kpis", "hyperContext", "creatives", "audiences"];
     const filtered: Record<string, any> = {};
     for (const key of allowed) {
       if (update[key] !== undefined) filtered[key] = update[key];

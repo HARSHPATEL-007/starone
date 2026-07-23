@@ -15,9 +15,10 @@ router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    const { entityType, action, limit = "50" } = req.query;
+    const { entityType, entityId, action, limit = "50" } = req.query;
     let activities = store().find("activities", (a: any) => a.tenantId === tenantId);
     if (entityType) activities = activities.filter((a: any) => a.entityType === entityType);
+    if (entityId) activities = activities.filter((a: any) => a.entityId === entityId);
     if (action) activities = activities.filter((a: any) => a.action === action);
     activities.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     res.json(activities.slice(0, parseInt(limit as string, 10)));

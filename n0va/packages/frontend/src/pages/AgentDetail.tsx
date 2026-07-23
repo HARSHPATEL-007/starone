@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Bot, Play, Pause, Trash2, Settings, Activity, RefreshCw, TrendingUp, Clock, CheckCircle, XCircle } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Bot, Play, Pause, Trash2, Settings, Activity, RefreshCw, TrendingUp, Clock, CheckCircle, XCircle, ListChecks } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
@@ -12,6 +12,7 @@ export default function AgentDetail() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [agent, setAgent] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
 
@@ -21,7 +22,12 @@ export default function AgentDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      setAgent(await api.agents.get(id));
+      const [agentData, activityData] = await Promise.all([
+        api.agents.get(id),
+        api.activity.list(`entityType=agent&entityId=${id}&limit=20`).catch(() => []),
+      ]);
+      setAgent(agentData);
+      setActivities(Array.isArray(activityData) ? activityData : []);
     } catch {
       addToast("error", "Agent not found");
       navigate("/agents");
@@ -58,7 +64,15 @@ export default function AgentDetail() {
     try {
       const updated = await api.agents.recordRun(agent._id, { success: true, actionsCount: Math.floor(Math.random() * 5) + 1 });
       setAgent(updated);
+      await api.activity.create({
+        entityType: "agent",
+        entityId: agent._id,
+        entityName: agent.name,
+        action: "run",
+        details: `Simulated run with ${Math.floor(Math.random() * 5) + 1} actions`,
+      });
       addToast("success", "Run recorded");
+      loadAgent();
     } catch {
       addToast("error", "Failed to record run");
     }
@@ -188,13 +202,31 @@ export default function AgentDetail() {
                 <Activity className="w-3.5 h-3.5" /> Simulate Run
               </button>
             </div>
-            <div className="h-64 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Activity className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-                <p className="text-sm">Run history will appear here</p>
-                <p className="text-xs text-gray-600 mt-1">Simulate a run to see activity data</p>
+            {activities.length > 0 ? (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {activities.map((a: any) => (
+                  <div key={a._id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/50">
+                    <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${a.action === "run" || a.action === "success" ? "bg-green-400" : a.action === "error" || a.action === "failure" ? "bg-red-400" : "bg-yellow-400"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white">{a.details || a.action}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-gray-500 capitalize">{a.action}</span>
+                        <span className="text-xs text-gray-600">·</span>
+                        <span className="text-xs text-gray-500">{a.timestamp ? new Date(a.timestamp).toLocaleString() : ""}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <Activity className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                  <p className="text-sm">No activity recorded yet</p>
+                  <p className="text-xs text-gray-600 mt-1">Simulate a run or wait for the agent to execute</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card">

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { api } from "../api/client";
-import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw, Play, Pause, Target, DollarSign } from "lucide-react";
 import { useToast } from "../components/Toast";
 
 export default function AudienceDetail() {
@@ -10,11 +10,12 @@ export default function AudienceDetail() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [audience, setAudience] = useState<any>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   async function loadData(isRefresh = false) {
@@ -24,8 +25,9 @@ export default function AudienceDetail() {
       const found = await api.audiences.get(id);
       setAudience(found);
       setEditName(found.name);
-      const analyticsData = await api.analytics.overview("30");
-      setAnalytics(analyticsData);
+      setEditDescription(found.description || "");
+      const campaignList = await api.campaigns.list();
+      setCampaigns(campaignList.campaigns || campaignList || []);
     } catch {
       navigate("/audiences");
     } finally {
@@ -39,8 +41,8 @@ export default function AudienceDetail() {
   async function handleSave() {
     if (!audience || !editName.trim()) return;
     try {
-      const updated = await api.audiences.update(audience._id || audience.id, { name: editName });
-      setAudience(updated || { ...audience, name: editName });
+      const updated = await api.audiences.update(audience._id || audience.id, { name: editName, description: editDescription });
+      setAudience(updated || { ...audience, name: editName, description: editDescription });
       setEditing(false);
       addToast("success", "Audience updated");
     } catch {
@@ -60,15 +62,23 @@ export default function AudienceDetail() {
     setShowDeleteConfirm(false);
   }
 
+  async function handleStatus(status: string) {
+    if (!audience) return;
+    try {
+      const updated = await api.audiences.update(audience._id || audience.id, { status });
+      setAudience(updated || { ...audience, status });
+      addToast("success", `Audience ${status}`);
+    } catch {
+      addToast("error", "Failed to update status");
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="flex items-center gap-4">
           <div className="w-5 h-5 bg-gray-800 rounded" />
-          <div>
-            <div className="w-48 h-7 bg-gray-800 rounded" />
-            <div className="w-32 h-4 bg-gray-800 rounded mt-2" />
-          </div>
+          <div><div className="w-48 h-7 bg-gray-800 rounded" /><div className="w-32 h-4 bg-gray-800 rounded mt-2" /></div>
         </div>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -97,19 +107,27 @@ export default function AudienceDetail() {
     { label: "Impressions", value: (perf.impressions || 0).toLocaleString(), icon: BarChart3 },
     { label: "Conversions", value: (perf.conversions || 0).toLocaleString(), icon: Activity },
     { label: "Spend", value: `$${(perf.spend || 0).toLocaleString()}`, icon: Globe },
-    { label: "Revenue", value: `$${(perf.revenue || 0).toLocaleString()}`, icon: Globe },
+    { label: "Revenue", value: `$${(perf.revenue || 0).toLocaleString()}`, icon: DollarSign },
     { label: "ROAS", value: `${(perf.roas || 0).toFixed(2)}x`, icon: BarChart3 },
   ];
 
+  const total = Math.max(1, (perf.spend || 0) + (perf.revenue || 0) + (perf.impressions || 0) / 100);
   const sourceData = [
-    { name: "Direct", value: 35 },
-    { name: "Social", value: 28 },
-    { name: "Email", value: 20 },
-    { name: "Referral", value: 12 },
-    { name: "Paid", value: 5 },
+    { name: "Spend", value: Math.round(((perf.spend || 0) / total) * 100) },
+    { name: "Revenue", value: Math.round(((perf.revenue || 0) / total) * 100) },
+    { name: "Impressions", value: Math.max(1, Math.round(((perf.impressions || 0) / 100 / total) * 100)) },
+    { name: "Conversions", value: Math.max(1, Math.round(((perf.conversions || 0) * 10 / total) * 100)) },
   ];
 
-  const SOURCE_COLORS = ["#8b5cf6", "#1a6dff", "#10b981", "#f59e0b", "#ec4899"];
+  const SOURCE_COLORS = ["#8b5cf6", "#1a6dff", "#10b981", "#f59e0b"];
+
+  const audienceId = audience._id || audience.id;
+
+  const linkedCampaigns = Array.isArray(campaigns) ? campaigns.filter((c: any) =>
+    c.audiences?.some((a: any) => (a._id || a) === audienceId)
+  ) : [];
+
+  const criteriaKeys = audience.criteria ? Object.keys(audience.criteria).filter((k) => audience.criteria[k]) : [];
 
   return (
     <div className="space-y-6">
@@ -120,15 +138,13 @@ export default function AudienceDetail() {
           </button>
           <div>
             {editing ? (
-              <div className="flex items-center gap-2">
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-white text-lg font-bold"
-                  autoFocus
-                />
-                <button className="btn-secondary text-sm" onClick={handleSave}>Save</button>
-                <button className="text-gray-500 text-sm" onClick={() => setEditing(false)}>Cancel</button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-white text-lg font-bold" autoFocus />
+                  <button className="btn-secondary text-sm" onClick={handleSave}>Save</button>
+                  <button className="text-gray-500 text-sm" onClick={() => setEditing(false)}>Cancel</button>
+                </div>
+                <input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-white text-sm" placeholder="Description" />
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -136,12 +152,24 @@ export default function AudienceDetail() {
                 <button onClick={() => setEditing(true)} className="text-gray-500 hover:text-n0va-400">
                   <Edit3 className="w-4 h-4" />
                 </button>
+                <span className={`badge ${audience.status === "active" ? "badge-active" : audience.status === "paused" ? "badge-paused" : "badge-draft"}`}>
+                  {audience.status || "active"}
+                </span>
               </div>
             )}
             <p className="text-gray-500 mt-1">{audience.description || audience.type || "Custom audience"}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {(audience.status === "active") ? (
+            <button className="btn-secondary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("paused")}>
+              <Pause className="w-4 h-4" /> Pause
+            </button>
+          ) : (
+            <button className="btn-primary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("active")}>
+              <Play className="w-4 h-4" /> Activate
+            </button>
+          )}
           <button className="btn-secondary p-2" onClick={() => loadData(true)} disabled={refreshing}>
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           </button>
@@ -176,14 +204,12 @@ export default function AudienceDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Audience Breakdown by Source</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Audience Breakdown</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={sourceData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value">
-                  {sourceData.map((_entry, i) => (
-                    <Cell key={i} fill={SOURCE_COLORS[i]} />
-                  ))}
+                  {sourceData.map((_entry, i) => (<Cell key={i} fill={SOURCE_COLORS[i]} />))}
                 </Pie>
                 <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
               </PieChart>
@@ -220,26 +246,69 @@ export default function AudienceDetail() {
         </div>
       </div>
 
-      <div className="card">
-        <h3 className="text-lg font-semibold text-white mb-4">Audience Details</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <DetailField label="Type" value={audience.type || audience.source || "custom"} />
-          <DetailField label="Source" value={audience.source || "platform"} />
-          <DetailField label="Size" value={(audience.size || 0).toLocaleString()} />
-          <DetailField label="Status" value={audience.status || "active"} />
-          <DetailField label="Platform" value={audience.platform || "cross-platform"} />
-          <DetailField label="Created" value={audience.createdAt ? new Date(audience.createdAt).toLocaleDateString() : "N/A"} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card">
+          <h3 className="text-lg font-semibold text-white mb-4">Audience Details</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <DetailField label="Type" value={audience.type || audience.source || "custom"} />
+            <DetailField label="Source" value={audience.source || "platform"} />
+            <DetailField label="Size" value={(audience.size || 0).toLocaleString()} />
+            <DetailField label="Status" value={audience.status || "active"} />
+            <DetailField label="Platform" value={audience.platform || "cross-platform"} />
+            <DetailField label="Created" value={audience.createdAt ? new Date(audience.createdAt).toLocaleDateString() : "N/A"} />
+          </div>
+          {audience.tags && audience.tags.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-500 mb-2">Tags</p>
+              <div className="flex flex-wrap gap-1.5">
+                {audience.tags.map((tag: string) => (
+                  <span key={tag} className="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{tag}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {criteriaKeys.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-800">
+              <p className="text-sm text-gray-500 mb-2">Criteria</p>
+              <div className="grid grid-cols-2 gap-2">
+                {criteriaKeys.map((key) => (
+                  <div key={key} className="bg-gray-800/50 rounded-lg p-2">
+                    <p className="text-xs text-gray-500 capitalize">{key.replace(/_/g, " ")}</p>
+                    <p className="text-sm text-white">{typeof audience.criteria[key] === "object" ? JSON.stringify(audience.criteria[key]) : String(audience.criteria[key])}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        {audience.tags && audience.tags.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500 mb-2">Tags</p>
-            <div className="flex flex-wrap gap-1.5">
-              {audience.tags.map((tag: string) => (
-                <span key={tag} className="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{tag}</span>
+
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Linked Campaigns</h3>
+            <Link to="/campaigns" className="text-sm text-n0va-400 hover:text-n0va-300">View All</Link>
+          </div>
+          {linkedCampaigns.length > 0 ? (
+            <div className="space-y-2">
+              {linkedCampaigns.map((c: any) => (
+                <Link key={c._id} to={`/campaigns/${c._id}`} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Target className="w-4 h-4 text-n0va-400 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{c.name}</p>
+                      <p className="text-xs text-gray-500 capitalize">{c.status} · {c.type}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-500 shrink-0">${c.budget?.daily || 0}/day</span>
+                </Link>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Target className="w-8 h-8 mx-auto mb-2 text-gray-600" />
+              <p className="text-sm">Not used in any campaigns yet</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

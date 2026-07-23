@@ -370,53 +370,9 @@ export default function CampaignDetail() {
         </>
       )}
 
-      {tab === "creatives" && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Linked Creatives</h3>
-            <Link to="/creatives" className="text-sm text-n0va-400 hover:text-n0va-300">Manage Creatives</Link>
-          </div>
-          {campaign.creatives?.length > 0 ? (
-            <div className="space-y-2">
-              {campaign.creatives.map((c: any) => (
-                <Link key={c._id || c} to={`/creatives/${c._id || c}`} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Image className="w-4 h-4 text-n0va-400" />
-                    <span className="text-sm text-white">{c.name || c._id || c}</span>
-                  </div>
-                  <span className="text-xs text-gray-500">{c.status || "linked"}</span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No creatives linked to this campaign.</p>
-          )}
-        </div>
-      )}
+      {tab === "creatives" && <CreativesTab campaign={campaign} onUpdate={loadCampaign} />}
 
-      {tab === "audiences" && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Target Audiences</h3>
-            <Link to="/audiences" className="text-sm text-n0va-400 hover:text-n0va-300">Manage Audiences</Link>
-          </div>
-          {campaign.audiences?.length > 0 ? (
-            <div className="space-y-2">
-              {campaign.audiences.map((a: any) => (
-                <Link key={a._id || a} to={`/audiences/${a._id || a}`} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-white">{a.name || a._id || a}</span>
-                  </div>
-                  <span className="text-xs text-gray-500">{a.size?.toLocaleString() || "—"}</span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No audiences targeted yet.</p>
-          )}
-        </div>
-      )}
+      {tab === "audiences" && <AudiencesTab campaign={campaign} onUpdate={loadCampaign} />}
 
       {tab === "platforms" && (
         <div className="card">
@@ -508,5 +464,235 @@ export default function CampaignDetail() {
         </div>
       )}
     </div>
+  );
+}
+
+function CreativesTab({ campaign, onUpdate }: { campaign: any; onUpdate: () => void }) {
+  const { addToast } = useToast();
+  const [allCreatives, setAllCreatives] = useState<any[]>([]);
+  const [showLink, setShowLink] = useState(false);
+  const [search, setSearch] = useState("");
+
+  async function openLink() {
+    try {
+      const list = await api.creatives.list();
+      setAllCreatives(Array.isArray(list) ? list : []);
+      setShowLink(true);
+    } catch {
+      addToast("error", "Failed to load creatives");
+    }
+  }
+
+  async function linkCreative(creativeId: string) {
+    const currentIds = (campaign.creatives || []).map((c: any) => c._id || c);
+    if (currentIds.includes(creativeId)) {
+      addToast("error", "Already linked");
+      return;
+    }
+    try {
+      await api.campaigns.update(campaign._id || campaign.id, { creatives: [...currentIds, creativeId] });
+      addToast("success", "Creative linked");
+      setShowLink(false);
+      onUpdate();
+    } catch {
+      addToast("error", "Failed to link creative");
+    }
+  }
+
+  async function removeCreative(creativeId: string) {
+    const currentIds = (campaign.creatives || []).map((c: any) => c._id || c);
+    try {
+      await api.campaigns.update(campaign._id || campaign.id, { creatives: currentIds.filter((id: string) => id !== creativeId) });
+      addToast("success", "Creative removed");
+      onUpdate();
+    } catch {
+      addToast("error", "Failed to remove creative");
+    }
+  }
+
+  const filteredCreatives = allCreatives.filter((c: any) =>
+    c.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <>
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Linked Creatives</h3>
+          <button className="btn-secondary text-sm flex items-center gap-1.5" onClick={openLink}>
+            <Image className="w-3.5 h-3.5" /> Link Creative
+          </button>
+        </div>
+        {campaign.creatives?.length > 0 ? (
+          <div className="space-y-2">
+            {campaign.creatives.map((c: any) => {
+              const cId = c._id || c;
+              return (
+                <div key={cId} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors group">
+                  <Link to={`/creatives/${cId}`} className="flex items-center gap-3 min-w-0 flex-1">
+                    <Image className="w-4 h-4 text-n0va-400 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-white">{c.name || cId}</span>
+                      {c.status && <span className="text-xs text-gray-500 ml-2">({c.status})</span>}
+                    </div>
+                  </Link>
+                  <button className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 text-xs" onClick={() => removeCreative(cId)}>
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm">No creatives linked to this campaign.</p>
+        )}
+      </div>
+
+      {showLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowLink(false)}>
+          <div className="w-full max-w-lg bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4">Link Creative</h3>
+            <input className="input mb-3" placeholder="Search creatives..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {filteredCreatives.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No creatives found</p>
+              ) : (
+                filteredCreatives.map((c: any) => {
+                  const cId = c._id || c.id;
+                  const isLinked = (campaign.creatives || []).some((cc: any) => (cc._id || cc) === cId);
+                  return (
+                    <button key={cId} className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${isLinked ? "bg-gray-800/30 text-gray-500" : "bg-gray-800/50 hover:bg-gray-800 text-white"}`} onClick={() => !isLinked && linkCreative(cId)} disabled={isLinked}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Image className="w-4 h-4 text-n0va-400 shrink-0" />
+                        <span className="text-sm truncate">{c.name || cId}</span>
+                      </div>
+                      <span className="text-xs shrink-0">{isLinked ? "Linked" : "Link"}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button className="btn-secondary" onClick={() => setShowLink(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function AudiencesTab({ campaign, onUpdate }: { campaign: any; onUpdate: () => void }) {
+  const { addToast } = useToast();
+  const [allAudiences, setAllAudiences] = useState<any[]>([]);
+  const [showLink, setShowLink] = useState(false);
+  const [search, setSearch] = useState("");
+
+  async function openLink() {
+    try {
+      const list = await api.audiences.list();
+      setAllAudiences(Array.isArray(list) ? list : []);
+      setShowLink(true);
+    } catch {
+      addToast("error", "Failed to load audiences");
+    }
+  }
+
+  async function linkAudience(audienceId: string) {
+    const currentIds = (campaign.audiences || []).map((a: any) => a._id || a);
+    if (currentIds.includes(audienceId)) {
+      addToast("error", "Already linked");
+      return;
+    }
+    try {
+      await api.campaigns.update(campaign._id || campaign.id, { audiences: [...currentIds, audienceId] });
+      addToast("success", "Audience linked");
+      setShowLink(false);
+      onUpdate();
+    } catch {
+      addToast("error", "Failed to link audience");
+    }
+  }
+
+  async function removeAudience(audienceId: string) {
+    const currentIds = (campaign.audiences || []).map((a: any) => a._id || a);
+    try {
+      await api.campaigns.update(campaign._id || campaign.id, { audiences: currentIds.filter((id: string) => id !== audienceId) });
+      addToast("success", "Audience removed");
+      onUpdate();
+    } catch {
+      addToast("error", "Failed to remove audience");
+    }
+  }
+
+  const filteredAudiences = allAudiences.filter((a: any) =>
+    a.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <>
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Target Audiences</h3>
+          <button className="btn-secondary text-sm flex items-center gap-1.5" onClick={openLink}>
+            <Users className="w-3.5 h-3.5" /> Link Audience
+          </button>
+        </div>
+        {campaign.audiences?.length > 0 ? (
+          <div className="space-y-2">
+            {campaign.audiences.map((a: any) => {
+              const aId = a._id || a;
+              return (
+                <div key={aId} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors group">
+                  <Link to={`/audiences/${aId}`} className="flex items-center gap-3 min-w-0 flex-1">
+                    <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-white">{a.name || aId}</span>
+                      {a.size ? <span className="text-xs text-gray-500 ml-2">({a.size.toLocaleString()})</span> : null}
+                    </div>
+                  </Link>
+                  <button className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 text-xs" onClick={() => removeAudience(aId)}>
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm">No audiences targeted yet.</p>
+        )}
+      </div>
+
+      {showLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowLink(false)}>
+          <div className="w-full max-w-lg bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4">Link Audience</h3>
+            <input className="input mb-3" placeholder="Search audiences..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {filteredAudiences.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No audiences found</p>
+              ) : (
+                filteredAudiences.map((a: any) => {
+                  const aId = a._id || a.id;
+                  const isLinked = (campaign.audiences || []).some((aa: any) => (aa._id || aa) === aId);
+                  return (
+                    <button key={aId} className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${isLinked ? "bg-gray-800/30 text-gray-500" : "bg-gray-800/50 hover:bg-gray-800 text-white"}`} onClick={() => !isLinked && linkAudience(aId)} disabled={isLinked}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span className="text-sm truncate">{a.name || aId}</span>
+                      </div>
+                      <span className="text-xs shrink-0">{isLinked ? "Linked" : "Link"}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button className="btn-secondary" onClick={() => setShowLink(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

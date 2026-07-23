@@ -1,33 +1,40 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
-import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText } from "lucide-react";
 
 export default function CreativeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [creative, setCreative] = useState<any>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editHeadline, setEditHeadline] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [editCta, setEditCta] = useState("");
 
-  useEffect(() => {
-    loadData();
-  }, [id, navigate]);
+  useEffect(() => { loadData(); }, [id, navigate]);
 
   async function loadData() {
     if (!id) return;
     setLoading(true);
     try {
-      const found = await api.creatives.get(id);
+      const [found, campaignList] = await Promise.all([
+        api.creatives.get(id),
+        api.campaigns.list().catch(() => ({ campaigns: [] })),
+      ]);
       setCreative(found);
       setEditName(found.name);
       setEditHeadline(found.headline || "");
+      setEditBody(found.body || "");
+      setEditCta(found.cta || "");
+      setCampaigns(campaignList.campaigns || campaignList || []);
     } catch {
       navigate("/creatives");
     } finally {
@@ -40,8 +47,8 @@ export default function CreativeDetail() {
   async function handleSave() {
     if (!creative || !editName.trim()) return;
     try {
-      const updated = await api.creatives.update(creative._id || creative.id, { name: editName, headline: editHeadline });
-      setCreative(updated || { ...creative, name: editName, headline: editHeadline });
+      const updated = await api.creatives.update(creative._id || creative.id, { name: editName, headline: editHeadline, body: editBody, cta: editCta });
+      setCreative(updated || { ...creative, name: editName, headline: editHeadline, body: editBody, cta: editCta });
       setEditing(false);
     } catch {
       addToast("error", "Failed to save creative");
@@ -60,6 +67,17 @@ export default function CreativeDetail() {
     setShowDeleteConfirm(false);
   }
 
+  async function handleStatus(status: string) {
+    if (!creative) return;
+    try {
+      const updated = await api.creatives.updateStatus(creative._id || creative.id, status);
+      setCreative(updated || { ...creative, status });
+      addToast("success", `Creative ${status}`);
+    } catch {
+      addToast("error", "Failed to update status");
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -68,10 +86,7 @@ export default function CreativeDetail() {
           <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+          <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
         </div>
       </div>
     );
@@ -105,6 +120,11 @@ export default function CreativeDetail() {
   ];
 
   const platformVariants = creative.platformVariants || {};
+  const creativeId = creative._id || creative.id;
+
+  const linkedCampaigns = Array.isArray(campaigns) ? campaigns.filter((c: any) =>
+    c.creatives?.some((cr: any) => (cr._id || cr) === creativeId)
+  ) : [];
 
   return (
     <div className="space-y-6">
@@ -115,15 +135,12 @@ export default function CreativeDetail() {
           </button>
           <div>
             {editing ? (
-              <div className="flex items-center gap-2">
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-white text-lg font-bold"
-                  autoFocus
-                />
-                <button className="btn-secondary text-sm" onClick={handleSave}>Save</button>
-                <button className="text-gray-500 text-sm" onClick={() => setEditing(false)}>Cancel</button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-white text-lg font-bold" autoFocus />
+                  <button className="btn-secondary text-sm" onClick={handleSave}>Save</button>
+                  <button className="text-gray-500 text-sm" onClick={() => setEditing(false)}>Cancel</button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -131,19 +148,51 @@ export default function CreativeDetail() {
                 <button onClick={() => setEditing(true)} className="text-gray-500 hover:text-n0va-400">
                   <Edit3 className="w-4 h-4" />
                 </button>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[creative.status] || "text-gray-400 bg-gray-500/10"}`}>
+                  {creative.status}
+                </span>
               </div>
             )}
             <div className="flex items-center gap-2 mt-1">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[creative.status] || "text-gray-400 bg-gray-500/10"}`}>
-                {creative.status}
-              </span>
               <span className="text-xs text-gray-500 capitalize">{creative.type}</span>
             </div>
           </div>
         </div>
-        <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={() => setShowDeleteConfirm(true)}>
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
+        <div className="flex items-center gap-2">
+          {creative.status === "draft" && (
+            <button className="btn-secondary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("pending_approval")}>
+              <CheckCircle className="w-4 h-4" /> Submit
+            </button>
+          )}
+          {creative.status === "pending_approval" && (
+            <>
+              <button className="btn-primary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("approved")}>
+                <CheckCircle className="w-4 h-4" /> Approve
+              </button>
+              <button className="btn-danger flex items-center gap-1.5 text-sm" onClick={() => handleStatus("rejected")}>
+                <XCircle className="w-4 h-4" /> Reject
+              </button>
+            </>
+          )}
+          {creative.status === "approved" && (
+            <button className="btn-primary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("active")}>
+              <Play className="w-4 h-4" /> Activate
+            </button>
+          )}
+          {creative.status === "active" && (
+            <button className="btn-secondary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("paused")}>
+              <Pause className="w-4 h-4" /> Pause
+            </button>
+          )}
+          {(creative.status === "paused" || creative.status === "rejected") && (
+            <button className="btn-primary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("active")}>
+              <Play className="w-4 h-4" /> Activate
+            </button>
+          )}
+          <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={() => setShowDeleteConfirm(true)}>
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        </div>
       </div>
 
       {showDeleteConfirm && (
@@ -177,6 +226,26 @@ export default function CreativeDetail() {
         </div>
       </div>
 
+      {editing && (
+        <div className="card">
+          <h3 className="text-lg font-semibold text-white mb-4">Edit Content</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Headline</label>
+              <input className="input" value={editHeadline} onChange={(e) => setEditHeadline(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Body</label>
+              <textarea className="input" rows={3} value={editBody} onChange={(e) => setEditBody(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">CTA</label>
+              <input className="input" value={editCta} onChange={(e) => setEditCta(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
           <h3 className="text-lg font-semibold text-white mb-4">Performance</h3>
@@ -193,24 +262,55 @@ export default function CreativeDetail() {
           </div>
         </div>
 
-        <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Creative Details</h3>
-          <div className="space-y-3">
-            <DetailField label="Type" value={creative.type} />
-            <DetailField label="Status" value={creative.status} />
-            <DetailField label="Format" value={creative.type === "image" ? "Static Image" : creative.type === "video" ? "Video" : creative.type === "carousel" ? "Carousel" : "Text"} />
-            {creative.headline && <DetailField label="Headline" value={creative.headline} />}
-            {creative.body && <DetailField label="Body" value={creative.body} />}
-            {creative.cta && <DetailField label="CTA" value={creative.cta} />}
-          </div>
-          {creative.tags && creative.tags.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-500 mb-2">Tags</p>
-              <div className="flex flex-wrap gap-1.5">
-                {creative.tags.map((tag: string) => (
-                  <span key={tag} className="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{tag}</span>
-                ))}
+        <div className="space-y-3">
+          <div className="card">
+            <h3 className="text-lg font-semibold text-white mb-4">Creative Details</h3>
+            <div className="space-y-3">
+              <DetailField label="Type" value={creative.type} />
+              <DetailField label="Status" value={creative.status} />
+              <DetailField label="Format" value={creative.type === "image" ? "Static Image" : creative.type === "video" ? "Video" : creative.type === "carousel" ? "Carousel" : "Text"} />
+              {creative.headline && <DetailField label="Headline" value={creative.headline} />}
+              {creative.body && <DetailField label="Body" value={creative.body} />}
+              {creative.cta && <DetailField label="CTA" value={creative.cta} />}
+            </div>
+            {creative.tags && creative.tags.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-500 mb-2">Tags</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {creative.tags.map((tag: string) => (
+                    <span key={tag} className="px-2 py-0.5 bg-gray-800 text-gray-400 rounded text-xs">{tag}</span>
+                  ))}
+                </div>
               </div>
+            )}
+          </div>
+
+          {(creative.type === "image" || creative.type === "video" || creative.type === "carousel") && (
+            <div className="card">
+              <h3 className="text-lg font-semibold text-white mb-4">Preview</h3>
+              <div className="h-48 bg-gray-800 rounded-lg flex items-center justify-center">
+                {creative.type === "image" && (
+                  <div className="text-center text-gray-500">
+                    <Image className="w-12 h-12 mx-auto mb-2 text-gray-600" />
+                    <p className="text-sm">{creative.assetUrl ? "Image asset" : "No image uploaded"}</p>
+                  </div>
+                )}
+                {creative.type === "video" && (
+                  <div className="text-center text-gray-500">
+                    <Video className="w-12 h-12 mx-auto mb-2 text-gray-600" />
+                    <p className="text-sm">{creative.assetUrl ? "Video asset" : "No video uploaded"}</p>
+                  </div>
+                )}
+                {creative.type === "carousel" && (
+                  <div className="text-center text-gray-500">
+                    <Film className="w-12 h-12 mx-auto mb-2 text-gray-600" />
+                    <p className="text-sm">Carousel preview not available</p>
+                  </div>
+                )}
+              </div>
+              {creative.assetUrl && (
+                <p className="text-xs text-gray-500 mt-2 truncate">URL: {creative.assetUrl}</p>
+              )}
             </div>
           )}
         </div>
@@ -231,6 +331,34 @@ export default function CreativeDetail() {
           </div>
         </div>
       )}
+
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Linked Campaigns</h3>
+          <Link to="/campaigns" className="text-sm text-n0va-400 hover:text-n0va-300">View All</Link>
+        </div>
+        {linkedCampaigns.length > 0 ? (
+          <div className="space-y-2">
+            {linkedCampaigns.map((c: any) => (
+              <Link key={c._id} to={`/campaigns/${c._id}`} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Target className="w-4 h-4 text-n0va-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{c.name}</p>
+                    <p className="text-xs text-gray-500 capitalize">{c.status} · {c.type}</p>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-500 shrink-0">${c.budget?.daily || 0}/day</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Target className="w-8 h-8 mx-auto mb-2 text-gray-600" />
+            <p className="text-sm">Not used in any campaigns yet</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
