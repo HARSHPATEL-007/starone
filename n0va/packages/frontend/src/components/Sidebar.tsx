@@ -27,11 +27,13 @@ import {
   LogOut,
   HeartPulse,
   TrendingDown,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
+  { to: "/campaign-calendar", icon: CalendarIcon, label: "Calendar" },
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
   { to: "/creatives", icon: Palette, label: "Creatives" },
   { to: "/audiences", icon: Users, label: "Audiences" },
