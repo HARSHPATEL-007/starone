@@ -44,6 +44,7 @@ export const api = {
   },
   agents: {
     list: () => request<any[]>("/agents"),
+    get: (id: string) => request<any>(`/agents/${id}`),
     defaults: () => request<any[]>("/agents/defaults"),
     create: (data: Record<string, unknown>) =>
       request<any>("/agents", { method: "POST", body: JSON.stringify(data) }),

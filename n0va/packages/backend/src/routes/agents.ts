@@ -24,6 +24,17 @@ router.get(
 );
 
 router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const agents = await DataStore.findAgents({ tenantId });
+    const agent = agents.find((a: any) => a._id === req.params.id);
+    if (!agent) throw new AppError(404, "Agent not found");
+    res.json(agent);
+  })
+);
+
+router.get(
   "/defaults",
   asyncHandler(async (_req: Request, res: Response) => {
     res.json(agentService.getDefaultAgents());

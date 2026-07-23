@@ -8,6 +8,7 @@ import CampaignDetail from "./pages/CampaignDetail";
 import Creatives from "./pages/Creatives";
 import Audiences from "./pages/Audiences";
 import Agents from "./pages/Agents";
+import AgentDetail from "./pages/AgentDetail";
 import Platforms from "./pages/Platforms";
 import Analytics from "./pages/Analytics";
 import Recipes from "./pages/Recipes";
@@ -30,6 +31,7 @@ import NotificationCenter from "./pages/NotificationCenter";
 import HyperContext from "./pages/HyperContext";
 import CampaignWizard from "./pages/CampaignWizard";
 import PlatformDetail from "./pages/PlatformDetail";
+import PlatformHealth from "./pages/PlatformHealth";
 import RecipeDetail from "./pages/RecipeDetail";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -59,6 +61,7 @@ export default function App() {
                 <Route path="/audiences" element={<Audiences />} />
                 <Route path="/audiences/:id" element={<AudienceDetail />} />
                 <Route path="/agents" element={<Agents />} />
+                <Route path="/agents/:id" element={<AgentDetail />} />
                 <Route path="/platforms" element={<Platforms />} />
                 <Route path="/platforms/:id" element={<PlatformDetail />} />
                 <Route path="/analytics" element={<Analytics />} />
@@ -69,6 +72,7 @@ export default function App() {
                 <Route path="/budget-strategy" element={<BudgetStrategy />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/connected-accounts" element={<ConnectedAccounts />} />
+                <Route path="/platform-health" element={<PlatformHealth />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

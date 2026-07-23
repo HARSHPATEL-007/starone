@@ -25,6 +25,7 @@ import {
   Bell,
   Layers,
   LogOut,
+  HeartPulse,
 } from "lucide-react";
 
 const navItems = [
@@ -41,6 +42,7 @@ const navItems = [
   { to: "/recipes", icon: FileJson, label: "Recipes" },
   { to: "/platforms", icon: Share2, label: "Platforms" },
   { to: "/connected-accounts", icon: Link2, label: "Accounts" },
+  { to: "/platform-health", icon: HeartPulse, label: "Platform Health" },
   { to: "/attribution", icon: GitCompare, label: "Attribution" },
   { to: "/forecast", icon: TrendingUp, label: "Forecast" },
   { to: "/creative-ab-test", icon: Split, label: "A/B Testing" },

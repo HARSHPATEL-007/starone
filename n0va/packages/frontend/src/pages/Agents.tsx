@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bot, Play, Pause, RotateCcw, Settings, X, TrendingUp, Activity, History, Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bot, Play, Pause, RotateCcw, Settings, X, TrendingUp, Activity, History, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
@@ -111,6 +112,9 @@ export default function Agents() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link to={`/agents/${agent._id}`} className="text-gray-500 hover:text-n0va-400" title="View details">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                   <button className="text-gray-500 hover:text-white" onClick={() => openConfig(agent)} title="Configure">
                     <Settings className="w-4 h-4" />
                   </button>
