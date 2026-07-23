@@ -104,6 +104,15 @@ router.post(
   })
 );
 
+router.patch(
+  "/docs/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const doc = store().update("docs", (d: any) => d._id === req.params.id, req.body);
+    if (!doc) throw new AppError(404, "Doc not found");
+    res.json(doc);
+  })
+);
+
 router.delete(
   "/docs/:id",
   asyncHandler(async (req: Request, res: Response) => {
@@ -147,6 +156,15 @@ router.post(
       createdBy: req.user!.userId,
     });
     res.status(201).json(sheet);
+  })
+);
+
+router.patch(
+  "/sheets/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const sheet = store().update("sheets", (s: any) => s._id === req.params.id, req.body);
+    if (!sheet) throw new AppError(404, "Sheet not found");
+    res.json(sheet);
   })
 );
 
@@ -194,6 +212,15 @@ router.post(
       createdBy: req.user!.userId,
     });
     res.status(201).json(event);
+  })
+);
+
+router.patch(
+  "/calendar/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const event = store().update("calendar_events", (e: any) => e._id === req.params.id, req.body);
+    if (!event) throw new AppError(404, "Calendar event not found");
+    res.json(event);
   })
 );
 

@@ -133,6 +133,8 @@ export const api = {
       get: (id: string) => request<any>(`/hypercontext/docs/${id}`),
       create: (data: Record<string, unknown>) =>
         request<any>("/hypercontext/docs", { method: "POST", body: JSON.stringify(data) }),
+      update: (id: string, data: Record<string, unknown>) =>
+        request<any>(`/hypercontext/docs/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
       delete: (id: string) => request<void>(`/hypercontext/docs/${id}`, { method: "DELETE" }),
     },
     sheets: {
@@ -140,6 +142,8 @@ export const api = {
       get: (id: string) => request<any>(`/hypercontext/sheets/${id}`),
       create: (data: Record<string, unknown>) =>
         request<any>("/hypercontext/sheets", { method: "POST", body: JSON.stringify(data) }),
+      update: (id: string, data: Record<string, unknown>) =>
+        request<any>(`/hypercontext/sheets/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
       delete: (id: string) => request<void>(`/hypercontext/sheets/${id}`, { method: "DELETE" }),
     },
     calendar: {
@@ -147,6 +151,8 @@ export const api = {
       get: (id: string) => request<any>(`/hypercontext/calendar/${id}`),
       create: (data: Record<string, unknown>) =>
         request<any>("/hypercontext/calendar", { method: "POST", body: JSON.stringify(data) }),
+      update: (id: string, data: Record<string, unknown>) =>
+        request<any>(`/hypercontext/calendar/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
       delete: (id: string) => request<void>(`/hypercontext/calendar/${id}`, { method: "DELETE" }),
     },
   },

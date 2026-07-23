@@ -224,5 +224,34 @@ export class MemoryStore {
         link: n.link,
       });
     }
+
+    const tasks = [
+      { tenantId: "tenant_001", title: "Review Q3 creative assets", status: "in_progress", priority: "high", assignee: "Jane Doe", campaignId: "camp_001", dueDate: new Date(now + day * 2).toISOString(), source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Approve budget increase for prospecting", status: "todo", priority: "critical", assignee: "John Smith", campaignId: "camp_001", dueDate: new Date(now + day).toISOString(), source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Set up LinkedIn conversion tracking", status: "done", priority: "medium", assignee: "Alice Wang", campaignId: "camp_002", source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Prepare weekly performance report", status: "todo", priority: "high", assignee: "Jane Doe", dueDate: new Date(now + day * 3).toISOString(), source: "external", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "A/B test creative variants", status: "in_progress", priority: "medium", assignee: "Alice Wang", campaignId: "camp_003", dueDate: new Date(now + day * 5).toISOString(), source: "n0va", createdBy: "user_001" },
+    ];
+    for (const t of tasks) this.insert("tasks", t);
+
+    const docs = [
+      { tenantId: "tenant_001", title: "Summer Sale Creative Brief", type: "brief", content: "Campaign targeting millennials with discount messaging highlighting the 40% off summer collection. Primary channels: Instagram and TikTok. Key message: 'Your summer, your style.'", campaignId: "camp_001", tags: ["creative", "summer"], source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Brand Awareness Strategy", type: "strategy", content: "Top-of-funnel strategy focusing on video content across Meta and TikTok. Target reach: 2M unique users. Budget allocation: 60% Meta, 40% TikTok.", campaignId: "camp_002", tags: ["strategy", "brand"], source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Monthly Performance Report - June", type: "report", content: "Overall revenue up 23% MoM. Top performing campaign: Q3 Enterprise Push at 3.2x ROAS. Recommendations: increase prospecting budget by 15%.", tags: ["report", "monthly"], source: "external", createdBy: "user_002" },
+    ];
+    for (const d of docs) this.insert("docs", d);
+
+    const sheets = [
+      { tenantId: "tenant_001", title: "Campaign Budget Tracker", type: "budget", rows: 45, columns: 12, campaignId: "camp_001", source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Weekly KPI Dashboard", type: "performance", rows: 30, columns: 8, source: "external", createdBy: "user_001" },
+    ];
+    for (const s of sheets) this.insert("sheets", s);
+
+    const calendarEntries = [
+      { tenantId: "tenant_001", title: "Creative Review Meeting", type: "review", startDate: new Date(now + day).toISOString(), endDate: new Date(now + day + 3600000).toISOString(), campaignId: "camp_001", source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Campaign Launch", type: "launch", startDate: new Date(now + day * 3).toISOString(), endDate: new Date(now + day * 3 + 3600000).toISOString(), campaignId: "camp_002", source: "n0va", createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Budget Review with Stakeholders", type: "meeting", startDate: new Date(now + day * 7).toISOString(), endDate: new Date(now + day * 7 + 3600000).toISOString(), source: "external", createdBy: "user_002" },
+    ];
+    for (const e of calendarEntries) this.insert("calendar_events", e);
   }
 }
