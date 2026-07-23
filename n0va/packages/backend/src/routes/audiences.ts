@@ -47,6 +47,17 @@ router.post(
   })
 );
 
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    const audience = await DataStore.findAudienceById(id, tenantId);
+    if (!audience) throw new AppError(404, "Audience not found");
+    res.json(audience);
+  })
+);
+
 router.patch(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

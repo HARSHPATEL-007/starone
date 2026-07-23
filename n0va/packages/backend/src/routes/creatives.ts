@@ -60,6 +60,36 @@ router.patch(
   })
 );
 
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    const creative = await DataStore.findCreativeById(id, tenantId);
+    if (!creative) throw new AppError(404, "Creative not found");
+    res.json(creative);
+  })
+);
+
+router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    const { name, headline, body, cta, tags, status } = req.body;
+    const update: Record<string, any> = {};
+    if (name) update.name = name;
+    if (headline !== undefined) update.headline = headline;
+    if (body !== undefined) update.body = body;
+    if (cta !== undefined) update.cta = cta;
+    if (tags) update.tags = tags;
+    if (status) update.status = status;
+    const updated = await DataStore.updateCreative(id, tenantId, update);
+    if (!updated) throw new AppError(404, "Creative not found");
+    res.json(updated);
+  })
+);
+
 router.delete(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

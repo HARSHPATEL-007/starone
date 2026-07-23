@@ -165,6 +165,14 @@ export class WebhookService {
     return this.deliveries.get(webhookId) || [];
   }
 
+  updateWebhook(id: string, updates: Partial<Omit<WebhookConfig, "id" | "createdAt">>): WebhookConfig | undefined {
+    const existing = this.webhooks.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...updates };
+    this.webhooks.set(id, updated);
+    return updated;
+  }
+
   deleteWebhook(id: string): boolean {
     return this.webhooks.delete(id);
   }

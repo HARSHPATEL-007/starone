@@ -73,6 +73,23 @@ router.post(
   })
 );
 
+router.delete(
+  "/connected/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    if (DataStore.usingMemory()) {
+      const ok = DataStore["mem"]().delete("connected_accounts", (a: any) => a._id === id && a.tenantId === tenantId);
+      if (!ok) throw new AppError(404, "Connected account not found");
+    } else {
+      const { ConnectedAccountModel } = require("../models/ConnectedAccount");
+      const deleted = await ConnectedAccountModel.findOneAndDelete({ _id: id, tenantId });
+      if (!deleted) throw new AppError(404, "Connected account not found");
+    }
+    res.status(204).send();
+  })
+);
+
 router.get(
   "/health",
   asyncHandler(async (_req: Request, res: Response) => {

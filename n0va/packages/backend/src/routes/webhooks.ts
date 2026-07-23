@@ -77,6 +77,15 @@ router.post(
   })
 );
 
+router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const webhook = webhookService.updateWebhook(req.params.id, req.body);
+    if (!webhook) throw new AppError(404, "Webhook not found");
+    res.json(webhook);
+  })
+);
+
 router.get(
   "/sample/config",
   asyncHandler(async (_req: Request, res: Response) => {

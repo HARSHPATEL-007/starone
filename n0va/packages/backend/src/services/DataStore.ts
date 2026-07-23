@@ -99,6 +99,13 @@ export class DataStore {
     return new Creative(data).save();
   }
 
+  static async findCreativeById(id: string, tenantId: string) {
+    if (DataStore.usingMemory()) {
+      return DataStore.mem().findOne("creatives", (c: any) => c._id === id && c.tenantId === tenantId) || null;
+    }
+    return Creative.findOne({ _id: id, tenantId });
+  }
+
   static async updateCreative(id: string, tenantId: string, update: any) {
     if (DataStore.usingMemory()) {
       return DataStore.mem().update("creatives", (c: any) => c._id === id && c.tenantId === tenantId, update);
@@ -120,6 +127,13 @@ export class DataStore {
   static async createAudience(data: any) {
     if (DataStore.usingMemory()) return DataStore.mem().insert("audiences", data);
     return new Audience(data).save();
+  }
+
+  static async findAudienceById(id: string, tenantId: string) {
+    if (DataStore.usingMemory()) {
+      return DataStore.mem().findOne("audiences", (a: any) => a._id === id && a.tenantId === tenantId) || null;
+    }
+    return Audience.findOne({ _id: id, tenantId });
   }
 
   static async updateAudience(id: string, tenantId: string, update: any) {
