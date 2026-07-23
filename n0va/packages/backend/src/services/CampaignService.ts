@@ -10,6 +10,8 @@ interface CreateCampaignInput {
   budget: { daily: number; lifetime: number; currency: string };
   platforms: string[];
   goal?: string;
+  startDate?: string;
+  endDate?: string;
   createdBy: string;
 }
 
@@ -38,6 +40,8 @@ export class CampaignService {
       budget,
       platforms: input.platforms,
       goal: input.goal,
+      startDate: input.startDate,
+      endDate: input.endDate,
       createdBy: new mongoose.Types.ObjectId(input.createdBy),
       hyperContext: {
         linkedTasks: [],

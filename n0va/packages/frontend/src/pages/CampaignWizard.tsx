@@ -26,7 +26,7 @@ const METRIC_GOALS = [
   { id: "ctr", label: "Target CTR", desc: "Optimize for click-through rate", placeholder: "2.5" },
 ];
 
-const STEPS = ["Basics", "Budget", "Platforms", "Audience", "Goals", "Review"];
+const STEPS = ["Basics", "Budget", "Schedule", "Platforms", "Audience", "Goals", "Review"];
 
 export default function CampaignWizard() {
   const navigate = useNavigate();
@@ -34,6 +34,8 @@ export default function CampaignWizard() {
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
   const [audiences, setAudiences] = useState<any[]>([]);
+  const today = new Date().toISOString().split("T")[0];
+  const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
   const [form, setForm] = useState({
     name: "",
     type: "performance",
@@ -47,6 +49,8 @@ export default function CampaignWizard() {
     audienceId: "",
     metricGoal: "",
     metricTarget: "",
+    startDate: today,
+    endDate: nextMonth,
   });
 
   useEffect(() => {
@@ -68,7 +72,7 @@ export default function CampaignWizard() {
     switch (step) {
       case 0: return form.name.trim().length > 0;
       case 1: return form.lifetimeBudget > 0;
-      case 2: return form.platforms.length > 0;
+      case 3: return form.platforms.length > 0;
       default: return true;
     }
   }
@@ -82,6 +86,8 @@ export default function CampaignWizard() {
         goal: form.goal || undefined,
         budget: { daily: form.dailyBudget, lifetime: form.lifetimeBudget, currency: form.currency },
         platforms: form.platforms,
+        startDate: new Date(form.startDate).toISOString(),
+        endDate: new Date(form.endDate).toISOString(),
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         description: form.description || undefined,
         audienceId: form.audienceId || undefined,
@@ -177,7 +183,44 @@ export default function CampaignWizard() {
 
         {step === 2 && (
           <div className="space-y-5">
-            <h2 className="text-xl font-bold text-white">Platforms</h2>
+            <h2 className="text-xl font-bold text-white">Schedule</h2>
+            <p className="text-sm text-gray-500">Set the campaign start and end dates</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">Start Date</label>
+                <input type="date" className="input" value={form.startDate} onChange={(e) => update("startDate", e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">End Date</label>
+                <input type="date" className="input" value={form.endDate} onChange={(e) => update("endDate", e.target.value)} min={form.startDate} />
+              </div>
+            </div>
+            {form.startDate && form.endDate && new Date(form.endDate) >= new Date(form.startDate) && (
+              <div className="p-4 bg-gray-800/50 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Duration</span>
+                  <span className="text-white font-medium">
+                    {Math.round((new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) / 86400000) + 1} days
+                  </span>
+                </div>
+                <div className="mt-3 w-full bg-gray-700 rounded-full h-2">
+                  <div className="bg-n0va-600 h-2 rounded-full" style={{ width: `${Math.min(100, ((Date.now() - new Date(form.startDate).getTime()) / (new Date(form.endDate).getTime() - new Date(form.startDate).getTime())) * 100)}%` }} />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>{new Date(form.startDate).toLocaleDateString()}</span>
+                  <span>{new Date(form.endDate).toLocaleDateString()}</span>
+                </div>
+                {(new Date(form.startDate).getTime() > Date.now()) && (
+                  <p className="text-xs text-n0va-400 mt-2">⏳ Starts in {Math.ceil((new Date(form.startDate).getTime() - Date.now()) / 86400000)} days</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-5">
+            <h3 className="text-xl font-bold text-white">Platforms</h3>
             <p className="text-sm text-gray-500">Select the ad platforms for this campaign</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {PLATFORM_OPTIONS.map((p) => (
@@ -191,7 +234,7 @@ export default function CampaignWizard() {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-5">
             <h2 className="text-xl font-bold text-white">Audience & Targeting</h2>
             <p className="text-sm text-gray-500">Select a saved audience or describe your targeting</p>
@@ -215,7 +258,7 @@ export default function CampaignWizard() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-5">
             <h2 className="text-xl font-bold text-white">Metrics & Goals</h2>
             <p className="text-sm text-gray-500">Set a performance target for this campaign</p>
@@ -240,7 +283,7 @@ export default function CampaignWizard() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 6 && (
           <div className="space-y-5">
             <h2 className="text-xl font-bold text-white">Review & Launch</h2>
             <p className="text-sm text-gray-500">Review your campaign settings before creating</p>
@@ -248,6 +291,7 @@ export default function CampaignWizard() {
               <ReviewRow label="Name" value={form.name} />
               <ReviewRow label="Type" value={form.type} />
               <ReviewRow label="Goal" value={form.goal || "Not specified"} />
+              <ReviewRow label="Schedule" value={`${new Date(form.startDate).toLocaleDateString()} → ${new Date(form.endDate).toLocaleDateString()} (${Math.round((new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) / 86400000) + 1} days)`} />
               <ReviewRow label="Daily Budget" value={`$${form.dailyBudget} ${form.currency}`} />
               <ReviewRow label="Lifetime Budget" value={`$${form.lifetimeBudget} ${form.currency}`} />
               <ReviewRow label="Platforms" value={form.platforms.length > 0 ? form.platforms.join(", ") : "None"} />

@@ -88,7 +88,7 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    const { name, type, budget, platforms, goal } = req.body;
+    const { name, type, budget, platforms, goal, startDate, endDate } = req.body;
     if (!name || !budget || !platforms) throw new AppError(400, "Missing required fields: name, budget, platforms");
 
     if (!DataStore.usingMemory()) {
@@ -99,6 +99,8 @@ router.post(
         budget,
         platforms,
         goal,
+        startDate,
+        endDate,
         createdBy: req.user!.userId,
       });
       res.status(201).json(campaign);
@@ -111,6 +113,8 @@ router.post(
         budget: { daily: budget.daily || 0, lifetime: budget.lifetime || 0, currency: budget.currency || "USD", spent: 0, remaining: budget.lifetime || 0 },
         platforms,
         goal,
+        startDate,
+        endDate,
         audiences: [],
         creatives: [],
         tags: [],
@@ -149,7 +153,7 @@ router.patch(
     const { id } = req.params;
     const tenantId = req.user!.tenantId;
     const update = req.body;
-    const allowed = ["name", "type", "status", "goal", "platforms", "tags", "kpis", "hyperContext", "creatives", "audiences"];
+    const allowed = ["name", "type", "status", "goal", "platforms", "tags", "kpis", "hyperContext", "creatives", "audiences", "startDate", "endDate"];
     const filtered: Record<string, any> = {};
     for (const key of allowed) {
       if (update[key] !== undefined) filtered[key] = update[key];

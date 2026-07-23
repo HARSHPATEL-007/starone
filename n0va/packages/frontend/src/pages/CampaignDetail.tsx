@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 
-type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext";
+type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule";
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -19,7 +19,7 @@ export default function CampaignDetail() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
   const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", goal: "", daily: 0, lifetime: 0 });
+  const [editForm, setEditForm] = useState({ name: "", goal: "", daily: 0, lifetime: 0, startDate: "", endDate: "" });
 
   const mergedAnalytics = liveData ? {
     ...analytics,
@@ -44,7 +44,7 @@ export default function CampaignDetail() {
       ]);
       setCampaign(c);
       setAnalytics(a);
-      setEditForm({ name: c.name || "", goal: c.goal || "", daily: c.budget?.daily || 0, lifetime: c.budget?.lifetime || 0 });
+      setEditForm({ name: c.name || "", goal: c.goal || "", daily: c.budget?.daily || 0, lifetime: c.budget?.lifetime || 0, startDate: c.startDate ? c.startDate.split("T")[0] : "", endDate: c.endDate ? c.endDate.split("T")[0] : "" });
     } catch {
       addToast("error", "Failed to load campaign");
     } finally {
@@ -95,6 +95,8 @@ export default function CampaignDetail() {
       const updated = await api.campaigns.update(id, {
         name: editForm.name,
         goal: editForm.goal,
+        startDate: editForm.startDate ? new Date(editForm.startDate).toISOString() : undefined,
+        endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : undefined,
       });
       await api.campaigns.updateBudget(id, { daily: editForm.daily, lifetime: editForm.lifetime });
       setCampaign((prev: any) => ({ ...prev, ...updated, budget: { ...prev.budget, daily: editForm.daily, lifetime: editForm.lifetime } }));
@@ -147,6 +149,7 @@ export default function CampaignDetail() {
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "creatives", label: "Creatives", icon: Image },
     { id: "audiences", label: "Audiences", icon: Users },
+    { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "platforms", label: "Platforms", icon: Layers },
     { id: "hypercontext", label: "Hyper Context", icon: Target },
   ];
@@ -170,7 +173,7 @@ export default function CampaignDetail() {
           <button className="btn-secondary flex items-center gap-2" onClick={handleClone}>
             <Copy className="w-4 h-4" /> Clone
           </button>
-          <button className="btn-secondary flex items-center gap-2" onClick={() => { setEditForm({ name: campaign.name, goal: campaign.goal || "", daily: campaign.budget?.daily || 0, lifetime: campaign.budget?.lifetime || 0 }); setShowEdit(true); }}>
+          <button className="btn-secondary flex items-center gap-2" onClick={() => { setEditForm({ name: campaign.name, goal: campaign.goal || "", daily: campaign.budget?.daily || 0, lifetime: campaign.budget?.lifetime || 0, startDate: campaign.startDate ? campaign.startDate.split("T")[0] : "", endDate: campaign.endDate ? campaign.endDate.split("T")[0] : "" }); setShowEdit(true); }}>
             <Edit3 className="w-4 h-4" /> Edit
           </button>
           <button className="btn-danger flex items-center gap-2" onClick={() => setShowDeleteConfirm(true)}>
@@ -322,6 +325,18 @@ export default function CampaignDetail() {
                     <dd className="text-white mt-1">{campaign.goal}</dd>
                   </div>
                 )}
+                {campaign.startDate && (
+                  <div className="col-span-2">
+                    <dt className="text-gray-500">Schedule</dt>
+                    <dd className="text-white mt-1 flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                      {new Date(campaign.startDate).toLocaleDateString()} → {new Date(campaign.endDate).toLocaleDateString()}
+                      <span className="text-xs text-gray-500">
+                        ({Math.round((new Date(campaign.endDate).getTime() - new Date(campaign.startDate).getTime()) / 86400000) + 1} days)
+                      </span>
+                    </dd>
+                  </div>
+                )}
                 {campaign.tags?.length > 0 && (
                   <div className="col-span-2">
                     <dt className="text-gray-500">Tags</dt>
@@ -373,6 +388,8 @@ export default function CampaignDetail() {
       {tab === "creatives" && <CreativesTab campaign={campaign} onUpdate={loadCampaign} />}
 
       {tab === "audiences" && <AudiencesTab campaign={campaign} onUpdate={loadCampaign} />}
+
+      {tab === "schedule" && <ScheduleTab campaign={campaign} />}
 
       {tab === "platforms" && (
         <div className="card">
@@ -453,6 +470,16 @@ export default function CampaignDetail() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Lifetime Budget</label>
                   <input type="number" className="input" value={editForm.lifetime} onChange={(e) => setEditForm((f) => ({ ...f, lifetime: Number(e.target.value) }))} min={0} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Start Date</label>
+                  <input type="date" className="input" value={editForm.startDate} onChange={(e) => setEditForm((f) => ({ ...f, startDate: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">End Date</label>
+                  <input type="date" className="input" value={editForm.endDate} onChange={(e) => setEditForm((f) => ({ ...f, endDate: e.target.value }))} min={editForm.startDate} />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
@@ -694,5 +721,134 @@ function AudiencesTab({ campaign, onUpdate }: { campaign: any; onUpdate: () => v
         </div>
       )}
     </>
+  );
+}
+
+function ScheduleTab({ campaign }: { campaign: any }) {
+  const startDate = campaign.startDate ? new Date(campaign.startDate) : null;
+  const endDate = campaign.endDate ? new Date(campaign.endDate) : null;
+  const now = new Date();
+  const totalDays = startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1 : 0;
+  const elapsedDays = startDate && now > startDate ? Math.round((now.getTime() - startDate.getTime()) / 86400000) : 0;
+  const progress = totalDays > 0 ? Math.min(100, (elapsedDays / totalDays) * 100) : 0;
+  const isActive = startDate && endDate && now >= startDate && now <= endDate;
+  const isUpcoming = startDate && now < startDate;
+  const isPast = endDate && now > endDate;
+
+  if (!startDate || !endDate) {
+    return (
+      <div className="card text-center py-12">
+        <Calendar className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+        <p className="text-gray-400">No schedule set for this campaign.</p>
+        <p className="text-gray-500 text-sm mt-1">Use the edit modal to set start and end dates.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="card">
+          <div className="flex items-center gap-3 mb-1">
+            <Calendar className="w-4 h-4 text-n0va-400" />
+            <span className="text-sm text-gray-500">Start Date</span>
+          </div>
+          <p className="text-xl font-bold text-white">{startDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+        </div>
+        <div className="card">
+          <div className="flex items-center gap-3 mb-1">
+            <Clock className="w-4 h-4 text-n0va-400" />
+            <span className="text-sm text-gray-500">Duration</span>
+          </div>
+          <p className="text-xl font-bold text-white">{totalDays} days</p>
+        </div>
+        <div className="card">
+          <div className="flex items-center gap-3 mb-1">
+            <Calendar className="w-4 h-4 text-n0va-400" />
+            <span className="text-sm text-gray-500">End Date</span>
+          </div>
+          <p className="text-xl font-bold text-white">{endDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+        </div>
+      </div>
+
+      {isActive && (
+        <div className="card border-green-600/30 bg-green-900/10 flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" /></span>
+          <span className="text-green-400 text-sm font-medium">Campaign is running</span>
+        </div>
+      )}
+      {isUpcoming && (
+        <div className="card border-yellow-600/30 bg-yellow-900/10 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-yellow-400" />
+          <span className="text-yellow-400 text-sm font-medium">Starts in {Math.ceil((startDate.getTime() - now.getTime()) / 86400000)} days</span>
+        </div>
+      )}
+      {isPast && (
+        <div className="card border-gray-600/30 bg-gray-800/50 flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-gray-500" />
+          <span className="text-gray-400 text-sm font-medium">Campaign ended {Math.floor((now.getTime() - endDate.getTime()) / 86400000)} days ago</span>
+        </div>
+      )}
+
+      <div className="card">
+        <h3 className="text-lg font-semibold text-white mb-4">Timeline</h3>
+        <div className="relative py-6">
+          <div className="w-full bg-gray-800 rounded-full h-3">
+            <div className="bg-n0va-600 h-3 rounded-full transition-all" style={{ width: `${progress}%` }} />
+          </div>
+          {isActive && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-0" style={{ left: `${progress}%` }}>
+                <div className="w-px h-24 bg-green-400" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-green-400 rounded-full" />
+                <span className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-green-400 whitespace-nowrap">Today</span>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-between text-xs text-gray-500 mt-3">
+            <span className="text-gray-400">{startDate.toLocaleDateString()}</span>
+            <span className="text-gray-400">{endDate.toLocaleDateString()}</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-center text-sm">
+          <div className="p-3 bg-gray-800/50 rounded-lg">
+            <p className="text-gray-500">Elapsed</p>
+            <p className="text-white font-bold">{elapsedDays}d</p>
+          </div>
+          <div className="p-3 bg-gray-800/50 rounded-lg">
+            <p className="text-gray-500">Remaining</p>
+            <p className="text-white font-bold">{Math.max(0, totalDays - elapsedDays)}d</p>
+          </div>
+          <div className="p-3 bg-gray-800/50 rounded-lg">
+            <p className="text-gray-500">Progress</p>
+            <p className="text-white font-bold">{progress.toFixed(1)}%</p>
+          </div>
+        </div>
+      </div>
+
+      {totalDays > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-semibold text-white mb-4">Day-by-Day Overview</h3>
+          <div className="flex gap-0.5 h-12 items-end">
+            {Array.from({ length: Math.min(totalDays, 90) }).map((_, i) => {
+              const d = new Date(startDate.getTime() + i * 86400000);
+              const isToday = d.toDateString() === now.toDateString();
+              const inPast = d < now;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1" title={d.toLocaleDateString()}>
+                  <div className={`w-full rounded-t transition-all ${isToday ? "bg-green-500 h-full" : inPast ? "bg-n0va-600/60" : "bg-gray-700"}`} style={{ height: isToday ? "100%" : inPast ? `${12 + (i % 7) * 2}px` : "8px" }} />
+                  {i % 7 === 0 && <span className="text-[10px] text-gray-600">{d.getDate()}</span>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <span>Past</span>
+            <span className="text-n0va-400">Today</span>
+            <span>Future</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
