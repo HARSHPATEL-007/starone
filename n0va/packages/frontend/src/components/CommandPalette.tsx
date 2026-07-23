@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings } from "lucide-react";
+import { Search, Megaphone, Palette, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell } from "lucide-react";
+import { api } from "../api/client";
 
 interface SearchResult {
   type: "page" | "campaign" | "creative" | "audience" | "agent" | "recipe";
@@ -8,57 +9,120 @@ interface SearchResult {
   subtitle?: string;
   route: string;
   icon: any;
+  badge?: string;
+  badgeColor?: string;
 }
 
 const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Dashboard", route: "/", icon: BarChart3 },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
+  { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },
   { type: "page", label: "Audiences", route: "/audiences", icon: Users },
-  { type: "page", label: "AI Agents", route: "/agents", icon: Bot },
   { type: "page", label: "Analytics", route: "/analytics", icon: BarChart3 },
-  { type: "page", label: "Recipes", route: "/recipes", icon: FileJson },
   { type: "page", label: "War Room", route: "/war-room", icon: Shield },
-  { type: "page", label: "Attribution", route: "/attribution", icon: BarChart3 },
-  { type: "page", label: "Forecast", route: "/forecast", icon: BarChart3 },
-  { type: "page", label: "A/B Testing", route: "/creative-ab-test", icon: Palette },
+  { type: "page", label: "Fraud Center", route: "/fraud-evaluation", icon: SearchX },
+  { type: "page", label: "Budget Strategy", route: "/budget-strategy", icon: Wallet },
+  { type: "page", label: "AI Agents", route: "/agents", icon: Bot },
+  { type: "page", label: "Recipes", route: "/recipes", icon: FileJson },
+  { type: "page", label: "Platforms", route: "/platforms", icon: Layers },
+  { type: "page", label: "Platform Health", route: "/platform-health", icon: HeartPulse },
+  { type: "page", label: "Attribution", route: "/attribution", icon: GitCompare },
+  { type: "page", label: "Forecast", route: "/forecast", icon: TrendingUp },
+  { type: "page", label: "A/B Testing", route: "/creative-ab-test", icon: Split },
   { type: "page", label: "Overlap Analysis", route: "/audience-overlap", icon: Users },
-  { type: "page", label: "Fraud Center", route: "/fraud-evaluation", icon: Shield },
-  { type: "page", label: "Budget Strategy", route: "/budget-strategy", icon: BarChart3 },
+  { type: "page", label: "Fatigue Monitor", route: "/creative-fatigue", icon: TrendingDown },
   { type: "page", label: "Activity Feed", route: "/activity", icon: Activity },
-  { type: "page", label: "Notifications", route: "/notifications", icon: Activity },
+  { type: "page", label: "Notifications", route: "/notifications", icon: Bell },
   { type: "page", label: "Hyper-Context", route: "/hyper-context", icon: Layers },
+  { type: "page", label: "Webhooks", route: "/webhooks", icon: Activity },
   { type: "page", label: "Settings", route: "/settings", icon: Settings },
+  { type: "page", label: "New Campaign", route: "/campaigns/new", icon: Megaphone },
 ];
+
+const STATUS_BADGES: Record<string, { label: string; color: string }> = {
+  active: { label: "Active", color: "bg-green-500/20 text-green-400" },
+  paused: { label: "Paused", color: "bg-yellow-500/20 text-yellow-400" },
+  draft: { label: "Draft", color: "bg-gray-500/20 text-gray-400" },
+  archived: { label: "Archived", color: "bg-gray-700/20 text-gray-500" },
+  running: { label: "Running", color: "bg-green-500/20 text-green-400" },
+  pending_approval: { label: "Pending", color: "bg-yellow-500/20 text-yellow-400" },
+  approved: { label: "Approved", color: "bg-blue-500/20 text-blue-400" },
+  rejected: { label: "Rejected", color: "bg-red-500/20 text-red-400" },
+};
+
+const TYPE_ICONS: Record<string, any> = {
+  campaign: Megaphone, creative: Palette, audience: Users,
+  agent: Bot, recipe: FileJson,
+};
+
+const TYPE_ROUTES: Record<string, string> = {
+  campaign: "/campaigns", creative: "/creatives", audience: "/audiences",
+  agent: "/agents", recipe: "/recipes",
+};
 
 export default function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>(PAGE_ITEMS);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [entityData, setEntityData] = useState<Record<string, any[]>>({});
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setQuery("");
       setSelectedIndex(0);
+      setLoading(true);
       setTimeout(() => inputRef.current?.focus(), 50);
+      Promise.all([
+        api.campaigns.list().then((r) => Array.isArray(r) ? r : r.campaigns || []).catch(() => []),
+        api.creatives.list().catch(() => []),
+        api.audiences.list().catch(() => []),
+        api.agents.list().catch(() => []),
+        api.recipes.list().catch(() => []),
+      ]).then(([campaigns, creatives, audiences, agents, recipes]) => {
+        setEntityData({ campaigns, creatives, audiences, agents, recipes });
+        setLoading(false);
+      });
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults(PAGE_ITEMS);
-      return;
+  const entityResults = useMemo(() => {
+    const items: SearchResult[] = [];
+    for (const [type, entries] of Object.entries(entityData)) {
+      for (const e of entries) {
+        const Icon = TYPE_ICONS[type] || Activity;
+        const statusBadge = STATUS_BADGES[e.status];
+        items.push({
+          type: type.substring(0, type.length - 1) as any,
+          label: e.name || e._id,
+          subtitle: e.type || e.platform || "",
+          route: `${TYPE_ROUTES[type] || "/"}/${e._id || e.id}`,
+          icon: Icon,
+          badge: statusBadge?.label || e.status,
+          badgeColor: statusBadge?.color || "bg-gray-500/20 text-gray-400",
+        });
+      }
     }
+    return items;
+  }, [entityData]);
+
+  const allItems = useMemo(() => [...PAGE_ITEMS, ...entityResults], [entityResults]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return allItems;
     const q = query.toLowerCase();
-    setResults(
-      PAGE_ITEMS.filter(
-        (item) =>
-          item.label.toLowerCase().includes(q) ||
-          item.type.toLowerCase().includes(q)
-      )
+    return allItems.filter(
+      (item) =>
+        item.label.toLowerCase().includes(q) ||
+        item.type.toLowerCase().includes(q) ||
+        item.subtitle?.toLowerCase().includes(q)
     );
+  }, [query, allItems]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
   }, [query]);
 
   const handleSelect = useCallback(
@@ -72,15 +136,19 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
+      setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && results[selectedIndex]) {
-      handleSelect(results[selectedIndex]);
+    } else if (e.key === "Enter" && filtered[selectedIndex]) {
+      handleSelect(filtered[selectedIndex]);
     } else if (e.key === "Escape") {
       onClose();
     }
+  }
+
+  function resultKey(r: SearchResult, i: number) {
+    return `${r.type}-${r.route}-${i}`;
   }
 
   if (!open) return null;
@@ -103,29 +171,52 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
             placeholder="Search pages, campaigns, creatives..."
             className="flex-1 bg-transparent text-white text-sm outline-none placeholder-gray-500"
           />
+          {loading && <div className="w-4 h-4 border-2 border-n0va-500 border-t-transparent rounded-full animate-spin" />}
           <kbd className="text-xs text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded">ESC</kbd>
         </div>
-        <div className="max-h-80 overflow-y-auto p-2">
-          {results.length === 0 ? (
+        <div className="max-h-96 overflow-y-auto p-2">
+          {filtered.length === 0 ? (
             <div className="text-center py-6 text-gray-500 text-sm">No results for "{query}"</div>
           ) : (
-            results.map((result, i) => (
-              <button
-                key={`${result.type}-${result.label}`}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors ${
-                  i === selectedIndex ? "bg-n0va-600/20 text-n0va-400" : "text-gray-300 hover:bg-gray-800"
-                }`}
-                onClick={() => handleSelect(result)}
-                onMouseEnter={() => setSelectedIndex(i)}
-              >
-                <result.icon className="w-4 h-4 text-gray-500" />
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium">{result.label}</span>
-                  {result.subtitle && <span className="text-gray-500 ml-2 text-xs">{result.subtitle}</span>}
-                </div>
-                <span className="text-xs text-gray-600 capitalize">{result.type}</span>
-              </button>
-            ))
+            filtered.map((result, i) => {
+              const isEntity = result.type !== "page";
+              return (
+                <button
+                  key={resultKey(result, i)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors ${
+                    i === selectedIndex ? "bg-n0va-600/20 text-n0va-400" : "text-gray-300 hover:bg-gray-800"
+                  }`}
+                  onClick={() => handleSelect(result)}
+                  onMouseEnter={() => setSelectedIndex(i)}
+                >
+                  <result.icon className="w-4 h-4 text-gray-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{result.label}</span>
+                      {result.badge && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${result.badgeColor || "bg-gray-500/20 text-gray-400"}`}>
+                          {result.badge}
+                        </span>
+                      )}
+                    </div>
+                    {result.subtitle && <p className="text-xs text-gray-500 truncate">{result.subtitle}</p>}
+                  </div>
+                  <span className={`text-xs shrink-0 ${isEntity ? "text-gray-600 capitalize" : "text-n0va-400"}`}>
+                    {isEntity ? result.type : "page"}
+                  </span>
+                </button>
+              );
+            })
+          )}
+          {entityData.campaigns && entityData.campaigns.length > 0 && !query.trim() && (
+            <div className="border-t border-gray-800 mt-2 pt-2 px-3">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Quick Links</p>
+              <div className="flex gap-2 mt-2">
+                <button className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 px-2.5 py-1.5 rounded-lg" onClick={() => { onClose(); navigate("/campaigns/new"); }}>New Campaign</button>
+                <button className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 px-2.5 py-1.5 rounded-lg" onClick={() => { onClose(); navigate("/campaign-calendar"); }}>Calendar</button>
+                <button className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 px-2.5 py-1.5 rounded-lg" onClick={() => { onClose(); navigate("/activity"); }}>Activity</button>
+              </div>
+            </div>
           )}
         </div>
       </div>
