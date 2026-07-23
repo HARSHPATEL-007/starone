@@ -1,5 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { api } from "../api/client";
 import {
   LayoutDashboard,
   Megaphone,
@@ -52,6 +54,11 @@ const navItems = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    api.notifications.unreadCount().then((res) => setUnreadCount(res.count)).catch(() => {});
+  }, []);
 
   function handleLogout() {
     localStorage.removeItem("n0va_token");
@@ -88,7 +95,12 @@ export default function Sidebar() {
             }
           >
             <item.icon className="w-4 h-4" />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.to === "/notifications" && unreadCount > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

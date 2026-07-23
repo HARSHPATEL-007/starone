@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft } from "lucide-react";
+import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft, CheckSquare, Square } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -18,6 +18,8 @@ export default function Creatives() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [form, setForm] = useState({ name: "", type: "image", headline: "", body: "", cta: "", tags: "" });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState("");
 
   useEffect(() => { loadCreatives(); }, []);
 
@@ -49,6 +51,14 @@ export default function Creatives() {
     try { await api.creatives.delete(id); setDeleteId(null); addToast("success", "Deleted"); loadCreatives(); }
     catch { addToast("error", "Failed to delete"); }
   }
+
+  async function handleBulkStatus() {
+    if (!bulkStatus || selected.size === 0) return;
+    try { await Promise.all(Array.from(selected).map((id) => api.creatives.updateStatus(id, bulkStatus))); addToast("success", `${selected.size} creatives ${bulkStatus}`); setSelected(new Set()); setBulkStatus(""); loadCreatives(); } catch { addToast("error", "Bulk update failed"); }
+  }
+
+  function toggleSelect(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
+  function toggleAll() { setSelected(new Set(selected.size === filtered.length ? [] : filtered.map((c) => c._id))); }
 
   function handleExport() {
     if (creatives.length === 0) return;
@@ -115,6 +125,21 @@ export default function Creatives() {
         ))}
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-n0va-600/10 border border-n0va-600/30 rounded-lg">
+          <span className="text-sm text-gray-300">{selected.size} selected</span>
+          <select className="select text-xs py-1" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+            <option value="">Action...</option>
+            <option value="active">Activate</option>
+            <option value="paused">Pause</option>
+            <option value="approved">Approve</option>
+            <option value="rejected">Reject</option>
+          </select>
+          <button className="btn-primary text-xs py-1.5" onClick={handleBulkStatus} disabled={!bulkStatus}>Apply</button>
+          <button className="btn-secondary text-xs py-1.5" onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
+
       {showCreate && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
           <div className="card w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
@@ -172,12 +197,21 @@ export default function Creatives() {
           <p className="text-gray-400">No creatives match your filters.</p>
         </div>
       ) : (
+        <><div className="flex items-center gap-2 mb-3 px-1">
+          <button onClick={toggleAll} className="text-gray-500 hover:text-white text-xs flex items-center gap-1.5">
+            {selected.size === filtered.length ? <CheckSquare className="w-4 h-4 text-n0va-400" /> : <Square className="w-4 h-4" />}
+            <span>{selected.size === filtered.length ? "Deselect all" : "Select all"}</span>
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((c) => {
             const TypeIcon = typeIcons[c.type] || Image;
             return (
-              <div key={c._id} className="card hover:border-gray-700 transition-colors">
+              <div key={c._id} className={`card hover:border-gray-700 transition-colors ${selected.has(c._id) ? "border-n0va-600/40" : ""}`}>
                 <div className="flex items-start justify-between mb-3">
+                  <button onClick={() => toggleSelect(c._id)} className="text-gray-500 hover:text-white mr-2 shrink-0">
+                    {selected.has(c._id) ? <CheckSquare className="w-4 h-4 text-n0va-400" /> : <Square className="w-4 h-4" />}
+                  </button>
                   <div className="flex items-center gap-2">
                     <TypeIcon className={`w-4 h-4 ${typeColors[c.type] || ""}`} />
                     <span className={`text-xs font-medium uppercase ${typeColors[c.type] || ""}`}>{c.type}</span>
@@ -206,7 +240,7 @@ export default function Creatives() {
             );
           })}
         </div>
-      )}
+        </>)}
 
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDeleteId(null)}>

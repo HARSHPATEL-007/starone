@@ -15,6 +15,7 @@ import WarRoom from "./pages/WarRoom";
 import SettingsPage from "./pages/Settings";
 import ConnectedAccounts from "./pages/ConnectedAccounts";
 import WebhooksPage from "./pages/WebhooksPage";
+import WebhookDetail from "./pages/WebhookDetail";
 import AttributionComparison from "./pages/AttributionComparison";
 import CampaignForecast from "./pages/CampaignForecast";
 import CreativeABTest from "./pages/CreativeABTest";
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/connected-accounts" element={<ConnectedAccounts />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
+                <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
                 <Route path="/forecast" element={<CampaignForecast />} />
                 <Route path="/creative-ab-test" element={<CreativeABTest />} />

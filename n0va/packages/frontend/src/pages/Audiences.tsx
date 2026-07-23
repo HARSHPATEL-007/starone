@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Users, Search, Download, Filter, TrendingUp, DollarSign, Target } from "lucide-react";
+import { Plus, Users, Search, Download, Filter, TrendingUp, DollarSign, Target, CheckSquare, Square } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -17,6 +17,8 @@ export default function Audiences() {
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [form, setForm] = useState({ name: "", description: "", type: "custom", platform: "meta", criteria: "", tags: "" });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState("");
 
   useEffect(() => { loadAudiences(); }, []);
 
@@ -44,6 +46,14 @@ export default function Audiences() {
     try { await api.audiences.delete(id); setDeleteId(null); addToast("success", "Deleted"); loadAudiences(); }
     catch { addToast("error", "Failed to delete"); }
   }
+
+  async function handleBulkDelete() {
+    if (selected.size === 0) return;
+    try { await Promise.all(Array.from(selected).map((id) => api.audiences.delete(id))); addToast("success", `${selected.size} audiences deleted`); setSelected(new Set()); loadAudiences(); } catch { addToast("error", "Bulk delete failed"); }
+  }
+
+  function toggleSelect(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
+  function toggleAll() { setSelected(new Set(selected.size === filtered.length ? [] : filtered.map((a) => a._id))); }
 
   function handleExport() {
     if (audiences.length === 0) return;
@@ -111,6 +121,14 @@ export default function Audiences() {
         ))}
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-n0va-600/10 border border-n0va-600/30 rounded-lg">
+          <span className="text-sm text-gray-300">{selected.size} selected</span>
+          <button className="btn-danger text-xs py-1.5" onClick={handleBulkDelete}>Delete All</button>
+          <button className="btn-secondary text-xs py-1.5" onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
+
       {showCreate && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
           <div className="card w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
@@ -169,13 +187,23 @@ export default function Audiences() {
           <p className="text-gray-400">No audience segments match your filters.</p>
         </div>
       ) : (
+        <><div className="flex items-center gap-2 mb-3 px-1">
+          <button onClick={toggleAll} className="text-gray-500 hover:text-white text-xs flex items-center gap-1.5">
+            {selected.size === filtered.length ? <CheckSquare className="w-4 h-4 text-n0va-400" /> : <Square className="w-4 h-4" />}
+            <span>{selected.size === filtered.length ? "Deselect all" : "Select all"}</span>
+          </button>
+        </div>
         <div className="space-y-3">
           {filtered.map((a) => (
-            <div key={a._id} className="card hover:border-gray-700 transition-colors">
+            <div key={a._id} className={`card hover:border-gray-700 transition-colors ${selected.has(a._id) ? "border-n0va-600/40" : ""}`}>
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <Link to={`/audiences/${a._id}`} className="text-white font-semibold hover:text-n0va-400">{a.name}</Link>
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <button onClick={() => toggleSelect(a._id)} className="mt-1 text-gray-500 hover:text-white shrink-0">
+                    {selected.has(a._id) ? <CheckSquare className="w-4 h-4 text-n0va-400" /> : <Square className="w-4 h-4" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <Link to={`/audiences/${a._id}`} className="text-white font-semibold hover:text-n0va-400">{a.name}</Link>
                     <span className={`text-xs font-medium ${typeColors[a.type] || ""}`}>{a.type}</span>
                     <span className="text-xs text-gray-500">{a.platform}</span>
                     <span className={statusBadge[a.status] || "badge-draft"}>{a.status}</span>
@@ -187,7 +215,8 @@ export default function Audiences() {
                     </div>
                   )}
                 </div>
-                <div className="text-right ml-4">
+              </div>
+              <div className="text-right ml-4">
                   <p className="text-lg font-bold text-white">{a.size?.toLocaleString() || 0}</p>
                   <p className="text-xs text-gray-500">users</p>
                 </div>
@@ -203,7 +232,7 @@ export default function Audiences() {
             </div>
           ))}
         </div>
-      )}
+        </>)}
 
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDeleteId(null)}>
