@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Share2, Link2, Wifi, X, Trash2, ExternalLink, Activity, Play } from "lucide-react";
+import { Share2, Link2, Wifi, X, Trash2, ExternalLink, Activity, Play, Search } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ export default function Platforms() {
   const [platforms, setPlatforms] = useState<any[]>([]);
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showConnect, setShowConnect] = useState(false);
   const [form, setForm] = useState({ platform: "meta", label: "", accessToken: "" });
   const [detailPlatform, setDetailPlatform] = useState<any>(null);
@@ -79,6 +80,11 @@ export default function Platforms() {
           </div>
         </div>
       )}
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <input className="input pl-10" placeholder="Search platforms..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       {showConnect && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -176,7 +182,7 @@ export default function Platforms() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {platforms.map((p) => (
+          {platforms.filter((p) => !search || p.name?.toLowerCase().includes(search.toLowerCase())).map((p) => (
             <div key={p.id} className="card cursor-pointer hover:border-gray-700 transition-colors" onClick={() => openDetail(p)}>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center"><Share2 className="w-5 h-5 text-n0va-400" /></div>
