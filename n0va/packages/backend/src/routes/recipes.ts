@@ -19,6 +19,17 @@ router.get(
   })
 );
 
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    const recipe = DataStore.findRecipes(tenantId).find((r: any) => r._id === id);
+    if (!recipe) throw new AppError(404, "Recipe not found");
+    res.json(recipe);
+  })
+);
+
 router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {

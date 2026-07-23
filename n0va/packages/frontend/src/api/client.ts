@@ -84,6 +84,7 @@ export const api = {
   },
   recipes: {
     list: () => request<any[]>("/recipes"),
+    get: (id: string) => request<any>(`/recipes/${id}`),
     create: (data: Record<string, unknown>) =>
       request<any>("/recipes", { method: "POST", body: JSON.stringify(data) }),
     compile: (id: string) =>

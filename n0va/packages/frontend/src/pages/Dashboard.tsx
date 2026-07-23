@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, AlertTriangle, Target } from "lucide-react";
+import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, AlertTriangle, Target, Bell, Activity } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useNavigate } from "react-router-dom";
+import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -12,6 +13,10 @@ export default function Dashboard() {
   const [fraudHealth, setFraudHealth] = useState<any>(null);
   const [agents, setAgents] = useState<any[]>([]);
   const [attribution, setAttribution] = useState<any>(null);
+
+  const liveFraudAlerts = useFraudAlerts();
+  const liveBudgetAlerts = useBudgetAlerts();
+  const liveAlertCount = liveFraudAlerts.length + liveBudgetAlerts.length;
 
   useEffect(() => {
     Promise.all([
@@ -74,9 +79,27 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Marketing Dashboard</h1>
-        <p className="text-gray-500 mt-1">Real-time overview of your advertising performance</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Marketing Dashboard</h1>
+          <p className="text-gray-500 mt-1">Real-time overview of your advertising performance</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-500">
+            <kbd className="text-gray-400 bg-gray-700 px-1 rounded">Ctrl</kbd>
+            <span>+</span>
+            <kbd className="text-gray-400 bg-gray-700 px-1 rounded">K</kbd>
+            <span className="ml-1">Search</span>
+          </div>
+          {liveAlertCount > 0 && (
+            <button onClick={() => navigate("/notifications")} className="relative">
+              <Bell className="w-5 h-5 text-yellow-400" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">
+                {liveAlertCount}
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -128,6 +151,27 @@ export default function Dashboard() {
           <p className="text-xs text-gray-500">{attribution?.totalPaths || 50} conversion paths</p>
         </div>
       </div>
+
+      {liveAlertCount > 0 && (
+        <div className="card border-yellow-500/30 bg-yellow-500/5">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Activity className="w-5 h-5 text-yellow-400" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-yellow-300 font-medium">
+                {liveAlertCount} live alert{liveAlertCount !== 1 ? "s" : ""} detected
+              </p>
+              <p className="text-xs text-yellow-400/70">
+                {liveFraudAlerts.length > 0 && `${liveFraudAlerts.length} fraud · `}
+                {liveBudgetAlerts.length > 0 && `${liveBudgetAlerts.length} budget`}
+              </p>
+            </div>
+            <button className="btn-secondary text-xs" onClick={() => navigate("/notifications")}>View</button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">

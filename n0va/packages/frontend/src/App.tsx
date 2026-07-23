@@ -26,6 +26,9 @@ import BudgetStrategy from "./pages/BudgetStrategy";
 import ActivityFeed from "./pages/ActivityFeed";
 import NotificationCenter from "./pages/NotificationCenter";
 import HyperContext from "./pages/HyperContext";
+import CampaignWizard from "./pages/CampaignWizard";
+import PlatformDetail from "./pages/PlatformDetail";
+import RecipeDetail from "./pages/RecipeDetail";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -46,6 +49,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/creatives" element={<Creatives />} />
                 <Route path="/creatives/:id" element={<CreativeDetail />} />
@@ -53,8 +57,10 @@ export default function App() {
                 <Route path="/audiences/:id" element={<AudienceDetail />} />
                 <Route path="/agents" element={<Agents />} />
                 <Route path="/platforms" element={<Platforms />} />
+                <Route path="/platforms/:id" element={<PlatformDetail />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/recipes" element={<Recipes />} />
+                <Route path="/recipes/:id" element={<RecipeDetail />} />
                 <Route path="/war-room" element={<WarRoom />} />
                 <Route path="/fraud-evaluation" element={<FraudEvaluation />} />
                 <Route path="/budget-strategy" element={<BudgetStrategy />} />
