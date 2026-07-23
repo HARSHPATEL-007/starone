@@ -103,4 +103,26 @@ router.post(
   })
 );
 
+router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    const updated = DataStore.updateRecipe(id, tenantId, req.body);
+    if (!updated) throw new AppError(404, "Recipe not found");
+    res.json(updated);
+  })
+);
+
+router.delete(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    const deleted = DataStore.deleteRecipe(id, tenantId);
+    if (!deleted) throw new AppError(404, "Recipe not found");
+    res.status(204).send();
+  })
+);
+
 export default router;

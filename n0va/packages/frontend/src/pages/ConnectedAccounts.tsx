@@ -1,72 +1,61 @@
-import { useEffect, useState } from "react";
-import { Link2, Link2Off, RefreshCw, Plus, CheckCircle, AlertCircle, Clock } from "lucide-react";
-
-interface ConnectedAccount {
-  _id: string;
-  platform: string;
-  label: string;
-  status: string;
-  metadata: Record<string, any>;
-  createdAt: string;
-}
+import { useEffect, useState, useCallback } from "react";
+import { Link2, Link2Off, RefreshCw, Plus, AlertCircle } from "lucide-react";
+import { api } from "../api/client";
+import { SkeletonCard } from "../components/Skeleton";
 
 const platformColors: Record<string, string> = {
-  meta: "text-blue-400",
-  google: "text-green-400",
-  linkedin: "text-blue-300",
-  tiktok: "text-pink-400",
-  snapchat: "text-yellow-400",
-  twitter: "text-sky-400",
+  meta: "text-blue-400", google: "text-green-400", linkedin: "text-blue-300",
+  tiktok: "text-pink-400", snapchat: "text-yellow-400", twitter: "text-sky-400",
 };
 
 export default function ConnectedAccounts() {
-  const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showConnect, setShowConnect] = useState(false);
   const [form, setForm] = useState({ platform: "meta", label: "", accessToken: "" });
   const [platforms, setPlatforms] = useState<any[]>([]);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/v1/platforms/connected").then((r) => r.json()),
-      fetch("/api/v1/platforms").then((r) => r.json()),
-    ])
-      .then(([accs, plats]) => {
-        setAccounts(accs);
-        setPlatforms(plats);
-      })
-      .finally(() => setLoading(false));
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [accs, plats] = await Promise.all([
+        api.platforms.connected(),
+        api.platforms.list(),
+      ]);
+      setAccounts(accs);
+      setPlatforms(plats);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/v1/platforms/connect", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })),
-        "x-tenant-id": "tenant_001",
-      },
-      body: JSON.stringify({ ...form, scopes: ["read", "write"] }),
-    });
+    await api.platforms.connect({ ...form, scopes: ["read", "write"] });
     setShowConnect(false);
     setForm({ platform: "meta", label: "", accessToken: "" });
-    const accs = await fetch("/api/v1/platforms/connected").then((r) => r.json());
-    setAccounts(accs);
+    loadData();
   }
 
-  const statusIcon: Record<string, any> = {
-    active: CheckCircle,
-    error: AlertCircle,
-    expired: Clock,
-    pending: Clock,
-  };
+  async function disconnect(id: string) {
+    setDisconnecting(id);
+    try {
+      await api.platforms.disconnect(id);
+      setAccounts((prev) => prev.filter((a) => a._id !== id));
+    } finally {
+      setDisconnecting(null);
+    }
+  }
 
-  const statusColors: Record<string, string> = {
-    active: "text-green-400",
-    error: "text-red-400",
-    expired: "text-yellow-400",
-    pending: "text-yellow-400",
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case "active": return <div className="w-2 h-2 rounded-full bg-green-400" />;
+      case "error": return <AlertCircle className="w-3 h-3 text-red-400" />;
+      default: return <div className="w-2 h-2 rounded-full bg-yellow-400" />;
+    }
   };
 
   return (
@@ -76,9 +65,12 @@ export default function ConnectedAccounts() {
           <h1 className="text-2xl font-bold text-white">Connected Accounts</h1>
           <p className="text-gray-500 mt-1">Manage 1,000+ ad platform connections via N0VA1O</p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={() => setShowConnect(true)}>
-          <Plus className="w-4 h-4" /> Connect Account
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary p-2" onClick={loadData} title="Refresh"><RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /></button>
+          <button className="btn-primary flex items-center gap-2" onClick={() => setShowConnect(true)}>
+            <Plus className="w-4 h-4" /> Connect Account
+          </button>
+        </div>
       </div>
 
       {showConnect && (
@@ -100,9 +92,6 @@ export default function ConnectedAccounts() {
                 <label className="block text-sm text-gray-400 mb-1">Access Token</label>
                 <input className="input font-mono text-xs" value={form.accessToken} onChange={(e) => setForm({ ...form, accessToken: e.target.value })} required placeholder="Enter platform access token..." />
               </div>
-              <div className="text-xs text-gray-500 bg-gray-800 rounded-lg p-3">
-                N0VA1O handles OAuth, token refresh, and scope management automatically. Your credentials are encrypted with AES-256-GCM and never stored in plaintext.
-              </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" className="btn-secondary" onClick={() => setShowConnect(false)}>Cancel</button>
                 <button type="submit" className="btn-primary">Connect</button>
@@ -113,7 +102,9 @@ export default function ConnectedAccounts() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" /></div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       ) : accounts.length === 0 ? (
         <div className="card text-center py-12">
           <Link2 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
@@ -122,48 +113,36 @@ export default function ConnectedAccounts() {
         </div>
       ) : (
         <div className="space-y-3">
-          {accounts.map((account) => {
-            const StatusIcon = statusIcon[account.status] || Clock;
-            return (
-              <div key={account._id} className="card">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center">
-                      <Link2 className={`w-6 h-6 ${platformColors[account.platform] || "text-gray-400"}`} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-white font-semibold">{account.label}</h3>
-                        <span className="text-xs text-gray-500 capitalize">{account.platform}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                        <span className="flex items-center gap-1">
-                          <StatusIcon className={`w-3 h-3 ${statusColors[account.status] || ""}`} />
-                          {account.status}
-                        </span>
-                        <span>JIT Auth: Enabled</span>
-                        <span>Scopes: read, write</span>
-                      </div>
-                    </div>
+          {accounts.map((account) => (
+            <div key={account._id} className="card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center shrink-0">
+                    <Link2 className={`w-6 h-6 ${platformColors[account.platform] || "text-gray-400"}`} />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button className="btn-secondary text-xs py-1.5">
-                      <RefreshCw className="w-3 h-3" />
-                    </button>
-                    <button className="btn-secondary text-xs py-1.5 text-red-400">
-                      <Link2Off className="w-3 h-3" />
-                    </button>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-white font-semibold truncate">{account.label}</h3>
+                      <span className="text-xs text-gray-500 capitalize shrink-0">{account.platform}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                      <span className="flex items-center gap-1">
+                        {statusIcon(account.status)}
+                        {account.status}
+                      </span>
+                      {account.metadata?.accountId && <span className="hidden sm:inline">ID: {account.metadata.accountId}</span>}
+                      {account.metadata?.customerId && <span className="hidden sm:inline">CID: {account.metadata.customerId}</span>}
+                    </div>
                   </div>
                 </div>
-                {account.metadata?.accountId && (
-                  <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500">
-                    Account ID: {account.metadata.accountId}
-                    {account.metadata.customerId && <> | Customer ID: {account.metadata.customerId}</>}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <button className="btn-danger p-2 text-xs" onClick={() => disconnect(account._id)} disabled={disconnecting === account._id}>
+                    {disconnecting === account._id ? <div className="animate-spin w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full" /> : <Link2Off className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 

@@ -232,4 +232,8 @@ export class DataStore {
   static updateRecipe(id: string, tenantId: string, update: any) {
     return DataStore.mem().update("recipes", (r: any) => r._id === id && r.tenantId === tenantId, update);
   }
+
+  static deleteRecipe(id: string, tenantId: string): boolean {
+    return DataStore.mem().delete("recipes", (r: any) => r._id === id && r.tenantId === tenantId);
+  }
 }

@@ -1,63 +1,88 @@
-import { useEffect, useState } from "react";
-import { FileJson, Play, Code, CheckCircle, AlertCircle } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X } from "lucide-react";
+import { api } from "../api/client";
+import { SkeletonCard } from "../components/Skeleton";
 
 export default function Recipes() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
   const [compiling, setCompiling] = useState<string | null>(null);
   const [executing, setExecuting] = useState<string | null>(null);
   const [execResult, setExecResult] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", description: "", trigger: "", steps: "" });
+  const [showDelete, setShowDelete] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", description: "", trigger: "", hitlThreshold: 0, hitlField: "" });
+  const [steps, setSteps] = useState<{ action: string; platform: string }[]>([{ action: "", platform: "" }]);
 
-  useEffect(() => { loadRecipes(); }, []);
-
-  async function loadRecipes() {
+  const loadRecipes = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await fetch("/api/v1/recipes");
-      setRecipes(await res.json());
-    } finally {
-      setLoading(false);
-    }
+    try { setRecipes(await api.recipes.list()); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadRecipes(); }, [loadRecipes]);
+
+  function openCreate() {
+    setEditing(null);
+    setForm({ name: "", description: "", trigger: "", hitlThreshold: 0, hitlField: "" });
+    setSteps([{ action: "", platform: "" }]);
+    setShowForm(true);
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  function openEdit(r: any) {
+    setEditing(r);
+    setForm({ name: r.name, description: r.description || "", trigger: r.trigger, hitlThreshold: r.hitlGate?.threshold || 0, hitlField: r.hitlGate?.field || "" });
+    setSteps(r.steps?.length > 0 ? r.steps.map((s: any) => ({ action: s.action, platform: s.platform })) : [{ action: "", platform: "" }]);
+    setShowForm(true);
+  }
+
+  function addStep() { setSteps((prev) => [...prev, { action: "", platform: "" }]); }
+  function removeStep(i: number) { setSteps((prev) => prev.filter((_, idx) => idx !== i)); }
+  function updateStep(i: number, key: "action" | "platform", value: string) {
+    setSteps((prev) => prev.map((s, idx) => idx === i ? { ...s, [key]: value } : s));
+  }
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    const steps = form.steps.split("\n").filter(Boolean).map((line) => {
-      const parts = line.split(":");
-      return { action: parts[0] || "", platform: parts[1] || "", params: {} };
-    });
-    await fetch("/api/v1/recipes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })), "x-tenant-id": "tenant_001" },
-      body: JSON.stringify({ name: form.name, description: form.description, trigger: form.trigger, steps }),
-    });
-    setShowCreate(false);
-    setForm({ name: "", description: "", trigger: "", steps: "" });
-    loadRecipes();
+    const validSteps = steps.filter((s) => s.action && s.platform);
+    if (validSteps.length === 0) return;
+    const data: any = {
+      name: form.name,
+      description: form.description,
+      trigger: form.trigger,
+      steps: validSteps,
+    };
+    if (form.hitlThreshold > 0 && form.hitlField) {
+      data.hitlGate = { threshold: form.hitlThreshold, field: form.hitlField };
+    }
+    try {
+      if (editing) {
+        await api.recipes.update(editing._id, data);
+      } else {
+        await api.recipes.create(data);
+      }
+      setShowForm(false);
+      setEditing(null);
+      loadRecipes();
+    } catch {}
   }
 
   async function compileRecipe(id: string) {
     setCompiling(id);
-    await fetch(`/api/v1/recipes/${id}/compile`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })), "x-tenant-id": "tenant_001" },
-    });
-    setCompiling(null);
-    loadRecipes();
+    try { await api.recipes.compile(id); loadRecipes(); } finally { setCompiling(null); }
   }
 
   async function executeRecipe(id: string) {
     setExecuting(id);
     setExecResult(null);
-    const res = await fetch(`/api/v1/recipes/${id}/execute`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })), "x-tenant-id": "tenant_001" },
-    });
-    const result = await res.json();
-    setExecResult(result);
-    setExecuting(null);
+    try {
+      const result = await api.recipes.execute(id);
+      setExecResult(result);
+    } finally { setExecuting(null); }
+  }
+
+  async function handleDelete(id: string) {
+    try { await api.recipes.delete(id); setShowDelete(null); loadRecipes(); } catch {}
   }
 
   return (
@@ -67,16 +92,16 @@ export default function Recipes() {
           <h1 className="text-2xl font-bold text-white">N0VA1O Recipes</h1>
           <p className="text-gray-500 mt-1">Compiled deterministic workflows that bypass LLM inference</p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={() => setShowCreate(true)}>
+        <button className="btn-primary flex items-center gap-2" onClick={openCreate}>
           <FileJson className="w-4 h-4" /> New Recipe
         </button>
       </div>
 
-      {showCreate && (
+      {showForm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="card w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold text-white mb-4">Create Recipe</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <h2 className="text-lg font-semibold text-white mb-4">{editing ? "Edit" : "Create"} Recipe</h2>
+            <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Name</label>
                 <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Auto-Budget-Reallocation-v2" required />
@@ -87,23 +112,65 @@ export default function Recipes() {
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Trigger</label>
-                <input className="input" value={form.trigger} onChange={(e) => setForm({ ...form, trigger: e.target.value })} placeholder="roas_drop > 0.15 on meta for 4h" required />
+                <input className="input font-mono text-xs" value={form.trigger} onChange={(e) => setForm({ ...form, trigger: e.target.value })} placeholder="roas_drop > 0.15 on meta for 4h" required />
               </div>
+
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Steps (one per line: action:platform)</label>
-                <textarea className="input font-mono text-xs" rows={5} value={form.steps} onChange={(e) => setForm({ ...form, steps: e.target.value })} placeholder={"shift_budget:meta\nshift_budget:google\nexpand_lookalike:meta"} required />
+                <label className="block text-sm text-gray-400 mb-1">Steps</label>
+                <div className="space-y-2">
+                  {steps.map((s, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-5">{i + 1}.</span>
+                      <input className="input flex-1 font-mono text-xs" placeholder="action (e.g. shift_budget)" value={s.action} onChange={(e) => updateStep(i, "action", e.target.value)} required />
+                      <input className="input flex-1 font-mono text-xs" placeholder="platform (e.g. meta)" value={s.platform} onChange={(e) => updateStep(i, "platform", e.target.value)} required />
+                      <button type="button" className="text-gray-500 hover:text-red-400 p-1 disabled:opacity-30" onClick={() => removeStep(i)} disabled={steps.length <= 1}><X className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className="btn-secondary text-xs mt-2 flex items-center gap-1" onClick={addStep}>
+                  <Plus className="w-3 h-3" /> Add Step
+                </button>
               </div>
+
+              <div className="border-t border-gray-800 pt-4">
+                <label className="block text-sm text-gray-400 mb-2">HITL Gate (optional)</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Threshold ($)</label>
+                    <input type="number" className="input" value={form.hitlThreshold || ""} onChange={(e) => setForm({ ...form, hitlThreshold: parseInt(e.target.value) || 0 })} min={0} placeholder="10000" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Field</label>
+                    <input className="input" value={form.hitlField} onChange={(e) => setForm({ ...form, hitlField: e.target.value })} placeholder="budget_shift" />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-3 justify-end pt-2">
-                <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create Recipe</button>
+                <button type="button" className="btn-secondary" onClick={() => { setShowForm(false); setEditing(null); }}>Cancel</button>
+                <button type="submit" className="btn-primary">{editing ? "Save" : "Create Recipe"}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {showDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="card max-w-sm mx-4 text-center">
+            <p className="text-white mb-4">Delete this recipe?</p>
+            <div className="flex gap-3 justify-center">
+              <button className="btn-secondary" onClick={() => setShowDelete(null)}>Cancel</button>
+              <button className="btn-danger" onClick={() => handleDelete(showDelete)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" /></div>
+        <div className="grid grid-cols-1 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       ) : recipes.length === 0 ? (
         <div className="card text-center py-12">
           <Code className="w-12 h-12 text-gray-600 mx-auto mb-4" />
@@ -112,9 +179,9 @@ export default function Recipes() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {recipes.map((r) => (
-            <div key={r._id} className="card">
+            <div key={r._id} className="card relative group">
               <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-white font-semibold">{r.name}</h3>
                     {r.isCompiled ? (
@@ -124,6 +191,10 @@ export default function Recipes() {
                     )}
                   </div>
                   {r.description && <p className="text-sm text-gray-500">{r.description}</p>}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                  <button className="text-gray-500 hover:text-n0va-400 p-1" onClick={() => openEdit(r)}><Edit3 className="w-3.5 h-3.5" /></button>
+                  <button className="text-gray-500 hover:text-red-400 p-1" onClick={() => setShowDelete(r._id)}><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
 
@@ -151,19 +222,17 @@ export default function Recipes() {
               )}
 
               {r.compiledCode && r.isCompiled && (
-                <pre className="text-xs text-gray-400 bg-gray-950 rounded-lg p-3 mb-4 overflow-x-auto">
-                  {r.compiledCode}
-                </pre>
+                <pre className="text-xs text-gray-400 bg-gray-950 rounded-lg p-3 mb-4 overflow-x-auto">{r.compiledCode}</pre>
               )}
 
               <div className="flex gap-2">
                 {!r.isCompiled ? (
                   <button className="btn-primary text-sm flex items-center gap-2" onClick={() => compileRecipe(r._id)} disabled={compiling === r._id}>
-                    {compiling === r._id ? "Compiling..." : <><Code className="w-4 h-4" /> Compile</>}
+                    {compiling === r._id ? <><div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1" /> Compiling...</> : <><Code className="w-4 h-4" /> Compile</>}
                   </button>
                 ) : (
                   <button className="btn-primary text-sm flex items-center gap-2" onClick={() => executeRecipe(r._id)} disabled={executing === r._id}>
-                    {executing === r._id ? "Executing..." : <><Play className="w-4 h-4" /> Execute</>}
+                    {executing === r._id ? <><div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1" /> Executing...</> : <><Play className="w-4 h-4" /> Execute</>}
                   </button>
                 )}
               </div>

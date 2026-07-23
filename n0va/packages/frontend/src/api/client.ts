@@ -58,6 +58,8 @@ export const api = {
       request<any>("/platforms/connect", { method: "POST", body: JSON.stringify(data) }),
     execute: (data: Record<string, unknown>) =>
       request<any>("/platforms/execute", { method: "POST", body: JSON.stringify(data) }),
+    disconnect: (id: string) =>
+      request<void>(`/platforms/connected/${id}`, { method: "DELETE" }),
     health: () => request<any>("/platforms/health"),
   },
   creatives: {
@@ -91,6 +93,10 @@ export const api = {
       request<any>(`/recipes/${id}/compile`, { method: "POST" }),
     execute: (id: string) =>
       request<any>(`/recipes/${id}/execute`, { method: "POST" }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/recipes/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      request<void>(`/recipes/${id}`, { method: "DELETE" }),
   },
   attribution: {
     models: () => request<any>("/attribution/models"),

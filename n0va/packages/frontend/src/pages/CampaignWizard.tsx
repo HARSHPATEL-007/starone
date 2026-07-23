@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, ChevronRight, DollarSign, Globe, Target, Tag } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, DollarSign, Target, Users } from "lucide-react";
 
 const PLATFORM_OPTIONS = [
   { id: "meta", label: "Meta Ads", icon: "M" },
@@ -19,12 +19,19 @@ const CAMPAIGN_TYPES = [
   { id: "prospecting", label: "Prospecting", desc: "Find new audiences" },
 ];
 
-const STEPS = ["Basics", "Budget", "Platforms", "Targeting", "Review"];
+const METRIC_GOALS = [
+  { id: "cpa", label: "Target CPA", desc: "Maximize conversions at a target cost per acquisition", placeholder: "25" },
+  { id: "roas", label: "Target ROAS", desc: "Maximize revenue at a target return on ad spend", placeholder: "3.0" },
+  { id: "ctr", label: "Target CTR", desc: "Optimize for click-through rate", placeholder: "2.5" },
+];
+
+const STEPS = ["Basics", "Budget", "Platforms", "Audience", "Goals", "Review"];
 
 export default function CampaignWizard() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [audiences, setAudiences] = useState<any[]>([]);
   const [form, setForm] = useState({
     name: "",
     type: "performance",
@@ -35,7 +42,14 @@ export default function CampaignWizard() {
     platforms: [] as string[],
     tags: "",
     description: "",
+    audienceId: "",
+    metricGoal: "",
+    metricTarget: "",
   });
+
+  useEffect(() => {
+    api.audiences.list().then(setAudiences).catch(() => {});
+  }, []);
 
   function update<T extends keyof typeof form>(key: T, value: (typeof form)[T]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -44,9 +58,7 @@ export default function CampaignWizard() {
   function togglePlatform(id: string) {
     setForm((prev) => ({
       ...prev,
-      platforms: prev.platforms.includes(id)
-        ? prev.platforms.filter((p) => p !== id)
-        : [...prev.platforms, id],
+      platforms: prev.platforms.includes(id) ? prev.platforms.filter((p) => p !== id) : [...prev.platforms, id],
     }));
   }
 
@@ -62,14 +74,20 @@ export default function CampaignWizard() {
   async function handleCreate() {
     setCreating(true);
     try {
-      const campaign = await api.campaigns.create({
+      const payload: any = {
         name: form.name,
         type: form.type,
         goal: form.goal || undefined,
         budget: { daily: form.dailyBudget, lifetime: form.lifetimeBudget, currency: form.currency },
         platforms: form.platforms,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      });
+        description: form.description || undefined,
+        audienceId: form.audienceId || undefined,
+      };
+      if (form.metricGoal && form.metricTarget) {
+        payload.metricGoal = { type: form.metricGoal, target: parseFloat(form.metricTarget) };
+      }
+      const campaign = await api.campaigns.create(payload);
       navigate(`/campaigns/${campaign._id || campaign.id}`);
     } catch {
       setCreating(false);
@@ -82,14 +100,14 @@ export default function CampaignWizard() {
         <ArrowLeft className="w-4 h-4" /> Back to Campaigns
       </button>
 
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
         {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
+          <div key={s} className="flex items-center gap-2 shrink-0">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${i < step ? "bg-green-500 text-white" : i === step ? "bg-n0va-600 text-white" : "bg-gray-800 text-gray-500"}`}>
               {i < step ? <Check className="w-4 h-4" /> : i + 1}
             </div>
             <span className={`text-xs font-medium hidden sm:inline ${i <= step ? "text-white" : "text-gray-500"}`}>{s}</span>
-            {i < STEPS.length - 1 && <div className={`w-8 h-px ${i < step ? "bg-green-500" : "bg-gray-800"}`} />}
+            {i < STEPS.length - 1 && <div className={`w-6 h-px ${i < step ? "bg-green-500" : "bg-gray-800"}`} />}
           </div>
         ))}
       </div>
@@ -129,15 +147,15 @@ export default function CampaignWizard() {
               <div>
                 <label className="block text-sm text-gray-400 mb-1.5">Daily Budget *</label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input type="number" className="input pl-9" value={form.dailyBudget} onChange={(e) => update("dailyBudget", Number(e.target.value))} min={1} />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                  <input type="number" className="input pl-8" value={form.dailyBudget} onChange={(e) => update("dailyBudget", Number(e.target.value))} min={1} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-400 mb-1.5">Lifetime Budget *</label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input type="number" className="input pl-9" value={form.lifetimeBudget} onChange={(e) => update("lifetimeBudget", Number(e.target.value))} min={1} />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                  <input type="number" className="input pl-8" value={form.lifetimeBudget} onChange={(e) => update("lifetimeBudget", Number(e.target.value))} min={1} />
                 </div>
               </div>
             </div>
@@ -160,7 +178,7 @@ export default function CampaignWizard() {
             <p className="text-sm text-gray-500">Select the ad platforms for this campaign</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {PLATFORM_OPTIONS.map((p) => (
-                <button key={p.id} className={`p-4 rounded-lg border text-center transition-colors ${form.platforms.includes(p.id) ? "border-n0va-600/40 bg-n0va-600/20" : "border-gray-800 bg-gray-800/30 hover:border-gray-700"}`} onClick={() => togglePlatform(p.id)}>
+                <button key={p.id} className={`p-4 rounded-lg border text-center transition-colors ${form.platforms.includes(p.id) ? "border-n0va-600/40 bg-n0va-600/20 ring-1 ring-n0va-600/30" : "border-gray-800 bg-gray-800/30 hover:border-gray-700"}`} onClick={() => togglePlatform(p.id)}>
                   <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center mx-auto mb-2 text-sm font-bold text-n0va-400">{p.icon}</div>
                   <p className="text-sm text-white font-medium">{p.label}</p>
                   {form.platforms.includes(p.id) && <p className="text-xs text-n0va-400 mt-1">Selected</p>}
@@ -172,11 +190,20 @@ export default function CampaignWizard() {
 
         {step === 3 && (
           <div className="space-y-5">
-            <h2 className="text-xl font-bold text-white">Targeting & Tags</h2>
-            <p className="text-sm text-gray-500">Add optional targeting description and tags</p>
+            <h2 className="text-xl font-bold text-white">Audience & Targeting</h2>
+            <p className="text-sm text-gray-500">Select a saved audience or describe your targeting</p>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Description</label>
-              <textarea className="input" rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="Describe your target audience, key messaging, etc." />
+              <label className="block text-sm text-gray-400 mb-1.5">Saved Audience (optional)</label>
+              <select className="select" value={form.audienceId} onChange={(e) => update("audienceId", e.target.value)}>
+                <option value="">No saved audience</option>
+                {audiences.map((a) => (
+                  <option key={a._id} value={a._id}>{a.name} — {(a.size || 0).toLocaleString()} users</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Targeting Description</label>
+              <textarea className="input" rows={3} value={form.description} onChange={(e) => update("description", e.target.value)} placeholder="Describe your target audience, demographics, interests, behaviors..." />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">Tags (comma-separated)</label>
@@ -187,6 +214,31 @@ export default function CampaignWizard() {
 
         {step === 4 && (
           <div className="space-y-5">
+            <h2 className="text-xl font-bold text-white">Metrics & Goals</h2>
+            <p className="text-sm text-gray-500">Set a performance target for this campaign</p>
+            <div className="grid grid-cols-1 gap-3">
+              {METRIC_GOALS.map((mg) => (
+                <button key={mg.id} className={`p-4 rounded-lg border text-left transition-colors ${form.metricGoal === mg.id ? "border-n0va-600/40 bg-n0va-600/20 ring-1 ring-n0va-600/30" : "border-gray-800 bg-gray-800/30 hover:border-gray-700"}`} onClick={() => update("metricGoal", mg.id)}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white font-medium">{mg.label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{mg.desc}</p>
+                    </div>
+                    {form.metricGoal === mg.id && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Target:</span>
+                        <input className="input w-20 text-sm" type="number" step="0.1" placeholder={mg.placeholder} value={form.metricTarget} onChange={(e) => update("metricTarget", e.target.value)} onClick={(e) => e.stopPropagation()} />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="space-y-5">
             <h2 className="text-xl font-bold text-white">Review & Launch</h2>
             <p className="text-sm text-gray-500">Review your campaign settings before creating</p>
             <div className="bg-gray-800 rounded-lg divide-y divide-gray-700">
@@ -196,6 +248,8 @@ export default function CampaignWizard() {
               <ReviewRow label="Daily Budget" value={`$${form.dailyBudget} ${form.currency}`} />
               <ReviewRow label="Lifetime Budget" value={`$${form.lifetimeBudget} ${form.currency}`} />
               <ReviewRow label="Platforms" value={form.platforms.length > 0 ? form.platforms.join(", ") : "None"} />
+              <ReviewRow label="Target Audience" value={audiences.find((a) => a._id === form.audienceId)?.name || "None selected"} />
+              <ReviewRow label="Metric Goal" value={form.metricGoal ? `${form.metricGoal.toUpperCase()}: ${form.metricTarget}` : "None"} />
               <ReviewRow label="Tags" value={form.tags || "None"} />
             </div>
           </div>
@@ -224,7 +278,7 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm text-white font-medium capitalize">{value}</span>
+      <span className="text-sm text-white font-medium capitalize truncate ml-4 max-w-[60%] text-right">{value}</span>
     </div>
   );
 }
