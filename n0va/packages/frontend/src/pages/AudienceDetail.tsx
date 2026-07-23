@@ -18,9 +18,7 @@ export default function AudienceDetail() {
     if (!id) return;
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const list = await api.audiences.list();
-      const found = Array.isArray(list) ? list.find((a: any) => a._id === id || a.id === id) : null;
-      if (!found) throw new Error("Audience not found");
+      const found = await api.audiences.get(id);
       setAudience(found);
       setEditName(found.name);
       const analyticsData = await api.analytics.overview("30");

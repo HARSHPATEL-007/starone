@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Webhook, Plus, Trash2, Play, CheckCircle, XCircle, Clock, ToggleLeft, ToggleRight, Activity, RotateCw } from "lucide-react";
+import { api } from "../api/client";
 
 const availableEvents = [
   "campaign.created", "campaign.launched", "campaign.paused", "campaign.archived",
@@ -25,8 +26,7 @@ export default function WebhooksPage() {
   async function loadWebhooks() {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/webhooks");
-      setWebhooks(await res.json());
+      setWebhooks(await api.webhooks.list());
     } finally {
       setLoading(false);
     }
@@ -34,28 +34,20 @@ export default function WebhooksPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/v1/webhooks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })), "x-tenant-id": "tenant_001" },
-      body: JSON.stringify(form),
-    });
+    await api.webhooks.create(form as any);
     setShowCreate(false);
     setForm({ name: "", url: "", events: [], retryCount: 3, timeout: 10000 });
     loadWebhooks();
   }
 
   async function deleteWebhook(id: string) {
-    await fetch(`/api/v1/webhooks/${id}`, { method: "DELETE" });
+    await api.webhooks.delete(id);
     if (detailWh?.id === id) { setDetailWh(null); setDeliveries([]); }
     loadWebhooks();
   }
 
   async function toggleWebhook(wh: any) {
-    await fetch(`/api/v1/webhooks/${wh.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: !wh.enabled }),
-    });
+    await api.webhooks.update(wh.id, { enabled: !wh.enabled });
     loadWebhooks();
   }
 
@@ -63,8 +55,7 @@ export default function WebhooksPage() {
     setDetailWh(wh);
     setDeliveriesLoading(true);
     try {
-      const res = await fetch(`/api/v1/webhooks/${wh.id}/deliveries`);
-      setDeliveries(await res.json());
+      setDeliveries(await api.webhooks.deliveries(wh.id));
     } finally {
       setDeliveriesLoading(false);
     }
@@ -77,12 +68,7 @@ export default function WebhooksPage() {
     try {
       let payload: any;
       try { payload = JSON.parse(testForm.payload); } catch { payload = { test: true, message: testForm.payload }; }
-      const res = await fetch("/api/v1/webhooks/test-emit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: testForm.type, source: testForm.source, payload }),
-      });
-      const data = await res.json();
+      const data = await api.webhooks.testEmit({ type: testForm.type, source: testForm.source, payload });
       setTestResult(JSON.stringify(data, null, 2));
     } catch (err: any) {
       setTestResult(JSON.stringify({ error: err.message }, null, 2));

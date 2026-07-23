@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts";
 import { TrendingUp, DollarSign, Target, Eye, MousePointerClick, BarChart3, RefreshCw } from "lucide-react";
 import { SkeletonChart } from "../components/Skeleton";
+import { api } from "../api/client";
 
 const COLORS = ["#1a6dff", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#ec4899"];
 
@@ -14,8 +15,8 @@ export default function Analytics() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      fetch(`/api/v1/analytics/cross-platform?days=${days}`).then((r) => r.json()).catch(() => null),
-      fetch(`/api/v1/analytics/overview?days=${days}`).then((r) => r.json()).catch(() => null),
+      api.analytics.crossPlatform(String(days)).catch(() => null),
+      api.analytics.overview(String(days)).catch(() => null),
     ])
       .then(([cp, ov]) => {
         setCrossPlatform(cp);

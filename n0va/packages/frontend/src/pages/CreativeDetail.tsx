@@ -16,10 +16,8 @@ export default function CreativeDetail() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    api.creatives.list()
-      .then((list) => {
-        const found = Array.isArray(list) ? list.find((c: any) => c._id === id || c.id === id) : null;
-        if (!found) throw new Error("Creative not found");
+    api.creatives.get(id)
+      .then((found) => {
         setCreative(found);
         setEditName(found.name);
         setEditHeadline(found.headline || "");
@@ -31,8 +29,8 @@ export default function CreativeDetail() {
   async function handleSave() {
     if (!creative || !editName.trim()) return;
     try {
-      await api.creatives.updateStatus(creative._id || creative.id, editName);
-      setCreative({ ...creative, name: editName, headline: editHeadline });
+      const updated = await api.creatives.update(creative._id || creative.id, { name: editName, headline: editHeadline });
+      setCreative(updated || { ...creative, name: editName, headline: editHeadline });
       setEditing(false);
     } catch { /* ignore */ }
   }

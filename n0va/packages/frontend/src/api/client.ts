@@ -53,6 +53,7 @@ export const api = {
   },
   platforms: {
     list: () => request<any[]>("/platforms"),
+    get: (id: string) => request<any>(`/platforms/${id}`),
     connected: () => request<any[]>("/platforms/connected"),
     connect: (data: Record<string, unknown>) =>
       request<any>("/platforms/connect", { method: "POST", body: JSON.stringify(data) }),
@@ -60,18 +61,24 @@ export const api = {
       request<any>("/platforms/execute", { method: "POST", body: JSON.stringify(data) }),
     disconnect: (id: string) =>
       request<void>(`/platforms/connected/${id}`, { method: "DELETE" }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/platforms/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     health: () => request<any>("/platforms/health"),
   },
   creatives: {
     list: (params?: string) => request<any[]>(`/creatives${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/creatives/${id}`),
     create: (data: Record<string, unknown>) =>
       request<any>("/creatives", { method: "POST", body: JSON.stringify(data) }),
     updateStatus: (id: string, status: string) =>
       request<any>(`/creatives/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/creatives/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/creatives/${id}`, { method: "DELETE" }),
   },
   audiences: {
     list: (params?: string) => request<any[]>(`/audiences${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/audiences/${id}`),
     create: (data: Record<string, unknown>) =>
       request<any>("/audiences", { method: "POST", body: JSON.stringify(data) }),
     update: (id: string, data: Record<string, unknown>) =>
@@ -164,6 +171,7 @@ export const api = {
   },
   notifications: {
     list: (params?: string) => request<any[]>(`/notifications${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/notifications/${id}`),
     unreadCount: () => request<{ count: number }>("/notifications/unread-count"),
     create: (data: Record<string, unknown>) =>
       request<any>("/notifications", { method: "POST", body: JSON.stringify(data) }),
@@ -171,6 +179,8 @@ export const api = {
       request<any>(`/notifications/${id}/read`, { method: "PATCH" }),
     markAllRead: () =>
       request<any>("/notifications/read-all", { method: "PATCH" }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/notifications/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/notifications/${id}`, { method: "DELETE" }),
   },
   activity: {
@@ -183,6 +193,8 @@ export const api = {
     create: (data: Record<string, unknown>) =>
       request<any>("/webhooks", { method: "POST", body: JSON.stringify(data) }),
     get: (id: string) => request<any>(`/webhooks/${id}`),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/webhooks/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     deliveries: (id: string) => request<any[]>(`/webhooks/${id}/deliveries`),
     delete: (id: string) => request<void>(`/webhooks/${id}`, { method: "DELETE" }),
     testEmit: (data: Record<string, unknown>) =>

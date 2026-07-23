@@ -25,27 +25,27 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
 
-    const user = MOCK_USERS.find(
-      (u) => u.email === credentials.email && u.password === credentials.password
-    );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Login failed" }));
+        throw new Error(err.error || "Login failed");
+      }
 
-    if (!user) {
-      setError("Invalid email or password");
+      const data = await res.json();
+      localStorage.setItem("n0va_token", data.token);
+      localStorage.setItem("n0va_user", JSON.stringify(data.user));
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const token = btoa(JSON.stringify({
-      userId: user.userId,
-      tenantId: user.tenantId,
-      role: user.role,
-    }));
-
-    localStorage.setItem("n0va_token", token);
-    localStorage.setItem("n0va_user", JSON.stringify({ name: user.name, email: user.email, role: user.role }));
-    navigate("/");
   }
 
   return (

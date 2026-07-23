@@ -91,6 +91,16 @@ router.delete(
 );
 
 router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const platforms = await n0va1oService.getPlatforms();
+    const platform = platforms.find((p: any) => p._id === req.params.id || p.id === req.params.id || p.name === req.params.id);
+    if (!platform) throw new AppError(404, "Platform not found");
+    res.json(platform);
+  })
+);
+
+router.get(
   "/health",
   asyncHandler(async (_req: Request, res: Response) => {
     const health = n0va1oService.getGatewayHealth();

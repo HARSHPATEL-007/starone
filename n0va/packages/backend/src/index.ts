@@ -10,6 +10,7 @@ import { config } from "./config";
 import { authMiddleware, tenantMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
+import authRoutes from "./routes/auth";
 import campaignRoutes from "./routes/campaigns";
 import agentRoutes from "./routes/agents";
 import platformRoutes from "./routes/platforms";
@@ -39,6 +40,8 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
 
 let usingMemoryStore = false;
+
+app.use("/api/v1/auth", authRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({

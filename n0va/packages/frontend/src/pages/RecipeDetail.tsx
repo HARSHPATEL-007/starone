@@ -16,12 +16,8 @@ export default function RecipeDetail() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    api.recipes.list()
-      .then((list) => {
-        const found = Array.isArray(list) ? list.find((r: any) => r._id === id || r.id === id) : null;
-        if (!found) throw new Error("Recipe not found");
-        setRecipe(found);
-      })
+    api.recipes.get(id)
+      .then((found) => setRecipe(found))
       .catch(() => navigate("/recipes"))
       .finally(() => setLoading(false));
   }, [id, navigate]);
