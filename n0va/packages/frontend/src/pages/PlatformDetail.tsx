@@ -1,36 +1,46 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity } from "lucide-react";
+import { useToast } from "../components/Toast";
+import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity, RefreshCw, AlertCircle } from "lucide-react";
 
 export default function PlatformDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [platform, setPlatform] = useState<any>(null);
   const [connected, setConnected] = useState<any[]>([]);
   const [health, setHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [executing, setExecuting] = useState<string | null>(null);
   const [execResult, setExecResult] = useState<any>(null);
 
   useEffect(() => {
     if (!id) return;
+    loadPlatform();
+  }, [id]);
+
+  async function loadPlatform() {
+    if (!id) return;
     setLoading(true);
-    Promise.all([
-      api.platforms.list(),
-      api.platforms.connected(),
-      api.platforms.health(),
-    ])
-      .then(([platforms, accounts, h]) => {
-        const found = platforms.find((p: any) => p.id === id || p.platform === id);
-        if (!found) throw new Error("Platform not found");
-        setPlatform(found);
-        setConnected(accounts.filter((a: any) => a.platform === found.platform));
-        setHealth(h);
-      })
-      .catch(() => navigate("/platforms"))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    setError(null);
+    try {
+      const [plat, accounts, h] = await Promise.all([
+        api.platforms.get(id),
+        api.platforms.connected(),
+        api.platforms.health(),
+      ]);
+      setPlatform(plat);
+      setConnected(accounts.filter((a: any) => a.platform === plat.platform));
+      setHealth(h);
+    } catch (err: any) {
+      setError(err.message || "Failed to load platform");
+      addToast("error", "Failed to load platform details");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function executeAction(action: string) {
     if (!platform) return;
@@ -46,14 +56,30 @@ export default function PlatformDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-gray-800 rounded-xl" />
+          <div><div className="w-36 h-7 bg-gray-800 rounded" /><div className="w-24 h-4 bg-gray-800 rounded mt-2" /></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 card p-6"><div className="w-40 h-5 bg-gray-800 rounded mb-4" /><div className="grid grid-cols-2 gap-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-14 bg-gray-800 rounded" />)}</div></div>
+          <div className="card p-6"><div className="w-28 h-5 bg-gray-800 rounded mb-4" /><div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 bg-gray-800 rounded" />)}</div></div>
+        </div>
       </div>
     );
   }
 
   if (!platform) {
-    return <div className="text-gray-400 text-center py-12">Platform not found</div>;
+    return (
+      <div className="card text-center py-12">
+        <AlertCircle className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+        <p className="text-gray-400">Platform not found</p>
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button className="btn-secondary flex items-center gap-2" onClick={loadPlatform}><RefreshCw className="w-4 h-4" /> Retry</button>
+          <button className="btn-secondary" onClick={() => navigate("/platforms")}>Back to Platforms</button>
+        </div>
+      </div>
+    );
   }
 
   return (

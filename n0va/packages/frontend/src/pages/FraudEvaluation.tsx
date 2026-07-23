@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { AlertTriangle, CheckCircle, Shield, RefreshCw, Play, Flag, Ban } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 interface Flag {
   id: string;
@@ -26,6 +27,7 @@ interface FraudHealth {
 }
 
 export default function FraudEvaluation() {
+  const { addToast } = useToast();
   const [health, setHealth] = useState<FraudHealth | null>(null);
   const [flags, setFlags] = useState<Flag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,9 @@ export default function FraudEvaluation() {
     try {
       await api.fraud.resolveFlag(flagId);
       setFlags((prev) => prev.map((f) => (f.id === flagId ? { ...f, resolved: true } : f)));
-    } catch { /* ignore */ }
+    } catch {
+      addToast("error", "Failed to resolve flag");
+    }
   }
 
   if (loading) {

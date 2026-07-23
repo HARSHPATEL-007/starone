@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Check, Settings as SettingsIcon, Shield, Bot, Bell, CreditCard, Sliders } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 interface PricingTier {
   tier: string;
@@ -23,8 +24,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/v1/settings/pricing").then((r) => r.json()).catch(() => null),
-      fetch("/api/v1/settings/tenant").then((r) => r.json()).catch(() => null),
+      api.settings.pricing().catch(() => null),
+      api.settings.tenant().catch(() => null),
     ]).then(([p, t]) => {
       setPricing(p);
       setTenantSettings(t);
@@ -33,11 +34,7 @@ export default function SettingsPage() {
 
   const saveSettings = useCallback(async (section: string) => {
     try {
-      await fetch("/api/v1/settings/tenant", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tenantSettings || {}),
-      });
+      await api.settings.updateTenant(tenantSettings || {});
       addToast("success", `${section} saved`);
     } catch {
       addToast("error", `Failed to save ${section}`);

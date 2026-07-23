@@ -32,21 +32,29 @@ export default function CampaignDetail() {
     if (!id) return;
     Promise.all([
       api.campaigns.get(id),
-      fetch(`/api/v1/analytics/campaign/${id}`).then((r) => r.json()).catch(() => null),
+      api.analytics.campaign(id).catch(() => null),
     ])
       .then(([c, a]) => {
         setCampaign(c);
         setAnalytics(a);
         setEditForm({ name: c.name || "", goal: c.goal || "", daily: c.budget?.daily || 0, lifetime: c.budget?.lifetime || 0 });
       })
+      .catch(() => addToast("error", "Failed to load campaign"))
       .finally(() => setLoading(false));
   }, [id]);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   async function handleDelete() {
-    if (!id || !confirm("Delete this campaign?")) return;
-    await api.campaigns.delete(id);
-    addToast("success", "Campaign deleted");
-    navigate("/campaigns");
+    if (!id) return;
+    try {
+      await api.campaigns.delete(id);
+      addToast("success", "Campaign deleted");
+      navigate("/campaigns");
+    } catch {
+      addToast("error", "Failed to delete campaign");
+    }
+    setShowDeleteConfirm(false);
   }
 
   async function handleStatus(status: string) {
@@ -63,11 +71,7 @@ export default function CampaignDetail() {
   async function handleClone() {
     if (!id) return;
     try {
-      const res = await fetch(`/api/v1/campaigns/${id}/clone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })), "x-tenant-id": "tenant_001" },
-      });
-      const cloned = await res.json();
+      const cloned = await api.campaigns.clone(id);
       addToast("success", "Campaign cloned");
       navigate(`/campaigns/${cloned._id || cloned.id}`);
     } catch {
@@ -82,9 +86,9 @@ export default function CampaignDetail() {
       const updated = await api.campaigns.update(id, {
         name: editForm.name,
         goal: editForm.goal,
-        budget: { daily: editForm.daily, lifetime: editForm.lifetime },
       });
-      setCampaign((prev: any) => ({ ...prev, ...updated }));
+      await api.campaigns.updateBudget(id, { daily: editForm.daily, lifetime: editForm.lifetime });
+      setCampaign((prev: any) => ({ ...prev, ...updated, budget: { ...prev.budget, daily: editForm.daily, lifetime: editForm.lifetime } }));
       setShowEdit(false);
       addToast("success", "Campaign updated");
     } catch {
@@ -142,11 +146,24 @@ export default function CampaignDetail() {
           <button className="btn-secondary flex items-center gap-2" onClick={() => { setEditForm({ name: campaign.name, goal: campaign.goal || "", daily: campaign.budget?.daily || 0, lifetime: campaign.budget?.lifetime || 0 }); setShowEdit(true); }}>
             <Edit3 className="w-4 h-4" /> Edit
           </button>
-          <button className="btn-danger flex items-center gap-2" onClick={handleDelete}>
+          <button className="btn-danger flex items-center gap-2" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Campaign</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to delete this campaign? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button className="btn-secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+              <button className="btn-danger" onClick={handleDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {campaign.status === "draft" && (
         <div className="card border-yellow-600/30 bg-yellow-900/10">

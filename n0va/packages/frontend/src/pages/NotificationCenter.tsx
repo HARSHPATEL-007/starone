@@ -3,6 +3,7 @@ import { Notification } from "../types";
 import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, RefreshCw } from "lucide-react";
 import { api } from "../api/client";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
+import { useToast } from "../components/Toast";
 import { Link } from "react-router-dom";
 
 const typeIcons: Record<string, any> = {
@@ -18,6 +19,7 @@ const severityColors: Record<string, string> = {
 };
 
 export default function NotificationCenter() {
+  const { addToast } = useToast();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -62,12 +64,12 @@ export default function NotificationCenter() {
 
   async function markAllRead() {
     try { await api.notifications.markAllRead(); setNotifications((prev) => prev.map((n) => ({ ...n, read: true }))); }
-    catch { /* ignore */ }
+    catch { addToast("error", "Failed to mark all as read"); }
   }
 
   async function markRead(id: string) {
     try { await api.notifications.markRead(id); setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, read: true } : n)); }
-    catch { /* ignore */ }
+    catch { addToast("error", "Failed to mark as read"); }
   }
 
   async function dismissNotification(id: string) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { ArrowLeft, Check, ChevronRight, DollarSign, Target, Users } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 const PLATFORM_OPTIONS = [
   { id: "meta", label: "Meta Ads", icon: "M" },
@@ -29,6 +30,7 @@ const STEPS = ["Basics", "Budget", "Platforms", "Audience", "Goals", "Review"];
 
 export default function CampaignWizard() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
   const [audiences, setAudiences] = useState<any[]>([]);
@@ -91,6 +93,7 @@ export default function CampaignWizard() {
       navigate(`/campaigns/${campaign._id || campaign.id}`);
     } catch {
       setCreating(false);
+      addToast("error", "Failed to create campaign");
     }
   }
 

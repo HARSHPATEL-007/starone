@@ -24,10 +24,10 @@ export default function Dashboard() {
     setLoading(true);
     Promise.all([
       api.campaigns.dashboard(),
-      fetch("/api/v1/analytics/overview").then((r) => r.json()).catch(() => ({ dailyMetrics: [] })),
-      fetch("/api/v1/fraud/health").then((r) => r.json()).catch(() => null),
+      api.analytics.overview("30").catch(() => ({ dailyMetrics: [] })),
+      api.fraud.health().catch(() => null),
       api.agents.list().catch(() => []),
-      fetch("/api/v1/attribution/models").then((r) => r.json()).catch(() => null),
+      api.attribution.models().catch(() => null),
     ])
       .then(([d, analytics, fraud, agentList, attr]) => {
         setData(d); setDailyData(analytics.dailyMetrics || []); setFraudHealth(fraud); setAgents(agentList); setAttribution(attr);

@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { api } from "../api/client";
+import { useToast } from "../components/Toast";
 import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2 } from "lucide-react";
 
 export default function CreativeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [creative, setCreative] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -26,21 +28,29 @@ export default function CreativeDetail() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   async function handleSave() {
     if (!creative || !editName.trim()) return;
     try {
       const updated = await api.creatives.update(creative._id || creative.id, { name: editName, headline: editHeadline });
       setCreative(updated || { ...creative, name: editName, headline: editHeadline });
       setEditing(false);
-    } catch { /* ignore */ }
+    } catch {
+      addToast("error", "Failed to save creative");
+    }
   }
 
   async function handleDelete() {
-    if (!creative || !window.confirm("Delete this creative?")) return;
+    if (!creative) return;
     try {
       await api.creatives.delete(creative._id || creative.id);
+      addToast("success", "Creative deleted");
       navigate("/creatives");
-    } catch { /* ignore */ }
+    } catch {
+      addToast("error", "Failed to delete creative");
+    }
+    setShowDeleteConfirm(false);
   }
 
   if (loading) {
@@ -108,10 +118,23 @@ export default function CreativeDetail() {
             </div>
           </div>
         </div>
-        <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={handleDelete}>
+        <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={() => setShowDeleteConfirm(true)}>
           <Trash2 className="w-4 h-4" /> Delete
         </button>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Creative</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to delete this creative?</p>
+            <div className="flex justify-end gap-3">
+              <button className="btn-secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+              <button className="btn-danger" onClick={handleDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-3">
         <div className="card text-center">

@@ -85,7 +85,7 @@ export default function Campaigns() {
 
   async function handleClone(id: string) {
     try {
-      await fetch(`/api/v1/campaigns/${id}/clone`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + btoa(JSON.stringify({ userId: "user_001", tenantId: "tenant_001", role: "admin" })), "x-tenant-id": "tenant_001" } });
+      await api.campaigns.clone(id);
       addToast("success", "Campaign duplicated"); loadCampaigns();
     } catch { addToast("error", "Failed to clone campaign"); }
   }

@@ -3,16 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { api } from "../api/client";
 import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 export default function AudienceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [audience, setAudience] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   async function loadData(isRefresh = false) {
     if (!id) return;
@@ -39,15 +42,22 @@ export default function AudienceDetail() {
       const updated = await api.audiences.update(audience._id || audience.id, { name: editName });
       setAudience(updated || { ...audience, name: editName });
       setEditing(false);
-    } catch { /* ignore */ }
+      addToast("success", "Audience updated");
+    } catch {
+      addToast("error", "Failed to save audience");
+    }
   }
 
   async function handleDelete() {
-    if (!audience || !window.confirm("Delete this audience?")) return;
+    if (!audience) return;
     try {
       await api.audiences.delete(audience._id || audience.id);
+      addToast("success", "Audience deleted");
       navigate("/audiences");
-    } catch { /* ignore */ }
+    } catch {
+      addToast("error", "Failed to delete audience");
+    }
+    setShowDeleteConfirm(false);
   }
 
   if (loading) {
@@ -135,11 +145,24 @@ export default function AudienceDetail() {
           <button className="btn-secondary p-2" onClick={() => loadData(true)} disabled={refreshing}>
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           </button>
-          <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={handleDelete}>
+          <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Audience</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to delete this audience?</p>
+            <div className="flex justify-end gap-3">
+              <button className="btn-secondary" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
+              <button className="btn-danger" onClick={handleDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
         {metrics.map((m) => (

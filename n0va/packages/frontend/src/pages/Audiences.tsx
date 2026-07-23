@@ -16,6 +16,7 @@ export default function Audiences() {
   const [filterType, setFilterType] = useState("all");
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [form, setForm] = useState({ name: "", description: "", type: "custom", platform: "meta", criteria: "", tags: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => { loadAudiences(); }, []);
 
@@ -40,8 +41,7 @@ export default function Audiences() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this audience?")) return;
-    try { await api.audiences.delete(id); addToast("success", "Deleted"); loadAudiences(); }
+    try { await api.audiences.delete(id); setDeleteId(null); addToast("success", "Deleted"); loadAudiences(); }
     catch { addToast("error", "Failed to delete"); }
   }
 
@@ -197,11 +197,24 @@ export default function Audiences() {
                   <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-n0va-400" /> {a.performance.impressions?.toLocaleString() || 0} impressions</span>
                   <span className="flex items-center gap-1"><Target className="w-3 h-3 text-green-400" /> {a.performance.conversions || 0} conversions</span>
                   <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-yellow-400" /> {a.performance.roas?.toFixed(2) || "0.00"}x ROAS</span>
-                  <button className="btn-secondary text-xs py-1 ml-auto" onClick={() => handleDelete(a._id)}>Delete</button>
+                  <button className="btn-secondary text-xs py-1 ml-auto" onClick={() => setDeleteId(a._id)}>Delete</button>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDeleteId(null)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Audience</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to delete this audience?</p>
+            <div className="flex justify-end gap-3">
+              <button className="btn-secondary" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button className="btn-danger" onClick={() => handleDelete(deleteId)}>Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

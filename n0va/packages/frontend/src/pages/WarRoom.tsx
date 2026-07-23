@@ -24,30 +24,36 @@ export default function WarRoom() {
   const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/v1/fraud/health").then((r) => r.json()).catch(() => null),
-      fetch("/api/v1/optimizer/budget/mock").then((r) => r.json()).catch(() => null),
-      fetch("/api/v1/optimizer/creative/mock").then((r) => r.json()).catch(() => null),
-      fetch("/api/v1/fraud/simulate", { method: "POST" }).then((r) => r.json()).catch(() => null),
-    ])
-      .then(([fraud, budget, creative, sim]) => {
-        setFraudHealth(fraud);
-        setOptimizationPlans(budget);
-        setCreativeAnalysis(creative);
-        const generatedAlerts = sim?.placements?.filter((p: any) => p.overallRisk > 60).map((p: any) => ({
-          id: p.placementId,
-          type: "fraud",
-          message: `High risk placement: ${p.placementId} (${p.overallRisk.toFixed(0)}%)`,
-          severity: p.overallRisk > 80 ? "critical" : "high",
-          timestamp: new Date().toISOString(),
-        })) || [];
-        setAlerts(generatedAlerts);
-      })
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
 
+  async function loadData() {
+    setLoading(true);
+    try {
+      const [fraud, budget, creative, sim] = await Promise.all([
+        api.fraud.health().catch(() => null),
+        api.optimizer.budgetMock().catch(() => null),
+        api.optimizer.creativeMock().catch(() => null),
+        api.fraud.simulate().catch(() => null),
+      ]);
+      setFraudHealth(fraud);
+      setOptimizationPlans(budget);
+      setCreativeAnalysis(creative);
+      const generatedAlerts = sim?.placements?.filter((p: any) => p.overallRisk > 60).map((p: any) => ({
+        id: p.placementId,
+        type: "fraud",
+        message: `High risk placement: ${p.placementId} (${p.overallRisk.toFixed(0)}%)`,
+        severity: p.overallRisk > 80 ? "critical" : "high",
+        timestamp: new Date().toISOString(),
+      })) || [];
+      setAlerts(generatedAlerts);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSimulateFraud() {
-    const res = await fetch("/api/v1/fraud/simulate", { method: "POST" }).then((r) => r.json());
+    const res = await api.fraud.simulate();
     setFraudHealth(res.summary);
     const newAlerts = res.placements?.filter((p: any) => p.overallRisk > 60).map((p: any) => ({
       id: p.placementId + Date.now(),
@@ -61,8 +67,11 @@ export default function WarRoom() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center justify-between"><div className="w-48 h-7 bg-gray-800 rounded" /><div className="w-32 h-9 bg-gray-800 rounded" /></div>
+        <div className="flex gap-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-28 h-9 bg-gray-800 rounded" />)}</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="card p-4"><div className="w-12 h-7 bg-gray-800 rounded mx-auto mb-2" /><div className="w-16 h-3 bg-gray-800 rounded mx-auto" /></div>)}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><div className="card p-6"><div className="w-32 h-5 bg-gray-800 rounded mb-4" /><div className="h-64 bg-gray-800 rounded" /></div><div className="card p-6"><div className="w-36 h-5 bg-gray-800 rounded mb-4" /><div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-16 bg-gray-800 rounded" />)}</div></div></div>
       </div>
     );
   }

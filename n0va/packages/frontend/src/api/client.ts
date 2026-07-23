@@ -37,6 +37,8 @@ export const api = {
       request<any>(`/campaigns/${id}/budget`, { method: "PATCH", body: JSON.stringify(budget) }),
     update: (id: string, data: Record<string, unknown>) =>
       request<any>(`/campaigns/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    clone: (id: string) =>
+      request<any>(`/campaigns/${id}/clone`, { method: "POST" }),
     delete: (id: string) => request<void>(`/campaigns/${id}`, { method: "DELETE" }),
     dashboard: () => request<any>("/campaigns/dashboard"),
   },

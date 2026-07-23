@@ -17,6 +17,7 @@ export default function Creatives() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [form, setForm] = useState({ name: "", type: "image", headline: "", body: "", cta: "", tags: "" });
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => { loadCreatives(); }, []);
 
@@ -45,8 +46,7 @@ export default function Creatives() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this creative?")) return;
-    try { await api.creatives.delete(id); addToast("success", "Deleted"); loadCreatives(); }
+    try { await api.creatives.delete(id); setDeleteId(null); addToast("success", "Deleted"); loadCreatives(); }
     catch { addToast("error", "Failed to delete"); }
   }
 
@@ -200,11 +200,24 @@ export default function Creatives() {
                   {c.status === "draft" && <button className="btn-primary text-xs py-1 flex-1" onClick={() => handleStatus(c._id, "active")}>Activate</button>}
                   {c.status === "active" && <button className="btn-secondary text-xs py-1 flex-1" onClick={() => handleStatus(c._id, "paused")}>Pause</button>}
                   {c.status === "paused" && <button className="btn-primary text-xs py-1 flex-1" onClick={() => handleStatus(c._id, "active")}>Resume</button>}
-                  <button className="btn-secondary text-xs py-1" onClick={() => handleDelete(c._id)}>Delete</button>
+                  <button className="btn-secondary text-xs py-1" onClick={() => setDeleteId(c._id)}>Delete</button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDeleteId(null)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Creative</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to delete this creative?</p>
+            <div className="flex justify-end gap-3">
+              <button className="btn-secondary" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button className="btn-danger" onClick={() => handleDelete(deleteId)}>Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
+import { useToast } from "../components/Toast";
 
 export default function Recipes() {
+  const { addToast } = useToast();
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -64,7 +66,10 @@ export default function Recipes() {
       setShowForm(false);
       setEditing(null);
       loadRecipes();
-    } catch {}
+      addToast("success", editing ? "Recipe updated" : "Recipe created");
+    } catch {
+      addToast("error", editing ? "Failed to update recipe" : "Failed to create recipe");
+    }
   }
 
   async function compileRecipe(id: string) {
@@ -82,7 +87,8 @@ export default function Recipes() {
   }
 
   async function handleDelete(id: string) {
-    try { await api.recipes.delete(id); setShowDelete(null); loadRecipes(); } catch {}
+    try { await api.recipes.delete(id); setShowDelete(null); loadRecipes(); addToast("success", "Recipe deleted"); }
+    catch { addToast("error", "Failed to delete recipe"); }
   }
 
   return (
