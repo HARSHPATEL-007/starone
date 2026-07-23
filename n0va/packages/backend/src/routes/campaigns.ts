@@ -100,6 +100,23 @@ router.patch(
 );
 
 router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const tenantId = req.user!.tenantId;
+    const update = req.body;
+    const allowed = ["name", "type", "status", "goal", "platforms", "tags", "kpis", "hyperContext"];
+    const filtered: Record<string, any> = {};
+    for (const key of allowed) {
+      if (update[key] !== undefined) filtered[key] = update[key];
+    }
+    const updated = await DataStore.updateCampaign(id, tenantId, filtered);
+    if (!updated) throw new AppError(404, "Campaign not found");
+    res.json(updated);
+  })
+);
+
+router.patch(
   "/:id/budget",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
