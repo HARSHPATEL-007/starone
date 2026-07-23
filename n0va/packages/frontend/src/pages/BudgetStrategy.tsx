@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, Cell } from "recharts";
 import { api } from "../api/client";
-import { TrendingUp, DollarSign, Target, RefreshCw } from "lucide-react";
+import { TrendingUp, DollarSign, Target, RefreshCw, CheckCircle } from "lucide-react";
+import { useToast } from "../components/Toast";
 
 interface BudgetPlan {
   status: string;
@@ -22,8 +23,10 @@ interface BudgetPlan {
 }
 
 export default function BudgetStrategy() {
+  const { addToast } = useToast();
   const [plans, setPlans] = useState<Record<string, BudgetPlan> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState<string>("balanced");
 
   useEffect(() => { loadData(); }, []);
@@ -94,8 +97,24 @@ export default function BudgetStrategy() {
           <h1 className="text-2xl font-bold text-white">Budget Strategy Comparison</h1>
           <p className="text-gray-500 mt-1">Compare conservative, balanced, and aggressive budget allocation strategies</p>
         </div>
-        <button className="btn-secondary flex items-center gap-2" onClick={loadData}>
+        <button className="btn-secondary flex items-center gap-2" onClick={loadData} disabled={applying}>
           <RefreshCw className="w-4 h-4" /> New Sample
+        </button>
+        <button className="btn-primary flex items-center gap-2" onClick={async () => {
+          setApplying(true);
+          const plan = plans?.[selectedStrategy];
+          if (!plan) { setApplying(false); return; }
+          const results = { success: 0, failed: 0 };
+          for (const c of plan.campaigns) {
+            try {
+              await api.campaigns.updateBudget(c.id, { daily: Math.round(c.allocatedBudget / 30), lifetime: Math.round(c.allocatedBudget) });
+              results.success++;
+            } catch { results.failed++; }
+          }
+          addToast("success", `${results.success} budgets applied, ${results.failed} failed`);
+          setApplying(false);
+        }} disabled={applying || !plans}>
+          {applying ? <><div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-1" /> Applying...</> : <><CheckCircle className="w-4 h-4" /> Apply {strategyLabels[selectedStrategy]}</>}
         </button>
       </div>
 

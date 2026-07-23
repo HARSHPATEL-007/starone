@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { api } from "../api/client";
-import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw } from "lucide-react";
 
 export default function AudienceDetail() {
   const { id } = useParams();
@@ -10,28 +10,30 @@ export default function AudienceDetail() {
   const [audience, setAudience] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
 
-  useEffect(() => {
+  async function loadData(isRefresh = false) {
     if (!id) return;
-    setLoading(true);
-    Promise.all([
-      api.audiences.list().then((list) => {
-        const found = Array.isArray(list) ? list.find((a: any) => a._id === id || a.id === id) : null;
-        if (!found) throw new Error("Audience not found");
-        setAudience(found);
-        setEditName(found.name);
-        return found;
-      }),
-      api.analytics.overview("30"),
-    ])
-      .then(([aud, analyticsData]) => {
-        setAnalytics(analyticsData);
-      })
-      .catch(() => navigate("/audiences"))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    if (isRefresh) setRefreshing(true); else setLoading(true);
+    try {
+      const list = await api.audiences.list();
+      const found = Array.isArray(list) ? list.find((a: any) => a._id === id || a.id === id) : null;
+      if (!found) throw new Error("Audience not found");
+      setAudience(found);
+      setEditName(found.name);
+      const analyticsData = await api.analytics.overview("30");
+      setAnalytics(analyticsData);
+    } catch {
+      navigate("/audiences");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => { loadData(); }, [id, navigate]);
 
   async function handleSave() {
     if (!audience || !editName.trim()) return;
@@ -52,8 +54,27 @@ export default function AudienceDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-n0va-500 border-t-transparent rounded-full" />
+      <div className="space-y-6 animate-pulse">
+        <div className="flex items-center gap-4">
+          <div className="w-5 h-5 bg-gray-800 rounded" />
+          <div>
+            <div className="w-48 h-7 bg-gray-800 rounded" />
+            <div className="w-32 h-4 bg-gray-800 rounded mt-2" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card p-4 text-center">
+              <div className="w-4 h-4 bg-gray-800 rounded mx-auto mb-2" />
+              <div className="w-16 h-6 bg-gray-800 rounded mx-auto mb-1" />
+              <div className="w-10 h-3 bg-gray-800 rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card p-6"><div className="w-36 h-5 bg-gray-800 rounded mb-4" /><div className="h-64 bg-gray-800 rounded" /></div>
+          <div className="card p-6"><div className="w-36 h-5 bg-gray-800 rounded mb-4" /><div className="h-64 bg-gray-800 rounded" /></div>
+        </div>
       </div>
     );
   }
@@ -112,9 +133,14 @@ export default function AudienceDetail() {
             <p className="text-gray-500 mt-1">{audience.description || audience.type || "Custom audience"}</p>
           </div>
         </div>
-        <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={handleDelete}>
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
+        <div className="flex items-center gap-3">
+          <button className="btn-secondary p-2" onClick={() => loadData(true)} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+          <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={handleDelete}>
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">

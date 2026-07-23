@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio } from "lucide-react";
+import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -11,12 +12,21 @@ export default function CampaignDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const liveData = useCampaignLive(id);
   const [campaign, setCampaign] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", goal: "", daily: 0, lifetime: 0 });
+
+  const mergedAnalytics = liveData ? {
+    ...analytics,
+    daily: analytics?.daily?.map((d: any) => {
+      if (liveData.date && d.date === liveData.date) return { ...d, ...liveData };
+      return d;
+    }) || (liveData.date ? [{ ...liveData, date: liveData.date }] : []),
+  } : analytics;
 
   useEffect(() => {
     if (!id) return;
@@ -94,7 +104,8 @@ export default function CampaignDetail() {
     return <div className="text-gray-400 text-center py-12">Campaign not found</div>;
   }
 
-  const dailyData = analytics?.daily?.slice(-14).map((d: any) => ({
+  const liveDaily = mergedAnalytics?.daily || analytics?.daily || [];
+  const dailyData = liveDaily.slice(-14).map((d: any) => ({
     ...d,
     date: d.date?.substring(5),
   })) || [];
@@ -187,25 +198,25 @@ export default function CampaignDetail() {
                     <TrendingUp className="w-4 h-4 text-n0va-400" />
                     <span className="text-sm text-gray-400">Revenue</span>
                   </div>
-                  <span className="text-white font-bold">${(analytics?.daily?.reduce((s: number, d: any) => s + (d.revenue || 0), 0) || 0).toLocaleString()}</span>
+                    <span className="text-white font-bold">${liveDaily.reduce((s: number, d: any) => s + (d.revenue || 0), 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-yellow-400" />
                     <span className="text-sm text-gray-400">Spend</span>
                   </div>
-                  <span className="text-white font-bold">${(analytics?.daily?.reduce((s: number, d: any) => s + (d.spend || 0), 0) || 0).toLocaleString()}</span>
+                    <span className="text-white font-bold">${liveDaily.reduce((s: number, d: any) => s + (d.spend || 0), 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-green-400" />
                     <span className="text-sm text-gray-400">Conversions</span>
                   </div>
-                  <span className="text-white font-bold">{analytics?.daily?.reduce((s: number, d: any) => s + (d.conversions || 0), 0) || 0}</span>
+                    <span className="text-white font-bold">{liveDaily.reduce((s: number, d: any) => s + (d.conversions || 0), 0)}</span>
                 </div>
                 <div className="pt-2 border-t border-gray-800 space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">Total Impressions</span><span className="text-white">{(analytics?.daily?.reduce((s: number, d: any) => s + (d.impressions || 0), 0) || 0).toLocaleString()}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Total Clicks</span><span className="text-white">{(analytics?.daily?.reduce((s: number, d: any) => s + (d.clicks || 0), 0) || 0).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Total Impressions</span><span className="text-white">{liveDaily.reduce((s: number, d: any) => s + (d.impressions || 0), 0).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Total Clicks</span><span className="text-white">{liveDaily.reduce((s: number, d: any) => s + (d.clicks || 0), 0).toLocaleString()}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Budget Remaining</span><span className="text-green-400">${(campaign.budget.remaining || 0).toLocaleString()}</span></div>
                 </div>
               </div>
@@ -282,7 +293,15 @@ export default function CampaignDetail() {
             <div className="card">
               <h3 className="text-lg font-semibold text-white mb-4">Actions</h3>
               <div className="space-y-3">
-                {campaign.status === "draft" && (
+      {liveData && (
+        <div className="card border-green-600/30 bg-green-900/10 flex items-center gap-3">
+          <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" /></span>
+          <span className="text-green-400 text-sm font-medium">Live data streaming</span>
+          <span className="text-xs text-gray-500">Impressions: {liveData.impressions?.toLocaleString() || "—"} · Clicks: {liveData.clicks?.toLocaleString() || "—"} · Spend: ${liveData.spend?.toLocaleString() || "—"}</span>
+        </div>
+      )}
+
+      {campaign.status === "draft" && (
                   <button className="btn-primary w-full" onClick={() => handleStatus("active")}>Launch Campaign</button>
                 )}
                 {campaign.status === "active" && (
