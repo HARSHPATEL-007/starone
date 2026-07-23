@@ -1,22 +1,34 @@
 import { useEffect, useState } from "react";
-import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick } from "lucide-react";
+import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, AlertTriangle, Target } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.campaigns.dashboard().then(setData).finally(() => setLoading(false));
-  }, []);
-
   const [dailyData, setDailyData] = useState<any[]>([]);
+  const [fraudHealth, setFraudHealth] = useState<any>(null);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [attribution, setAttribution] = useState<any>(null);
+
   useEffect(() => {
-    fetch("/api/v1/analytics/overview")
-      .then((r) => r.json())
-      .then((d) => setDailyData(d.dailyMetrics || []))
-      .catch(() => {});
+    Promise.all([
+      api.campaigns.dashboard(),
+      fetch("/api/v1/analytics/overview").then((r) => r.json()).catch(() => ({ dailyMetrics: [] })),
+      fetch("/api/v1/fraud/health").then((r) => r.json()).catch(() => null),
+      api.agents.list().catch(() => []),
+      fetch("/api/v1/attribution/models").then((r) => r.json()).catch(() => null),
+    ])
+      .then(([d, analytics, fraud, agentList, attr]) => {
+        setData(d);
+        setDailyData(analytics.dailyMetrics || []);
+        setFraudHealth(fraud);
+        setAgents(agentList);
+        setAttribution(attr);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -49,6 +61,16 @@ export default function Dashboard() {
   ];
 
   const budgetUtilization = data?.totalBudget ? ((data.totalSpent / data.totalBudget) * 100).toFixed(1) : "0";
+  const runningAgents = agents.filter((a: any) => a.status === "running").length;
+  const activeFlags = fraudHealth?.activeFlags || 0;
+  const criticalFlags = fraudHealth?.criticalFlags || 0;
+
+  const agentData = attribution?.models?.data_driven?.platformBreakdown
+    ? Object.entries(attribution.models.data_driven.platformBreakdown).map(([platform, p]: [string, any]) => ({
+        platform,
+        weight: parseFloat((p.weight * 100).toFixed(1)),
+      }))
+    : [];
 
   return (
     <div className="space-y-8">
@@ -67,6 +89,44 @@ export default function Dashboard() {
             <p className="text-2xl font-bold text-white">{stat.value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/agents")}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">AI Agents</span>
+            <Bot className="w-4 h-4 text-n0va-400" />
+          </div>
+          <p className="text-2xl font-bold text-white">{runningAgents}/{agents.length}</p>
+          <p className="text-xs text-green-400">{runningAgents > 0 ? `${runningAgents} active` : "No agents running"}</p>
+        </div>
+
+        <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/war-room")}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Fraud Alerts</span>
+            <Shield className={`w-4 h-4 ${criticalFlags > 0 ? "text-red-400" : "text-green-400"}`} />
+          </div>
+          <p className={`text-2xl font-bold ${criticalFlags > 0 ? "text-red-400" : "text-white"}`}>{activeFlags}</p>
+          <p className="text-xs text-gray-500">{criticalFlags > 0 ? `${criticalFlags} critical` : "All clear"}</p>
+        </div>
+
+        <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/war-room")}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Optimal Strategy</span>
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-2xl font-bold text-white">Balanced</p>
+          <p className="text-xs text-gray-500">30% max shift per campaign</p>
+        </div>
+
+        <div className="card cursor-pointer hover:border-n0va-600/30" onClick={() => navigate("/analytics")}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Attribution</span>
+            <Target className="w-4 h-4 text-purple-400" />
+          </div>
+          <p className="text-2xl font-bold text-white">Data-Driven</p>
+          <p className="text-xs text-gray-500">{attribution?.totalPaths || 50} conversion paths</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -157,6 +217,23 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {agentData.length > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-semibold text-white mb-4">Attribution Weight by Platform (Data-Driven)</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={agentData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="platform" stroke="#6b7280" fontSize={11} />
+                <YAxis stroke="#6b7280" fontSize={11} unit="%" />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px", color: "#f3f4f6" }} />
+                <Bar dataKey="weight" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Attribution Weight %" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -54,7 +54,7 @@ router.patch(
     const tenantId = req.user!.tenantId;
     const { status } = req.body;
 
-    const updated = DataStore.updateCampaign(id, tenantId, { status });
+    const updated = await DataStore.updateCreative(id, tenantId, { status });
     if (!updated) throw new AppError(404, "Creative not found");
     res.json(updated);
   })

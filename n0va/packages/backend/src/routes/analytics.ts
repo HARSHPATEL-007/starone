@@ -132,4 +132,49 @@ router.get(
   })
 );
 
+router.get(
+  "/audience/overlap",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const audiences = generateMockAudiences();
+    const overlaps = generateMockOverlaps(audiences);
+    res.json(overlaps);
+  })
+);
+
+function generateMockAudiences() {
+  return [
+    { id: "aud_001", name: "Website Visitors", description: "All site visitors in last 30 days", size: 125000, source: "web", tags: ["retargeting", "all"] },
+    { id: "aud_002", name: "High Intent", description: "Users who viewed pricing or added to cart", size: 32000, source: "web", tags: ["high-value", "purchase-intent"] },
+    { id: "aud_003", name: "Past Purchasers", description: "Users who completed a purchase", size: 18000, source: "crm", tags: ["retargeting", "loyalty"] },
+    { id: "aud_004", name: "Newsletter Subscribers", description: "Email newsletter subscribers", size: 45000, source: "email", tags: ["email", "engagement"] },
+    { id: "aud_005", name: "Social Followers", description: "Instagram and Twitter followers", size: 67000, source: "social", tags: ["social", "awareness"] },
+    { id: "aud_006", name: "Lookalike: Purchasers", description: "Lookalike audience based on past purchasers", size: 85000, source: "platform", tags: ["lookalike", "prospecting"] },
+    { id: "aud_007", name: "Mobile App Users", description: "Users who installed the mobile app", size: 28000, source: "mobile", tags: ["mobile", "engagement"] },
+    { id: "aud_008", name: "Cart Abandoners", description: "Users who added to cart but didn't purchase", size: 12000, source: "web", tags: ["retargeting", "high-value"] },
+    { id: "aud_009", name: "Blog Readers", description: "Users who read at least 3 blog posts", size: 22000, source: "web", tags: ["content", "awareness"] },
+    { id: "aud_010", name: "VIP Customers", description: "Customers with LTV above $500", size: 4500, source: "crm", tags: ["loyalty", "high-value"] },
+  ];
+}
+
+function generateMockOverlaps(audiences: any[]) {
+  const overlaps: any[] = [];
+  for (let i = 0; i < audiences.length; i++) {
+    for (let j = i + 1; j < audiences.length; j++) {
+      const baseOverlap = Math.random() * 40 + 5;
+      const overlapSize = Math.round(audiences[i].size * (baseOverlap / 100));
+      const uniqueA = Math.max(0, 100 - baseOverlap - Math.random() * 20);
+      const uniqueB = Math.max(0, 100 - baseOverlap - uniqueA);
+      overlaps.push({
+        audienceA: audiences[i].id,
+        audienceB: audiences[j].id,
+        overlapSize,
+        overlapPercentage: parseFloat(baseOverlap.toFixed(1)),
+        uniqueToA: parseFloat(uniqueA.toFixed(1)),
+        uniqueToB: parseFloat(uniqueB.toFixed(1)),
+      });
+    }
+  }
+  return overlaps;
+}
+
 export default router;

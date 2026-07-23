@@ -59,7 +59,7 @@ router.patch(
     if (criteria) update.criteria = criteria;
     if (status) update.status = status;
 
-    const updated = DataStore.updateCampaign(id, tenantId, update);
+    const updated = await DataStore.updateAudience(id, tenantId, update);
     if (!updated) throw new AppError(404, "Audience not found");
     res.json(updated);
   })

@@ -99,6 +99,13 @@ export class DataStore {
     return new Creative(data).save();
   }
 
+  static async updateCreative(id: string, tenantId: string, update: any) {
+    if (DataStore.usingMemory()) {
+      return DataStore.mem().update("creatives", (c: any) => c._id === id && c.tenantId === tenantId, update);
+    }
+    return Creative.findOneAndUpdate({ _id: id, tenantId }, update, { new: true });
+  }
+
   // Audiences
   static async findAudiences(filter: Record<string, any>) {
     if (DataStore.usingMemory()) {
@@ -113,6 +120,13 @@ export class DataStore {
   static async createAudience(data: any) {
     if (DataStore.usingMemory()) return DataStore.mem().insert("audiences", data);
     return new Audience(data).save();
+  }
+
+  static async updateAudience(id: string, tenantId: string, update: any) {
+    if (DataStore.usingMemory()) {
+      return DataStore.mem().update("audiences", (a: any) => a._id === id && a.tenantId === tenantId, update);
+    }
+    return Audience.findOneAndUpdate({ _id: id, tenantId }, update, { new: true });
   }
 
   // Agents

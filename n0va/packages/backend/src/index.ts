@@ -17,6 +17,11 @@ import creativeRoutes from "./routes/creatives";
 import audienceRoutes from "./routes/audiences";
 import analyticsRoutes from "./routes/analytics";
 import recipeRoutes from "./routes/recipes";
+import attributionRoutes from "./routes/attribution";
+import fraudRoutes from "./routes/fraud";
+import optimizerRoutes from "./routes/optimizer";
+import webhookRoutes from "./routes/webhooks";
+import settingsRoutes from "./routes/settings";
 
 const app = express();
 const httpServer = createServer(app);
@@ -48,6 +53,11 @@ app.use("/api/v1/creatives", authMiddleware, tenantMiddleware, creativeRoutes);
 app.use("/api/v1/audiences", authMiddleware, tenantMiddleware, audienceRoutes);
 app.use("/api/v1/analytics", authMiddleware, tenantMiddleware, analyticsRoutes);
 app.use("/api/v1/recipes", authMiddleware, tenantMiddleware, recipeRoutes);
+app.use("/api/v1/attribution", authMiddleware, tenantMiddleware, attributionRoutes);
+app.use("/api/v1/fraud", authMiddleware, tenantMiddleware, fraudRoutes);
+app.use("/api/v1/optimizer", authMiddleware, tenantMiddleware, optimizerRoutes);
+app.use("/api/v1/webhooks", authMiddleware, tenantMiddleware, webhookRoutes);
+app.use("/api/v1/settings", authMiddleware, tenantMiddleware, settingsRoutes);
 
 app.use(errorHandler);
 
@@ -55,6 +65,8 @@ io.on("connection", (socket) => {
   console.log(`Client connected: ${socket.id}`);
   socket.on("subscribe:campaign", (id: string) => socket.join(`campaign:${id}`));
   socket.on("unsubscribe:campaign", (id: string) => socket.leave(`campaign:${id}`));
+  socket.on("subscribe:fraud", () => socket.join("fraud_alerts"));
+  socket.on("subscribe:budget", () => socket.join("budget_alerts"));
   socket.on("disconnect", () => console.log(`Client disconnected: ${socket.id}`));
 });
 

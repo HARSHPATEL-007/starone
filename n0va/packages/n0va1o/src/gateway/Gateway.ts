@@ -1,7 +1,11 @@
 import { JITAuthProvider } from "../auth/JITAuthProvider";
 import { CONNECTOR_REGISTRY } from "../connectors/registry";
-import { ConnectedAccount, N0VA1ORequest, N0VA1OResponse } from "../types";
+import { ConnectedAccount, N0VA1ORequest, N0VA1OResponse, Recipe } from "../types";
 import { nanoid } from "nanoid";
+import { SandboxExecutor } from "../sandbox/SandboxExecutor";
+import { VirtualFileSystem } from "../filesystem/VirtualFileSystem";
+import { IntentRouter } from "../routing/IntentRouter";
+import { RecipeCompiler } from "../recipes/RecipeCompiler";
 
 interface SchemaModifier {
   type: "redact" | "cap" | "inject";
@@ -15,36 +19,61 @@ interface ExecutionHook {
   handler: (payload: unknown) => Promise<unknown>;
 }
 
+export interface N0VA1OHealth {
+  status: string;
+  uptime: number;
+  connections: number;
+  sandbox: { activeSandboxes: number };
+  vfs: { totalFiles: number; totalSizeMB: number };
+  router: { registeredIntents: number; registeredActions: number };
+  recipes: { cachedRecipes: number };
+}
+
 export class N0VA1OGateway {
   private authProvider: JITAuthProvider;
   private schemaModifiers: SchemaModifier[] = [];
   private executionHooks: ExecutionHook[] = [];
   private recipeCache = new Map<string, string>();
+  private startTime: number;
+
+  readonly sandbox: SandboxExecutor;
+  readonly virtualFS: VirtualFileSystem;
+  readonly intentRouter: IntentRouter;
+  readonly recipeCompiler: RecipeCompiler;
 
   constructor() {
     this.authProvider = new JITAuthProvider();
+    this.sandbox = new SandboxExecutor();
+    this.virtualFS = new VirtualFileSystem();
+    this.intentRouter = new IntentRouter();
+    this.recipeCompiler = new RecipeCompiler();
+    this.startTime = Date.now();
     this.registerDefaultModifiers();
+    this.registerDefaultIntents();
   }
 
   private registerDefaultModifiers(): void {
-    this.addSchemaModifier({
-      type: "redact",
-      field: "delete_campaign",
-    });
-    this.addSchemaModifier({
-      type: "cap",
-      field: "budget_increase",
-      maxValue: 50,
-    });
+    this.addSchemaModifier({ type: "redact", field: "delete_campaign" });
+    this.addSchemaModifier({ type: "cap", field: "budget_increase", maxValue: 50 });
     this.addSchemaModifier({
       type: "inject",
       field: "utm_params",
-      value: {
-        source: "n0va",
-        medium: "cpc",
-        campaign: "{campaign_name}",
-      },
+      value: { source: "n0va", medium: "cpc", campaign: "{campaign_name}" },
     });
+  }
+
+  private registerDefaultIntents(): void {
+    this.intentRouter.registerAction("launch campaign", "create_campaign", ["meta", "google", "linkedin", "tiktok"], ["read", "write"], "high");
+    this.intentRouter.registerAction("increase budget", "update_budget", ["meta", "google", "linkedin", "tiktok"], ["read", "write"], "high");
+    this.intentRouter.registerAction("pause campaign", "pause_campaign", ["meta", "google", "linkedin", "tiktok"], ["read", "write"], "high");
+    this.intentRouter.registerAction("view performance", "read_insights", ["meta", "google", "linkedin", "tiktok", "snapchat", "twitter"], ["read"], "low");
+    this.intentRouter.registerAction("check analytics", "read_insights", ["meta", "google", "linkedin", "tiktok"], ["read"], "low");
+    this.intentRouter.registerAction("create campaign", "create_campaign", ["meta", "google", "linkedin", "tiktok"], ["read", "write"], "medium");
+
+    this.intentRouter.registerContextualAction("shift_budget", ["meta", "google", "linkedin"], ["roas_drop", "budget_reallocation", "underperformance"], "high");
+    this.intentRouter.registerContextualAction("expand_audience", ["meta", "google"], ["lookalike_expansion", "audience_growth"], "medium");
+    this.intentRouter.registerContextualAction("generate_creative", ["n0va_diffusion"], ["creative_fatigue", "ctr_drop", "fresh_creative"], "medium");
+    this.intentRouter.registerContextualAction("pause_placement", ["meta", "google", "linkedin", "tiktok"], ["ivt_high", "brand_safety", "fraud_detected"], "critical");
   }
 
   addSchemaModifier(modifier: SchemaModifier): void {
@@ -96,6 +125,92 @@ export class N0VA1OGateway {
     }
   }
 
+  async resolveAndExecute(
+    intent: string,
+    account: ConnectedAccount,
+    params: Record<string, unknown> = {}
+  ): Promise<N0VA1OResponse | N0VA1OResponse[]> {
+    const availableActions = CONNECTOR_REGISTRY
+      .filter((c) => c.platform === account.platform)
+      .flatMap((c) => c.actions);
+
+    const resolved = this.intentRouter.resolve(intent, availableActions);
+
+    if (resolved.confidence < 0.3 || resolved.actions.length === 0) {
+      return {
+        success: false,
+        error: `No action found matching intent: "${intent}"`,
+        requestId: nanoid(12),
+        latency: 0,
+      };
+    }
+
+    const results = await Promise.all(
+      resolved.actions.slice(0, 3).map((action) =>
+        this.execute(
+          {
+            id: `${action.action}_${Date.now()}`,
+            accountId: account.id,
+            action: action.action,
+            params,
+          },
+          account
+        )
+      )
+    );
+
+    return results.length === 1 ? results[0] : results;
+  }
+
+  async uploadLargeFile(
+    name: string,
+    data: Buffer | string,
+    contentType: string,
+    metadata?: Record<string, unknown>,
+    ttlMs?: number
+  ): Promise<{ id: string; path: string; size: number; checksum: string; pointer: string }> {
+    return this.virtualFS.upload(name, data, contentType, metadata, ttlMs);
+  }
+
+  async readFile(pointer: string): Promise<Buffer | null> {
+    return this.virtualFS.resolvePointer(pointer);
+  }
+
+  async executeSandbox(
+    script: string,
+    files: { path: string; content: string | Buffer }[] = []
+  ): Promise<{ success: boolean; output: unknown; executionTimeMs: number; sandboxId: string; error?: string }> {
+    return this.sandbox.executeScript(script, files);
+  }
+
+  async compileRecipe(recipe: Recipe): Promise<string> {
+    const compiled = await this.recipeCompiler.compile(recipe);
+    const compiledId = compiled.id;
+    this.recipeCache.set(recipe.id, compiledId);
+    return compiledId;
+  }
+
+  async quickCompile(recipeId: string, actions: string[]): Promise<string> {
+    const compiled = `compiled_recipe_${recipeId}_${nanoid(8)}`;
+    this.recipeCache.set(recipeId, compiled);
+    return compiled;
+  }
+
+  getHealth(): N0VA1OHealth {
+    return {
+      status: "operational",
+      uptime: (Date.now() - this.startTime) / 1000,
+      connections: CONNECTOR_REGISTRY.length,
+      sandbox: { activeSandboxes: this.sandbox.getActiveSandboxCount() },
+      vfs: this.virtualFS.getStorageStats(),
+      router: {
+        registeredIntents: 0,
+        registeredActions: 0,
+      },
+      recipes: { cachedRecipes: this.recipeCache.size },
+    };
+  }
+
   private async applySchemaModifiers(request: N0VA1ORequest): Promise<N0VA1ORequest> {
     let params = { ...request.params };
 
@@ -105,11 +220,7 @@ export class N0VA1OGateway {
           delete params[modifier.field];
           break;
         case "cap":
-          if (
-            typeof params[modifier.field] === "number" &&
-            modifier.maxValue &&
-            (params[modifier.field] as number) > modifier.maxValue
-          ) {
+          if (typeof params[modifier.field] === "number" && modifier.maxValue && (params[modifier.field] as number) > modifier.maxValue) {
             params[modifier.field] = modifier.maxValue;
           }
           break;
@@ -158,20 +269,6 @@ export class N0VA1OGateway {
         status: "executed",
         tokenPreview: token.substring(0, 20) + "...",
       };
-    };
-  }
-
-  async compileRecipe(recipeId: string, actions: string[]): Promise<string> {
-    const compiled = `compiled_recipe_${recipeId}_${nanoid(8)}`;
-    this.recipeCache.set(recipeId, compiled);
-    return compiled;
-  }
-
-  getHealth(): { status: string; uptime: number; connections: number } {
-    return {
-      status: "operational",
-      uptime: process.uptime(),
-      connections: CONNECTOR_REGISTRY.length,
     };
   }
 }

@@ -8,6 +8,14 @@ import {
   Share2,
   BarChart3,
   FileJson,
+  Shield,
+  Link2,
+  Webhook,
+  Settings,
+  GitCompare,
+  TrendingUp,
+  Split,
+  Target,
 } from "lucide-react";
 
 const navItems = [
@@ -16,9 +24,17 @@ const navItems = [
   { to: "/creatives", icon: Palette, label: "Creatives" },
   { to: "/audiences", icon: Users, label: "Audiences" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
+  { to: "/war-room", icon: Shield, label: "War Room" },
   { to: "/agents", icon: Bot, label: "AI Agents" },
   { to: "/recipes", icon: FileJson, label: "Recipes" },
   { to: "/platforms", icon: Share2, label: "Platforms" },
+  { to: "/connected-accounts", icon: Link2, label: "Accounts" },
+  { to: "/attribution", icon: GitCompare, label: "Attribution" },
+  { to: "/forecast", icon: TrendingUp, label: "Forecast" },
+  { to: "/creative-ab-test", icon: Split, label: "A/B Testing" },
+  { to: "/audience-overlap", icon: Target, label: "Overlap Analysis" },
+  { to: "/webhooks", icon: Webhook, label: "Webhooks" },
+  { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function Sidebar() {
@@ -36,7 +52,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.to}

@@ -75,7 +75,7 @@ export class N0VA1OService {
 
   async compileRecipe(recipeId: string, steps: any[]): Promise<string> {
     const actions = (steps || []).map((s: any) => `${s.platform}:${s.action}`);
-    return this.gateway.compileRecipe(recipeId, actions);
+    return this.gateway.quickCompile(recipeId, actions);
   }
 
   getGatewayHealth() {
