@@ -35,6 +35,7 @@ import PlatformHealth from "./pages/PlatformHealth";
 import RecipeDetail from "./pages/RecipeDetail";
 import CreativeFatigue from "./pages/CreativeFatigue";
 import CampaignCalendar from "./pages/CampaignCalendar";
+import ReportCenter from "./pages/ReportCenter";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -86,6 +87,7 @@ export default function App() {
                 <Route path="/activity" element={<ActivityFeed />} />
                 <Route path="/notifications" element={<NotificationCenter />} />
                 <Route path="/hyper-context" element={<HyperContext />} />
+                <Route path="/reports" element={<ReportCenter />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

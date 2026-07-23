@@ -28,6 +28,7 @@ import {
   HeartPulse,
   TrendingDown,
   Calendar as CalendarIcon,
+  FileText,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +39,7 @@ const navItems = [
   { to: "/creatives", icon: Palette, label: "Creatives" },
   { to: "/audiences", icon: Users, label: "Audiences" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
+  { to: "/reports", icon: FileText, label: "Reports" },
   { to: "/war-room", icon: Shield, label: "War Room" },
   { to: "/fraud-evaluation", icon: SearchX, label: "Fraud Center" },
   { to: "/budget-strategy", icon: Wallet, label: "Budget Strategy" },
