@@ -72,6 +72,9 @@ import Segmentation from "./pages/Segmentation";
 import UTMBuilder from "./pages/UTMBuilder";
 import Funnel from "./pages/Funnel";
 import SmartLists from "./pages/SmartLists";
+import Briefs from "./pages/Briefs";
+import LandingPages from "./pages/LandingPages";
+import CostTracker from "./pages/CostTracker";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -150,6 +153,9 @@ export default function App() {
                 <Route path="/utm-builder" element={<UTMBuilder />} />
                 <Route path="/funnel" element={<Funnel />} />
                 <Route path="/smart-lists" element={<SmartLists />} />
+                <Route path="/briefs" element={<Briefs />} />
+                <Route path="/landing-pages" element={<LandingPages />} />
+                <Route path="/cost-tracker" element={<CostTracker />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
