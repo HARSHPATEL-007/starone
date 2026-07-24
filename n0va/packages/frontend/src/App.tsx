@@ -84,6 +84,9 @@ import CampaignSnapshots from "./pages/CampaignSnapshots";
 import SocialPublisher from "./pages/SocialPublisher";
 import CampaignAlerts from "./pages/CampaignAlerts";
 import AdCopyGenerator from "./pages/AdCopyGenerator";
+import CampaignSurveys from "./pages/CampaignSurveys";
+import CampaignHealth from "./pages/CampaignHealth";
+import CustomerJourneyBuilder from "./pages/CustomerJourneyBuilder";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -174,6 +177,9 @@ export default function App() {
                 <Route path="/social-publisher" element={<SocialPublisher />} />
                 <Route path="/campaign-alerts" element={<CampaignAlerts />} />
                 <Route path="/ad-copy" element={<AdCopyGenerator />} />
+                <Route path="/surveys" element={<CampaignSurveys />} />
+                <Route path="/campaign-health" element={<CampaignHealth />} />
+                <Route path="/customer-journey" element={<CustomerJourneyBuilder />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
