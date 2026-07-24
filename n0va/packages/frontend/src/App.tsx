@@ -69,6 +69,9 @@ import AuditLog from "./pages/AuditLog";
 import CustomDashboards from "./pages/CustomDashboards";
 import AdPreview from "./pages/AdPreview";
 import Segmentation from "./pages/Segmentation";
+import UTMBuilder from "./pages/UTMBuilder";
+import Funnel from "./pages/Funnel";
+import SmartLists from "./pages/SmartLists";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -144,6 +147,9 @@ export default function App() {
                 <Route path="/custom-dashboards" element={<CustomDashboards />} />
                 <Route path="/ad-preview" element={<AdPreview />} />
                 <Route path="/segmentation" element={<Segmentation />} />
+                <Route path="/utm-builder" element={<UTMBuilder />} />
+                <Route path="/funnel" element={<Funnel />} />
+                <Route path="/smart-lists" element={<SmartLists />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

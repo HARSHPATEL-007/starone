@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -43,6 +43,9 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Custom Dashboards", route: "/custom-dashboards", icon: LayoutDashboard },
   { type: "page", label: "Ad Preview", route: "/ad-preview", icon: Eye },
   { type: "page", label: "Segmentation", route: "/segmentation", icon: Split },
+  { type: "page", label: "UTM Builder", route: "/utm-builder", icon: Link2 },
+  { type: "page", label: "Funnels", route: "/funnel", icon: TrendingDown },
+  { type: "page", label: "Smart Lists", route: "/smart-lists", icon: ListFilter },
   { type: "page", label: "Hyper-Context", route: "/hyper-context", icon: Layers },
   { type: "page", label: "Webhooks", route: "/webhooks", icon: Activity },
   { type: "page", label: "Settings", route: "/settings", icon: Settings },
