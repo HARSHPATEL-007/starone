@@ -67,6 +67,7 @@ import ROICalculator from "./pages/ROICalculator";
 import Team from "./pages/Team";
 import AuditLog from "./pages/AuditLog";
 import CustomDashboards from "./pages/CustomDashboards";
+import AdPreview from "./pages/AdPreview";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -140,6 +141,7 @@ export default function App() {
                 <Route path="/team" element={<Team />} />
                 <Route path="/audit-log" element={<AuditLog />} />
                 <Route path="/custom-dashboards" element={<CustomDashboards />} />
+                <Route path="/ad-preview" element={<AdPreview />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
