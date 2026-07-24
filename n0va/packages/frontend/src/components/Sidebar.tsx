@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import {
   LayoutDashboard,
+  LayoutGrid,
   Megaphone,
   Palette,
   Users,
@@ -52,6 +53,7 @@ const navItems = [
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
   { to: "/brief-generator", icon: Sparkles, label: "Brief Generator" },
   { to: "/creatives", icon: Palette, label: "Creatives" },
+  { to: "/creative-gallery", icon: LayoutGrid, label: "Creative Gallery" },
   { to: "/creatives/new", icon: Palette, label: "New Creative" },
   { to: "/import", icon: Upload, label: "Data Import" },
   { to: "/audiences", icon: Users, label: "Audiences" },

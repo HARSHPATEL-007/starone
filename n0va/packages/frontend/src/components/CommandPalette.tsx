@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2, FileText, CreditCard, CheckSquare, CheckCircle, Sparkles, User, Upload } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2, FileText, CreditCard, CheckSquare, CheckCircle, Sparkles, User, Upload } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -55,6 +55,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Brand Kit", route: "/brand-kit", icon: Palette },
   { type: "page", label: "Data Import", route: "/import", icon: Upload },
   { type: "page", label: "Approvals", route: "/approvals", icon: CheckCircle },
+  { type: "page", label: "Creative Gallery", route: "/creative-gallery", icon: LayoutGrid },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {
