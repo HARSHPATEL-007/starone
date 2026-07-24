@@ -42,6 +42,7 @@ import AgentCreator from "./pages/AgentCreator";
 import CreativeBuilder from "./pages/CreativeBuilder";
 import RecipeBuilder from "./pages/RecipeBuilder";
 import CampaignComparison from "./pages/CampaignComparison";
+import CampaignInsights from "./pages/CampaignInsights";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -89,6 +90,7 @@ export default function App() {
                 <Route path="/creative-fatigue" element={<CreativeFatigue />} />
                 <Route path="/campaign-calendar" element={<CampaignCalendar />} />
                 <Route path="/campaign-comparison" element={<CampaignComparison />} />
+                <Route path="/insights" element={<CampaignInsights />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

@@ -46,6 +46,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "New Creative", route: "/creatives/new", icon: Palette },
   { type: "page", label: "New Recipe", route: "/recipes/new", icon: FileJson },
   { type: "page", label: "Campaign Comparison", route: "/campaign-comparison", icon: GitCompare },
+  { type: "page", label: "Insights", route: "/insights", icon: TrendingUp },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {

@@ -37,6 +37,7 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-calendar", icon: CalendarIcon, label: "Calendar" },
+  { to: "/insights", icon: TrendingUp, label: "Insights" },
   { to: "/campaign-comparison", icon: GitCompare, label: "Compare Campaigns" },
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
   { to: "/creatives", icon: Palette, label: "Creatives" },
