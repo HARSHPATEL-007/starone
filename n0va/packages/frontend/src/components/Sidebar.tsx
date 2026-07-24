@@ -88,6 +88,7 @@ const navItems = [
   { to: "/brand-kit", icon: Palette, label: "Brand Kit" },
   { to: "/content-library", icon: FolderOpen, label: "Content Library" },
   { to: "/goals", icon: Target, label: "Goals & OKRs" },
+  { to: "/ab-testing", icon: GitCompare, label: "A/B Testing" },
   { to: "/account", icon: User, label: "Account" },
   { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/settings", icon: Settings, label: "Settings" },

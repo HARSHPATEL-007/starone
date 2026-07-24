@@ -61,6 +61,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Export Center", route: "/export", icon: Download },
   { type: "page", label: "Content Library", route: "/content-library", icon: FolderOpen },
   { type: "page", label: "Goals & OKRs", route: "/goals", icon: Target },
+  { type: "page", label: "A/B Testing", route: "/ab-testing", icon: GitCompare },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {
