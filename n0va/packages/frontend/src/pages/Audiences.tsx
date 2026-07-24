@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Users, Search, Download, Filter, TrendingUp, DollarSign, Target, CheckSquare, Square } from "lucide-react";
+import { Plus, Users, Search, Download, Filter, TrendingUp, DollarSign, Target, CheckSquare, Square, Wand2 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -94,6 +94,9 @@ export default function Audiences() {
           <button className="btn-secondary flex items-center gap-2" onClick={handleExport} disabled={audiences.length === 0}>
             <Download className="w-4 h-4" /> Export
           </button>
+          <Link to="/audiences/new" className="btn-secondary flex items-center gap-2">
+            <Wand2 className="w-4 h-4" /> Audience Builder
+          </Link>
           <button className="btn-primary flex items-center gap-2" onClick={() => setShowCreate(true)}>
             <Plus className="w-4 h-4" /> New Audience
           </button>

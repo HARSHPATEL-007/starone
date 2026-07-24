@@ -36,6 +36,8 @@ import RecipeDetail from "./pages/RecipeDetail";
 import CreativeFatigue from "./pages/CreativeFatigue";
 import CampaignCalendar from "./pages/CampaignCalendar";
 import ReportCenter from "./pages/ReportCenter";
+import AudienceBuilder from "./pages/AudienceBuilder";
+import Billing from "./pages/Billing";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -62,6 +64,7 @@ export default function App() {
                 <Route path="/creatives" element={<Creatives />} />
                 <Route path="/creatives/:id" element={<CreativeDetail />} />
                 <Route path="/audiences" element={<Audiences />} />
+                <Route path="/audiences/new" element={<AudienceBuilder />} />
                 <Route path="/audiences/:id" element={<AudienceDetail />} />
                 <Route path="/agents" element={<Agents />} />
                 <Route path="/agents/:id" element={<AgentDetail />} />
@@ -88,6 +91,7 @@ export default function App() {
                 <Route path="/notifications" element={<NotificationCenter />} />
                 <Route path="/hyper-context" element={<HyperContext />} />
                 <Route path="/reports" element={<ReportCenter />} />
+                <Route path="/billing" element={<Billing />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

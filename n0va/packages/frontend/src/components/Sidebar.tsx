@@ -29,6 +29,8 @@ import {
   TrendingDown,
   Calendar as CalendarIcon,
   FileText,
+  UserPlus,
+  CreditCard,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +40,7 @@ const navItems = [
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
   { to: "/creatives", icon: Palette, label: "Creatives" },
   { to: "/audiences", icon: Users, label: "Audiences" },
+  { to: "/audiences/new", icon: UserPlus, label: "Audience Builder" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/reports", icon: FileText, label: "Reports" },
   { to: "/war-room", icon: Shield, label: "War Room" },
@@ -57,6 +60,7 @@ const navItems = [
   { to: "/notifications", icon: Bell, label: "Notifications" },
   { to: "/hyper-context", icon: Layers, label: "Hyper-Context" },
   { to: "/webhooks", icon: Webhook, label: "Webhooks" },
+  { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
