@@ -33,6 +33,7 @@ import {
   UserPlus,
   CreditCard,
   History,
+  Sparkles,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -45,6 +46,7 @@ const navItems = [
   { to: "/campaign-comparison", icon: GitCompare, label: "Compare Campaigns" },
   { to: "/templates", icon: FileText, label: "Templates" },
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
+  { to: "/brief-generator", icon: Sparkles, label: "Brief Generator" },
   { to: "/creatives", icon: Palette, label: "Creatives" },
   { to: "/creatives/new", icon: Palette, label: "New Creative" },
   { to: "/audiences", icon: Users, label: "Audiences" },
