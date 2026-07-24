@@ -37,6 +37,7 @@
   .badge-draft { @apply badge bg-gray-700 text-gray-300; }
   .badge-paused { @apply badge bg-yellow-900 text-yellow-300; }
   .badge-archived { @apply badge bg-red-900 text-red-300; }
+  .badge-warning { @apply badge bg-amber-900 text-amber-300; }
 }
 
 @keyframes slide-up {

@@ -115,7 +115,7 @@ export default function Campaigns() {
     exportToCsv(data, "campaigns_export"); addToast("success", "Campaigns exported to CSV");
   }
 
-  const statusBadge: Record<string, string> = { draft: "badge-draft", active: "badge-active", paused: "badge-paused", archived: "badge-archived" };
+  const statusBadge: Record<string, string> = { draft: "badge-draft", active: "badge-active", paused: "badge-paused", archived: "badge-archived", pending_approval: "badge-warning" };
 
   return (
     <div className="space-y-6">

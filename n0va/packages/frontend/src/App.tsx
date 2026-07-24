@@ -50,6 +50,7 @@ import CampaignBriefGenerator from "./pages/CampaignBriefGenerator";
 import AccountPage from "./pages/Account";
 import BrandKit from "./pages/BrandKit";
 import DataImport from "./pages/DataImport";
+import Approvals from "./pages/Approvals";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -105,6 +106,7 @@ export default function App() {
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/brand-kit" element={<BrandKit />} />
                 <Route path="/import" element={<DataImport />} />
+                <Route path="/approvals" element={<Approvals />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

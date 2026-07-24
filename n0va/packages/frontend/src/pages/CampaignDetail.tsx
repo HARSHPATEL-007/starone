@@ -186,8 +186,8 @@ export default function CampaignDetail() {
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white">{campaign.name}</h1>
-            <span className={`badge ${campaign.status === "active" ? "badge-active" : campaign.status === "paused" ? "badge-paused" : campaign.status === "draft" ? "badge-draft" : "badge-archived"}`}>
-              {campaign.status}
+            <span className={`badge ${campaign.status === "active" ? "badge-active" : campaign.status === "paused" ? "badge-paused" : campaign.status === "draft" ? "badge-draft" : campaign.status === "pending_approval" ? "badge-warning" : "badge-archived"}`}>
+              {campaign.status === "pending_approval" ? "Pending Approval" : campaign.status}
             </span>
           </div>
           <p className="text-gray-500 mt-1 capitalize">{campaign.type} campaign</p>
@@ -223,10 +223,19 @@ export default function CampaignDetail() {
 
       {campaign.status === "draft" && (
         <div className="card border-yellow-600/30 bg-yellow-900/10">
-          <p className="text-yellow-400 text-sm font-medium">This campaign is in draft. Launch it to start serving ads.</p>
+          <p className="text-yellow-400 text-sm font-medium">This campaign is in draft. Submit for approval or launch directly.</p>
           <div className="flex gap-2 mt-2">
-            <button className="btn-primary" onClick={() => handleStatus("active")}>Launch Campaign</button>
-            <Link to="/campaigns/new" className="btn-secondary">Create New</Link>
+            <button className="btn-primary" onClick={() => handleStatus("pending_approval")}>Request Approval</button>
+            <button className="btn-secondary" onClick={() => handleStatus("active")}>Launch Directly</button>
+          </div>
+        </div>
+      )}
+      {campaign.status === "pending_approval" && (
+        <div className="card border-amber-600/30 bg-amber-900/10">
+          <p className="text-amber-400 text-sm font-medium flex items-center gap-2"><Clock className="w-4 h-4" /> This campaign is pending approval.</p>
+          <div className="flex gap-2 mt-2">
+            <button className="btn-primary" onClick={() => handleStatus("active")}>Approve</button>
+            <button className="btn-secondary" onClick={() => handleStatus("draft")}>Send Back to Draft</button>
           </div>
         </div>
       )}
@@ -387,7 +396,19 @@ export default function CampaignDetail() {
       )}
 
       {campaign.status === "draft" && (
-                  <button className="btn-primary w-full" onClick={() => handleStatus("active")}>Launch Campaign</button>
+                  <div className="space-y-2">
+                    <button className="btn-primary w-full" onClick={() => handleStatus("pending_approval")}>Request Approval</button>
+                    <button className="btn-secondary w-full text-xs" onClick={() => handleStatus("active")}>Launch Directly</button>
+                  </div>
+                )}
+                {campaign.status === "pending_approval" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
+                      <Clock className="w-4 h-4" /> Pending approval
+                    </div>
+                    <button className="btn-primary w-full" onClick={() => handleStatus("active")}>Approve</button>
+                    <button className="btn-ghost w-full text-red-400 hover:text-red-300" onClick={() => handleStatus("draft")}>Reject</button>
+                  </div>
                 )}
                 {campaign.status === "active" && (
                   <button className="btn-secondary w-full" onClick={() => handleStatus("paused")}>Pause Campaign</button>

@@ -4,6 +4,7 @@ export enum CampaignStatus {
   Paused = "paused",
   Archived = "archived",
   Completed = "completed",
+  PendingApproval = "pending_approval",
 }
 
 export enum CampaignType {
