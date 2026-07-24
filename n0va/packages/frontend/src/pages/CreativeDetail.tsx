@@ -4,7 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
-import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText } from "lucide-react";
+import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText, MessageSquare } from "lucide-react";
+import NotesWidget from "../components/NotesWidget";
 
 export default function CreativeDetail() {
   const { id } = useParams();
@@ -358,6 +359,14 @@ export default function CreativeDetail() {
             <p className="text-sm">Not used in any campaigns yet</p>
           </div>
         )}
+      </div>
+
+      <div className="card">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className="w-5 h-5 text-n0va-400" />
+          <h3 className="text-lg font-semibold text-white">Notes</h3>
+        </div>
+        <NotesWidget entityType="creative" entityId={creative._id || creative.id} entityName={creative.name} />
       </div>
     </div>
   );

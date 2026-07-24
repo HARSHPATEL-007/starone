@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { api } from "../api/client";
-import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw, Play, Pause, Target, DollarSign } from "lucide-react";
+import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw, Play, Pause, Target, DollarSign, MessageSquare } from "lucide-react";
+import NotesWidget from "../components/NotesWidget";
 import { useToast } from "../components/Toast";
 
 export default function AudienceDetail() {
@@ -309,6 +310,14 @@ export default function AudienceDetail() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className="w-5 h-5 text-n0va-400" />
+          <h3 className="text-lg font-semibold text-white">Notes</h3>
+        </div>
+        <NotesWidget entityType="audience" entityId={audience._id || audience.id} entityName={audience.name} />
       </div>
     </div>
   );

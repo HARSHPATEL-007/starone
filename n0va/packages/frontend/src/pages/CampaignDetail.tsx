@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
+import NotesWidget from "../components/NotesWidget";
 
-type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule";
+type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes";
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -152,6 +153,7 @@ export default function CampaignDetail() {
     { id: "schedule", label: "Schedule", icon: Calendar },
     { id: "platforms", label: "Platforms", icon: Layers },
     { id: "hypercontext", label: "Hyper Context", icon: Target },
+    { id: "notes", label: "Notes", icon: MessageSquare },
   ];
 
   return (
@@ -443,6 +445,15 @@ export default function CampaignDetail() {
           ) : (
             <p className="text-gray-500 text-sm">No hyper context data.</p>
           )}
+        </div>
+      )}
+
+      {tab === "notes" && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Campaign Notes</h3>
+          </div>
+          <NotesWidget entityType="campaign" entityId={campaign._id || campaign.id} entityName={campaign.name} />
         </div>
       )}
 
