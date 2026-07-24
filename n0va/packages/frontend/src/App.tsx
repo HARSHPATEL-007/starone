@@ -48,6 +48,7 @@ import CampaignReview from "./pages/CampaignReview";
 import GlobalSearch from "./pages/GlobalSearch";
 import CampaignBriefGenerator from "./pages/CampaignBriefGenerator";
 import AccountPage from "./pages/Account";
+import BrandKit from "./pages/BrandKit";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -101,6 +102,7 @@ export default function App() {
                 <Route path="/search" element={<GlobalSearch />} />
                 <Route path="/brief-generator" element={<CampaignBriefGenerator />} />
                 <Route path="/account" element={<AccountPage />} />
+                <Route path="/brand-kit" element={<BrandKit />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

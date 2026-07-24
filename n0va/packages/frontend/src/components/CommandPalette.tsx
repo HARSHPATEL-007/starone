@@ -52,6 +52,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Search", route: "/search", icon: Search },
   { type: "page", label: "Brief Generator", route: "/brief-generator", icon: Sparkles },
   { type: "page", label: "Account", route: "/account", icon: User },
+  { type: "page", label: "Brand Kit", route: "/brand-kit", icon: Palette },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {

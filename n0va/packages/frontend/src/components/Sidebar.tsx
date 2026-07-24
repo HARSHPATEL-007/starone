@@ -73,6 +73,7 @@ const navItems = [
   { to: "/notifications", icon: Bell, label: "Notifications" },
   { to: "/hyper-context", icon: Layers, label: "Hyper-Context" },
   { to: "/webhooks", icon: Webhook, label: "Webhooks" },
+  { to: "/brand-kit", icon: Palette, label: "Brand Kit" },
   { to: "/account", icon: User, label: "Account" },
   { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/settings", icon: Settings, label: "Settings" },
