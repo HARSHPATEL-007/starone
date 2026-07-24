@@ -100,6 +100,7 @@ const navItems = [
   { to: "/ab-testing", icon: GitCompare, label: "A/B Testing" },
   { to: "/comments", icon: MessageCircle, label: "Comments" },
   { to: "/competitive-intel", icon: Crosshair, label: "Competitive Intel" },
+  { to: "/team", icon: Users, label: "Team" },
   { to: "/account", icon: User, label: "Account" },
   { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/help", icon: LifeBuoy, label: "Help & Support" },

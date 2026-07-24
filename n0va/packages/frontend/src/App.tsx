@@ -64,6 +64,7 @@ import HelpCenter from "./pages/HelpCenter";
 import Automation from "./pages/Automation";
 import Playbooks from "./pages/Playbooks";
 import ROICalculator from "./pages/ROICalculator";
+import Team from "./pages/Team";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -134,6 +135,7 @@ export default function App() {
                 <Route path="/automation" element={<Automation />} />
                 <Route path="/playbooks" element={<Playbooks />} />
                 <Route path="/roi-calculator" element={<ROICalculator />} />
+                <Route path="/team" element={<Team />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

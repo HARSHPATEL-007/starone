@@ -38,6 +38,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Automation", route: "/automation", icon: Zap },
   { type: "page", label: "Playbooks", route: "/playbooks", icon: BookTemplate },
   { type: "page", label: "ROI Calculator", route: "/roi-calculator", icon: Calculator },
+  { type: "page", label: "Team", route: "/team", icon: Users },
   { type: "page", label: "Hyper-Context", route: "/hyper-context", icon: Layers },
   { type: "page", label: "Webhooks", route: "/webhooks", icon: Activity },
   { type: "page", label: "Settings", route: "/settings", icon: Settings },
