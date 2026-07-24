@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import Sidebar from "./Sidebar";
 import CommandPalette from "./CommandPalette";
 import QuickActions from "./QuickActions";
+import AIAssistant from "./AIAssistant";
 
 interface LayoutProps {
   children: ReactNode;
@@ -57,6 +58,7 @@ export default function Layout({ children }: LayoutProps) {
       </main>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <QuickActions />
+      <AIAssistant />
     </div>
   );
 }
