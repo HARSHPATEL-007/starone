@@ -114,6 +114,11 @@ export default function CampaignBoard() {
     setShowForm(true);
   }
 
+  function resetForm(card?: BoardCard) {
+    if (card) setForm({ ...card, labels: [...card.labels] });
+    else setForm({ id: "", title: "", description: "", status: "idea", assignee: "", priority: "medium", dueDate: "", campaignName: "", labels: [], createdAt: "" });
+  }
+
   function moveCard(cardId: string, newStatus: BoardStatus) {
     if (!activeBoard) return;
     updateBoard({ ...activeBoard, cards: activeBoard.cards.map(c => c.id === cardId ? { ...c, status: newStatus } : c), updatedAt: new Date().toISOString() });

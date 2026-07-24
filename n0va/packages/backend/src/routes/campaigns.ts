@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { campaignService } from "../services/CampaignService";
 import { AppError } from "../middleware/errorHandler";
+import { webhookService } from "../services/WebhookService";
+import { io } from "../index";
 
 const router = Router();
 
@@ -91,8 +93,9 @@ router.post(
     const { name, type, budget, platforms, goal, startDate, endDate } = req.body;
     if (!name || !budget || !platforms) throw new AppError(400, "Missing required fields: name, budget, platforms");
 
+    let campaign: any;
     if (!DataStore.usingMemory()) {
-      const campaign = await campaignService.create({
+      campaign = await campaignService.create({
         tenantId,
         name,
         type: type || "performance",
@@ -103,9 +106,8 @@ router.post(
         endDate,
         createdBy: req.user!.userId,
       });
-      res.status(201).json(campaign);
     } else {
-      const campaign = await DataStore.createCampaign({
+      campaign = await DataStore.createCampaign({
         tenantId,
         name,
         type: type || "performance",
@@ -122,8 +124,18 @@ router.post(
         hyperContext: { linkedTasks: [], linkedDocs: [], linkedSheets: [], linkedCalendar: [] },
         createdBy: req.user!.userId,
       });
-      res.status(201).json(campaign);
     }
+
+    webhookService.emit({
+      type: "campaign.created",
+      tenantId,
+      source: "api",
+      payload: { campaignId: campaign._id, name, type: type || "performance", platforms },
+    });
+
+    io.to(`tenant:${tenantId}`).emit("campaign:created", campaign);
+
+    res.status(201).json(campaign);
   })
 );
 
@@ -135,15 +147,26 @@ router.patch(
     const { status } = req.body;
     if (!status) throw new AppError(400, "Missing status field");
 
+    let campaign: any;
     if (!DataStore.usingMemory()) {
-      const campaign = await campaignService.updateStatus(id, tenantId, status);
+      campaign = await campaignService.updateStatus(id, tenantId, status);
       if (!campaign) throw new AppError(404, "Campaign not found");
-      res.json(campaign);
     } else {
-      const campaign = await DataStore.updateCampaign(id, tenantId, { status });
+      campaign = await DataStore.updateCampaign(id, tenantId, { status });
       if (!campaign) throw new AppError(404, "Campaign not found");
-      res.json(campaign);
     }
+
+    const eventType = status === "active" ? "campaign.launched" : status === "paused" ? "campaign.paused" : "campaign.status_changed";
+    webhookService.emit({
+      type: eventType,
+      tenantId,
+      source: "api",
+      payload: { campaignId: id, status, name: campaign.name },
+    });
+
+    io.to(`campaign:${id}`).emit(`campaign:${id}:update`, { status, updatedAt: new Date().toISOString() });
+
+    res.json(campaign);
   })
 );
 
@@ -171,10 +194,10 @@ router.patch(
     const tenantId = req.user!.tenantId;
     const { daily, lifetime } = req.body;
 
+    let updated: any;
     if (!DataStore.usingMemory()) {
-      const updated = await campaignService.updateBudget(id, tenantId, { daily: daily || 0, lifetime: lifetime || 0 });
+      updated = await campaignService.updateBudget(id, tenantId, { daily: daily || 0, lifetime: lifetime || 0 });
       if (!updated) throw new AppError(404, "Campaign not found");
-      res.json(updated);
     } else {
       const campaign = await DataStore.findCampaignById(id, tenantId);
       if (!campaign) throw new AppError(404, "Campaign not found");
@@ -186,9 +209,17 @@ router.patch(
         update["budget.remaining"] = lifetime - (campaign.budget?.spent || 0);
       }
 
-      const updated = await DataStore.updateCampaign(id, tenantId, update);
-      res.json(updated);
+      updated = await DataStore.updateCampaign(id, tenantId, update);
     }
+
+    webhookService.emit({
+      type: "campaign.budget_updated",
+      tenantId,
+      source: "api",
+      payload: { campaignId: id, daily, lifetime },
+    });
+
+    res.json(updated);
   })
 );
 

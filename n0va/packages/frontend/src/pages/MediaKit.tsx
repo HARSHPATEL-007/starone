@@ -133,7 +133,7 @@ export default function MediaKit() {
     const content = `# ${kit.brandName}\n${kit.tagline}\n\n${kit.description}\n\nWebsite: ${kit.website}\nAudience: ${kit.audience}\nReach: ${fmt(kit.reach)}\n\n${kit.sections.map(s => `## ${s.title}\n${s.content}`).join("\n\n")}`;
     const blob = new Blob([content], { type: "text/markdown" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${kit.brandName.toLowerCase().replace(/\s+/g, "-")}-media-kit.md`; a.click();
-    URL.revokeObjectURL(blob);
+    URL.revokeObjectURL(a.href);
     addToast("success", "Media kit exported as Markdown");
   }
 

@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { AppError } from "./errorHandler";
+
+const JWT_SECRET = process.env.JWT_SECRET || "n0va-transcendent-secret-2026-q3-change-in-production";
 
 export interface AuthPayload {
   userId: string;
@@ -23,12 +26,14 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
 
   const token = authHeader.substring(7);
   try {
-    const decoded = Buffer.from(token, "base64").toString("utf-8");
-    const payload = JSON.parse(decoded) as AuthPayload;
-    req.user = payload;
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as AuthPayload;
+    req.user = decoded;
     next();
-  } catch {
-    throw new AppError(401, "Invalid token format");
+  } catch (err: any) {
+    if (err.name === "TokenExpiredError") {
+      throw new AppError(401, "Token expired");
+    }
+    throw new AppError(401, "Invalid token");
   }
 }
 
@@ -42,3 +47,5 @@ export function tenantMiddleware(req: Request, _res: Response, next: NextFunctio
   }
   next();
 }
+
+export { JWT_SECRET };

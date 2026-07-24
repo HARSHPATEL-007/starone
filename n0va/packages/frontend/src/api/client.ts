@@ -1,20 +1,38 @@
 const API_BASE = "/api/v1";
-const TENANT_ID = "tenant_001";
-const USER_TOKEN = btoa(JSON.stringify({ userId: "user_001", tenantId: TENANT_ID, role: "admin" }));
+
+function getToken(): string | null {
+  return localStorage.getItem("n0va_token");
+}
+
+function getTenantId(): string {
+  try {
+    const user = localStorage.getItem("n0va_user");
+    if (user) return JSON.parse(user).tenantId || "tenant_001";
+  } catch {}
+  return "tenant_001";
+}
 
 async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
+  const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${USER_TOKEN}`,
-    "x-tenant-id": TENANT_ID,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    "x-tenant-id": getTenantId(),
     ...(options.headers as Record<string, string>),
   };
 
   const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401) {
+    localStorage.removeItem("n0va_token");
+    localStorage.removeItem("n0va_user");
+    window.location.href = "/login";
+    throw new Error("Session expired");
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Request failed" }));
@@ -210,5 +228,23 @@ export const api = {
     updateTenant: (data: Record<string, unknown>) =>
       request<any>("/settings/tenant", { method: "PUT", body: JSON.stringify(data) }),
     modules: () => request<any>("/settings/modules"),
+  },
+  scheduler: {
+    list: () => request<any[]>("/scheduler"),
+    get: (id: string) => request<any>(`/scheduler/${id}`),
+    schedule: (data: { campaignId: string; type: string; executeAt: string; params?: Record<string, unknown> }) =>
+      request<any>("/scheduler", { method: "POST", body: JSON.stringify(data) }),
+    cancel: (id: string) => request<void>(`/scheduler/${id}`, { method: "DELETE" }),
+  },
+  auth: {
+    login: (email: string, password: string) =>
+      request<{ token: string; user: any }>("/auth/login", {
+        method: "POST", body: JSON.stringify({ email, password }),
+      }),
+    register: (email: string, password: string, name: string) =>
+      request<{ token: string; user: any }>("/auth/register", {
+        method: "POST", body: JSON.stringify({ email, password, name }),
+      }),
+    verify: () => request<{ valid: boolean; userId: string; tenantId: string; role: string }>("/auth/verify"),
   },
 };

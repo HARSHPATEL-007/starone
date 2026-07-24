@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { LayoutDashboard, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, GripVertical, Save, Eye, EyeOff, Copy, BarChart3, TrendingUp, DollarSign, Target, Users, Megaphone, CheckCircle, Activity, Bot, Palette, Calendar, Bell, Zap, Crosshair, Star, Clock } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
+import { api } from "../api/client";
 
 interface DashboardWidget {
   id: string;
@@ -80,6 +82,8 @@ const DASHBOARD_DEMOS: CustomDashboard[] = [
   },
 ];
 
+const COLORS = ["#1a6dff", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
+
 function load(): CustomDashboard[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -100,8 +104,6 @@ function timeAgo(date: string): string {
   return new Date(date).toLocaleDateString();
 }
 
-/* --- Widget renders --- */
-
 function KpiCard({ label, value, sub, icon: Icon, color }: { label: string; value: string; sub?: string; icon: any; color: string }) {
   return (
     <div className="card p-4 flex items-start gap-3">
@@ -115,14 +117,352 @@ function KpiCard({ label, value, sub, icon: Icon, color }: { label: string; valu
   );
 }
 
-function PlaceholderWidget({ label, icon: Icon }: { label: string; icon: any }) {
+/* --- Live widget components --- */
+
+function RevenueKpiWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.campaigns.dashboard().then(setData).catch(() => {}); }, []);
+  if (!data) return <div className="card p-4 animate-pulse h-24 bg-gray-900" />;
   return (
-    <div className="card p-6 flex flex-col items-center justify-center text-center min-h-[120px]">
-      <Icon className="w-6 h-6 text-gray-700 mb-2" />
-      <p className="text-xs text-gray-600">{label} widget</p>
-      <p className="text-[10px] text-gray-700 mt-1">Data preview</p>
+    <div className="card p-4">
+      <div className="grid grid-cols-3 gap-3">
+        <KpiCard label="Revenue" value={`$${((data.metrics?.totalRevenue ?? 0) / 1000).toFixed(1)}K`} icon={TrendingUp} color="bg-green-500/10" />
+        <KpiCard label="ROAS" value={(data.metrics?.avgRoas ?? 0).toFixed(2)} icon={BarChart3} color="bg-n0va-500/10" />
+        <KpiCard label="Spent" value={`$${((data.totalSpent ?? 0) / 1000).toFixed(1)}K`} icon={DollarSign} color="bg-yellow-500/10" />
+      </div>
     </div>
   );
+}
+
+function CampaignKpiWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.campaigns.list().then(setData).catch(() => {}); }, []);
+  const campaigns = Array.isArray(data) ? data : [];
+  const active = campaigns.filter((c: any) => c.status === "active").length;
+  const paused = campaigns.filter((c: any) => c.status === "paused").length;
+  const draft = campaigns.filter((c: any) => c.status === "draft").length;
+  return (
+    <div className="card p-4">
+      <div className="grid grid-cols-3 gap-3">
+        <KpiCard label="Active" value={String(active)} sub="running campaigns" icon={Megaphone} color="bg-green-500/10" />
+        <KpiCard label="Paused" value={String(paused)} icon={BarChart3} color="bg-yellow-500/10" />
+        <KpiCard label="Draft" value={String(draft)} icon={BarChart3} color="bg-gray-500/10" />
+      </div>
+    </div>
+  );
+}
+
+function AudienceKpiWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.audiences.list().then(setData).catch(() => {}); }, []);
+  const audiences = Array.isArray(data) ? data : [];
+  const totalReach = audiences.reduce((s: number, a: any) => s + (a.size || 0), 0);
+  return (
+    <div className="card p-4">
+      <div className="grid grid-cols-1 gap-3">
+        <KpiCard label="Total Reach" value={totalReach >= 1000000 ? `${(totalReach / 1000000).toFixed(1)}M` : totalReach >= 1000 ? `${(totalReach / 1000).toFixed(1)}K` : String(totalReach)} icon={Users} color="bg-purple-500/10" />
+        <KpiCard label="Segments" value={String(audiences.length)} icon={Target} color="bg-n0va-500/10" />
+      </div>
+    </div>
+  );
+}
+
+function PerformanceChartWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.analytics.overview("14").then(setData).catch(() => {}); }, []);
+  const daily = data?.dailyMetrics?.slice(-14) || [];
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-4"><h3 className="text-sm font-semibold text-white">Revenue & Impressions</h3><span className="text-xs text-gray-500">Last 14 days</span></div>
+      {daily.length === 0 ? <div className="h-48 flex items-center justify-center text-gray-600 text-sm">No data</div> : (
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={daily}>
+              <defs><linearGradient id="revG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#1a6dff" stopOpacity={0.3} /><stop offset="95%" stopColor="#1a6dff" stopOpacity={0} /></linearGradient></defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="date" stroke="#6b7280" fontSize={10} tickFormatter={(v) => v?.substring(5) || v} />
+              <YAxis stroke="#6b7280" fontSize={10} />
+              <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px", color: "#f3f4f6", fontSize: "12px" }} />
+              <Area type="monotone" dataKey="revenue" stroke="#1a6dff" fill="url(#revG)" strokeWidth={2} name="Revenue" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecentCampaignsWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.campaigns.list().then(setData).catch(() => {}); }, []);
+  const campaigns = (Array.isArray(data) ? data : []).slice(0, 5);
+  const statusColors: Record<string, string> = { active: "bg-green-500", paused: "bg-yellow-500", draft: "bg-gray-600", archived: "bg-gray-800", completed: "bg-n0va-500" };
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Recent Campaigns</h3>
+      {campaigns.length === 0 ? <p className="text-xs text-gray-600">No campaigns yet</p> : (
+        <div className="space-y-2">
+          {campaigns.map((c: any) => (
+            <div key={c._id} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-gray-300 truncate">{c.name || c.title}</p>
+                <p className="text-xs text-gray-600">{c.type || "campaign"} · ${((c.budget?.daily || 0) / 100).toFixed(0)}/day</p>
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[c.status] || "bg-gray-700"} text-white shrink-0`}>{c.status}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PendingApprovalsWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.campaigns.list().then(setData).catch(() => {}); }, []);
+  const pending = (Array.isArray(data) ? data : []).filter((c: any) => c.status === "draft").slice(0, 5);
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Pending Approvals</h3>
+      {pending.length === 0 ? <p className="text-xs text-green-400">All clear — no pending items</p> : (
+        <div className="space-y-2">
+          {pending.map((c: any) => (
+            <div key={c._id} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
+              <p className="text-sm text-gray-300 truncate">{c.name || c.title}</p>
+              <CheckCircle className="w-4 h-4 text-yellow-400 shrink-0" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BudgetStatusWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.campaigns.dashboard().then(setData).catch(() => {}); }, []);
+  if (!data) return <div className="card p-4 animate-pulse h-24 bg-gray-900" />;
+  const used = data.totalBudget ? ((data.totalSpent / data.totalBudget) * 100) : 0;
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Budget Status</h3>
+      <div className="flex flex-col items-center">
+        <div className="relative w-20 h-20 mb-2">
+          <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#1f2937" strokeWidth="8" />
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#1a6dff" strokeWidth="8" strokeDasharray={`${used * 2.01} 201`} strokeLinecap="round" />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center"><span className="text-sm font-bold text-white">{used.toFixed(0)}%</span></div>
+        </div>
+        <p className="text-xs text-gray-500">${((data.totalSpent ?? 0) / 1000).toFixed(1)}K of ${((data.totalBudget ?? 0) / 1000).toFixed(1)}K</p>
+      </div>
+    </div>
+  );
+}
+
+function ActivityFeedWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.activity.list().then((d) => setData(Array.isArray(d) ? d.slice(0, 5) : [])).catch(() => {}); }, []);
+  const items = data || [];
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Recent Activity</h3>
+      {items.length === 0 ? <p className="text-xs text-gray-600">No activity yet</p> : (
+        <div className="space-y-2">
+          {items.map((a: any, i: number) => (
+            <div key={a.id || i} className="flex items-start gap-2 py-1.5 border-b border-gray-800 last:border-0">
+              <Activity className="w-3 h-3 text-gray-600 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-gray-300">{a.action}</p>
+                <p className="text-[10px] text-gray-600">{a.userName} · {a.timestamp ? timeAgo(a.timestamp) : ""}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgentStatusWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.agents.list().then(setData).catch(() => {}); }, []);
+  const agents = Array.isArray(data) ? data : [];
+  const running = agents.filter((a: any) => a.status === "running").length;
+  const idle = agents.filter((a: any) => a.status === "idle").length;
+  const errors = agents.filter((a: any) => a.status === "error").length;
+  return (
+    <div className="card p-4">
+      <div className="grid grid-cols-3 gap-2">
+        <KpiCard label="Running" value={String(running)} icon={Bot} color="bg-green-500/10" />
+        <KpiCard label="Idle" value={String(idle)} icon={Bot} color="bg-gray-500/10" />
+        <KpiCard label="Errors" value={String(errors)} sub={errors > 0 ? "needs attention" : undefined} icon={Bot} color={errors > 0 ? "bg-red-500/10" : "bg-gray-500/10"} />
+      </div>
+    </div>
+  );
+}
+
+function GoalsProgressWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("n0va_goals");
+      if (raw) setData(JSON.parse(raw));
+    } catch {}
+  }, []);
+  const goals = Array.isArray(data) ? data.slice(0, 4) : [];
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Goals Progress</h3>
+      {goals.length === 0 ? <p className="text-xs text-gray-600">Set goals to track progress</p> : (
+        <div className="space-y-2">
+          {goals.map((g: any) => {
+            const progress = g.keyResults?.length ? Math.round(g.keyResults.filter((kr: any) => kr.status === "completed").length / g.keyResults.length * 100) : 0;
+            return (<div key={g.id} className="flex items-center justify-between py-1"><span className="text-xs text-gray-300 truncate flex-1">{g.title}</span><div className="flex items-center gap-2"><div className="w-16 h-1.5 bg-gray-800 rounded-full"><div className="h-full bg-n0va-500 rounded-full" style={{ width: `${progress}%` }} /></div><span className="text-xs text-gray-600 w-6 text-right">{progress}%</span></div></div>);
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ABTestStatusWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("n0va_ab_tests");
+      if (raw) setData(JSON.parse(raw));
+    } catch {}
+  }, []);
+  const tests = Array.isArray(data) ? data : [];
+  const running = tests.filter((t: any) => t.status === "running").length;
+  const completed = tests.filter((t: any) => t.status === "completed").length;
+  return (
+    <div className="card p-4">
+      <div className="grid grid-cols-2 gap-3">
+        <KpiCard label="Running" value={String(running)} icon={Zap} color="bg-n0va-500/10" />
+        <KpiCard label="Completed" value={String(completed)} icon={CheckCircle} color="bg-green-500/10" />
+      </div>
+    </div>
+  );
+}
+
+function CalendarPreviewWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.hypercontext.calendar.list().then((d) => setData(Array.isArray(d) ? d.slice(0, 5) : [])).catch(() => {}); }, []);
+  const events = data || [];
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Upcoming Schedule</h3>
+      {events.length === 0 ? <p className="text-xs text-gray-600">No upcoming events</p> : (
+        <div className="space-y-2">
+          {events.map((e: any) => (
+            <div key={e._id} className="flex items-center gap-3 py-1.5 border-b border-gray-800 last:border-0">
+              <div className="w-8 h-8 rounded-lg bg-n0va-500/10 flex items-center justify-center shrink-0"><Calendar className="w-4 h-4 text-n0va-400" /></div>
+              <div className="min-w-0 flex-1"><p className="text-xs text-gray-300 truncate">{e.title}</p><p className="text-[10px] text-gray-600">{e.startDate ? new Date(e.startDate).toLocaleDateString() : ""} · {e.type}</p></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ApprovalQueueWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => { api.campaigns.list().then(setData).catch(() => {}); }, []);
+  const draft = (Array.isArray(data) ? data : []).filter((c: any) => c.status === "draft");
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Approval Queue</h3>
+      {draft.length === 0 ? <p className="text-xs text-green-400">All campaigns approved</p> : (
+        <p className="text-2xl font-bold text-white">{draft.length}</p>
+      )}
+    </div>
+  );
+}
+
+function CompetitiveSnapshotWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("n0va_competitive_intel");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setData(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch {}
+  }, []);
+  const competitors = Array.isArray(data) ? data : [];
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Competitive Snapshot</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <KpiCard label="Competitors" value={String(competitors.length)} icon={Crosshair} color="bg-red-500/10" />
+        <KpiCard label="Recent Ads" value={String(competitors.reduce((s: number, c: any) => s + (c.recentAds?.length || 0), 0))} icon={Crosshair} color="bg-orange-500/10" />
+      </div>
+    </div>
+  );
+}
+
+function RecentCommentsWidget() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("n0va_comments");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setData(Array.isArray(parsed) ? parsed.slice(0, 4) : []);
+      }
+    } catch {}
+  }, []);
+  const comments = data || [];
+  return (
+    <div className="card p-4">
+      <h3 className="text-sm font-semibold text-white mb-3">Recent Comments</h3>
+      {comments.length === 0 ? <p className="text-xs text-gray-600">No discussions yet</p> : (
+        <div className="space-y-2">
+          {comments.map((c: any, i: number) => (
+            <div key={c.id || i} className="flex items-start gap-2 py-1.5 border-b border-gray-800 last:border-0">
+              <Star className="w-3 h-3 text-gray-600 mt-0.5 shrink-0" />
+              <div><p className="text-xs text-gray-300 truncate">{c.text || c.content}</p><p className="text-[10px] text-gray-600">{c.author || "User"}</p></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const WIDGET_COMPONENTS: Record<string, () => JSX.Element> = {
+  kpi_revenue: RevenueKpiWidget,
+  kpi_campaigns: CampaignKpiWidget,
+  kpi_audience: AudienceKpiWidget,
+  chart_performance: PerformanceChartWidget,
+  recent_campaigns: RecentCampaignsWidget,
+  pending_approvals: PendingApprovalsWidget,
+  budget_status: BudgetStatusWidget,
+  activity_feed: ActivityFeedWidget,
+  agent_status: AgentStatusWidget,
+  goals_progress: GoalsProgressWidget,
+  ab_testing: ABTestStatusWidget,
+  calendar_preview: CalendarPreviewWidget,
+  approval_queue: ApprovalQueueWidget,
+  competitive_snapshot: CompetitiveSnapshotWidget,
+  recent_comments: RecentCommentsWidget,
+};
+
+function WidgetRenderer({ type, label }: { type: string; label: string }) {
+  const Widget = WIDGET_COMPONENTS[type];
+  if (!Widget) {
+    return (
+      <div className="card p-6 flex flex-col items-center justify-center text-center min-h-[120px]">
+        <BarChart3 className="w-6 h-6 text-gray-700 mb-2" />
+        <p className="text-xs text-gray-600">{label}</p>
+      </div>
+    );
+  }
+  return <Widget />;
 }
 
 export default function CustomDashboards() {
@@ -250,7 +590,6 @@ export default function CustomDashboards() {
 
   return (
     <div className="space-y-6">
-      {/* Header + dashboard tabs */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {dashboards.map(db => (
@@ -267,7 +606,6 @@ export default function CustomDashboards() {
         </div>
       </div>
 
-      {/* Rename modal */}
       {editingId && active && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditingId(null)}>
           <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
@@ -282,66 +620,48 @@ export default function CustomDashboards() {
 
       {active && (
         <>
-          {/* Dashboard info */}
           <div className="flex items-center justify-between text-sm text-gray-500">
             <span>{active.widgets.filter(w => w.visible).length} visible widgets · Updated {timeAgo(active.updatedAt)}</span>
             <button onClick={() => setShowWidgetPicker(true)} className="text-n0va-400 hover:text-n0va-300 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add Widget</button>
           </div>
 
-          {/* Widget grid */}
           <div className="space-y-4">
-            {/* Full width widgets */}
             <div className="space-y-4">
-              {active.widgets.filter(w => w.width === "full" && w.visible).map(w => {
-                const tmpl = WIDGET_TEMPLATES.find(t => t.type === w.type);
-                const Icon = tmpl?.icon || BarChart3;
-                return (
-                  <div key={w.id} className="relative group">
-                    <PlaceholderWidget label={w.label} icon={Icon} />
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => toggleWidgetVisibility(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-gray-300"><EyeOff className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => removeWidget(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
-                    </div>
+              {active.widgets.filter(w => w.width === "full" && w.visible).map(w => (
+                <div key={w.id} className="relative group">
+                  <WidgetRenderer type={w.type} label={w.label} />
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => toggleWidgetVisibility(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-gray-300"><EyeOff className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeWidget(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Half width widgets */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {active.widgets.filter(w => w.width === "half" && w.visible).map(w => {
-                const tmpl = WIDGET_TEMPLATES.find(t => t.type === w.type);
-                const Icon = tmpl?.icon || BarChart3;
-                return (
-                  <div key={w.id} className="relative group">
-                    <PlaceholderWidget label={w.label} icon={Icon} />
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => toggleWidgetVisibility(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-gray-300"><EyeOff className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => removeWidget(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
-                    </div>
+              {active.widgets.filter(w => w.width === "half" && w.visible).map(w => (
+                <div key={w.id} className="relative group">
+                  <WidgetRenderer type={w.type} label={w.label} />
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => toggleWidgetVisibility(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-gray-300"><EyeOff className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeWidget(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Third width widgets */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {active.widgets.filter(w => w.width === "third" && w.visible).map(w => {
-                const tmpl = WIDGET_TEMPLATES.find(t => t.type === w.type);
-                const Icon = tmpl?.icon || BarChart3;
-                return (
-                  <div key={w.id} className="relative group">
-                    <PlaceholderWidget label={w.label} icon={Icon} />
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => toggleWidgetVisibility(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-gray-300"><EyeOff className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => removeWidget(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
-                    </div>
+              {active.widgets.filter(w => w.width === "third" && w.visible).map(w => (
+                <div key={w.id} className="relative group">
+                  <WidgetRenderer type={w.type} label={w.label} />
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => toggleWidgetVisibility(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-gray-300"><EyeOff className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeWidget(w.id)} className="p-1 bg-gray-800 rounded text-gray-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Hidden widgets indicator */}
             {active.widgets.filter(w => !w.visible).length > 0 && (
               <div className="text-center py-4 text-xs text-gray-600">
                 {active.widgets.filter(w => !w.visible).length} hidden widget{active.widgets.filter(w => !w.visible).length !== 1 ? "s" : ""}
@@ -352,7 +672,6 @@ export default function CustomDashboards() {
         </>
       )}
 
-      {/* Widget picker */}
       {showWidgetPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowWidgetPicker(false)}>
           <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>

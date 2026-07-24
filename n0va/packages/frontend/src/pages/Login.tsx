@@ -1,21 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 
 interface LoginCredentials {
   email: string;
   password: string;
+  name?: string;
 }
-
-const MOCK_USERS = [
-  { email: "admin@n0va.io", password: "admin123", name: "Jane Doe", role: "admin", tenantId: "tenant_001", userId: "user_001" },
-  { email: "manager@n0va.io", password: "manager123", name: "John Smith", role: "manager", tenantId: "tenant_001", userId: "user_002" },
-  { email: "analyst@n0va.io", password: "analyst123", name: "Alice Wang", role: "analyst", tenantId: "tenant_001", userId: "user_003" },
-];
 
 export default function Login() {
   const navigate = useNavigate();
-  const [credentials, setCredentials] = useState<LoginCredentials>({ email: "", password: "" });
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [credentials, setCredentials] = useState<LoginCredentials>({ email: "", password: "", name: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,15 +22,20 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const endpoint = mode === "login" ? "/api/v1/auth/login" : "/api/v1/auth/register";
+      const body = mode === "login"
+        ? { email: credentials.email, password: credentials.password }
+        : { email: credentials.email, password: credentials.password, name: credentials.name };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Login failed" }));
-        throw new Error(err.error || "Login failed");
+        const err = await res.json().catch(() => ({ error: mode === "login" ? "Login failed" : "Registration failed" }));
+        throw new Error(err.error || (mode === "login" ? "Login failed" : "Registration failed"));
       }
 
       const data = await res.json();
@@ -42,7 +43,7 @@ export default function Login() {
       localStorage.setItem("n0va_user", JSON.stringify(data.user));
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -56,13 +57,27 @@ export default function Login() {
             N0
           </div>
           <h1 className="text-2xl font-bold text-white">N0VA Ads & Marketing</h1>
-          <p className="text-gray-500 mt-1">Sign in to your account</p>
+          <p className="text-gray-500 mt-1">{mode === "login" ? "Sign in to your account" : "Create your account"}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-5">
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
               {error}
+            </div>
+          )}
+
+          {mode === "register" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">Name</label>
+              <input
+                type="text"
+                value={credentials.name}
+                onChange={(e) => setCredentials({ ...credentials, name: e.target.value })}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:border-n0va-500 focus:outline-none"
+                placeholder="Your name"
+                required
+              />
             </div>
           )}
 
@@ -88,6 +103,7 @@ export default function Login() {
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm pr-10 focus:border-n0va-500 focus:outline-none"
                 placeholder="••••••••"
                 required
+                minLength={6}
               />
               <button
                 type="button"
@@ -106,23 +122,39 @@ export default function Login() {
           >
             {loading ? (
               <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-            ) : (
+            ) : mode === "login" ? (
               <LogIn className="w-4 h-4" />
+            ) : (
+              <UserPlus className="w-4 h-4" />
             )}
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
           </button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+              className="text-sm text-n0va-400 hover:text-n0va-300"
+            >
+              {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </button>
+          </div>
 
           <div className="border-t border-gray-800 pt-4">
             <p className="text-xs text-gray-500 mb-2 text-center">Demo accounts</p>
             <div className="space-y-1.5 text-xs text-gray-500">
-              {MOCK_USERS.map((u) => (
+              {[
+                { email: "admin@n0va.io", password: "admin123", role: "admin" },
+                { email: "manager@n0va.io", password: "manager123", role: "manager" },
+                { email: "analyst@n0va.io", password: "analyst123", role: "analyst" },
+              ].map((u) => (
                 <button
                   key={u.email}
                   type="button"
                   className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-800 transition-colors"
-                  onClick={() => setCredentials({ email: u.email, password: u.password })}
+                  onClick={() => setCredentials({ ...credentials, email: u.email, password: u.password })}
                 >
-                  <span className="text-gray-300">{u.role}</span> — {u.email} / {u.password}
+                  <span className="text-gray-300">{u.role}</span> — {u.email}
                 </button>
               ))}
             </div>

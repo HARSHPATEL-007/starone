@@ -10,6 +10,8 @@ import { config } from "./config";
 import { authMiddleware, tenantMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
+import { schedulerService } from "./services/SchedulerService";
+
 import authRoutes from "./routes/auth";
 import campaignRoutes from "./routes/campaigns";
 import agentRoutes from "./routes/agents";
@@ -26,6 +28,7 @@ import settingsRoutes from "./routes/settings";
 import hyperContextRoutes from "./routes/hypercontext";
 import notificationsRoutes from "./routes/notifications";
 import activityRoutes from "./routes/activity";
+import schedulerRoutes from "./routes/scheduler";
 
 const app = express();
 const httpServer = createServer(app);
@@ -67,6 +70,7 @@ app.use("/api/v1/settings", authMiddleware, tenantMiddleware, settingsRoutes);
 app.use("/api/v1/hypercontext", authMiddleware, tenantMiddleware, hyperContextRoutes);
 app.use("/api/v1/notifications", authMiddleware, tenantMiddleware, notificationsRoutes);
 app.use("/api/v1/activity", authMiddleware, tenantMiddleware, activityRoutes);
+app.use("/api/v1/scheduler", authMiddleware, tenantMiddleware, schedulerRoutes);
 
 app.use(errorHandler);
 
@@ -90,6 +94,8 @@ async function start() {
     console.log("MongoDB not available — using in-memory store with seed data");
     usingMemoryStore = true;
   }
+
+  schedulerService.start(30000);
 
   httpServer.listen(config.port, () => {
     console.log(`N0VA Ads & Marketing API running on port ${config.port}`);
