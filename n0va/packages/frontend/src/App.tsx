@@ -75,6 +75,9 @@ import SmartLists from "./pages/SmartLists";
 import Briefs from "./pages/Briefs";
 import LandingPages from "./pages/LandingPages";
 import CostTracker from "./pages/CostTracker";
+import MarketingForms from "./pages/MarketingForms";
+import ChannelPerformance from "./pages/ChannelPerformance";
+import KeywordManager from "./pages/KeywordManager";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -156,6 +159,9 @@ export default function App() {
                 <Route path="/briefs" element={<Briefs />} />
                 <Route path="/landing-pages" element={<LandingPages />} />
                 <Route path="/cost-tracker" element={<CostTracker />} />
+                <Route path="/forms" element={<MarketingForms />} />
+                <Route path="/channel-performance" element={<ChannelPerformance />} />
+                <Route path="/keywords" element={<KeywordManager />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
