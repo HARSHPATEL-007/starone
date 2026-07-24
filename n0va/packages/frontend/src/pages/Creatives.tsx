@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft, CheckSquare, Square } from "lucide-react";
+import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft, CheckSquare, Square, Wand2 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -98,6 +98,9 @@ export default function Creatives() {
           <button className="btn-secondary flex items-center gap-2" onClick={handleExport} disabled={creatives.length === 0}>
             <Download className="w-4 h-4" /> Export
           </button>
+          <Link to="/creatives/new" className="btn-secondary flex items-center gap-2">
+            <Wand2 className="w-4 h-4" /> Creative Builder
+          </Link>
           <button className="btn-primary flex items-center gap-2" onClick={() => setShowCreate(true)}>
             <Plus className="w-4 h-4" /> New Creative
           </button>

@@ -38,6 +38,10 @@ import CampaignCalendar from "./pages/CampaignCalendar";
 import ReportCenter from "./pages/ReportCenter";
 import AudienceBuilder from "./pages/AudienceBuilder";
 import Billing from "./pages/Billing";
+import AgentCreator from "./pages/AgentCreator";
+import CreativeBuilder from "./pages/CreativeBuilder";
+import RecipeBuilder from "./pages/RecipeBuilder";
+import CampaignComparison from "./pages/CampaignComparison";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -62,16 +66,19 @@ export default function App() {
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
                 <Route path="/creatives" element={<Creatives />} />
+                <Route path="/creatives/new" element={<CreativeBuilder />} />
                 <Route path="/creatives/:id" element={<CreativeDetail />} />
                 <Route path="/audiences" element={<Audiences />} />
                 <Route path="/audiences/new" element={<AudienceBuilder />} />
                 <Route path="/audiences/:id" element={<AudienceDetail />} />
                 <Route path="/agents" element={<Agents />} />
+                <Route path="/agents/new" element={<AgentCreator />} />
                 <Route path="/agents/:id" element={<AgentDetail />} />
                 <Route path="/platforms" element={<Platforms />} />
                 <Route path="/platforms/:id" element={<PlatformDetail />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/recipes" element={<Recipes />} />
+                <Route path="/recipes/new" element={<RecipeBuilder />} />
                 <Route path="/recipes/:id" element={<RecipeDetail />} />
                 <Route path="/war-room" element={<WarRoom />} />
                 <Route path="/fraud-evaluation" element={<FraudEvaluation />} />
@@ -81,6 +88,7 @@ export default function App() {
                 <Route path="/platform-health" element={<PlatformHealth />} />
                 <Route path="/creative-fatigue" element={<CreativeFatigue />} />
                 <Route path="/campaign-calendar" element={<CampaignCalendar />} />
+                <Route path="/campaign-comparison" element={<CampaignComparison />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

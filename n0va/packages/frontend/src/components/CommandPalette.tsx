@@ -42,6 +42,10 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Connected Accounts", route: "/connected-accounts", icon: Link2 },
   { type: "page", label: "Reports", route: "/reports", icon: FileText },
   { type: "page", label: "Billing", route: "/billing", icon: CreditCard },
+  { type: "page", label: "New Agent", route: "/agents/new", icon: Bot },
+  { type: "page", label: "New Creative", route: "/creatives/new", icon: Palette },
+  { type: "page", label: "New Recipe", route: "/recipes/new", icon: FileJson },
+  { type: "page", label: "Campaign Comparison", route: "/campaign-comparison", icon: GitCompare },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {

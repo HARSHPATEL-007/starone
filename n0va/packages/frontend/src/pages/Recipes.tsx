@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X, Search, ExternalLink } from "lucide-react";
+import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X, Search, ExternalLink, Wand2 } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
@@ -100,9 +100,14 @@ export default function Recipes() {
           <h1 className="text-2xl font-bold text-white">N0VA1O Recipes</h1>
           <p className="text-gray-500 mt-1">Compiled deterministic workflows that bypass LLM inference</p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={openCreate}>
-          <FileJson className="w-4 h-4" /> New Recipe
-        </button>
+        <div className="flex items-center gap-2">
+          <Link to="/recipes/new" className="btn-secondary flex items-center gap-2">
+            <Wand2 className="w-4 h-4" /> Recipe Builder
+          </Link>
+          <button className="btn-primary flex items-center gap-2" onClick={openCreate}>
+            <FileJson className="w-4 h-4" /> New Recipe
+          </button>
+        </div>
       </div>
 
       <div className="relative max-w-md">

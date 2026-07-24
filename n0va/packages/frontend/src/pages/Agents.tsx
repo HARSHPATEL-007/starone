@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Play, Pause, RotateCcw, Settings, X, TrendingUp, Activity, History, Eye, EyeOff, ExternalLink, Search } from "lucide-react";
+import { Bot, Play, Pause, RotateCcw, Settings, X, TrendingUp, Activity, History, Eye, EyeOff, ExternalLink, Search, Plus } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
@@ -83,11 +83,16 @@ export default function Agents() {
           <h1 className="text-2xl font-bold text-white">AI Agents</h1>
           <p className="text-gray-500 mt-1">Autonomous agent swarm for 24/7 campaign optimization</p>
         </div>
-        {agents.length === 0 && (
-          <button className="btn-primary flex items-center gap-2" onClick={setupDefaultAgents}>
-            <Bot className="w-4 h-4" /> Deploy Agent Swarm
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {agents.length === 0 && (
+            <button className="btn-secondary flex items-center gap-2" onClick={setupDefaultAgents}>
+              <Bot className="w-4 h-4" /> Deploy Agent Swarm
+            </button>
+          )}
+          <Link to="/agents/new" className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> New Agent
+          </Link>
+        </div>
       </div>
 
       <div className="relative max-w-md">
