@@ -53,6 +53,7 @@ import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-calendar", icon: CalendarIcon, label: "Calendar" },
   { to: "/marketing-calendar", icon: CalendarDays, label: "Marketing Calendar" },
