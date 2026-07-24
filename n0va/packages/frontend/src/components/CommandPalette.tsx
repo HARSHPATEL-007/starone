@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2, FileText, CreditCard } from "lucide-react";
+import { Search, Megaphone, Palette, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2, FileText, CreditCard, CheckSquare } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -48,6 +48,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Campaign Comparison", route: "/campaign-comparison", icon: GitCompare },
   { type: "page", label: "Insights", route: "/insights", icon: TrendingUp },
   { type: "page", label: "Templates", route: "/templates", icon: FileText },
+  { type: "page", label: "Review Board", route: "/campaign-review", icon: CheckSquare },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {

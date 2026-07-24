@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import CommandPalette from "./CommandPalette";
+import QuickActions from "./QuickActions";
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,6 +31,7 @@ export default function Layout({ children }: LayoutProps) {
         <div className="p-8 max-w-7xl mx-auto">{children}</div>
       </main>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <QuickActions />
     </div>
   );
 }
