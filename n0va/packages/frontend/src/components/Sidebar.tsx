@@ -35,6 +35,7 @@ import {
   History,
   Sparkles,
   User,
+  Upload,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -50,6 +51,7 @@ const navItems = [
   { to: "/brief-generator", icon: Sparkles, label: "Brief Generator" },
   { to: "/creatives", icon: Palette, label: "Creatives" },
   { to: "/creatives/new", icon: Palette, label: "New Creative" },
+  { to: "/import", icon: Upload, label: "Data Import" },
   { to: "/audiences", icon: Users, label: "Audiences" },
   { to: "/audiences/new", icon: UserPlus, label: "Audience Builder" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
