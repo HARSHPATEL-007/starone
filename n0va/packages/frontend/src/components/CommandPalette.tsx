@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -55,6 +55,9 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Campaign Archive", route: "/campaign-archive", icon: Archive },
   { type: "page", label: "Snapshots", route: "/campaign-snapshots", icon: Camera },
   { type: "page", label: "Lead Scoring", route: "/lead-scoring", icon: Award },
+  { type: "page", label: "Social Publisher", route: "/social-publisher", icon: Send },
+  { type: "page", label: "Campaign Alerts", route: "/campaign-alerts", icon: Bell },
+  { type: "page", label: "Ad Copy", route: "/ad-copy", icon: FileText },
   { type: "page", label: "Hyper-Context", route: "/hyper-context", icon: Layers },
   { type: "page", label: "Webhooks", route: "/webhooks", icon: Activity },
   { type: "page", label: "Settings", route: "/settings", icon: Settings },
