@@ -78,6 +78,9 @@ import CostTracker from "./pages/CostTracker";
 import MarketingForms from "./pages/MarketingForms";
 import ChannelPerformance from "./pages/ChannelPerformance";
 import KeywordManager from "./pages/KeywordManager";
+import CampaignArchive from "./pages/CampaignArchive";
+import LeadScoring from "./pages/LeadScoring";
+import CampaignSnapshots from "./pages/CampaignSnapshots";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -162,6 +165,9 @@ export default function App() {
                 <Route path="/forms" element={<MarketingForms />} />
                 <Route path="/channel-performance" element={<ChannelPerformance />} />
                 <Route path="/keywords" element={<KeywordManager />} />
+                <Route path="/campaign-archive" element={<CampaignArchive />} />
+                <Route path="/lead-scoring" element={<LeadScoring />} />
+                <Route path="/campaign-snapshots" element={<CampaignSnapshots />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
