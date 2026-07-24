@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap,   Sparkles, User, Upload, Download, FolderOpen, Target } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -37,6 +37,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Help & Support", route: "/help", icon: LifeBuoy },
   { type: "page", label: "Automation", route: "/automation", icon: Zap },
   { type: "page", label: "Playbooks", route: "/playbooks", icon: BookTemplate },
+  { type: "page", label: "ROI Calculator", route: "/roi-calculator", icon: Calculator },
   { type: "page", label: "Hyper-Context", route: "/hyper-context", icon: Layers },
   { type: "page", label: "Webhooks", route: "/webhooks", icon: Activity },
   { type: "page", label: "Settings", route: "/settings", icon: Settings },
