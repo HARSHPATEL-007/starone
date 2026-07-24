@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2, FileText, CreditCard, CheckSquare, CheckCircle, Sparkles, User, Upload, Download } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3, Shield, Layers, Activity, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split, SearchX, Bell, Link2, FileText, CreditCard, CheckSquare, CheckCircle,   Sparkles, User, Upload, Download, FolderOpen, Target } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -59,6 +59,8 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Launch Checklist", route: "/launch-checklist", icon: CheckSquare },
   { type: "page", label: "Marketing Calendar", route: "/marketing-calendar", icon: CalendarDays },
   { type: "page", label: "Export Center", route: "/export", icon: Download },
+  { type: "page", label: "Content Library", route: "/content-library", icon: FolderOpen },
+  { type: "page", label: "Goals & OKRs", route: "/goals", icon: Target },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {
