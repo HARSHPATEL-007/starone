@@ -75,6 +75,7 @@ const navItems = [
   { to: "/export", icon: Download, label: "Export Center" },
   { to: "/audiences", icon: Users, label: "Audiences" },
   { to: "/audiences/new", icon: UserPlus, label: "Audience Builder" },
+  { to: "/segmentation", icon: Split, label: "Segmentation" },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
   { to: "/reports", icon: FileText, label: "Reports" },
   { to: "/war-room", icon: Shield, label: "War Room" },

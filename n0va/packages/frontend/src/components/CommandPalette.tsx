@@ -42,6 +42,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Audit Log", route: "/audit-log", icon: ScrollText },
   { type: "page", label: "Custom Dashboards", route: "/custom-dashboards", icon: LayoutDashboard },
   { type: "page", label: "Ad Preview", route: "/ad-preview", icon: Eye },
+  { type: "page", label: "Segmentation", route: "/segmentation", icon: Split },
   { type: "page", label: "Hyper-Context", route: "/hyper-context", icon: Layers },
   { type: "page", label: "Webhooks", route: "/webhooks", icon: Activity },
   { type: "page", label: "Settings", route: "/settings", icon: Settings },
