@@ -229,6 +229,40 @@ export const api = {
       request<any>("/settings/tenant", { method: "PUT", body: JSON.stringify(data) }),
     modules: () => request<any>("/settings/modules"),
   },
+  entities: {
+    list: (entityType: string, params?: string) =>
+      request<any[]>(`/entities/${entityType}${params ? `?${params}` : ""}`),
+    get: (entityType: string, id: string) =>
+      request<any>(`/entities/${entityType}/${id}`),
+    create: (entityType: string, data: Record<string, unknown>) =>
+      request<any>(`/entities/${entityType}`, { method: "POST", body: JSON.stringify(data) }),
+    update: (entityType: string, id: string, data: Record<string, unknown>) =>
+      request<any>(`/entities/${entityType}/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (entityType: string, id: string) =>
+      request<void>(`/entities/${entityType}/${id}`, { method: "DELETE" }),
+    deleteAll: (entityType: string) =>
+      request<{ deleted: number }>(`/entities/${entityType}`, { method: "DELETE" }),
+  },
+  insights: {
+    health: {
+      all: () => request<any[]>("/insights/health"),
+      get: (campaignId: string) => request<any>(`/insights/health/${campaignId}`),
+      sample: () => request<any[]>("/insights/health/sample"),
+    },
+    leadScoring: {
+      defaultModel: () => request<any>("/insights/lead-scoring/models/default"),
+      evaluate: (model: any, lead: any) =>
+        request<any>("/insights/lead-scoring/evaluate", { method: "POST", body: JSON.stringify({ model, lead }) }),
+      sample: () => request<any>("/insights/lead-scoring/sample"),
+    },
+    roi: {
+      calculate: (data: Record<string, unknown>) =>
+        request<any>("/insights/roi/calculate", { method: "POST", body: JSON.stringify(data) }),
+      compare: (scenarios: Record<string, unknown>[]) =>
+        request<any>("/insights/roi/compare", { method: "POST", body: JSON.stringify({ scenarios }) }),
+      sample: () => request<any[]>("/insights/roi/sample"),
+    },
+  },
   scheduler: {
     list: () => request<any[]>("/scheduler"),
     get: (id: string) => request<any>(`/scheduler/${id}`),

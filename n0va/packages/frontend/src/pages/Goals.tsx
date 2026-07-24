@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Target, TrendingUp, Users, Award, Eye, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, BarChart3, Circle, CheckCircle2, AlertTriangle, Flag } from "lucide-react";
+import { Target, TrendingUp, Users, Award, Eye, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, Circle, CheckCircle2, AlertTriangle, Flag } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 interface KeyResult {
   id: string;
@@ -21,7 +22,6 @@ interface Goal {
   createdAt: string;
 }
 
-const STORAGE_KEY = "n0va_goals";
 const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
 const GOAL_TYPES = [
   { value: "revenue", label: "Revenue", icon: TrendingUp, color: "text-green-400 bg-green-500/10" },
@@ -30,52 +30,6 @@ const GOAL_TYPES = [
   { value: "engagement", label: "Engagement", icon: Eye, color: "text-amber-400 bg-amber-500/10" },
   { value: "other", label: "Other", icon: Target, color: "text-gray-400 bg-gray-500/10" },
 ];
-
-const DEFAULT_GOALS: Goal[] = [
-  {
-    id: "demo-1",
-    name: "Q3 Revenue Growth",
-    description: "Increase quarterly revenue through campaign optimization",
-    quarter: "Q3", year: 2026, type: "revenue",
-    keyResults: [
-      { id: "kr-1", description: "Generate $500K in pipeline", target: 500000, current: 320000, unit: "USD" },
-      { id: "kr-2", description: "Close $200K in new business", target: 200000, current: 145000, unit: "USD" },
-      { id: "kr-3", description: "Improve average deal size by 15%", target: 15, current: 12, unit: "%" },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-2",
-    name: "Q3 Lead Generation",
-    description: "Drive qualified leads across all channels",
-    quarter: "Q3", year: 2026, type: "leads",
-    keyResults: [
-      { id: "kr-4", description: "10,000 new MQLs", target: 10000, current: 7200, unit: "leads" },
-      { id: "kr-5", description: "1,500 SQLs", target: 1500, current: 890, unit: "leads" },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-3",
-    name: "Brand Awareness Q3",
-    description: "Expand brand reach and recognition",
-    quarter: "Q3", year: 2026, type: "brand",
-    keyResults: [
-      { id: "kr-6", description: "Reach 2M impressions", target: 2000000, current: 1850000, unit: "impressions" },
-      { id: "kr-7", description: "Grow social following by 25K", target: 25000, current: 18300, unit: "followers" },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-];
-
-function load(): Goal[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_GOALS));
-    return DEFAULT_GOALS;
-  } catch { return []; }
-}
 
 function progress(krs: KeyResult[]): number {
   if (krs.length === 0) return 0;
@@ -98,15 +52,22 @@ export default function Goals() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", description: "", quarter: "Q3", year: 2026, type: "revenue" as Goal["type"], keyResults: [] as KeyResult[] });
   const [filterQuarter, setFilterQuarter] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
 
-  useEffect(() => { setGoals(load()); }, []);
+  useEffect(() => {
+    api.entities.list("goals").then(d => setGoals(d || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
 
-  function persist(updated: Goal[]) {
+  async function persist(updated: Goal[]) {
     setGoals(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      const existing = await api.entities.list("goals");
+      if (existing && existing.length > 0) await api.entities.deleteAll("goals");
+      for (const g of updated) await api.entities.create("goals", g as any);
+    } catch {}
   }
 
   function toggle(id: string) {
@@ -287,8 +248,16 @@ export default function Goals() {
         </div>
       )}
 
+      {/* Loading */}
+      {loading && (
+        <div className="card p-12 flex items-center justify-center text-center">
+          <Target className="w-6 h-6 text-n0va-400 animate-pulse" />
+          <span className="ml-3 text-gray-400">Loading goals...</span>
+        </div>
+      )}
+
       {/* Empty state */}
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <Target className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No goals found</h3>

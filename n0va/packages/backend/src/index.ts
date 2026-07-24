@@ -29,6 +29,8 @@ import hyperContextRoutes from "./routes/hypercontext";
 import notificationsRoutes from "./routes/notifications";
 import activityRoutes from "./routes/activity";
 import schedulerRoutes from "./routes/scheduler";
+import entityRoutes from "./routes/entities";
+import insightsRoutes from "./routes/insights";
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +73,8 @@ app.use("/api/v1/hypercontext", authMiddleware, tenantMiddleware, hyperContextRo
 app.use("/api/v1/notifications", authMiddleware, tenantMiddleware, notificationsRoutes);
 app.use("/api/v1/activity", authMiddleware, tenantMiddleware, activityRoutes);
 app.use("/api/v1/scheduler", authMiddleware, tenantMiddleware, schedulerRoutes);
+app.use("/api/v1/entities", authMiddleware, tenantMiddleware, entityRoutes);
+app.use("/api/v1/insights", authMiddleware, tenantMiddleware, insightsRoutes);
 
 app.use(errorHandler);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Edit3, Trash2, Copy, Search, TrendingUp, Users, DollarSign, Target, Mail, Eye, MousePointerClick, ShoppingCart, Globe, Smartphone, Award, Clock } from "lucide-react";
+import { Plus, X, Edit3, Trash2, Search, TrendingUp, Users, Target, Mail, Eye, MousePointerClick, ShoppingCart, Globe, Smartphone, Award, Clock } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 type ScoringField = "email_open" | "link_click" | "page_visit" | "form_submit" | "demo_request" | "download" | "purchase" | "social_share" | "support_ticket" | "website_time" | "page_depth" | "device_type" | "location" | "referral_source";
 
@@ -35,9 +36,6 @@ interface LeadRecord {
   source: string;
 }
 
-const STORAGE_KEY = "n0va_lead_scoring_models";
-const LEAD_KEY = "n0va_lead_scores";
-
 const FIELD_META: Record<string, { label: string; icon: any }> = {
   email_open: { label: "Email Open", icon: Mail },
   link_click: { label: "Link Click", icon: MousePointerClick },
@@ -55,70 +53,6 @@ const FIELD_META: Record<string, { label: string; icon: any }> = {
   referral_source: { label: "Referral Source", icon: Users },
 };
 
-const DEFAULT_MODELS: LeadScoreModel[] = [
-  {
-    id: "lsm-1", name: "B2B Lead Scoring", description: "Score enterprise leads based on engagement and fit",
-    rules: [
-      { id: "lr-1", field: "demo_request", operator: "gte", value: "1", points: 30 },
-      { id: "lr-2", field: "form_submit", operator: "gte", value: "2", points: 20 },
-      { id: "lr-3", field: "download", operator: "gte", value: "3", points: 15 },
-      { id: "lr-4", field: "email_open", operator: "gte", value: "5", points: 10 },
-      { id: "lr-5", field: "purchase", operator: "gte", value: "1", points: 50 },
-    ],
-    minThreshold: 60, maxScore: 100, isActive: true, leadCount: 2840, createdAt: new Date(Date.now() - 86400000 * 60).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "lsm-2", name: "E-commerce Lead Score", description: "Score potential buyers based on purchase intent",
-    rules: [
-      { id: "lr-6", field: "purchase", operator: "gte", value: "1", points: 40 },
-      { id: "lr-7", field: "page_visit", operator: "gte", value: "10", points: 15 },
-      { id: "lr-8", field: "link_click", operator: "gte", value: "5", points: 10 },
-      { id: "lr-9", field: "social_share", operator: "gte", value: "2", points: 5 },
-    ],
-    minThreshold: 50, maxScore: 100, isActive: true, leadCount: 5620, createdAt: new Date(Date.now() - 86400000 * 45).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "lsm-3", name: "Content Engagement Model", description: "Score leads based on content consumption",
-    rules: [
-      { id: "lr-10", field: "download", operator: "gte", value: "5", points: 25 },
-      { id: "lr-11", field: "website_time", operator: "gte", value: "300", points: 15 },
-      { id: "lr-12", field: "page_depth", operator: "gte", value: "5", points: 10 },
-    ],
-    minThreshold: 40, maxScore: 100, isActive: false, leadCount: 1250, createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-];
-
-const DEMO_LEADS: LeadRecord[] = [
-  { id: "ld-1", name: "Sarah Johnson", email: "sarah@techcorp.com", score: 85, modelId: "lsm-1", lastActivity: new Date(Date.now() - 86400000 * 1).toISOString(), source: "LinkedIn" },
-  { id: "ld-2", name: "Mike Chen", email: "mike@startup.io", score: 72, modelId: "lsm-1", lastActivity: new Date(Date.now() - 86400000 * 2).toISOString(), source: "Website" },
-  { id: "ld-3", name: "Emily Davis", email: "emily@retailco.com", score: 45, modelId: "lsm-2", lastActivity: new Date(Date.now() - 86400000 * 3).toISOString(), source: "Facebook" },
-  { id: "ld-4", name: "Alex Brown", email: "alex@agency.net", score: 92, modelId: "lsm-1", lastActivity: new Date(Date.now() - 86400000 * 0.5).toISOString(), source: "Google Ads" },
-  { id: "ld-5", name: "Lisa Wang", email: "lisa@finance.com", score: 30, modelId: "lsm-2", lastActivity: new Date(Date.now() - 86400000 * 7).toISOString(), source: "Email" },
-  { id: "ld-6", name: "James Wilson", email: "james@health.io", score: 65, modelId: "lsm-2", lastActivity: new Date(Date.now() - 86400000 * 4).toISOString(), source: "Organic" },
-  { id: "ld-7", name: "Rachel Kim", email: "rachel@edutech.org", score: 55, modelId: "lsm-1", lastActivity: new Date(Date.now() - 86400000 * 5).toISOString(), source: "Referral" },
-  { id: "ld-8", name: "Tom Martinez", email: "tom@saas.dev", score: 78, modelId: "lsm-1", lastActivity: new Date(Date.now() - 86400000 * 2).toISOString(), source: "LinkedIn" },
-];
-
-
-
-function loadModels(): LeadScoreModel[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_MODELS));
-    return DEFAULT_MODELS;
-  } catch { return []; }
-}
-
-function loadLeads(): LeadRecord[] {
-  try {
-    const raw = localStorage.getItem(LEAD_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(LEAD_KEY, JSON.stringify(DEMO_LEADS));
-    return DEMO_LEADS;
-  } catch { return []; }
-}
-
 export default function LeadScoring() {
   const { addToast } = useToast();
   const [models, setModels] = useState<LeadScoreModel[]>([]);
@@ -127,13 +61,34 @@ export default function LeadScoring() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showLeads, setShowLeads] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<{ name: string; description: string; rules: ScoringRule[]; minThreshold: number; isActive: boolean }>({ name: "", description: "", rules: [], minThreshold: 50, isActive: true });
 
-  useEffect(() => { setModels(loadModels()); setLeads(loadLeads()); }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        const m = await api.entities.list("lead_scoring_models");
+        setModels(m || []);
+      } catch { setModels([]); }
+      try {
+        const ls = await api.insights.leadScoring.sample();
+        if (ls?.results) setLeads(ls.results);
+      } catch { setLeads([]); }
+      setLoading(false);
+    })();
+  }, []);
 
-  function persistModels(updated: LeadScoreModel[]) {
+  async function persistModels(updated: LeadScoreModel[]) {
     setModels(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      const existing = await api.entities.list("lead_scoring_models");
+      if (existing && existing.length > 0) {
+        await api.entities.deleteAll("lead_scoring_models");
+      }
+      for (const m of updated) {
+        await api.entities.create("lead_scoring_models", m as any);
+      }
+    } catch {}
   }
 
   const activeModel = models.find(m => m.id === activeModelId) || models[0];
@@ -353,7 +308,14 @@ export default function LeadScoring() {
         </div>
       )}
 
-      {filtered.length === 0 && (
+      {loading && (
+        <div className="card p-12 flex items-center justify-center text-center">
+          <Award className="w-6 h-6 text-n0va-400 animate-pulse" />
+          <span className="ml-3 text-gray-400">Loading scoring models...</span>
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <Award className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No scoring models</h3>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Crosshair, Plus, X, Edit3, Trash2, ExternalLink, Globe, TrendingUp, TrendingDown, Minus, AlertTriangle, BarChart3, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Crosshair, Plus, X, Edit3, Trash2, ExternalLink, Globe, TrendingUp, TrendingDown, Minus, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 interface CompetitorAd {
   id: string;
@@ -25,7 +26,6 @@ interface Competitor {
   createdAt: string;
 }
 
-const STORAGE_KEY = "n0va_competitive_intel";
 const POSITIONS = [
   { value: "leader", label: "Market Leader", color: "text-green-400 bg-green-500/10" },
   { value: "challenger", label: "Challenger", color: "text-blue-400 bg-blue-500/10" },
@@ -33,50 +33,6 @@ const POSITIONS = [
   { value: "emerging", label: "Emerging", color: "text-amber-400 bg-amber-500/10" },
 ];
 const PLATFORMS = ["Google Ads", "Meta", "LinkedIn", "TikTok", "Twitter/X", "YouTube", "Programmatic", "CTV", "Print", "Other"];
-
-const DEFAULT_COMPETITORS: Competitor[] = [
-  {
-    id: "comp-1", name: "AdSwift", website: "https://adswift.io", logoUrl: "",
-    description: "AI-powered ad optimization platform targeting SMBs with automated campaign management.",
-    strength: "Strong ML algorithms, easy onboarding, competitive pricing",
-    weakness: "Limited enterprise features, no offline attribution, smaller ad network",
-    position: "challenger", trend: "up",
-    ads: [
-      { id: "ad-1", name: "SMB Growth Campaign", description: "Facebook carousel ad targeting small business owners with '10x your ROI' messaging", url: "https://adswift.io/campaigns/smb-growth", platform: "Meta", observedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-      { id: "ad-2", name: "Free Trial Push", description: "Google Search ad 'Try AdSwift Free - No Credit Card' with landing page demo", url: "https://adswift.io/free-trial", platform: "Google Ads", observedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-  },
-  {
-    id: "comp-2", name: "MarketPulse", website: "https://marketpulse.com", logoUrl: "",
-    description: "Enterprise marketing suite with end-to-end campaign management and analytics.",
-    strength: "Comprehensive platform, Fortune 500 clientele, advanced analytics",
-    weakness: "High price point, steep learning curve, slow feature releases",
-    position: "leader", trend: "stable",
-    ads: [
-      { id: "ad-3", name: "Enterprise Webinar", description: "LinkedIn lead gen ad promoting 'The Future of Marketing Analytics' webinar with C-suite speakers", url: "https://marketpulse.com/webinars/analytics-future", platform: "LinkedIn", observedAt: new Date(Date.now() - 86400000 * 7).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
-  },
-  {
-    id: "comp-3", name: "GrowthEngine", website: "https://growthengine.co", logoUrl: "",
-    description: "Growth marketing platform focused on conversion rate optimization and A/B testing.",
-    strength: "Best-in-class testing tools, strong community, excellent documentation",
-    weakness: "Narrow focus, no multi-channel campaigns, limited reporting",
-    position: "niche", trend: "down",
-    ads: [],
-    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
-  },
-];
-
-function load(): Competitor[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_COMPETITORS));
-    return DEFAULT_COMPETITORS;
-  } catch { return []; }
-}
 
 const positionMeta = (pos: string) => POSITIONS.find(p => p.value === pos) || POSITIONS[0];
 const trendIcon: Record<string, any> = { up: TrendingUp, down: TrendingDown, stable: Minus };
@@ -91,14 +47,21 @@ export default function CompetitiveIntel() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdForm, setShowAdForm] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", website: "", logoUrl: "", description: "", strength: "", weakness: "", position: "challenger" as Competitor["position"], trend: "stable" as Competitor["trend"] });
   const [adForm, setAdForm] = useState({ name: "", description: "", url: "", platform: "Google Ads" });
 
-  useEffect(() => { setCompetitors(load()); }, []);
+  useEffect(() => {
+    api.entities.list("competitive_intel").then(d => setCompetitors(d || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
 
-  function persist(updated: Competitor[]) {
+  async function persist(updated: Competitor[]) {
     setCompetitors(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      const existing = await api.entities.list("competitive_intel");
+      if (existing && existing.length > 0) await api.entities.deleteAll("competitive_intel");
+      for (const c of updated) await api.entities.create("competitive_intel", c as any);
+    } catch {}
   }
 
   function toggle(id: string) {
@@ -220,8 +183,16 @@ export default function CompetitiveIntel() {
         </div>
       )}
 
+      {/* Loading */}
+      {loading && (
+        <div className="card p-12 flex items-center justify-center text-center">
+          <Crosshair className="w-6 h-6 text-n0va-400 animate-pulse" />
+          <span className="ml-3 text-gray-400">Loading competitors...</span>
+        </div>
+      )}
+
       {/* Empty */}
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <Crosshair className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No competitors tracked</h3>
