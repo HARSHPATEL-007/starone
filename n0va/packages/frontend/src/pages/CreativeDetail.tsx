@@ -6,11 +6,13 @@ import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
 import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText, MessageSquare } from "lucide-react";
 import NotesWidget from "../components/NotesWidget";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 export default function CreativeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { track } = useRecentItems();
   const [creative, setCreative] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ export default function CreativeDetail() {
         api.campaigns.list().catch(() => ({ campaigns: [] })),
       ]);
       setCreative(found);
+      track({ type: "creative", id: found._id || found.id, label: found.name, subtitle: found.headline, route: `/creatives/${found._id || found.id}` });
       setEditName(found.name);
       setEditHeadline(found.headline || "");
       setEditBody(found.body || "");

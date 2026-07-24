@@ -3,11 +3,13 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity, RefreshCw, AlertCircle, Unplug } from "lucide-react";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 export default function PlatformDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { track } = useRecentItems();
   const [platform, setPlatform] = useState<any>(null);
   const [connected, setConnected] = useState<any[]>([]);
   const [health, setHealth] = useState<any>(null);
@@ -33,6 +35,7 @@ export default function PlatformDetail() {
         api.platforms.health(),
       ]);
       setPlatform(plat);
+      track({ type: "platform", id: plat._id || plat.id, label: plat.name, route: `/platforms/${plat._id || plat.id}` });
       setConnected(accounts.filter((a: any) => a.platform === plat.platform));
       setHealth(h);
     } catch (err: any) {

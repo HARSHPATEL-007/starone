@@ -32,7 +32,9 @@ import {
   FileText,
   UserPlus,
   CreditCard,
+  History,
 } from "lucide-react";
+import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -72,9 +74,15 @@ const navItems = [
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
+const typeIcons: Record<string, any> = {
+  campaign: Megaphone, creative: Palette, audience: Users,
+  agent: Bot, recipe: FileJson, platform: Share2, webhook: Webhook,
+};
+
 export default function Sidebar() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const { recent } = useRecentItems();
 
   useEffect(() => {
     api.notifications.unreadCount().then((res) => setUnreadCount(res.count)).catch(() => {});
@@ -123,6 +131,34 @@ export default function Sidebar() {
             )}
           </NavLink>
         ))}
+        {recent.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 px-3 pt-4 pb-1">
+              <History className="w-3 h-3 text-gray-600" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-600">Recent</span>
+            </div>
+            {recent.map((item: RecentItem) => {
+              const Icon = typeIcons[item.type] || History;
+              return (
+                <NavLink
+                  key={`${item.type}-${item.id}`}
+                  to={item.route}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      isActive
+                        ? "bg-n0va-600/20 text-n0va-400"
+                        : "text-gray-500 hover:text-gray-200 hover:bg-gray-800"
+                    }`
+                  }
+                >
+                  <Icon className="w-3 h-3" />
+                  <span className="truncate flex-1">{item.label}</span>
+                  {item.subtitle && <span className="text-gray-600 truncate max-w-[80px] hidden 2xl:inline">{item.subtitle}</span>}
+                </NavLink>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       <div className="p-4 border-t border-gray-800">

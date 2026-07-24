@@ -4,11 +4,13 @@ import { ArrowLeft, Webhook, ToggleLeft, ToggleRight, Trash2, CheckCircle, XCirc
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 export default function WebhookDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { track } = useRecentItems();
   const [webhook, setWebhook] = useState<any>(null);
   const [deliveries, setDeliveries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function WebhookDetail() {
     try {
       const wh = await api.webhooks.get(id);
       setWebhook(wh);
+      track({ type: "webhook", id: wh._id || wh.id, label: wh.name, route: `/webhooks/${wh._id || wh.id}` });
     } catch {
       addToast("error", "Webhook not found");
       navigate("/webhooks");

@@ -4,11 +4,13 @@ import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { ArrowLeft, FileJson, Code, Play, CheckCircle, AlertCircle, Clock, Terminal, RefreshCw, Trash2, Edit3, Save, X, History, Activity } from "lucide-react";
 import { SkeletonCard } from "../components/Skeleton";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { track } = useRecentItems();
   const [recipe, setRecipe] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ export default function RecipeDetail() {
         api.activity.list(`entityType=recipe&entityId=${id}&limit=20`).catch(() => []),
       ]);
       setRecipe(found);
+      track({ type: "recipe", id: found._id || found.id, label: found.name, route: `/recipes/${found._id || found.id}` });
       setEditForm({ name: found.name, description: found.description || "", trigger: found.trigger || "" });
       setActivities(Array.isArray(activityList) ? activityList : []);
     } catch {

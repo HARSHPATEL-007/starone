@@ -4,6 +4,7 @@ import { ArrowLeft, Bot, Play, Pause, Trash2, Settings, Activity, RefreshCw, Tre
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 const agentIcons: Record<string, string> = { budget: "💰", creative: "🎨", audience: "👥", bid: "⚡", fraud: "🛡️" };
 
@@ -11,6 +12,7 @@ export default function AgentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { track } = useRecentItems();
   const [agent, setAgent] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,7 @@ export default function AgentDetail() {
         api.activity.list(`entityType=agent&entityId=${id}&limit=20`).catch(() => []),
       ]);
       setAgent(agentData);
+      track({ type: "agent", id: agentData._id || agentData.id, label: agentData.name, route: `/agents/${agentData._id || agentData.id}` });
       setActivities(Array.isArray(activityData) ? activityData : []);
     } catch {
       addToast("error", "Agent not found");

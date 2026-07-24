@@ -5,11 +5,13 @@ import { api } from "../api/client";
 import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw, Play, Pause, Target, DollarSign, MessageSquare } from "lucide-react";
 import NotesWidget from "../components/NotesWidget";
 import { useToast } from "../components/Toast";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 export default function AudienceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { track } = useRecentItems();
   const [audience, setAudience] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function AudienceDetail() {
     try {
       const found = await api.audiences.get(id);
       setAudience(found);
+      track({ type: "audience", id: found._id || found.id, label: found.name, subtitle: found.description, route: `/audiences/${found._id || found.id}` });
       setEditName(found.name);
       setEditDescription(found.description || "");
       const campaignList = await api.campaigns.list();

@@ -8,6 +8,7 @@ import { useToast } from "../components/Toast";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 import NotesWidget from "../components/NotesWidget";
 import { useTemplates } from "../hooks/useTemplates";
+import { useRecentItems } from "../hooks/useRecentItems";
 
 type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes";
 
@@ -17,6 +18,7 @@ export default function CampaignDetail() {
   const { addToast } = useToast();
   const liveData = useCampaignLive(id);
   const { createTemplate } = useTemplates();
+  const { track } = useRecentItems();
   const [campaign, setCampaign] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,7 @@ export default function CampaignDetail() {
         api.analytics.campaign(id).catch(() => null),
       ]);
       setCampaign(c);
+      track({ type: "campaign", id: c._id || c.id, label: c.name, route: `/campaigns/${c._id || c.id}` });
       setAnalytics(a);
       setEditForm({ name: c.name || "", goal: c.goal || "", daily: c.budget?.daily || 0, lifetime: c.budget?.lifetime || 0, startDate: c.startDate ? c.startDate.split("T")[0] : "", endDate: c.endDate ? c.endDate.split("T")[0] : "" });
     } catch {
