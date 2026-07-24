@@ -60,6 +60,8 @@ import Goals from "./pages/Goals";
 import ABTesting from "./pages/ABTesting";
 import Comments from "./pages/Comments";
 import CompetitiveIntel from "./pages/CompetitiveIntel";
+import HelpCenter from "./pages/HelpCenter";
+
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -125,6 +127,7 @@ export default function App() {
                 <Route path="/ab-testing" element={<ABTesting />} />
                 <Route path="/comments" element={<Comments />} />
                 <Route path="/competitive-intel" element={<CompetitiveIntel />} />
+                <Route path="/help" element={<HelpCenter />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

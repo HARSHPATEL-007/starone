@@ -28,6 +28,7 @@ import {
   Bell,
   MessageCircle,
   Crosshair,
+  LifeBuoy,
   Layers,
   LogOut,
   HeartPulse,
@@ -95,6 +96,7 @@ const navItems = [
   { to: "/competitive-intel", icon: Crosshair, label: "Competitive Intel" },
   { to: "/account", icon: User, label: "Account" },
   { to: "/billing", icon: CreditCard, label: "Billing" },
+  { to: "/help", icon: LifeBuoy, label: "Help & Support" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
