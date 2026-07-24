@@ -62,6 +62,7 @@ import Comments from "./pages/Comments";
 import CompetitiveIntel from "./pages/CompetitiveIntel";
 import HelpCenter from "./pages/HelpCenter";
 import Automation from "./pages/Automation";
+import Playbooks from "./pages/Playbooks";
 
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -130,6 +131,7 @@ export default function App() {
                 <Route path="/competitive-intel" element={<CompetitiveIntel />} />
                 <Route path="/help" element={<HelpCenter />} />
                 <Route path="/automation" element={<Automation />} />
+                <Route path="/playbooks" element={<Playbooks />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />
