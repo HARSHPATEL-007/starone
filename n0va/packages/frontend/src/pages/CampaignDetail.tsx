@@ -10,8 +10,9 @@ import NotesWidget from "../components/NotesWidget";
 import { useTemplates } from "../hooks/useTemplates";
 import { useRecentItems } from "../hooks/useRecentItems";
 import { useLaunchChecklist } from "../hooks/useLaunchChecklist";
+import CommentsSection from "../components/CommentsSection";
 
-type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes" | "checklist";
+type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes" | "checklist" | "comments";
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -177,7 +178,8 @@ export default function CampaignDetail() {
     { id: "platforms", label: "Platforms", icon: Layers },
     { id: "hypercontext", label: "Hyper Context", icon: Target },
     { id: "notes", label: "Notes", icon: MessageSquare },
-    { id: "checklist", label: "Checklist", icon: CheckSquare },
+  { id: "checklist",   label: "Checklist",    icon: CheckSquare },
+  { id: "comments",    label: "Comments",     icon: MessageSquare },
   ];
 
   return (
@@ -546,6 +548,12 @@ export default function CampaignDetail() {
               <CheckCircle className="w-4 h-4" /> All checks passed! This campaign is ready to launch.
             </div>
           )}
+        </div>
+      )}
+
+      {tab === "comments" && campaign && (
+        <div className="card p-6">
+          <CommentsSection entityId={campaign._id || campaign.id} entityName={campaign.name} />
         </div>
       )}
 
