@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 import NotesWidget from "../components/NotesWidget";
+import { useTemplates } from "../hooks/useTemplates";
 
 type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes";
 
@@ -15,6 +16,7 @@ export default function CampaignDetail() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const liveData = useCampaignLive(id);
+  const { createTemplate } = useTemplates();
   const [campaign, setCampaign] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,22 @@ export default function CampaignDetail() {
     } catch {
       addToast("error", "Failed to clone campaign");
     }
+  }
+
+  function handleSaveTemplate() {
+    if (!campaign) return;
+    createTemplate({
+      name: `${campaign.name} (Template)`,
+      description: campaign.goal || "",
+      type: campaign.type || "performance",
+      dailyBudget: campaign.budget?.daily || 100,
+      lifetimeBudget: campaign.budget?.lifetime || 3000,
+      currency: campaign.budget?.currency || "USD",
+      platforms: campaign.platforms || [],
+      goal: campaign.goal || "",
+      tags: (campaign.tags || []).join(", "),
+    });
+    addToast("success", "Template saved");
   }
 
   async function handleSaveEdit(e: React.FormEvent) {
@@ -174,6 +192,9 @@ export default function CampaignDetail() {
         <div className="flex items-center gap-2">
           <button className="btn-secondary flex items-center gap-2" onClick={handleClone}>
             <Copy className="w-4 h-4" /> Clone
+          </button>
+          <button className="btn-secondary flex items-center gap-2" onClick={handleSaveTemplate}>
+            <FileText className="w-4 h-4" /> Save as Template
           </button>
           <button className="btn-secondary flex items-center gap-2" onClick={() => { setEditForm({ name: campaign.name, goal: campaign.goal || "", daily: campaign.budget?.daily || 0, lifetime: campaign.budget?.lifetime || 0, startDate: campaign.startDate ? campaign.startDate.split("T")[0] : "", endDate: campaign.endDate ? campaign.endDate.split("T")[0] : "" }); setShowEdit(true); }}>
             <Edit3 className="w-4 h-4" /> Edit

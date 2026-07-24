@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, ChevronRight, DollarSign, Target, Users } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, DollarSign, Target, Users, FileText } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useTemplates } from "../hooks/useTemplates";
 
 const PLATFORM_OPTIONS = [
   { id: "meta", label: "Meta Ads", icon: "M" },
@@ -30,10 +31,13 @@ const STEPS = ["Basics", "Budget", "Schedule", "Platforms", "Audience", "Goals",
 
 export default function CampaignWizard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addToast } = useToast();
+  const { getTemplate } = useTemplates();
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
   const [audiences, setAudiences] = useState<any[]>([]);
+  const [templateLabel, setTemplateLabel] = useState("");
   const today = new Date().toISOString().split("T")[0];
   const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
   const [form, setForm] = useState({
@@ -55,6 +59,26 @@ export default function CampaignWizard() {
 
   useEffect(() => {
     api.audiences.list().then(setAudiences).catch(() => {});
+    const tplId = searchParams.get("template");
+    if (tplId) {
+      const tpl = getTemplate(tplId);
+      if (tpl) {
+        setForm((prev) => ({
+          ...prev,
+          name: tpl.name.replace(" (Template)", ""),
+          type: tpl.type,
+          dailyBudget: tpl.dailyBudget,
+          lifetimeBudget: tpl.lifetimeBudget,
+          currency: tpl.currency,
+          platforms: tpl.platforms,
+          goal: tpl.goal,
+          tags: tpl.tags,
+          description: tpl.description,
+        }));
+        setTemplateLabel(tpl.name);
+        addToast("info", `Template "${tpl.name}" loaded`);
+      }
+    }
   }, []);
 
   function update<T extends keyof typeof form>(key: T, value: (typeof form)[T]) {
@@ -124,8 +148,21 @@ export default function CampaignWizard() {
       <div className="card">
         {step === 0 && (
           <div className="space-y-5">
-            <h2 className="text-xl font-bold text-white">Campaign Basics</h2>
-            <p className="text-sm text-gray-500">Start with a name and goal for your campaign</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Campaign Basics</h2>
+                <p className="text-sm text-gray-500">Start with a name and goal for your campaign</p>
+              </div>
+              <button onClick={() => navigate("/templates")} className="btn-secondary text-xs flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5" /> From Template
+              </button>
+            </div>
+            {templateLabel && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-n0va-600/10 border border-n0va-600/30">
+                <FileText className="w-4 h-4 text-n0va-400" />
+                <p className="text-xs text-n0va-400">Loaded from template: <span className="font-medium">{templateLabel}</span></p>
+              </div>
+            )}
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">Campaign Name *</label>
               <input className="input" value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g., Summer Sale 2026" autoFocus />
