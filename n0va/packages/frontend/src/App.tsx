@@ -52,6 +52,7 @@ import BrandKit from "./pages/BrandKit";
 import DataImport from "./pages/DataImport";
 import Approvals from "./pages/Approvals";
 import CreativeGallery from "./pages/CreativeGallery";
+import LaunchChecklist from "./pages/LaunchChecklist";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -109,6 +110,7 @@ export default function App() {
                 <Route path="/import" element={<DataImport />} />
                 <Route path="/approvals" element={<Approvals />} />
                 <Route path="/creative-gallery" element={<CreativeGallery />} />
+                <Route path="/launch-checklist" element={<LaunchChecklist />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

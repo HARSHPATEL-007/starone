@@ -50,6 +50,7 @@ const navItems = [
   { to: "/insights", icon: TrendingUp, label: "Insights" },
   { to: "/campaign-comparison", icon: GitCompare, label: "Compare Campaigns" },
   { to: "/templates", icon: FileText, label: "Templates" },
+  { to: "/launch-checklist", icon: CheckSquare, label: "Launch Checklist" },
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
   { to: "/brief-generator", icon: Sparkles, label: "Brief Generator" },
   { to: "/creatives", icon: Palette, label: "Creatives" },

@@ -56,6 +56,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Data Import", route: "/import", icon: Upload },
   { type: "page", label: "Approvals", route: "/approvals", icon: CheckCircle },
   { type: "page", label: "Creative Gallery", route: "/creative-gallery", icon: LayoutGrid },
+  { type: "page", label: "Launch Checklist", route: "/launch-checklist", icon: CheckSquare },
 ];
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {

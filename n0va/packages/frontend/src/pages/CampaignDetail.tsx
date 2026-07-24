@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
@@ -9,8 +9,9 @@ import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 import NotesWidget from "../components/NotesWidget";
 import { useTemplates } from "../hooks/useTemplates";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { useLaunchChecklist } from "../hooks/useLaunchChecklist";
 
-type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes";
+type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes" | "checklist";
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -19,6 +20,7 @@ export default function CampaignDetail() {
   const liveData = useCampaignLive(id);
   const { createTemplate } = useTemplates();
   const { track } = useRecentItems();
+  const { items: checklistItems, current: checklist, toggleItem: toggleChecklist, progress: checklistProgress } = useLaunchChecklist(id);
   const [campaign, setCampaign] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -175,6 +177,7 @@ export default function CampaignDetail() {
     { id: "platforms", label: "Platforms", icon: Layers },
     { id: "hypercontext", label: "Hyper Context", icon: Target },
     { id: "notes", label: "Notes", icon: MessageSquare },
+    { id: "checklist", label: "Checklist", icon: CheckSquare },
   ];
 
   return (
@@ -499,6 +502,50 @@ export default function CampaignDetail() {
             <h3 className="text-lg font-semibold text-white">Campaign Notes</h3>
           </div>
           <NotesWidget entityType="campaign" entityId={campaign._id || campaign.id} entityName={campaign.name} />
+        </div>
+      )}
+
+      {tab === "checklist" && (
+        <div className="card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-n0va-400" /> Launch Checklist
+            </h3>
+            <span className={`text-sm font-medium ${checklistProgress === 100 ? "text-emerald-400" : "text-gray-400"}`}>
+              {checklistProgress}% complete
+            </span>
+          </div>
+          <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${checklistProgress === 100 ? "bg-emerald-500" : "bg-n0va-500"}`} style={{ width: `${checklistProgress}%` }} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {checklistItems.map((item) => {
+              const checked = checklist?.completed.includes(item.id) || false;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => toggleChecklist(campaign._id || campaign.id, item.id)}
+                  disabled={campaign.status === "active"}
+                  className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                    checked
+                      ? "border-emerald-500/20 bg-emerald-500/5"
+                      : "border-gray-800 hover:border-gray-700"
+                  } ${campaign.status === "active" ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  {checked ? <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" /> : <Square className="w-4 h-4 text-gray-600 mt-0.5 shrink-0" />}
+                  <div>
+                    <p className={`text-sm font-medium ${checked ? "text-emerald-300" : "text-gray-300"}`}>{item.label}</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{item.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {checklistProgress === 100 && campaign.status === "draft" && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm text-emerald-400 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> All checks passed! This campaign is ready to launch.
+            </div>
+          )}
         </div>
       )}
 
