@@ -389,5 +389,13 @@ export class MemoryStore {
       platforms: ["meta", "google", "tiktok"], goal: "Drive Q4 holiday sales", tags: ["holiday", "q4"],
       startDate: mkDate(14), endDate: mkDate(44), createdBy: "user_002"
     });
+
+    const campaignSnapshots = [
+      { campaignId: "mem_1001", campaignName: "Q3 Enterprise SaaS Push", name: "Mid-campaign check-in", description: "Mid-point performance review", capturedAt: new Date(now - 7 * day).toISOString(), metrics: { impressions: 2450000, clicks: 78000, conversions: 3200, spend: 45200, revenue: 142000, ctr: 3.18, cpc: 0.58, roas: 3.14, cvr: 4.1 }, budget: { daily: 5000, lifetime: 150000, spent: 45200, remaining: 104800 }, status: "active", platforms: ["meta", "google", "linkedin"], tags: ["mid-campaign"] },
+      { campaignId: "mem_1001", campaignName: "Q3 Enterprise SaaS Push", name: "Launch baseline", description: "Initial snapshot at campaign launch", capturedAt: new Date(now - 30 * day).toISOString(), metrics: { impressions: 520000, clicks: 15000, conversions: 580, spend: 8900, revenue: 28000, ctr: 2.88, cpc: 0.59, roas: 3.15, cvr: 3.87 }, budget: { daily: 5000, lifetime: 150000, spent: 8900, remaining: 141100 }, status: "active", platforms: ["meta", "google", "linkedin"], tags: ["baseline"] },
+    ];
+    for (const s of campaignSnapshots) this.insert("campaign_snapshots", { tenantId: "tenant_001", ...s });
+
+    this.insert("notification_prefs", { tenantId: "tenant_001", email_alerts: true, push_alerts: true, fraud_alerts: true, budget_alerts: true, campaign_updates: true, agent_status: true, digest_frequency: "realtime", quiet_hours_start: "22:00", quiet_hours_end: "07:00" });
   }
 }

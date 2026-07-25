@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Camera, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, DollarSign, Target, Eye, Download, Clock, TrendingUp, Users } from "lucide-react";
+import { Camera, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, DollarSign, Target, Eye, Download, Clock, TrendingUp, Users, GitCompare, Activity } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 interface SnapshotMetric {
   label: string;
@@ -22,8 +22,6 @@ interface CampaignSnapshot {
   tags: string[];
 }
 
-
-
 function fmtValue(val: number, format: string): string {
   if (format === "currency") return "$" + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (format === "percent") return val.toFixed(2) + "%";
@@ -33,13 +31,22 @@ function fmtValue(val: number, format: string): string {
 
 const FORMAT_OPTIONS = ["number", "currency", "percent", "rate"] as const;
 
+const METRIC_LABELS: Record<string, string> = {
+  impressions: "Impressions", clicks: "Clicks", conversions: "Conversions",
+  spend: "Spend", revenue: "Revenue", ctr: "CTR", cpc: "CPC", roas: "ROAS", cvr: "CVR",
+};
+
 export default function CampaignSnapshots() {
   const { addToast } = useToast();
-  const { data: snapshots, create, update, remove, replaceAll } = useEntityData<CampaignSnapshot>("campaign_snapshots");
+  const [snapshots, setSnapshots] = useState<CampaignSnapshot[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [comparison, setComparison] = useState<any>(null);
   const [form, setForm] = useState<{ name: string; description: string; campaignName: string; metrics: SnapshotMetric[]; notes: string; tags: string }>({
     name: "", description: "", campaignName: "", metrics: [
       { label: "Impressions", value: 0, format: "number" },
@@ -52,6 +59,20 @@ export default function CampaignSnapshots() {
       { label: "CPA", value: 0, format: "currency" },
     ], notes: "", tags: "",
   });
+
+  async function loadSnapshots() {
+    setLoading(true);
+    try {
+      const data = await api.entities.list("campaign_snapshots");
+      setSnapshots(data || []);
+    } catch (e: any) {
+      addToast("error", "Failed to load snapshots");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadSnapshots(); }, []);
 
   function resetForm(s?: CampaignSnapshot) {
     if (s) setForm({ name: s.name, description: s.description, campaignName: s.campaignName, metrics: s.metrics.map(m => ({ ...m })), notes: s.notes, tags: s.tags.join(", ") });
@@ -89,25 +110,77 @@ export default function CampaignSnapshots() {
       notes: form.notes.trim(), tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
       createdAt: editingId ? snapshots.find(s => s.id === editingId)!.createdAt : now,
     };
-    if (editingId) { await update(editingId, snap as any); addToast("success", "Snapshot updated"); }
-    else { await create(snap as any); addToast("success", "Snapshot saved"); }
+    try {
+      if (editingId) {
+        await api.entities.update("campaign_snapshots", editingId, snap as any);
+        addToast("success", "Snapshot updated");
+      } else {
+        await api.entities.create("campaign_snapshots", snap as any);
+        addToast("success", "Snapshot saved");
+      }
+      await loadSnapshots();
+    } catch {
+      addToast("error", "Failed to save snapshot");
+    }
     setShowForm(false);
     setEditingId(null);
   }
 
   async function handleDelete(id: string) {
     const name = snapshots.find(s => s.id === id)?.name;
-    await remove(id);
-    if (viewingId === id) setViewingId(null);
-    addToast("success", `"${name}" deleted`);
+    try {
+      await api.snapshots.delete(id);
+      if (viewingId === id) setViewingId(null);
+      await loadSnapshots();
+      addToast("success", `"${name}" deleted`);
+    } catch {
+      addToast("error", "Failed to delete snapshot");
+    }
   }
 
   async function cloneSnapshot(id: string) {
     const s = snapshots.find(sn => sn.id === id);
     if (!s) return;
     const copy: CampaignSnapshot = { ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${s.name} (Copy)`, createdAt: new Date().toISOString() };
-    await create(copy as any);
-    addToast("success", "Snapshot duplicated");
+    try {
+      await api.entities.create("campaign_snapshots", copy as any);
+      await loadSnapshots();
+      addToast("success", "Snapshot duplicated");
+    } catch {
+      addToast("error", "Failed to duplicate snapshot");
+    }
+  }
+
+  async function handleCompare() {
+    if (selectedForCompare.length !== 2) { addToast("error", "Select exactly 2 snapshots to compare"); return; }
+    try {
+      const result = await api.snapshots.compare(selectedForCompare[0], selectedForCompare[1]);
+      setComparison(result);
+    } catch {
+      addToast("error", "Failed to compare snapshots");
+    }
+  }
+
+  async function handleAutoCapture() {
+    try {
+      const result = await api.snapshots.autoCapture();
+      addToast("success", `Captured ${result.count || result.captured || "new"} snapshots`);
+      await loadSnapshots();
+    } catch {
+      addToast("error", "Auto-capture failed");
+    }
+  }
+
+  function toggleCompareSelection(id: string) {
+    setSelectedForCompare(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length < 2 ? [...prev, id] : [prev[1], id]
+    );
+  }
+
+  function closeComparison() {
+    setComparison(null);
+    setSelectedForCompare([]);
+    setCompareMode(false);
   }
 
   const filtered = snapshots.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.campaignName.toLowerCase().includes(search.toLowerCase()) || s.tags.some(t => t.toLowerCase().includes(search.toLowerCase())));
@@ -121,6 +194,24 @@ export default function CampaignSnapshots() {
     addToast("success", "Snapshots exported");
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+              <Camera className="w-6 h-6 text-n0va-400" />
+              Campaign Snapshots
+            </h1>
+          </div>
+        </div>
+        <div className="card p-12 flex items-center justify-center">
+          <div className="animate-spin w-6 h-6 border-2 border-n0va-400 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -131,7 +222,11 @@ export default function CampaignSnapshots() {
           </h1>
           <p className="text-gray-400 mt-1">{snapshots.length} saved snapshots</p>
         </div>
-        <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Snapshot</button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleAutoCapture} className="btn-ghost text-xs flex items-center gap-1"><Activity className="w-3.5 h-3.5" /> Auto-Capture</button>
+          <button onClick={() => { setCompareMode(!compareMode); setSelectedForCompare([]); setComparison(null); }} className={`btn-ghost text-xs flex items-center gap-1 ${compareMode ? "text-n0va-400" : ""}`}><GitCompare className="w-3.5 h-3.5" /> Compare</button>
+          <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Snapshot</button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
@@ -140,9 +235,68 @@ export default function CampaignSnapshots() {
           <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search snapshots..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <button onClick={exportSnapshotsCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Export CSV</button>
+        {compareMode && (
+          <button onClick={handleCompare} className="btn-primary text-xs flex items-center gap-1" disabled={selectedForCompare.length !== 2}>
+            <GitCompare className="w-3.5 h-3.5" /> Compare Selected
+          </button>
+        )}
       </div>
 
-      {snapshots.length > 1 && (
+      {/* Comparison result */}
+      {comparison && (
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-white flex items-center gap-2"><GitCompare className="w-4 h-4 text-n0va-400" /> Snapshot Comparison</h3>
+            <button onClick={closeComparison} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+          </div>
+          {comparison.summary && (
+            <div className="bg-n0va-500/10 border border-n0va-500/20 rounded-lg p-3 mb-4">
+              <p className="text-sm text-n0va-300">{comparison.summary}</p>
+            </div>
+          )}
+          <div className="flex items-center gap-6 text-xs text-gray-500 mb-4">
+            <span>Before: <strong className="text-white">{comparison.snapshot1?.name || comparison.snapshot1}</strong></span>
+            <span>After: <strong className="text-white">{comparison.snapshot2?.name || comparison.snapshot2}</strong></span>
+          </div>
+          {comparison.diff && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    <th className="text-left text-gray-500 font-medium py-2 pr-4">Metric</th>
+                    <th className="text-right text-gray-500 font-medium py-2 px-4">Before</th>
+                    <th className="text-right text-gray-500 font-medium py-2 px-4">After</th>
+                    <th className="text-right text-gray-500 font-medium py-2 px-4">Change</th>
+                    <th className="text-right text-gray-500 font-medium py-2 pl-4">Change %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(comparison.diff).map(([key, val]: any) => {
+                    if (!val || typeof val !== "object" || val.change === undefined) return null;
+                    const pos = val.change > 0;
+                    const isPct = key === "ctr" || key === "cvr" || key === "roas";
+                    return (
+                      <tr key={key} className="border-b border-gray-800/50">
+                        <td className="py-2 pr-4 text-gray-300 capitalize">{METRIC_LABELS[key] || key}</td>
+                        <td className={`text-right py-2 px-4 text-white`}>{isPct ? `${val.before}%` : fmtValue(val.before, key === "spend" || key === "revenue" ? "currency" : "number")}</td>
+                        <td className={`text-right py-2 px-4 text-white`}>{isPct ? `${val.after}%` : fmtValue(val.after, key === "spend" || key === "revenue" ? "currency" : "number")}</td>
+                        <td className={`text-right py-2 px-4 font-medium ${pos ? "text-green-400" : val.change < 0 ? "text-red-400" : "text-gray-400"}`}>
+                          {pos ? "+" : ""}{isPct ? `${val.change}%` : fmtValue(Math.abs(val.change), key === "spend" || key === "revenue" ? "currency" : "number")}
+                        </td>
+                        <td className={`text-right py-2 pl-4 font-medium ${pos ? "text-green-400" : val.changePercent < 0 ? "text-red-400" : "text-gray-400"}`}>
+                          {val.changePercent > 0 ? "+" : ""}{Number(val.changePercent).toFixed(2)}%
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {snapshots.length > 1 && !comparison && (
         <div className="card">
           <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5 text-n0va-400" /> Metric Comparison (latest snapshots)</h3>
           <div className="h-40">
@@ -241,6 +395,16 @@ export default function CampaignSnapshots() {
       {filtered.map(s => (
         <div key={s.id} className="card p-4">
           <div className="flex items-start gap-3">
+            {compareMode && (
+              <div className="pt-2">
+                <input
+                  type="checkbox"
+                  checked={selectedForCompare.includes(s.id)}
+                  onChange={() => toggleCompareSelection(s.id)}
+                  className="w-4 h-4 accent-n0va-500"
+                />
+              </div>
+            )}
             <div className="p-2 rounded-lg bg-n0va-500/10"><Camera className="w-5 h-5 text-n0va-400" /></div>
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-semibold text-white cursor-pointer hover:text-n0va-400" onClick={() => setViewingId(s.id)}>{s.name}</h3>

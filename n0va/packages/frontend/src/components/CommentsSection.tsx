@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MessageSquare, Send, Reply, MoreHorizontal, Trash2, AtSign, Clock } from "lucide-react";
 import { useToast } from "./Toast";
+import { api } from "../api/client";
 
 export interface Comment {
   id: string;
@@ -12,14 +13,8 @@ export interface Comment {
   createdAt: string;
 }
 
-const STORAGE_PREFIX = "n0va_comments_";
-
-function loadComments(entityId: string): Comment[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_PREFIX + entityId) || "[]"); } catch { return []; }
-}
-
-function saveComments(entityId: string, comments: Comment[]) {
-  localStorage.setItem(STORAGE_PREFIX + entityId, JSON.stringify(comments));
+function fromApi(item: any): Comment {
+  return { id: item._id, entityId: item.entityId, entityName: item.entityName, author: item.author, body: item.body, parentId: item.parentId ?? null, createdAt: item.createdAt };
 }
 
 function timeAgo(date: string): string {
@@ -37,73 +32,47 @@ function timeAgo(date: string): string {
 interface Props {
   entityId: string;
   entityName: string;
+  entityType: string;
 }
 
-export function getAllComments(): Comment[] {
-  const all: Comment[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(STORAGE_PREFIX)) {
-      try { all.push(...JSON.parse(localStorage.getItem(key) || "[]")); } catch {}
-    }
-  }
-  return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-export function getCommentCount(entityId: string): number {
-  return loadComments(entityId).length;
-}
-
-export default function CommentsSection({ entityId, entityName }: Props) {
+export default function CommentsSection({ entityId, entityName, entityType }: Props) {
   const { addToast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
 
-  useEffect(() => { setComments(loadComments(entityId)); }, [entityId]);
+  useEffect(() => {
+    api.comments.list(entityType, entityId).then(data => setComments((data || []).map(fromApi))).catch(() => {});
+  }, [entityType, entityId]);
 
-  function persist(updated: Comment[]) {
-    setComments(updated);
-    saveComments(entityId, updated);
-  }
-
-  function handlePost() {
+  async function handlePost() {
     if (!newComment.trim()) return;
-    const comment: Comment = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      entityId,
-      entityName,
-      author: "You",
-      body: newComment.trim(),
-      parentId: null,
-      createdAt: new Date().toISOString(),
-    };
-    persist([comment, ...comments]);
-    setNewComment("");
-    addToast("success", "Comment added");
+    try {
+      const created = await api.comments.create(entityType, entityId, { body: newComment.trim(), author: "You" });
+      setComments([fromApi(created), ...comments]);
+      setNewComment("");
+      addToast("success", "Comment added");
+    } catch { addToast("error", "Failed to add comment"); }
   }
 
-  function handleReply(parentId: string) {
+  async function handleReply(parentId: string) {
     if (!replyText.trim()) return;
-    const comment: Comment = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      entityId,
-      entityName,
-      author: "You",
-      body: replyText.trim(),
-      parentId,
-      createdAt: new Date().toISOString(),
-    };
-    persist([...comments, comment]);
-    setReplyText("");
-    setReplyTo(null);
-    addToast("success", "Reply added");
+    try {
+      const created = await api.comments.create(entityType, entityId, { body: replyText.trim(), author: "You", parentId });
+      setComments([...comments, fromApi(created)]);
+      setReplyText("");
+      setReplyTo(null);
+      addToast("success", "Reply added");
+    } catch { addToast("error", "Failed to reply"); }
   }
 
-  function handleDelete(id: string) {
-    persist(comments.filter(c => c.id !== id && c.parentId !== id));
-    addToast("success", "Comment removed");
+  async function handleDelete(id: string) {
+    try {
+      await api.comments.delete(id);
+      setComments(prev => prev.filter(c => c.id !== id && c.parentId !== id));
+      addToast("success", "Comment removed");
+    } catch { addToast("error", "Failed to delete comment"); }
   }
 
   const topLevel = comments.filter(c => !c.parentId);

@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Bell, Plus, X, Edit3, Trash2, Copy, Search, BellOff, BellRing, TrendingUp, TrendingDown, DollarSign, Eye, MousePointerClick, Target, Megaphone, Users, AlertTriangle, Clock, Activity, Zap, History, Download, Send, Play } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type AlertMetric = "ctr" | "cpc" | "cpa" | "roas" | "spend" | "impressions" | "clicks" | "conversions" | "revenue" | "frequency";
 type AlertCondition = "gt" | "lt" | "gte" | "lte" | "eq" | "change_pct";
@@ -42,9 +42,19 @@ const ALERT_TEMPLATES = [
   { name: "Low ROAS Alert", metric: "roas" as AlertMetric, condition: "lt" as AlertCondition, threshold: 1.0, description: "Fires when ROAS drops below 1.0x", channels: ["email", "webhook"] as AlertChannel[] },
 ];
 
+const ENTITY_TYPE = "campaign_alerts";
+
 export default function CampaignAlerts() {
   const { addToast } = useToast();
-  const { data: alerts, loading, create, update, remove, replaceAll } = useEntityData<CampaignAlert>("campaign_alerts");
+  const [alerts, setAlerts] = useState<CampaignAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAlerts = useCallback(() => {
+    setLoading(true);
+    api.entities.list(ENTITY_TYPE).then(setAlerts).catch(() => addToast("error", "Failed to load alerts")).finally(() => setLoading(false));
+  }, [addToast]);
+
+  useEffect(() => { loadAlerts(); }, [loadAlerts]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<AlertStatus | "all">("all");
   const [showForm, setShowForm] = useState(false);
@@ -73,36 +83,34 @@ export default function CampaignAlerts() {
 
   function handleSave() {
     if (!form.name.trim()) { addToast("error", "Alert name is required"); return; }
-    const now = new Date().toISOString();
-    const alert: CampaignAlert = {
-      id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    const alertData = {
       name: form.name.trim(), description: form.description.trim(), metric: form.metric,
       condition: form.condition, threshold: form.threshold, channels: form.channels,
       campaignFilter: form.campaignFilter.trim() || "all", cooldownHours: form.cooldownHours,
-      lastTriggered: editingId ? alerts.find(a => a.id === editingId)!.lastTriggered : null,
-      triggerCount: editingId ? alerts.find(a => a.id === editingId)!.triggerCount : 0,
-      status: form.status, createdAt: editingId ? alerts.find(a => a.id === editingId)!.createdAt : now,
+      status: form.status,
     };
-    if (editingId) { update(editingId, alert as any); addToast("success", "Alert updated"); }
-    else { create(alert as any); addToast("success", "Alert created"); }
+    if (editingId) {
+      api.entities.update(ENTITY_TYPE, editingId, alertData).then(() => { loadAlerts(); addToast("success", "Alert updated"); }).catch(() => addToast("error", "Failed to update alert"));
+    } else {
+      api.entities.create(ENTITY_TYPE, alertData).then(() => { loadAlerts(); addToast("success", "Alert created"); }).catch(() => addToast("error", "Failed to create alert"));
+    }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = alerts.find(a => a.id === id)?.name;
-    remove(id);
-    addToast("success", `"${name}" deleted`);
+    api.entities.delete(ENTITY_TYPE, id).then(() => { loadAlerts(); addToast("success", `"${name}" deleted`); }).catch(() => addToast("error", "Failed to delete alert"));
   }
 
   function toggleStatus(id: string) {
-    replaceAll(alerts.map(a => a.id === id ? { ...a, status: (a.status === "active" ? "paused" : "active") as AlertStatus } : a));
     const a = alerts.find(al => al.id === id);
-    addToast("success", `"${a?.name}" ${a?.status === "active" ? "paused" : "activated"}`);
+    if (!a) return;
+    api.entities.update(ENTITY_TYPE, id, { enabled: a.status !== "active" }).then(() => { loadAlerts(); addToast("success", `"${a.name}" ${a.status === "active" ? "paused" : "activated"}`); }).catch(() => addToast("error", "Failed to toggle alert status"));
   }
 
   function resetTriggerCount(id: string) {
-    replaceAll(alerts.map(a => a.id === id ? { ...a, triggerCount: 0, lastTriggered: null, status: "active" as AlertStatus } : a));
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, triggerCount: 0, lastTriggered: null, status: "active" as AlertStatus } : a));
     addToast("success", "Trigger count reset");
   }
 
@@ -111,7 +119,7 @@ export default function CampaignAlerts() {
     if (!a) return;
     const now = new Date().toISOString();
     const simulatedValue = a.metric === "roas" ? 0.5 + Math.random() * 2 : a.metric === "ctr" ? Math.random() * 2 : a.metric === "spend" ? 500 + Math.random() * 2000 : Math.random() * 100;
-    replaceAll(alerts.map(al => al.id === id ? { ...al, lastTriggered: now, triggerCount: al.triggerCount + 1, status: "triggered" as AlertStatus } : a));
+    setAlerts(prev => prev.map(al => al.id === id ? { ...al, lastTriggered: now, triggerCount: al.triggerCount + 1, status: "triggered" as AlertStatus } : al));
     setAlertHistory(prev => [{ alertId: id, alertName: a.name, triggeredAt: now, value: Math.round(simulatedValue * 100) / 100, threshold: a.threshold }, ...prev].slice(0, 50));
     addToast("warning", `Simulated: ${a.name} — value ${Math.round(simulatedValue * 100) / 100} (threshold: ${a.threshold})`);
   }

@@ -558,7 +558,7 @@ export default function CampaignDetail() {
 
       {tab === "comments" && campaign && (
         <div className="card p-6">
-          <CommentsSection entityId={campaign._id || campaign.id} entityName={campaign.name} />
+          <CommentsSection entityType="campaigns" entityId={campaign._id || campaign.id} entityName={campaign.name} />
         </div>
       )}
 

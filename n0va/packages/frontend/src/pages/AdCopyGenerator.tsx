@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Sparkles, Tag, Megaphone, Star, Heart, Target, Zap, Sun, Moon, Cloud, Flame, Smile, Frown, Download, PieChart as PieChartIcon } from "lucide-react";
+import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -18,6 +19,18 @@ interface AdCopy {
   isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface GeneratedVariant {
+  headline: string;
+  body: string;
+  cta: string;
+  tone: Tone;
+  platform: string;
+  estimatedCtr: number;
+  estimatedCvr: number;
+  characterCount: number;
+  platformFit: "excellent" | "good" | "fair" | "poor";
 }
 
 const TONE_META: Record<string, { label: string; icon: any; color: string }> = {
@@ -42,13 +55,14 @@ export default function AdCopyGenerator() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [form, setForm] = useState<{ headline: string; body: string; cta: string; tone: Tone; campaignName: string; platform: string; tags: string }>({
-    headline: "", body: "", cta: "", tone: "professional", campaignName: "", platform: "", tags: "",
+  const [form, setForm] = useState<{ headline: string; body: string; cta: string; tone: Tone; campaignName: string; platform: string; tags: string; productDescription: string; targetAudience: string }>({
+    headline: "", body: "", cta: "", tone: "professional", campaignName: "", platform: "", tags: "", productDescription: "", targetAudience: "",
   });
+  const [generated, setGenerated] = useState<GeneratedVariant[]>([]);
 
   function resetForm(c?: AdCopy) {
-    if (c) setForm({ headline: c.headline, body: c.body, cta: c.cta, tone: c.tone, campaignName: c.campaignName, platform: c.platform, tags: c.tags.join(", ") });
-    else setForm({ headline: "", body: "", cta: "", tone: "professional", campaignName: "", platform: "", tags: "" });
+    if (c) setForm({ headline: c.headline, body: c.body, cta: c.cta, tone: c.tone, campaignName: c.campaignName, platform: c.platform, tags: c.tags.join(", "), productDescription: "", targetAudience: "" });
+    else setForm({ headline: "", body: "", cta: "", tone: "professional", campaignName: "", platform: "", tags: "", productDescription: "", targetAudience: "" });
   }
 
   function handleSave() {
@@ -86,22 +100,24 @@ export default function AdCopyGenerator() {
     addToast("success", "Copy duplicated");
   }
 
-  function aiGenerate() {
+  async function aiGenerate() {
     setGenerating(true);
-    setTimeout(() => {
-      const suggestion: AdCopy = {
-        id: "gen-" + Date.now().toString(36),
-        headline: "Don't Just Market — Dominate",
-        body: "AI-powered campaign optimization that turns every dollar into results. N0VA's marketing platform helps you create, manage, and optimize campaigns with unprecedented efficiency.",
-        cta: "Get Started Free",
-        tone: form.tone, campaignName: form.campaignName || "New Campaign",
-        platform: form.platform || "Google Ads", tags: ["ai-generated"],
-        isFavorite: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-      };
-      replaceAll([suggestion, ...copies]);
+    try {
+      const res = await api.creativeAI.generate({
+        productDescription: form.productDescription || "AI-powered marketing platform",
+        targetAudience: form.targetAudience || "digital marketers",
+        tone: form.tone || "professional",
+        platform: form.platform || "meta",
+        count: 3,
+      });
+      const variants: GeneratedVariant[] = res.variants || [];
+      setGenerated(variants);
+      addToast("success", `${variants.length} AI variants generated!`);
+    } catch (err: any) {
+      addToast("error", err.message || "Failed to generate AI copy");
+    } finally {
       setGenerating(false);
-      addToast("success", "AI copy generated!");
-    }, 800);
+    }
   }
 
   const filtered = copies.filter(c => {
@@ -184,6 +200,64 @@ export default function AdCopyGenerator() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI-generated variants */}
+      {generated.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-n0va-400" />
+              Generated Variants
+            </h2>
+            <button onClick={() => setGenerated([])} className="btn-ghost text-xs">Clear</button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {generated.map((v, i) => {
+              const fitColors: Record<string, string> = {
+                excellent: "bg-green-500/20 text-green-400 border-green-500/30",
+                good: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                fair: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+                poor: "bg-red-500/20 text-red-400 border-red-500/30",
+              };
+              return (
+                <div key={i} className="card p-4 border border-n0va-500/20">
+                  <div className="flex items-start gap-2 mb-2">
+                    <div className="p-1.5 rounded bg-n0va-500/10 text-n0va-400">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-white truncate">{v.headline}</h3>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-600 mt-0.5">
+                        <span className="px-1.5 py-0.5 rounded bg-n0va-500/10 text-n0va-400">{v.tone}</span>
+                        <span>{v.platform}</span>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${fitColors[v.platformFit] || ""}`}>
+                      {v.platformFit}
+                    </span>
+                  </div>
+                  <div className="bg-gray-800/40 rounded-lg p-3 mb-2">
+                    <p className="text-sm text-gray-300 italic">"{v.body}"</p>
+                  </div>
+                  {v.cta && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-600">CTA:</span>
+                      <span className="text-xs bg-n0va-600/20 text-n0va-400 px-2 py-0.5 rounded">{v.cta}</span>
+                    </div>
+                  )}
+                  {v.estimatedCtr != null && (
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500">
+                      <span>CTR: {(v.estimatedCtr * 100).toFixed(1)}%</span>
+                      <span>CVR: {(v.estimatedCvr * 100).toFixed(1)}%</span>
+                      <span>Chars: {v.characterCount}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

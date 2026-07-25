@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { BookTemplate, Plus, X, Search, Edit3, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Star, Eye, Clock, Filter, Copy, CheckCircle, ListChecks, GripVertical, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface PlaybookSection {
@@ -43,7 +43,19 @@ function timeAgo(date: string): string {
 
 export default function Playbooks() {
   const { addToast } = useToast();
-  const { data: playbooks, loading, create, update, remove, replaceAll } = useEntityData<Playbook>("playbooks");
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadPlaybooks(); }, []);
+
+  async function loadPlaybooks() {
+    setLoading(true);
+    try {
+      const data = await api.entities.list("playbooks");
+      setPlaybooks(data || []);
+    } catch { setPlaybooks([]); }
+    setLoading(false);
+  }
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -60,8 +72,13 @@ export default function Playbooks() {
     setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
-  function toggleFavorite(id: string) {
-    replaceAll(playbooks.map(p => p.id === id ? { ...p, favorite: !p.favorite } : p));
+  async function toggleFavorite(id: string) {
+    const pb = playbooks.find(p => p.id === id);
+    if (!pb) return;
+    try {
+      await api.entities.update("playbooks", id, { ...pb, favorite: !pb.favorite } as any);
+      await loadPlaybooks();
+    } catch { addToast("error", "Failed to update favorite"); }
   }
 
   function resetForm(pb?: Playbook) {
@@ -81,7 +98,7 @@ export default function Playbooks() {
     setForm(f => ({ ...f, sections: f.sections.filter(s => s.id !== id) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.title.trim()) { addToast("error", "Playbook title is required"); return; }
     const validSections = form.sections.filter(s => s.title.trim());
     const now = new Date().toISOString();
@@ -97,19 +114,30 @@ export default function Playbooks() {
       createdAt: editingId ? playbooks.find(p => p.id === editingId)!.createdAt : now,
       updatedAt: now,
     };
-    if (editingId) { update(editingId, playbook); addToast("success", "Playbook updated"); }
-    else { create(playbook); addToast("success", "Playbook created"); }
+    try {
+      if (editingId) {
+        await api.entities.update("playbooks", editingId, playbook as any);
+        addToast("success", "Playbook updated");
+      } else {
+        await api.entities.create("playbooks", playbook as any);
+        addToast("success", "Playbook created");
+      }
+      await loadPlaybooks();
+    } catch { addToast("error", "Save failed"); }
     setShowForm(false);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = playbooks.find(p => p.id === id)?.title;
-    remove(id);
+    try {
+      await api.entities.delete("playbooks", id);
+      await loadPlaybooks();
+      addToast("success", `"${name}" deleted`);
+    } catch { addToast("error", "Delete failed"); }
     if (viewingId === id) setViewingId(null);
-    addToast("success", `"${name}" deleted`);
   }
 
-  function duplicatePlaybook(id: string) {
+  async function duplicatePlaybook(id: string) {
     const pb = playbooks.find(p => p.id === id);
     if (!pb) return;
     const copy: Playbook = {
@@ -117,8 +145,11 @@ export default function Playbooks() {
       title: `${pb.title} (Copy)`, status: "draft", favorite: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
-    replaceAll([copy, ...playbooks]);
-    addToast("success", "Playbook duplicated");
+    try {
+      await api.entities.create("playbooks", copy as any);
+      await loadPlaybooks();
+      addToast("success", "Playbook duplicated");
+    } catch { addToast("error", "Duplicate failed"); }
   }
 
   let filtered = playbooks;

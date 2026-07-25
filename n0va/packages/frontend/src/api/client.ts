@@ -12,6 +12,27 @@ function getTenantId(): string {
   return "tenant_001";
 }
 
+async function requestFormData<T>(path: string, fd: FormData): Promise<T> {
+  const url = `${API_BASE}${path}`;
+  const token = getToken();
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    "x-tenant-id": getTenantId(),
+  };
+  const response = await fetch(url, { method: "POST", headers, body: fd });
+  if (response.status === 401) {
+    localStorage.removeItem("n0va_token");
+    localStorage.removeItem("n0va_user");
+    window.location.href = "/login";
+    throw new Error("Session expired");
+  }
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(err.error || `HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -486,5 +507,69 @@ export const api = {
       request<any>(`/approvals/${id}/act`, { method: "PATCH", body: JSON.stringify({ action, comment, approver }) }),
     pendingCount: () => request<{ count: number }>("/approvals/pending-count"),
     history: () => request<any[]>("/approvals/history"),
+  },
+  creativeAI: {
+    generate: (data: Record<string, unknown>) =>
+      request<any>("/creative-ai/generate", { method: "POST", body: JSON.stringify(data) }),
+    headlines: (data: Record<string, unknown>) =>
+      request<any>("/creative-ai/headlines", { method: "POST", body: JSON.stringify(data) }),
+    body: (data: Record<string, unknown>) =>
+      request<any>("/creative-ai/body", { method: "POST", body: JSON.stringify(data) }),
+    suggestTone: (data: Record<string, unknown>) =>
+      request<any>("/creative-ai/suggest-tone", { method: "POST", body: JSON.stringify(data) }),
+    expand: (data: Record<string, unknown>) =>
+      request<any>("/creative-ai/expand", { method: "POST", body: JSON.stringify(data) }),
+  },
+  snapshots: {
+    capture: (data: Record<string, unknown>) =>
+      request<any>("/snapshots/capture", { method: "POST", body: JSON.stringify(data) }),
+    compare: (id1: string, id2: string) => request<any>(`/snapshots/compare?id1=${id1}&id2=${id2}`),
+    timeline: (campaignId: string) => request<any[]>(`/snapshots/timeline/${campaignId}`),
+    autoCapture: () => request<any>("/snapshots/auto-capture", { method: "POST" }),
+    delete: (id: string) => request<void>(`/snapshots/${id}`, { method: "DELETE" }),
+  },
+  reports: {
+    generate: (data: Record<string, unknown>) =>
+      request<any>("/reports/generate", { method: "POST", body: JSON.stringify(data) }),
+    list: () => request<any[]>("/reports"),
+    get: (id: string) => request<any>(`/reports/${id}`),
+    schedule: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/reports/${id}/schedule`, { method: "POST", body: JSON.stringify(data) }),
+    schedules: () => request<any[]>("/reports/schedules"),
+    cancelSchedule: (id: string) => request<void>(`/reports/schedules/${id}`, { method: "DELETE" }),
+    export: (id: string) => request<any>(`/reports/${id}/export`, { method: "POST", body: JSON.stringify({ format: "json" }) }),
+  },
+  notificationPreferences: {
+    get: () => request<any>("/notification-preferences"),
+    save: (data: Record<string, unknown>) =>
+      request<any>("/notification-preferences", { method: "PUT", body: JSON.stringify(data) }),
+    defaults: () => request<any>("/notification-preferences/defaults"),
+  },
+  bulkImport: {
+    import: (data: Record<string, unknown>) =>
+      request<any>("/bulk-import", { method: "POST", body: JSON.stringify(data) }),
+    validate: (data: Record<string, unknown>) =>
+      request<any>("/bulk-import/validate", { method: "POST", body: JSON.stringify(data) }),
+    template: (entityType: string) => request<any>(`/bulk-import/templates/${entityType}`),
+  },
+  upload: {
+    single: (file: File, entityType?: string, entityId?: string) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      if (entityType) fd.append("entityType", entityType);
+      if (entityId) fd.append("entityId", entityId);
+      return requestFormData<any>("/upload", fd);
+    },
+    multiple: (files: File[], entityType?: string, entityId?: string) => {
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+      if (entityType) fd.append("entityType", entityType);
+      if (entityId) fd.append("entityId", entityId);
+      return requestFormData<any>("/upload/multiple", fd);
+    },
+    list: (entityType?: string) =>
+      request<any[]>(`/upload${entityType ? `?entityType=${entityType}` : ""}`),
+    get: (id: string) => request<any>(`/upload/${id}`),
+    delete: (id: string) => request<void>(`/upload/${id}`, { method: "DELETE" }),
   },
 };

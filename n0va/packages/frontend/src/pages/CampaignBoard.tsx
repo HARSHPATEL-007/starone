@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Columns3, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, DollarSign, Target, BarChart3, Megaphone, CheckCircle, Clock, ArrowRight, GripVertical, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type BoardStatus = "idea" | "planning" | "in_progress" | "review" | "completed" | "on_hold";
 
@@ -45,9 +45,12 @@ const PRIORITY_META: Record<string, { color: string }> = {
 
 const STATUSES: BoardStatus[] = ["idea", "planning", "in_progress", "review", "completed", "on_hold"];
 
+const ENTITY_TYPE = "campaign_boards";
+
 export default function CampaignBoard() {
   const { addToast } = useToast();
-  const { data: boards, loading, create, remove, replaceAll } = useEntityData<CampaignBoard>("campaign_boards");
+  const [boards, setBoards] = useState<CampaignBoard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -57,10 +60,23 @@ export default function CampaignBoard() {
   const [showNewBoard, setShowNewBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
 
+  useEffect(() => {
+    api.entities.list(ENTITY_TYPE).then(data => {
+      if (data?.length) setBoards(data as CampaignBoard[]);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
   const activeBoard = boards.find(b => b.id === activeBoardId) || boards[0];
 
   function updateBoard(updated: CampaignBoard) {
-    replaceAll(boards.map(b => b.id === updated.id ? updated : b));
+    const existing = boards.find(b => b.id === updated.id);
+    const entityId = (existing as any)?._id;
+    setBoards(prev => prev.map(b => b.id === updated.id ? updated : b));
+    if (entityId) {
+      const { _id, ...payload } = updated as any;
+      api.entities.update(ENTITY_TYPE, entityId, payload);
+    }
   }
 
   function addCard(status: BoardStatus) {
@@ -122,7 +138,9 @@ export default function CampaignBoard() {
     if (!newBoardName.trim()) { addToast("error", "Board name required"); return; }
     const now = new Date().toISOString();
     const board: CampaignBoard = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: newBoardName.trim(), cards: [], createdAt: now, updatedAt: now };
-    create(board as any);
+    api.entities.create(ENTITY_TYPE, board as unknown as Record<string, unknown>).then(created => {
+      setBoards(prev => [...prev, created as CampaignBoard]);
+    });
     setActiveBoardId(board.id);
     setNewBoardName("");
     setShowNewBoard(false);
@@ -130,8 +148,11 @@ export default function CampaignBoard() {
   }
 
   function deleteBoard(id: string) {
-    const name = boards.find(b => b.id === id)?.name;
-    remove(id);
+    const board = boards.find(b => b.id === id);
+    const entityId = (board as any)?._id;
+    const name = board?.name;
+    if (entityId) api.entities.delete(ENTITY_TYPE, entityId);
+    setBoards(prev => prev.filter(b => b.id !== id));
     if (activeBoardId === id) setActiveBoardId(null);
     addToast("success", `"${name}" deleted`);
   }

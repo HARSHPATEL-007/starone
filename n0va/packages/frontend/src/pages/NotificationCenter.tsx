@@ -52,13 +52,23 @@ export default function NotificationCenter() {
   const [selectMode, setSelectMode] = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
   const [prefTypes, setPrefTypes] = useState<Record<string, boolean>>({ fraud_alert: true, budget_alert: true, campaign_update: true, agent_status: true, system: true });
+  const [prefsLoading, setPrefsLoading] = useState(false);
   const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set());
   const [snoozeTimer, setSnoozeTimer] = useState<Record<string, NodeJS.Timeout>>({});
 
   const fraudAlerts = useFraudAlerts();
   const budgetAlerts = useBudgetAlerts();
 
-  useEffect(() => { loadNotifications(); }, []);
+  useEffect(() => { loadNotifications(); loadPrefs(); }, []);
+
+  async function loadPrefs() {
+    setPrefsLoading(true);
+    try {
+      const prefs = await api.notificationPreferences.get();
+      setPrefTypes({ fraud_alert: prefs.fraud_alerts !== false, budget_alert: prefs.budget_alerts !== false, campaign_update: prefs.campaign_updates !== false, agent_status: prefs.agent_status !== false, system: true });
+    } catch { /* use defaults */ }
+    finally { setPrefsLoading(false); }
+  }
 
   async function loadNotifications() {
     setLoading(true);
@@ -219,7 +229,16 @@ export default function NotificationCenter() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {Object.entries(prefTypes).map(([type, enabled]) => (
               <label key={type} className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
-                <input type="checkbox" checked={enabled} onChange={() => setPrefTypes(prev => ({ ...prev, [type]: !prev[type] }))} className="rounded border-gray-700 bg-gray-800 accent-n0va-500" />
+                <input type="checkbox" checked={enabled} disabled={prefsLoading} onChange={() => {
+                  const next = { ...prefTypes, [type]: !prefTypes[type] };
+                  setPrefTypes(next);
+                  api.notificationPreferences.save({
+                    fraud_alerts: next.fraud_alert,
+                    budget_alerts: next.budget_alert,
+                    campaign_updates: next.campaign_update,
+                    agent_status: next.agent_status,
+                  }).catch(() => setPrefTypes(prefTypes));
+                }} className="rounded border-gray-700 bg-gray-800 accent-n0va-500" />
                 {type === "fraud_alert" ? "Fraud Alerts" : type === "budget_alert" ? "Budget Alerts" : type === "campaign_update" ? "Campaign Updates" : type === "agent_status" ? "Agent Status" : "System"}
               </label>
             ))}

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Send, Plus, X, Edit3, Trash2, Copy, Search, Calendar, Clock, Globe, Image, Smartphone, Monitor, Hash, CheckCircle, AlertCircle, BarChart3, TrendingUp, Filter, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type SocialPlatform = "facebook" | "instagram" | "linkedin" | "twitter" | "tiktok" | "youtube";
 type PostStatus = "draft" | "scheduled" | "published" | "failed";
@@ -43,7 +43,15 @@ const COLORS = ["#8b5cf6", "#22c55e", "#eab308", "#ef4444", "#3b82f6", "#ec4899"
 
 export default function SocialPublisher() {
   const { addToast } = useToast();
-  const { data: posts, loading, create, update, remove, replaceAll } = useEntityData<SocialPost>("social_posts");
+  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.entities.list("social_posts")
+      .then(data => setPosts(Array.isArray(data) ? data : []))
+      .catch(() => setPosts([]))
+      .finally(() => setLoading(false));
+  }, []);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<PostStatus | "all">("all");
   const [filterPlatform, setFilterPlatform] = useState<SocialPlatform | "all">("all");
@@ -71,27 +79,42 @@ export default function SocialPublisher() {
     if (!form.content.trim()) { addToast("error", "Post content is required"); return; }
     if (form.platforms.length === 0) { addToast("error", "Select at least one platform"); return; }
     const now = new Date().toISOString();
-    const post: SocialPost = {
-      id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    const postData = {
       content: form.content.trim(), platforms: form.platforms, scheduledDate: form.scheduledDate,
       status: form.status, mediaUrls: form.mediaUrls.filter(u => u.trim()), link: form.link.trim(),
-      campaignName: form.campaignName.trim(), createdAt: editingId ? posts.find(p => p.id === editingId)!.createdAt : now,
-      engagement: editingId ? posts.find(p => p.id === editingId)!.engagement : { likes: 0, comments: 0, shares: 0 },
+      campaignName: form.campaignName.trim(), createdAt: now,
+      engagement: { likes: 0, comments: 0, shares: 0 },
     };
-    if (editingId) { update(editingId, post); addToast("success", "Post updated"); }
-    else { create(post); addToast("success", "Post created"); }
+    if (editingId) {
+      api.entities.update("social_posts", editingId, postData).then(() =>
+        api.entities.list("social_posts").then(data => setPosts(Array.isArray(data) ? data : []))
+      );
+      addToast("success", "Post updated");
+    } else {
+      api.entities.create("social_posts", postData).then(() =>
+        api.entities.list("social_posts").then(data => setPosts(Array.isArray(data) ? data : []))
+      );
+      addToast("success", "Post created");
+    }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
-    remove(id);
+    api.entities.delete("social_posts", id).then(() => setPosts(prev => prev.filter(p => p.id !== id)));
     addToast("success", "Post deleted");
   }
 
   function publishNow(id: string) {
-    replaceAll(posts.map(p => p.id === id ? { ...p, status: "published" as PostStatus, publishedAt: new Date().toISOString(), engagement: { likes: Math.floor(Math.random() * 100), comments: Math.floor(Math.random() * 20), shares: Math.floor(Math.random() * 10) } } : p));
-    addToast("success", "Post published!");
+    const post = posts.find(p => p.id === id);
+    if (!post) return;
+    api.platforms.execute({ platform: post.platforms[0], action: "post", content: post.content })
+      .then(() => api.entities.update("social_posts", id, { status: "published", publishedAt: new Date().toISOString() }))
+      .then(() => {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, status: "published" as PostStatus, publishedAt: new Date().toISOString(), engagement: { likes: Math.floor(Math.random() * 100), comments: Math.floor(Math.random() * 20), shares: Math.floor(Math.random() * 10) } } : p));
+        addToast("success", "Post published!");
+      })
+      .catch(() => addToast("error", "Failed to publish post"));
   }
 
   const filtered = posts.filter(p => {

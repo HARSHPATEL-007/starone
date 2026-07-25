@@ -54,6 +54,12 @@ import channelPerformanceRoutes from "./routes/channel-performance";
 import automationRulesRoutes from "./routes/automation-rules";
 import templateRoutes from "./routes/templates";
 import approvalRoutes from "./routes/approvals";
+import creativeAIRoutes from "./routes/creative-ai";
+import snapshotRoutes from "./routes/snapshots";
+import reportRoutes from "./routes/reports";
+import notificationPrefRoutes from "./routes/notification-preferences";
+import bulkImportRoutes from "./routes/bulk-import";
+import uploadRoutes from "./routes/upload";
 
 const app = express();
 const httpServer = createServer(app);
@@ -68,6 +74,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.corsOrigin }));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
+app.use("/uploads", express.static("uploads"));
 
 let usingMemoryStore = false;
 
@@ -121,6 +128,12 @@ app.use("/api/v1/channel-performance", authMiddleware, tenantMiddleware, channel
 app.use("/api/v1/automation-rules", authMiddleware, tenantMiddleware, automationRulesRoutes);
 app.use("/api/v1/templates", authMiddleware, tenantMiddleware, templateRoutes);
 app.use("/api/v1/approvals", authMiddleware, tenantMiddleware, approvalRoutes);
+app.use("/api/v1/creative-ai", authMiddleware, tenantMiddleware, creativeAIRoutes);
+app.use("/api/v1/snapshots", authMiddleware, tenantMiddleware, snapshotRoutes);
+app.use("/api/v1/reports", authMiddleware, tenantMiddleware, reportRoutes);
+app.use("/api/v1/notification-preferences", authMiddleware, tenantMiddleware, notificationPrefRoutes);
+app.use("/api/v1/bulk-import", authMiddleware, tenantMiddleware, bulkImportRoutes);
+app.use("/api/v1/upload", authMiddleware, tenantMiddleware, uploadRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

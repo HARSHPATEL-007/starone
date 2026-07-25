@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MessageSquare, Plus, Trash2, Clock, User } from "lucide-react";
+import { api } from "../api/client";
 
 interface Note {
   id: string;
@@ -14,14 +15,10 @@ interface NotesWidgetProps {
   entityName: string;
 }
 
-function storageKey(entityType: string, entityId: string) {
-  return `n0va_notes_${entityType}_${entityId}`;
-}
-
 export default function NotesWidget({ entityType, entityId, entityName }: NotesWidgetProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [text, setText] = useState("");
-  const [author, setAuthor] = useState(() => {
+  const [author] = useState(() => {
     try {
       const u = localStorage.getItem("n0va_user");
       if (u) return JSON.parse(u).name || "User";
@@ -30,31 +27,40 @@ export default function NotesWidget({ entityType, entityId, entityName }: NotesW
   });
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey(entityType, entityId));
-      if (saved) setNotes(JSON.parse(saved));
-    } catch {}
+    api.entities.list("notes").then((result) => {
+      const filtered = (result || [])
+        .filter((n: any) => n.entityType === entityType && n.entityId === entityId)
+        .map((n: any) => ({ id: n._id, text: n.text, author: n.author, timestamp: n.createdAt }))
+        .sort((a: Note, b: Note) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setNotes(filtered);
+    }).catch(() => {});
   }, [entityType, entityId]);
 
-  function persist(updated: Note[]) {
-    setNotes(updated);
-    localStorage.setItem(storageKey(entityType, entityId), JSON.stringify(updated));
-  }
-
-  function addNote() {
+  async function addNote() {
     if (!text.trim()) return;
-    const note: Note = {
-      id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      text: text.trim(),
-      author: author || "User",
-      timestamp: new Date().toISOString(),
-    };
-    persist([note, ...notes]);
-    setText("");
+    try {
+      const created = await api.entities.create("notes", {
+        text: text.trim(),
+        author: author || "User",
+        entityType,
+        entityId,
+        createdAt: new Date().toISOString(),
+      });
+      setNotes((prev) => [{
+        id: created._id,
+        text: created.text,
+        author: created.author,
+        timestamp: created.createdAt,
+      }, ...prev]);
+      setText("");
+    } catch {}
   }
 
-  function deleteNote(id: string) {
-    persist(notes.filter((n) => n.id !== id));
+  async function deleteNote(id: string) {
+    try {
+      await api.entities.delete("notes", id);
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+    } catch {}
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

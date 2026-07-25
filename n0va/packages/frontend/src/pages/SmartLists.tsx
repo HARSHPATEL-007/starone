@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ListFilter, Plus, X, Edit3, Trash2, Copy, Search, Tag, Eye, Users, Megaphone, Palette, BarChart3, Bot, FileJson, Target, Share2, Star, Download, Grid, List, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type EntityType = "campaign" | "creative" | "audience" | "analytics" | "agent" | "recipe" | "platform" | "generic";
 
@@ -48,7 +48,19 @@ const FILTER_TEMPLATES = [
 export default function SmartLists() {
   const { addToast } = useToast();
   const navigate = useNavigate();
-  const { data: lists, loading, create, update, remove, replaceAll } = useEntityData<SmartList>("smart_lists");
+  const [lists, setLists] = useState<SmartList[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadLists(); }, []);
+
+  async function loadLists() {
+    setLoading(true);
+    try {
+      const data = await api.entities.list("smart_lists");
+      setLists(data || []);
+    } catch { setLists([]); }
+    setLoading(false);
+  }
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<EntityType | "all">("all");
   const [showFavorites, setShowFavorites] = useState(false);
@@ -81,7 +93,7 @@ export default function SmartLists() {
     addToast("success", `Template "${tmpl.name}" applied`);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "List name is required"); return; }
     const validFilters = form.filters.filter(f => f.field && f.value);
     const now = new Date().toISOString();
@@ -92,28 +104,47 @@ export default function SmartLists() {
       usageCount: editingId ? lists.find(l => l.id === editingId)!.usageCount : 0,
       createdAt: editingId ? lists.find(l => l.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    if (editingId) { update(editingId, list); addToast("success", "Smart list updated"); }
-    else { create(list); addToast("success", "Smart list created"); }
+    try {
+      if (editingId) {
+        await api.entities.update("smart_lists", editingId, list as any);
+        addToast("success", "Smart list updated");
+      } else {
+        await api.entities.create("smart_lists", list as any);
+        addToast("success", "Smart list created");
+      }
+      await loadLists();
+    } catch { addToast("error", "Save failed"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = lists.find(l => l.id === id)?.name;
-    remove(id);
-    addToast("success", `"${name}" deleted`);
+    try {
+      await api.entities.delete("smart_lists", id);
+      await loadLists();
+      addToast("success", `"${name}" deleted`);
+    } catch { addToast("error", "Delete failed"); }
   }
 
-  function toggleFavorite(id: string) {
-    replaceAll(lists.map(l => l.id === id ? { ...l, isFavorite: !l.isFavorite } : l));
+  async function toggleFavorite(id: string) {
+    const list = lists.find(l => l.id === id);
+    if (!list) return;
+    try {
+      await api.entities.update("smart_lists", id, { ...list, isFavorite: !list.isFavorite } as any);
+      await loadLists();
+    } catch { addToast("error", "Failed to update favorite"); }
   }
 
-  function duplicate(id: string) {
+  async function duplicate(id: string) {
     const l = lists.find(li => li.id === id);
     if (!l) return;
     const copy: SmartList = { ...l, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${l.name} (Copy)`, usageCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    replaceAll([copy, ...lists]);
-    addToast("success", "Smart list duplicated");
+    try {
+      await api.entities.create("smart_lists", copy as any);
+      await loadLists();
+      addToast("success", "Smart list duplicated");
+    } catch { addToast("error", "Duplicate failed"); }
   }
 
   function applyList(list: SmartList) {
