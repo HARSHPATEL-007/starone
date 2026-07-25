@@ -45,7 +45,7 @@ const VALID_ENTITY_TYPES = [
   "billing_subscriptions",
 ];
 
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
   return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
 }
 
@@ -63,8 +63,8 @@ router.get(
     for (const [k, v] of Object.entries(rest)) {
       if (typeof v === "string") filter[k] = v;
     }
-    const results = entityStore.list(tenantId, entityType, Object.keys(filter).length ? filter : undefined);
-    res.json(results.map((r) => ({ _id: r._id, ...r.data })));
+    const results = await entityStore.list(tenantId, entityType, Object.keys(filter).length ? filter : undefined);
+    res.json(results);
   })
 );
 
@@ -73,11 +73,11 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { entityType, id } = req.params;
-    const record = entityStore.get(id, tenantId);
-    if (!record || record.entityType !== entityType) {
+    const record = await entityStore.get(id, tenantId);
+    if (!record) {
       throw new AppError(404, "Entity not found");
     }
-    res.json({ _id: record._id, ...record.data });
+    res.json(record);
   })
 );
 
@@ -89,8 +89,8 @@ router.post(
     if (!VALID_ENTITY_TYPES.includes(entityType)) {
       throw new AppError(400, `Invalid entity type: ${entityType}`);
     }
-    const record = entityStore.create(tenantId, entityType, req.body, req.user!.userId);
-    res.status(201).json({ _id: record._id, ...record.data });
+    const record = await entityStore.create(tenantId, entityType, req.body, req.user!.userId);
+    res.status(201).json(record);
   })
 );
 
@@ -99,12 +99,12 @@ router.patch(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { entityType, id } = req.params;
-    const record = entityStore.get(id, tenantId);
-    if (!record || record.entityType !== entityType) {
+    const record = await entityStore.get(id, tenantId);
+    if (!record) {
       throw new AppError(404, "Entity not found");
     }
-    const updated = entityStore.update(id, tenantId, req.body);
-    res.json({ _id: updated!._id, ...updated!.data });
+    const updated = await entityStore.update(id, tenantId, req.body);
+    res.json(updated);
   })
 );
 
@@ -113,7 +113,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { entityType, id } = req.params;
-    const deleted = entityStore.delete(id, tenantId);
+    const deleted = await entityStore.delete(id, tenantId);
     if (!deleted) throw new AppError(404, "Entity not found");
     res.status(204).send();
   })
@@ -124,9 +124,11 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { entityType } = req.params;
-    const count = entityStore.deleteAll(tenantId, entityType);
+    const count = await entityStore.deleteAll(tenantId, entityType);
     res.json({ deleted: count });
   })
 );
 
 export default router;
+
+

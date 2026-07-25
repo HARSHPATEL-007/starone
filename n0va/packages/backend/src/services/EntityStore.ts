@@ -1,19 +1,47 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
+import { EntityRecord, IEntityRecord } from "../models/EntityRecord";
 
-interface EntityRecord {
+interface InMemEntity {
   _id: string;
   tenantId: string;
   entityType: string;
   data: Record<string, unknown>;
   createdBy?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class EntityStore {
-  private records: EntityRecord[] = [];
+  private records: InMemEntity[] = [];
+  private useMongo = false;
 
-  list(tenantId: string, entityType: string, filter?: Record<string, unknown>): EntityRecord[] {
+  constructor() { this.useMongo = mongoose.connection.readyState === 1; }
+
+  private isConnected(): boolean {
+    return mongoose.connection.readyState === 1;
+  }
+
+  async list(tenantId: string, entityType: string, filter?: Record<string, unknown>): Promise<any[]> {
+    if (this.isConnected()) {
+      const query: any = { tenantId, entityType };
+      if (filter) {
+        for (const [key, value] of Object.entries(filter)) {
+          if (key === "search" && typeof value === "string") {
+            query["$or"] = [
+              { "data.name": { $regex: value, $options: "i" } },
+              { "data.title": { $regex: value, $options: "i" } },
+              { "data.description": { $regex: value, $options: "i" } },
+            ];
+          } else {
+            query[`data.${key}`] = value;
+          }
+        }
+      }
+      const docs = await EntityRecord.find(query).sort({ createdAt: -1 }).lean();
+      return docs.map((d: any) => ({ _id: d._id.toString(), ...d.data }));
+    }
+
     let results = this.records.filter(
       (r) => r.tenantId === tenantId && r.entityType === entityType
     );
@@ -28,59 +56,78 @@ export class EntityStore {
         }
       }
     }
-    return results.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return results
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((r) => ({ _id: r._id, ...r.data }));
   }
 
-  get(id: string, tenantId: string): EntityRecord | undefined {
-    return this.records.find((r) => r._id === id && r.tenantId === tenantId);
+  async get(id: string, tenantId: string): Promise<any | undefined> {
+    if (this.isConnected()) {
+      const doc = await EntityRecord.findOne({ _id: id, tenantId }).lean();
+      if (!doc) return undefined;
+      const d: any = doc;
+      return { _id: d._id.toString(), ...d.data };
+    }
+    const r = this.records.find((rec) => rec._id === id && rec.tenantId === tenantId);
+    if (!r) return undefined;
+    return { _id: r._id, ...r.data };
   }
 
-  create(
+  async create(
     tenantId: string,
     entityType: string,
     data: Record<string, unknown>,
     createdBy?: string
-  ): EntityRecord {
-    const now = new Date().toISOString();
-    const record: EntityRecord = {
-      _id: `${entityType}_${crypto.randomBytes(8).toString("hex")}`,
-      tenantId,
-      entityType,
-      data: { ...data },
-      createdBy,
-      createdAt: now,
-      updatedAt: now,
-    };
+  ): Promise<any> {
+    if (this.isConnected()) {
+      const doc = await EntityRecord.create({ tenantId, entityType, data, createdBy });
+      return { _id: doc._id.toString(), ...data };
+    }
+    const now = new Date();
+    const _id = `${entityType}_${crypto.randomBytes(8).toString("hex")}`;
+    const record: InMemEntity = { _id, tenantId, entityType, data: { ...data }, createdBy, createdAt: now, updatedAt: now };
     this.records.push(record);
-    return record;
+    return { _id, ...data };
   }
 
-  update(
+  async update(
     id: string,
     tenantId: string,
-    data: Partial<Record<string, unknown>>
-  ): EntityRecord | undefined {
-    const record = this.records.find(
-      (r) => r._id === id && r.tenantId === tenantId
-    );
+    data: Record<string, unknown>
+  ): Promise<any | undefined> {
+    if (this.isConnected()) {
+      const doc = await EntityRecord.findOneAndUpdate(
+        { _id: id, tenantId },
+        { $set: { data } },
+        { new: true }
+      ).lean();
+      if (!doc) return undefined;
+      const d: any = doc;
+      return { _id: d._id.toString(), ...d.data };
+    }
+    const record = this.records.find((r) => r._id === id && r.tenantId === tenantId);
     if (!record) return undefined;
     Object.assign(record.data, data);
-    record.updatedAt = new Date().toISOString();
-    return record;
+    record.updatedAt = new Date();
+    return { _id: record._id, ...record.data };
   }
 
-  delete(id: string, tenantId: string): boolean {
-    const idx = this.records.findIndex(
-      (r) => r._id === id && r.tenantId === tenantId
-    );
+  async delete(id: string, tenantId: string): Promise<boolean> {
+    if (this.isConnected()) {
+      const result = await EntityRecord.deleteOne({ _id: id, tenantId });
+      return result.deletedCount > 0;
+    }
+    const idx = this.records.findIndex((r) => r._id === id && r.tenantId === tenantId);
     if (idx === -1) return false;
     this.records.splice(idx, 1);
     return true;
   }
 
-  deleteAll(tenantId: string, entityType: string): number {
+  async deleteAll(tenantId: string, entityType: string): Promise<number> {
+    if (this.isConnected()) {
+      const result = await EntityRecord.deleteMany({ tenantId, entityType });
+      return result.deletedCount || 0;
+    }
     const before = this.records.length;
     this.records = this.records.filter(
       (r) => !(r.tenantId === tenantId && r.entityType === entityType)
@@ -88,8 +135,17 @@ export class EntityStore {
     return before - this.records.length;
   }
 
-  count(tenantId: string, entityType: string, filter?: Record<string, unknown>): number {
-    return this.list(tenantId, entityType, filter).length;
+  async count(tenantId: string, entityType: string, filter?: Record<string, unknown>): Promise<number> {
+    if (this.isConnected()) {
+      const query: any = { tenantId, entityType };
+      if (filter) {
+        for (const [key, value] of Object.entries(filter)) {
+          query[`data.${key}`] = value;
+        }
+      }
+      return EntityRecord.countDocuments(query);
+    }
+    return this.list(tenantId, entityType, filter).then(r => r.length);
   }
 }
 

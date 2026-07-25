@@ -6,7 +6,7 @@ import { DataStore } from "../services/DataStore";
 const router = Router();
 const n0va1oService = new N0VA1OService();
 
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
   return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
 }
 
@@ -109,3 +109,5 @@ router.get(
 );
 
 export default router;
+
+

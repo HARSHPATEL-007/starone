@@ -6,7 +6,7 @@ import { N0VA1OService } from "../services/N0VA1OService";
 const router = Router();
 const n0va1o = new N0VA1OService();
 
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
   return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
 }
 
@@ -126,3 +126,5 @@ router.delete(
 );
 
 export default router;
+
+

@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
   tenantId: string;
   email: string;
+  passwordHash: string;
   name: string;
   role: "admin" | "manager" | "analyst" | "viewer";
   avatar?: string;
@@ -15,7 +16,8 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     tenantId: { type: String, required: true, index: true },
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    passwordHash: { type: String, required: true },
     name: { type: String, required: true },
     role: { type: String, enum: ["admin", "manager", "analyst", "viewer"], default: "viewer" },
     avatar: { type: String },
@@ -24,5 +26,7 @@ const UserSchema = new Schema<IUser>(
   },
   { timestamps: true }
 );
+
+UserSchema.index({ tenantId: 1, role: 1 });
 
 export const User = mongoose.model<IUser>("User", UserSchema);

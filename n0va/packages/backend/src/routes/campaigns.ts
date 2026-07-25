@@ -7,7 +7,7 @@ import { io } from "../index";
 
 const router = Router();
 
-function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
   return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
 }
 
@@ -283,3 +283,5 @@ router.delete(
 );
 
 export default router;
+
+
