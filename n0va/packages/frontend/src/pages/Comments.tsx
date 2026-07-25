@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { MessageCircle, MessageSquare, Trash2, ExternalLink, Clock, Filter, RefreshCw, Search, Loader, Plus, Send, X } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { MessageCircle, MessageSquare, Trash2, ExternalLink, Clock, Filter, RefreshCw, Search, Loader, Plus, Send, X, Edit3, ThumbsUp, Smile, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -22,6 +22,8 @@ const ENTITY_CONFIGS = [
   { key: "audiences", label: "Audiences", route: "/audiences" },
 ];
 
+const EMOJI_REACTIONS = ["👍", "❤️", "😂", "🎯", "🔥", "💡"];
+
 export default function Comments() {
   const { addToast } = useToast();
   const [comments, setComments] = useState<any[]>([]);
@@ -33,6 +35,9 @@ export default function Comments() {
   const [entities, setEntities] = useState<Record<string, any[]>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadAll(); }, []);
 
@@ -61,7 +66,7 @@ export default function Comments() {
   async function handleCreate() {
     if (!newComment.body.trim() || !newComment.entityId) { addToast("error", "Select an entity and enter a comment"); return; }
     try {
-      const created = await api.comments.create(newComment.entityType, newComment.entityId, { body: newComment.body.trim(), author: "You" });
+      const created = await api.comments.create(newComment.entityType, newComment.entityId, { body: newComment.body.trim(), author: "You", reactions: [] });
       const entityName = (entities[newComment.entityType]?.find((e) => e._id === newComment.entityId)?.name || newComment.entityId);
       setComments([{ ...created, entityName, entityType: newComment.entityType, entityId: newComment.entityId }, ...comments]);
       setNewComment({ entityType: "campaigns", entityId: "", body: "" });
@@ -73,7 +78,7 @@ export default function Comments() {
   async function handleReply(parentId: string, entityType: string, entityId: string) {
     if (!replyText.trim()) { addToast("error", "Enter a reply"); return; }
     try {
-      const created = await api.comments.create(entityType, entityId, { body: replyText.trim(), author: "You", parentId });
+      const created = await api.comments.create(entityType, entityId, { body: replyText.trim(), author: "You", parentId, reactions: [] });
       setComments([{ ...created, entityName: comments.find(c => c._id === parentId)?.entityName, entityType, entityId }, ...comments]);
       setReplyText("");
       setReplyingTo(null);
@@ -89,13 +94,49 @@ export default function Comments() {
     } catch { addToast("error", "Failed to delete comment"); }
   }
 
-  const entityNames = [...new Set(comments.map(c => c.entityName))];
-  const filtered = comments.filter(c => {
-    if (filterEntity !== "all" && c.entityName !== filterEntity) return false;
-    if (searchQuery && !c.body?.toLowerCase().includes(searchQuery.toLowerCase()) && !c.author?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-  const topLevel = filtered.filter(c => !c.parentId);
+  function handleEdit(comment: any) {
+    setEditingId(comment._id);
+    setEditText(comment.body);
+  }
+
+  async function handleSaveEdit() {
+    if (!editText.trim() || !editingId) return;
+    try {
+      setComments((prev) => prev.map(c => c._id === editingId ? { ...c, body: editText.trim() } : c));
+      setEditingId(null);
+      setEditText("");
+      addToast("success", "Comment updated");
+    } catch { addToast("error", "Failed to update comment"); }
+  }
+
+  function handleReaction(commentId: string, emoji: string) {
+    setComments((prev) => prev.map(c => {
+      if (c._id !== commentId) return c;
+      const reactions = c.reactions || [];
+      const existing = reactions.findIndex((r: any) => r.emoji === emoji && r.user === "You");
+      if (existing >= 0) {
+        const updated = reactions.filter((_: any, i: number) => i !== existing);
+        return { ...c, reactions: updated };
+      }
+      return { ...c, reactions: [...reactions, { emoji, user: "You" }] };
+    }));
+  }
+
+  function toggleCollapse(id: string) {
+    setCollapsed(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  const entityNames = useMemo(() => [...new Set(comments.map(c => c.entityName))], [comments]);
+  const filtered = useMemo(() => {
+    return comments.filter(c => {
+      if (filterEntity !== "all" && c.entityName !== filterEntity) return false;
+      if (searchQuery && !c.body?.toLowerCase().includes(searchQuery.toLowerCase()) && !c.author?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    });
+  }, [comments, filterEntity, searchQuery]);
+  const topLevel = useMemo(() => filtered.filter(c => !c.parentId), [filtered]);
+
+  const totalThreads = topLevel.length;
 
   return (
     <div className="space-y-6">
@@ -105,7 +146,7 @@ export default function Comments() {
             <MessageCircle className="w-6 h-6 text-n0va-400" />
             Comments
           </h1>
-          <p className="text-gray-400 mt-1">{comments.length} total · {topLevel.length} thread{topLevel.length !== 1 ? "s" : ""}</p>
+          <p className="text-gray-400 mt-1">{comments.length} total · {totalThreads} thread{totalThreads !== 1 ? "s" : ""} · {entityNames.length} entities</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowNew(true)} className="btn-primary text-sm flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> New Comment</button>
@@ -121,7 +162,7 @@ export default function Comments() {
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-gray-600" />
               <select className="input text-sm w-auto" value={filterEntity} onChange={e => setFilterEntity(e.target.value)}>
-                <option value="all">All Entities</option>
+                <option value="all">All Entities ({entityNames.length})</option>
                 {entityNames.map(e => <option key={e} value={e}>{e}</option>)}
               </select>
             </div>
@@ -170,11 +211,18 @@ export default function Comments() {
         <div className="space-y-3">
           {topLevel.map(comment => {
             const replies = filtered.filter(c => c.parentId === comment._id);
+            const isCollapsed = collapsed.has(comment._id);
+            const reactions = comment.reactions || [];
+            const reactionSummary = reactions.reduce((acc: Record<string, number>, r: any) => {
+              acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+
             return (
               <div key={comment._id} className="card p-4">
                 <div className="flex gap-3">
                   <div className="w-8 h-8 rounded-full bg-gray-800 text-gray-400 flex items-center justify-center text-sm font-medium shrink-0">
-                    {(comment.author || "A")[0]}
+                    {(comment.author || "A")[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -185,11 +233,37 @@ export default function Comments() {
                       </Link>
                       <span className="text-[10px] text-gray-600 capitalize px-1.5 py-0.5 bg-gray-800 rounded">{comment.entityType}</span>
                       <div className="ml-auto flex items-center gap-1">
-                        <button onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)} className="text-xs text-gray-600 hover:text-n0va-400"><MessageSquare className="w-3 h-3 inline" /> Reply</button>
+                        <button onClick={() => handleEdit(comment)} className="text-xs text-gray-600 hover:text-gray-300"><Edit3 className="w-3 h-3 inline" /></button>
+                        <button onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)} className="text-xs text-gray-600 hover:text-n0va-400"><MessageSquare className="w-3 h-3 inline" /></button>
                         <button onClick={() => handleDelete(comment._id)} className="text-xs text-gray-600 hover:text-red-400"><Trash2 className="w-3 h-3 inline" /></button>
+                        {replies.length > 0 && (
+                          <button onClick={() => toggleCollapse(comment._id)} className="text-xs text-gray-600 hover:text-gray-400">
+                            {isCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-300 mt-1 whitespace-pre-wrap break-words">{comment.body}</p>
+
+                    {editingId === comment._id ? (
+                      <div className="mt-1 space-y-1">
+                        <textarea className="input text-sm min-h-[60px]" value={editText} onChange={e => setEditText(e.target.value)} />
+                        <div className="flex gap-2">
+                          <button onClick={handleSaveEdit} className="btn-primary text-xs flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Save</button>
+                          <button onClick={() => setEditingId(null)} className="btn-ghost text-xs">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-300 mt-1 whitespace-pre-wrap break-words">{comment.body}</p>
+                    )}
+
+                    {/* Reactions */}
+                    <div className="flex items-center gap-1 mt-1.5">
+                      {EMOJI_REACTIONS.map(emoji => (
+                        <button key={emoji} onClick={() => handleReaction(comment._id, emoji)} className={`text-xs px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 ${reactions.some((r: any) => r.emoji === emoji && r.user === "You") ? "ring-1 ring-n0va-500/50" : ""}`}>
+                          {emoji} {reactionSummary[emoji] ? ` ${reactionSummary[emoji]}` : ""}
+                        </button>
+                      ))}
+                    </div>
 
                     {replyingTo === comment._id && (
                       <div className="mt-3 flex gap-2">
@@ -199,22 +273,52 @@ export default function Comments() {
                       </div>
                     )}
 
-                    {replies.length > 0 && (
+                    {!isCollapsed && replies.length > 0 && (
                       <div className="mt-3 pl-3 border-l-2 border-gray-800 space-y-2">
-                        {replies.map(reply => (
-                          <div key={reply._id} className="flex gap-2 group">
-                            <div className="w-6 h-6 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs font-medium shrink-0">{(reply.author || "A")[0]}</div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-white">{reply.author || "Anonymous"}</span>
-                                <span className="text-[10px] text-gray-600">{timeAgo(reply.createdAt || reply._id)}</span>
-                                <button onClick={() => handleDelete(reply._id)} className="text-[10px] text-gray-600 hover:text-red-400 ml-auto"><Trash2 className="w-2.5 h-2.5 inline" /></button>
+                        {replies.map(reply => {
+                          const replyReactions = reply.reactions || [];
+                          const replySummary = replyReactions.reduce((acc: Record<string, number>, r: any) => { acc[r.emoji] = (acc[r.emoji] || 0) + 1; return acc; }, {} as Record<string, number>);
+                          return (
+                            <div key={reply._id} className="flex gap-2 group">
+                              <div className="w-6 h-6 rounded-full bg-gray-800 text-gray-500 flex items-center justify-center text-xs font-medium shrink-0">{(reply.author || "A")[0].toUpperCase()}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-medium text-white">{reply.author || "Anonymous"}</span>
+                                  <span className="text-[10px] text-gray-600">{timeAgo(reply.createdAt || reply._id)}</span>
+                                  <div className="ml-auto flex items-center gap-0.5">
+                                    <button onClick={() => handleEdit(reply)} className="text-[10px] text-gray-600 hover:text-gray-300 hidden group-hover:inline"><Edit3 className="w-2.5 h-2.5" /></button>
+                                    <button onClick={() => handleDelete(reply._id)} className="text-[10px] text-gray-600 hover:text-red-400"><Trash2 className="w-2.5 h-2.5" /></button>
+                                  </div>
+                                </div>
+                                {editingId === reply._id ? (
+                                  <div className="space-y-1">
+                                    <textarea className="input text-xs min-h-[40px]" value={editText} onChange={e => setEditText(e.target.value)} />
+                                    <div className="flex gap-1">
+                                      <button onClick={handleSaveEdit} className="btn-primary text-[10px]">Save</button>
+                                      <button onClick={() => setEditingId(null)} className="btn-ghost text-[10px]">Cancel</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-400">{reply.body}</p>
+                                )}
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {EMOJI_REACTIONS.map(emoji => (
+                                    <button key={emoji} onClick={() => handleReaction(reply._id, emoji)} className={`text-[10px] px-1 py-0.5 rounded bg-gray-800 hover:bg-gray-700 ${replyReactions.some((r: any) => r.emoji === emoji && r.user === "You") ? "ring-1 ring-n0va-500/50" : ""}`}>
+                                      {emoji}{replySummary[emoji] ? ` ${replySummary[emoji]}` : ""}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                              <p className="text-xs text-gray-400">{reply.body}</p>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                    )}
+
+                    {isCollapsed && replies.length > 0 && (
+                      <button onClick={() => toggleCollapse(comment._id)} className="text-xs text-gray-600 hover:text-gray-400 mt-1">
+                        Show {replies.length} repl{replies.length !== 1 ? "ies" : "y"}
+                      </button>
                     )}
                   </div>
                 </div>

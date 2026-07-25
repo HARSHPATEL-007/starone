@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link2, Copy, Check, Trash2, Plus, X, Search, ExternalLink, Clock, Hash, Globe, Mail, Smartphone, ShoppingCart, Share2 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Link2, Copy, Check, Trash2, Plus, X, Search, ExternalLink, Clock, Hash, Globe, Mail, Smartphone, ShoppingCart, Share2, QrCode, Layers } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -65,6 +66,9 @@ export default function UTMBuilder() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", url: "", source: "", medium: "", campaign: "", term: "", content: "" });
+  const [qrLinkId, setQrLinkId] = useState<string | null>(null);
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkForm, setBulkForm] = useState({ baseUrl: "", source: "", medium: "", campaign: "", names: "" });
 
   useEffect(() => { load(); }, []);
 
@@ -137,8 +141,33 @@ export default function UTMBuilder() {
     } catch { addToast("error", "Failed to copy"); }
   }
 
+  async function handleBulkGenerate() {
+    if (!bulkForm.baseUrl.trim() || !bulkForm.names.trim()) { addToast("error", "Base URL and names are required"); return; }
+    const names = bulkForm.names.split("\n").map(s => s.trim()).filter(Boolean);
+    let created = 0;
+    for (const name of names) {
+      const slug = name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+      const fullUrl = buildUrl(bulkForm.baseUrl.trim(), bulkForm.source, bulkForm.medium, bulkForm.campaign || slug, "", "");
+      const link: UTMLink = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4),
+        name, url: bulkForm.baseUrl.trim(), source: bulkForm.source, medium: bulkForm.medium,
+        campaign: bulkForm.campaign || slug, term: "", content: "", fullUrl,
+        createdAt: new Date().toISOString(), clicks: 0,
+      };
+      try {
+        const created_link = await api.entities.create("utm_links", link as any);
+        setLinks(prev => [created_link, ...prev]);
+      } catch { setLinks(prev => [link, ...prev]); }
+      created++;
+    }
+    addToast("success", `Generated ${created} UTM links`);
+    setShowBulk(false);
+    setBulkForm({ baseUrl: "", source: "", medium: "", campaign: "", names: "" });
+  }
+
   const previewUrl = form.url ? buildUrl(form.url, form.source, form.medium, form.campaign, form.term, form.content) : "";
   const filtered = links.filter(l => !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.campaign.toLowerCase().includes(search.toLowerCase()) || l.source.toLowerCase().includes(search.toLowerCase()));
+  const clickChartData = links.filter(l => l.clicks > 0).map(l => ({ name: l.name.length > 14 ? l.name.substring(0, 14) + "..." : l.name, clicks: l.clicks }));
 
   if (loading) {
     return <div className="card p-12 flex items-center justify-center text-gray-400"><Link2 className="w-5 h-5 animate-spin mr-2" /> Loading UTM links...</div>;
@@ -155,7 +184,43 @@ export default function UTMBuilder() {
           <p className="text-gray-400 mt-1">{links.length} tracking URLs · {links.reduce((s, l) => s + l.clicks, 0).toLocaleString()} total copy events</p>
         </div>
         <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New UTM Link</button>
+        <button onClick={() => setShowBulk(true)} className="btn-ghost text-sm"><Layers className="w-4 h-4 mr-1" /> Bulk</button>
       </div>
+
+      {showBulk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowBulk(false)}>
+          <div className="w-full max-w-lg bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold text-white">Bulk Generate UTM Links</h3><button onClick={() => setShowBulk(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
+            <form onSubmit={e => { e.preventDefault(); handleBulkGenerate(); }} className="space-y-3">
+              <div><label className="label">Base URL</label><input className="input" placeholder="https://example.com/page" value={bulkForm.baseUrl} onChange={e => setBulkForm({ ...bulkForm, baseUrl: e.target.value })} autoFocus /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className="label">Source</label><input className="input" placeholder="google" value={bulkForm.source} onChange={e => setBulkForm({ ...bulkForm, source: e.target.value })} /></div>
+                <div><label className="label">Medium</label><input className="input" placeholder="cpc" value={bulkForm.medium} onChange={e => setBulkForm({ ...bulkForm, medium: e.target.value })} /></div>
+                <div><label className="label">Campaign</label><input className="input" placeholder="(optional)" value={bulkForm.campaign} onChange={e => setBulkForm({ ...bulkForm, campaign: e.target.value })} /></div>
+              </div>
+              <div><label className="label">Link Names (one per line)</label><textarea className="input" rows={5} placeholder="Spring Sale - Google&#10;Spring Sale - Facebook&#10;Spring Sale - Email" value={bulkForm.names} onChange={e => setBulkForm({ ...bulkForm, names: e.target.value })} /></div>
+              <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setShowBulk(false)} className="btn-secondary">Cancel</button><button type="submit" className="btn-primary">Generate {bulkForm.names.split("\n").filter(s => s.trim()).length || 0} Links</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {clickChartData.length > 1 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Click Activity</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={clickChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                <YAxis stroke="#6b7280" fontSize={11} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="clicks" fill="#1a6dff" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
@@ -248,10 +313,23 @@ export default function UTMBuilder() {
               <button onClick={() => handleCopy(l.fullUrl, l.id)} className="p-2 text-gray-600 hover:text-n0va-400" title="Copy URL">
                 {copiedId === l.id ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
               </button>
+              <button onClick={() => setQrLinkId(qrLinkId === l.id ? null : l.id)} className={`p-2 ${qrLinkId === l.id ? "text-n0va-400" : "text-gray-600 hover:text-n0va-400"}`} title="Show QR">
+                <QrCode className="w-4 h-4" />
+              </button>
               <button onClick={() => { resetForm(l); setEditingId(l.id); setShowForm(true); }} className="p-2 text-gray-600 hover:text-gray-300"><Plus className="w-4 h-4" /></button>
               <button onClick={() => handleDelete(l.id)} className="p-2 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
             </div>
           </div>
+          {qrLinkId === l.id && (
+            <div className="mt-3 pt-3 border-t border-gray-800 flex items-center gap-4">
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(l.fullUrl)}`} alt="QR Code" className="w-20 h-20 rounded-lg" />
+              <div className="text-xs text-gray-500">
+                <p className="text-gray-400 font-medium mb-1">QR Code for {l.name}</p>
+                <p className="break-all">{l.fullUrl}</p>
+                <button onClick={() => handleCopy(l.fullUrl, l.id)} className="text-n0va-400 hover:underline mt-1 inline-block">Copy URL</button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

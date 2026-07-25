@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Calculator, TrendingUp, DollarSign, Target, Trash2, Plus, X, Copy, BarChart3, Download, Edit3, Server } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { Calculator, TrendingUp, DollarSign, Target, Trash2, Plus, X, Copy, BarChart3, Download, Edit3, Server, Database } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -156,6 +157,46 @@ export default function ROICalculator() {
     addToast("success", "Exported as CSV");
   }
 
+  async function importFromCampaigns() {
+    try {
+      const campaigns = await api.campaigns.list({ status: "active" });
+      if (!campaigns || campaigns.length === 0) { addToast("error", "No active campaigns found"); return; }
+      let imported = 0;
+      for (const c of (campaigns.slice(0, 5) as any[])) {
+        const budget = c.budget?.amount || c.budget || 5000;
+        const scenario: Scenario = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4),
+          name: `${c.name || "Campaign"} ROI`,
+          budget: typeof budget === "number" ? budget : 5000,
+          impressions: c.impressions || c.metrics?.impressions || 100000,
+          ctr: c.ctr || c.metrics?.ctr || 2.0,
+          conversionRate: c.conversionRate || c.metrics?.conversionRate || 3.0,
+          aov: c.aov || c.metrics?.aov || 75,
+          fixedCosts: 2000,
+          createdAt: new Date().toISOString(),
+        };
+        await save(scenario, true);
+        imported++;
+      }
+      addToast("success", `Imported ${imported} campaign${imported > 1 ? "s" : ""} as scenarios`);
+    } catch { addToast("error", "Import failed"); }
+  }
+
+  const chartData = allProjections.map(s => ({
+    name: s.name.length > 12 ? s.name.substring(0, 12) + "..." : s.name,
+    Revenue: s.projection.revenue,
+    Cost: s.budget + s.fixedCosts,
+    Profit: s.projection.profit,
+    ROAS: +s.projection.roas.toFixed(2),
+  }));
+
+  const waterfallData = allProjections.length > 0 ? [
+    { name: "Budget", value: allProjections.reduce((s, p) => s + p.budget, 0), fill: "#ef4444" },
+    { name: "Fixed", value: allProjections.reduce((s, p) => s + p.fixedCosts, 0), fill: "#f97316" },
+    { name: "Revenue", value: allProjections.reduce((s, p) => s + p.projection.revenue, 0), fill: "#10b981" },
+    { name: "Profit", value: allProjections.reduce((s, p) => s + p.projection.profit, 0), fill: p => p >= 0 ? "#8b5cf6" : "#ef4444" },
+  ] : [];
+
   const comparison = [...selectedIds].map(id => {
     const s = scenarios.find(sc => sc.id === id);
     if (!s) return null;
@@ -176,6 +217,7 @@ export default function ROICalculator() {
         </div>
         <div className="flex items-center gap-2">
           {scenarios.length > 0 && <button onClick={exportCSV} className="btn-ghost text-sm"><Download className="w-4 h-4 mr-1" /> CSV</button>}
+          <button onClick={importFromCampaigns} className="btn-ghost text-sm"><Database className="w-4 h-4 mr-1" /> Import</button>
           <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Scenario</button>
         </div>
       </div>
@@ -218,6 +260,41 @@ export default function ROICalculator() {
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No ROI scenarios</h3>
           <p className="text-sm text-gray-500">Create scenarios to project campaign ROI and compare outcomes.</p>
           <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm mt-4"><Plus className="w-4 h-4 inline mr-1.5" /> Create Scenario</button>
+        </div>
+      )}
+
+      {allProjections.length > 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card">
+            <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> ROAS Comparison</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                  <YAxis stroke="#6b7280" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                  <Bar dataKey="ROAS" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="card">
+            <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-n0va-400" /> Profit vs Revenue</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                  <YAxis stroke="#6b7280" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                  <Legend wrapperStyle={{ fontSize: "11px" }} />
+                  <Bar dataKey="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Profit" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { GitCompare, Plus, X, Play, Square, Trophy, ChevronDown, ChevronRight, Trash2, BarChart3, Users, Target, RefreshCw, DollarSign, TrendingUp, Eye } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { GitCompare, Plus, X, Play, Square, Trophy, ChevronDown, ChevronRight, Trash2, BarChart3, Users, Target, RefreshCw, DollarSign, TrendingUp, Eye, PauseCircle, Copy } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -119,6 +120,31 @@ export default function ABTesting() {
     }
   }
 
+  async function handleDuplicate(test: ABTest) {
+    try {
+      await api.optimizer.createABTest({
+        testName: `${test.testName} (Copy)`,
+        testType: test.testType,
+        variants: test.variants.map(v => ({ id: v.id, name: v.name })),
+      });
+      addToast("success", "Test duplicated");
+      loadTests();
+    } catch (e: any) {
+      addToast("error", e.message || "Failed to duplicate");
+    }
+  }
+
+  async function handleTogglePause(test: ABTest) {
+    const newStatus = test.status === "running" ? "paused" : "running";
+    try {
+      await api.optimizer.updateABTest(test._id, { status: newStatus });
+      addToast("success", `Test ${newStatus}`);
+      loadTests();
+    } catch (e: any) {
+      addToast("error", e.message || `Failed to ${newStatus} test`);
+    }
+  }
+
   async function handleDelete(id: string) {
     try {
       await api.entities.delete("ab_tests", id);
@@ -127,6 +153,11 @@ export default function ABTesting() {
     } catch (e: any) {
       addToast("error", e.message || "Failed to delete");
     }
+  }
+
+  function bestMetric(variants: Variant[], metric: keyof Variant, higher = true): string {
+    const sorted = [...variants].sort((a, b) => higher ? (b[metric] as number) - (a[metric] as number) : (a[metric] as number) - (b[metric] as number));
+    return sorted[0]?.name || "—";
   }
 
   const filtered = tests.filter(t => {
@@ -239,6 +270,12 @@ export default function ABTesting() {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {test.status === "running" && <button onClick={() => handleEndTest(test)} className="btn-ghost text-xs py-1 px-2"><Trophy className="w-3 h-3 mr-1" />End</button>}
+                    {(test.status === "running" || test.status === "paused") && (
+                      <button onClick={() => handleTogglePause(test)} className={`p-1.5 ${test.status === "paused" ? "text-green-400 hover:bg-green-500/10" : "text-amber-400 hover:bg-amber-500/10"}`}>
+                        {test.status === "paused" ? <Play className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                      </button>
+                    )}
+                    <button onClick={() => handleDuplicate(test)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-4 h-4" /></button>
                     <button onClick={() => handleDelete(test._id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
@@ -255,6 +292,29 @@ export default function ABTesting() {
                       </div>
                     </div>
                   )}
+                  <div className="p-5 border-b border-gray-800">
+                    <h4 className="text-sm font-semibold text-gray-400 mb-3">Variant Comparison</h4>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={test.variants.map(v => ({ name: v.name, CVR: +(v.cvr * 100).toFixed(2), CTR: +(v.ctr * 100).toFixed(2), ROAS: +v.roas.toFixed(2) }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                          <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                          <YAxis stroke="#6b7280" fontSize={11} />
+                          <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                          <Bar dataKey="CVR" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="CTR" fill="#1a6dff" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="ROAS" fill="#10b981" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex items-center justify-center gap-6 mt-2 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-purple-500" /> CVR</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-500" /> CTR</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> ROAS</span>
+                      <span className="text-gray-600">Best CVR: {bestMetric(test.variants, "cvr")}</span>
+                      <span className="text-gray-600">Best ROAS: {bestMetric(test.variants, "roas")}</span>
+                    </div>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>

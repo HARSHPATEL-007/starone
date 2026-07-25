@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TrendingDown, Plus, X, Edit3, Trash2, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, Target, ChevronDown, ChevronRight, BarChart3, RefreshCw } from "lucide-react";
+import { TrendingDown, Plus, X, Edit3, Trash2, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, Target, ChevronDown, ChevronRight, BarChart3, RefreshCw, Download, GitCompare } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -88,6 +88,28 @@ export default function Funnel() {
     if (expandedId === id) setExpandedId(null);
   }
 
+  const [compareId, setCompareId] = useState<string | null>(null);
+  const compareFunnel = compareId ? funnels.find(f => f.id === compareId) : null;
+
+  function exportCSV(funnel: Funnel) {
+    const header = "Stage,Count,% of Top,% from Previous,Drop-off";
+    const rows = funnel.stages.map((s, idx) => {
+      const pctTop = (s.count / funnel.stages[0].count * 100).toFixed(1);
+      const fromPrev = idx > 0 ? (s.count / funnel.stages[idx - 1].count * 100).toFixed(1) : "100.0";
+      const drop = idx > 0 ? (100 - Number(fromPrev)).toFixed(1) : "0.0";
+      return `${s.name},${s.count},${pctTop}%,${fromPrev}%,${drop}%`;
+    }).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = `${funnel.name.replace(/\s+/g, "_")}.csv`; el.click();
+    addToast("success", "CSV exported");
+  }
+
+  function avgConvRate(stages: FunnelStage[]): number {
+    if (stages.length < 2) return 100;
+    const rates = stages.slice(1).map((s, i) => s.count / stages[i].count);
+    return rates.reduce((a, b) => a + b, 0) / rates.length * 100;
+  }
+
   const maxFunnelWidth = 400;
 
   return (
@@ -129,6 +151,15 @@ export default function Funnel() {
         </div>
       )}
 
+      {funnels.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="card text-center"><p className="text-xs text-gray-500 mb-1">Total Funnels</p><p className="text-2xl font-bold text-white">{funnels.length}</p></div>
+          <div className="card text-center"><p className="text-xs text-gray-500 mb-1">Avg Stages</p><p className="text-2xl font-bold text-white">{(funnels.reduce((s, f) => s + f.stages.length, 0) / funnels.length).toFixed(1)}</p></div>
+          <div className="card text-center"><p className="text-xs text-gray-500 mb-1">Avg Conv Rate</p><p className="text-2xl font-bold text-green-400">{avgConvRate(funnels[0]?.stages || []).toFixed(1)}%</p></div>
+          <div className="card text-center"><p className="text-xs text-gray-500 mb-1">Total Top-of-Funnel</p><p className="text-2xl font-bold text-blue-400">{fmt(funnels.reduce((s, f) => s + f.stages[0]?.count || 0, 0))}</p></div>
+        </div>
+      )}
+
       {/* Funnels */}
       {funnels.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
@@ -155,6 +186,8 @@ export default function Funnel() {
                   <div className="text-xs text-gray-600 mt-1">Updated {new Date(funnel.updatedAt).toLocaleDateString()}</div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => exportCSV(funnel)} className="p-1.5 text-gray-600 hover:text-gray-300"><Download className="w-4 h-4" /></button>
+                  <button onClick={() => setCompareId(compareId === funnel.id ? null : funnel.id)} className={`p-1.5 ${compareId === funnel.id ? "text-n0va-400" : "text-gray-600 hover:text-gray-300"}`}><GitCompare className="w-4 h-4" /></button>
                   <button onClick={() => { resetForm(funnel); setEditingId(funnel.id); setShowForm(true); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Edit3 className="w-4 h-4" /></button>
                   <button onClick={() => handleDelete(funnel.id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
                 </div>
@@ -254,6 +287,38 @@ export default function Funnel() {
           </div>
         );
       })}
+
+      {compareFunnel && (
+        <div className="card">
+          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><GitCompare className="w-4 h-4 text-n0va-400" /> Comparison: {compareFunnel.name}</h3>
+            <button onClick={() => setCompareId(null)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+          </div>
+          <div className="p-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-gray-800 text-xs text-gray-500">
+                  <th className="text-left p-2 font-medium">Stage</th>
+                  <th className="text-right p-2 font-medium">{compareFunnel.name}</th>
+                  {funnels.filter(f => f.id !== compareFunnel.id).slice(0, 2).map(f => <th key={f.id} className="text-right p-2 font-medium">{f.name}</th>)}
+                </tr></thead>
+                <tbody>
+                  {compareFunnel.stages.map((stage, idx) => (
+                    <tr key={stage.id} className="border-b border-gray-800/50">
+                      <td className="p-2 text-gray-300 flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${stage.color}`} />{stage.name}</td>
+                      <td className="p-2 text-right text-white font-mono">{fmt(stage.count)}</td>
+                      {funnels.filter(f => f.id !== compareFunnel.id).slice(0, 2).map(f => {
+                        const match = f.stages[idx];
+                        return <td key={f.id} className="p-2 text-right text-gray-400 font-mono">{match ? fmt(match.count) : "—"}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

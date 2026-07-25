@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Zap, Plus, X, Power, PowerOff, Edit3, Trash2, ChevronDown, ChevronRight, Clock, Activity, AlertTriangle, Bell, Megaphone, PauseCircle, RefreshCw, Copy, CheckCircle } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Zap, Plus, X, Power, PowerOff, Edit3, Trash2, ChevronDown, ChevronRight, Clock, Activity, AlertTriangle, Bell, Megaphone, PauseCircle, RefreshCw, Copy, CheckCircle, CheckSquare, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -59,6 +60,8 @@ export default function Automation() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", trigger: "campaign_launched" as Trigger, action: "send_notification" as Action, config: {} as Record<string, string> });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEnabled, setBulkEnabled] = useState(false);
 
   function toggle(id: string) {
     setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -113,6 +116,25 @@ export default function Automation() {
     addToast("success", "Rule triggered (simulated)");
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filtered.map(r => r.id)));
+  }
+
+  function bulkToggleEnabled(enable: boolean) {
+    replaceAll(rules.map(r => selectedIds.has(r.id) ? { ...r, enabled: enable } : r));
+    addToast("success", `${selectedIds.size} rules ${enable ? "enabled" : "disabled"}`);
+  }
+
+  const chartData = rules.filter(r => r.runCount > 0).map(r => ({
+    name: r.name.length > 12 ? r.name.substring(0, 12) + "..." : r.name,
+    runs: r.runCount,
+  }));
+
   const filtered = rules.filter(r => filterEnabled === "all" || (filterEnabled === "enabled" && r.enabled) || (filterEnabled === "disabled" && !r.enabled));
   const enabledCount = rules.filter(r => r.enabled).length;
 
@@ -137,6 +159,23 @@ export default function Automation() {
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Last Run</p><p className="text-2xl font-bold text-gray-400 text-sm">{rules.filter(r => r.lastRun).sort((a, b) => new Date(b.lastRun!).getTime() - new Date(a.lastRun!).getTime())[0]?.lastRun ? timeAgo(rules.filter(r => r.lastRun).sort((a, b) => new Date(b.lastRun!).getTime() - new Date(a.lastRun!).getTime())[0].lastRun!) : "—"}</p></div>
       </div>
 
+      {chartData.length > 1 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Execution Activity</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                <YAxis stroke="#6b7280" fontSize={11} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="runs" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <select className="input text-sm w-auto" value={filterEnabled} onChange={e => setFilterEnabled(e.target.value)}>
@@ -145,6 +184,13 @@ export default function Automation() {
           <option value="disabled">Disabled</option>
         </select>
         {filterEnabled !== "all" && <button onClick={() => setFilterEnabled("all")} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>}
+        <button onClick={() => setBulkEnabled(!bulkEnabled)} className={`btn-ghost text-xs ${bulkEnabled ? "text-n0va-400" : ""}`}><CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk</button>
+        {bulkEnabled && selectedIds.size > 0 && (
+          <>
+            <button onClick={() => bulkToggleEnabled(true)} className="btn-ghost text-xs text-green-400">Enable {selectedIds.size}</button>
+            <button onClick={() => bulkToggleEnabled(false)} className="btn-ghost text-xs text-red-400">Disable {selectedIds.size}</button>
+          </>
+        )}
       </div>
 
       {/* Form modal */}
@@ -190,6 +236,9 @@ export default function Automation() {
           <div key={rule.id} className={`card overflow-hidden border-l-4 ${rule.enabled ? "border-l-green-500/50" : "border-l-gray-700"}`}>
             <div className="p-5">
               <div className="flex items-start gap-4">
+                {bulkEnabled && (
+                  <input type="checkbox" checked={selectedIds.has(rule.id)} onChange={() => toggleSelect(rule.id)} className="mt-1.5 w-4 h-4 rounded border-gray-700 bg-gray-800 accent-n0va-500" />
+                )}
                 <button onClick={() => toggle(rule.id)} className="p-1 mt-1 text-gray-600 hover:text-gray-300">{isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">

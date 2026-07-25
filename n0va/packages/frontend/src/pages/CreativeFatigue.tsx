@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ReferenceLine } from "recharts";
 import { api } from "../api/client";
-import { AlertTriangle, CheckCircle, RefreshCw, Palette, TrendingDown, Zap, ArrowUpRight, Play, Pause, RotateCcw, Loader, Eye, BarChart3, Filter } from "lucide-react";
+import { AlertTriangle, CheckCircle, RefreshCw, Palette, TrendingDown, Zap, ArrowUpRight, Play, Pause, RotateCcw, Loader, Eye, BarChart3, Filter, Download } from "lucide-react";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 
@@ -14,8 +14,15 @@ export default function CreativeFatigue() {
   const [selectedCreativeIds, setSelectedCreativeIds] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(true);
   const [view, setView] = useState<"current" | "trends">("current");
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(loadData, 30000);
+    return () => clearInterval(id);
+  }, [autoRefresh]);
 
   async function loadData() {
     setLoading(true);
@@ -70,6 +77,16 @@ export default function CreativeFatigue() {
     );
   }
 
+  function exportCSV() {
+    const header = "Creative,Fatigue Score %,Is Fatigued,Urgency,Recommendation";
+    const rows = items.map((a: any) =>
+      `${a.creativeName || a.name || "Unknown"},${(a.fatigueScore * 100).toFixed(1)},${a.isFatigued ? "Yes" : "No"},${a.urgency || "—"},"${(a.recommendation || "").replace(/"/g, '""')}"`
+    ).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "creative_fatigue.csv"; el.click();
+    addToast("success", "CSV exported");
+  }
+
   if (!data) return null;
 
   const { creatives: creativeAnalyses, analysis } = data;
@@ -114,6 +131,10 @@ export default function CreativeFatigue() {
             <button className={`px-3 py-1.5 text-xs rounded-md ${view === "current" ? "bg-n0va-600/20 text-n0va-400" : "text-gray-500"}`} onClick={() => setView("current")}>Current</button>
             <button className={`px-3 py-1.5 text-xs rounded-md ${view === "trends" ? "bg-n0va-600/20 text-n0va-400" : "text-gray-500"}`} onClick={() => setView("trends")}>Trends</button>
           </div>
+          <button onClick={exportCSV} className="btn-ghost text-sm flex items-center gap-1.5"><Download className="w-4 h-4" /> CSV</button>
+          <button onClick={() => setAutoRefresh(!autoRefresh)} className={`btn-ghost text-sm flex items-center gap-1.5 ${autoRefresh ? "text-green-400" : ""}`}>
+            <RefreshCw className={`w-4 h-4 ${autoRefresh ? "animate-spin" : ""}`} /> {autoRefresh ? "Auto" : "Auto"}
+          </button>
           <button className="btn-secondary flex items-center gap-2" onClick={loadData}><RefreshCw className="w-4 h-4" /> Refresh</button>
         </div>
       </div>
@@ -163,6 +184,7 @@ export default function CreativeFatigue() {
                   <XAxis type="number" domain={[0, 100]} stroke="#6b7280" fontSize={11} tickFormatter={(v) => `${v}%`} />
                   <YAxis type="category" dataKey="name" stroke="#6b7280" fontSize={11} width={100} />
                   <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} formatter={(v: number) => [`${v}%`, "Fatigue Score"]} />
+                  <ReferenceLine x={70} label={{ value: "Threshold", position: "top", fill: "#ef4444", fontSize: 10 }} stroke="#ef4444" strokeDasharray="4 4" />
                   <Bar dataKey="score" radius={[0, 4, 4, 0]} fill="#8b5cf6" />
                 </BarChart>
               </ResponsiveContainer>

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { ClipboardList, Plus, X, Edit3, Trash2, Copy, Search, CheckCircle, Circle, Users, Eye, Calendar, Star, ThumbsUp, MessageSquare, BarChart3 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ClipboardList, Plus, X, Edit3, Trash2, Copy, Search, CheckCircle, Circle, Users, Eye, Calendar, Star, ThumbsUp, MessageSquare, BarChart3, Download, Filter, Play, PieChart } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -35,12 +36,20 @@ const QT_META: Record<string, { label: string; icon: any }> = {
 
 const QUESTION_TYPES: QuestionType[] = ["rating", "yesno", "multiple_choice", "text", "likert"];
 
+const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#a78bfa", "#ec4899"];
+
+function simulateResponses(questions: SurveyQuestion[]): number {
+  return 10 + Math.floor(Math.random() * 90);
+}
+
 export default function CampaignSurveys() {
   const { addToast } = useToast();
   const { data: surveys, create, update, remove, replaceAll } = useEntityData<Survey>("surveys");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [filterActive, setFilterActive] = useState<string>("all");
+  const [previewSurvey, setPreviewSurvey] = useState<Survey | null>(null);
   const [form, setForm] = useState<{ title: string; description: string; campaignName: string; questions: SurveyQuestion[]; isActive: boolean }>({ title: "", description: "", campaignName: "", questions: [], isActive: true });
 
   function resetForm(s?: Survey) {
@@ -109,7 +118,39 @@ export default function CampaignSurveys() {
     await update(id, { ...s, isActive: !s.isActive } as any);
   }
 
-  const filtered = surveys.filter(s => !search || s.title.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()) || s.campaignName.toLowerCase().includes(search.toLowerCase()));
+  async function simulateResponsesFor(id: string) {
+    const s = surveys.find(sv => sv.id === id);
+    if (!s) return;
+    const newResponses = s.responses + simulateResponses(s.questions);
+    await update(id, { ...s, responses: newResponses } as any);
+    addToast("success", `Simulated ${simulateResponses(s.questions)} responses`);
+  }
+
+  function handleExport() {
+    const headers = ["Title", "Campaign", "Questions", "Responses", "Active", "Created"];
+    const rows = surveys.map(s => [s.title, s.campaignName, s.questions.length.toString(), s.responses.toString(), s.isActive ? "Yes" : "No", new Date(s.createdAt).toLocaleDateString()]);
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "surveys-export.csv"; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", "Exported surveys");
+  }
+
+  const filtered = useMemo(() => {
+    let result = surveys.filter(s => !search || s.title.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()) || s.campaignName.toLowerCase().includes(search.toLowerCase()));
+    if (filterActive === "active") result = result.filter(s => s.isActive);
+    if (filterActive === "inactive") result = result.filter(s => !s.isActive);
+    return result;
+  }, [surveys, search, filterActive]);
+
+  const totalResponses = surveys.reduce((s, sv) => s + sv.responses, 0);
+  const activeCount = surveys.filter(s => s.isActive).length;
+
+  const pieData = useMemo(() => [
+    { name: "Active", value: activeCount, fill: "#22c55e" },
+    { name: "Inactive", value: surveys.length - activeCount, fill: "#6b7280" },
+  ], [surveys, activeCount]);
 
   return (
     <div className="space-y-6">
@@ -119,55 +160,64 @@ export default function CampaignSurveys() {
             <ClipboardList className="w-6 h-6 text-n0va-400" />
             Campaign Surveys
           </h1>
-          <p className="text-gray-400 mt-1">{surveys.length} surveys · {surveys.reduce((s, sv) => s + sv.responses, 0).toLocaleString()} total responses</p>
+          <p className="text-gray-400 mt-1">{surveys.length} surveys · {totalResponses.toLocaleString()} total responses · {activeCount} active</p>
         </div>
-        <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Survey</button>
+        <div className="flex items-center gap-2">
+          <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={handleExport}><Download className="w-3.5 h-3.5" /> Export</button>
+          <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Survey</button>
+        </div>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-        <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search surveys..." value={search} onChange={e => setSearch(e.target.value)} />
+      {(surveys.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="card p-3"><p className="text-[10px] text-gray-500">Total Surveys</p><p className="text-lg font-bold text-white">{surveys.length}</p></div>
+          <div className="card p-3"><p className="text-[10px] text-gray-500">Active</p><p className="text-lg font-bold text-green-400">{activeCount}</p></div>
+          <div className="card p-3"><p className="text-[10px] text-gray-500">Total Responses</p><p className="text-lg font-bold text-white">{totalResponses.toLocaleString()}</p></div>
+          <div className="card p-3">
+            <ResponsiveContainer width="100%" height={50}>
+              <PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={15} outerRadius={22} dataKey="value">{pieData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Pie></PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+          <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search surveys..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <Filter className="w-3 h-3" /> Status:
+        </div>
+        {["all", "active", "inactive"].map(s => (
+          <button key={s} className={`text-xs px-2.5 py-1 rounded-lg border ${filterActive === s ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500 hover:border-gray-600"}`} onClick={() => setFilterActive(s)}>
+            {s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
       </div>
 
-      {/* Builder modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowForm(false)}>
           <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold text-white">{editingId ? "Edit Survey" : "New Survey"}</h3><button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
             <form onSubmit={e => { e.preventDefault(); handleSave(); }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="label">Survey Title</label><input className="input" placeholder="e.g. Campaign Feedback" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} autoFocus /></div>
-                <div><label className="label">Campaign</label><input className="input" placeholder="Related campaign" value={form.campaignName} onChange={e => setForm({ ...form, campaignName: e.target.value })} /></div>
-              </div>
+              <div className="grid grid-cols-2 gap-3"><div><label className="label">Survey Title</label><input className="input" placeholder="e.g. Campaign Feedback" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} autoFocus /></div><div><label className="label">Campaign</label><input className="input" placeholder="Related campaign" value={form.campaignName} onChange={e => setForm({ ...form, campaignName: e.target.value })} /></div></div>
               <div><label className="label">Description</label><textarea className="input" rows={2} placeholder="Purpose of this survey..." value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-              <div className="flex items-center gap-2">
-                <label className="label mb-0">Active</label>
-                <button type="button" onClick={() => setForm({ ...form, isActive: !form.isActive })} className={`text-xs px-3 py-1.5 rounded border ${form.isActive ? "border-green-500 bg-green-500/10 text-green-400" : "border-gray-700 bg-gray-800 text-gray-500"}`}>{form.isActive ? "Active" : "Inactive"}</button>
-              </div>
+              <div className="flex items-center gap-2"><label className="label mb-0">Active</label><button type="button" onClick={() => setForm({ ...form, isActive: !form.isActive })} className={`text-xs px-3 py-1.5 rounded border ${form.isActive ? "border-green-500 bg-green-500/10 text-green-400" : "border-gray-700 bg-gray-800 text-gray-500"}`}>{form.isActive ? "Active" : "Inactive"}</button></div>
               <div><div className="flex items-center justify-between mb-2"><label className="label mb-0">Questions</label><button type="button" onClick={addQuestion} className="text-xs text-n0va-400 hover:text-n0va-300">+ Add Question</button></div>
-                {form.questions.length === 0 && <p className="text-xs text-gray-600 py-2">No questions yet. Add your first question.</p>}
+                {form.questions.length === 0 && <p className="text-xs text-gray-600 py-2">No questions yet.</p>}
                 {form.questions.map((q, idx) => (
                   <div key={q.id} className="bg-n0va-900 rounded-lg p-3 mb-2 border border-gray-800">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs text-gray-600 font-mono">Q{idx + 1}</span>
+                    <div className="flex items-center gap-2 mb-2"><span className="text-xs text-gray-600 font-mono">Q{idx + 1}</span>
                       <select className="text-xs bg-gray-800 text-gray-300 rounded px-1.5 py-1 border border-gray-700" value={q.type} onChange={e => updateQuestion(q.id, "type", e.target.value as QuestionType)}>
                         {QUESTION_TYPES.map(t => <option key={t} value={t}>{QT_META[t].label}</option>)}
                       </select>
-                      <div className="flex-1" />
-                      <button type="button" onClick={() => removeQuestion(q.id)} className="p-1 text-gray-600 hover:text-red-400"><X className="w-3 h-3" /></button>
-                    </div>
+                      <div className="flex-1" /><button type="button" onClick={() => removeQuestion(q.id)} className="p-1 text-gray-600 hover:text-red-400"><X className="w-3 h-3" /></button></div>
                     <input className="input text-xs py-1.5 w-full" placeholder="Enter your question" value={q.question} onChange={e => updateQuestion(q.id, "question", e.target.value)} />
                     {(q.type === "multiple_choice" || q.type === "likert") && (
-                      <div className="mt-2">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="text-[10px] text-gray-600">Options</span>
-                          {q.type === "multiple_choice" && <button type="button" onClick={() => addOption(q.id)} className="text-[10px] text-n0va-400">+ Add</button>}
-                        </div>
+                      <div className="mt-2"><div className="flex items-center gap-1 mb-1"><span className="text-[10px] text-gray-600">Options</span>{q.type === "multiple_choice" && <button type="button" onClick={() => addOption(q.id)} className="text-[10px] text-n0va-400">+ Add</button>}</div>
                         {q.options.map((o, oi) => (
-                          <div key={oi} className="flex items-center gap-1 mb-1">
-                            <input className="input text-[11px] py-1 flex-1" placeholder={`Option ${oi + 1}`} value={o} onChange={e => updateOption(q.id, oi, e.target.value)} />
-                            {q.type === "multiple_choice" && <button type="button" onClick={() => removeOption(q.id, oi)} className="p-0.5 text-gray-600 hover:text-red-400"><X className="w-2.5 h-2.5" /></button>}
-                          </div>
+                          <div key={oi} className="flex items-center gap-1 mb-1"><input className="input text-[11px] py-1 flex-1" placeholder={`Option ${oi + 1}`} value={o} onChange={e => updateOption(q.id, oi, e.target.value)} />{q.type === "multiple_choice" && <button type="button" onClick={() => removeOption(q.id, oi)} className="p-0.5 text-gray-600 hover:text-red-400"><X className="w-2.5 h-2.5" /></button>}</div>
                         ))}
                       </div>
                     )}
@@ -180,7 +230,6 @@ export default function CampaignSurveys() {
         </div>
       )}
 
-      {/* Empty */}
       {filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <ClipboardList className="w-12 h-12 text-gray-700 mb-4" />
@@ -190,7 +239,6 @@ export default function CampaignSurveys() {
         </div>
       )}
 
-      {/* Survey cards */}
       {filtered.map(sv => (
         <div key={sv.id} className="card p-4">
           <div className="flex items-start gap-3">
@@ -199,12 +247,13 @@ export default function CampaignSurveys() {
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-semibold text-white">{sv.title}</h3>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded ${sv.isActive ? "bg-green-500/20 text-green-400" : "bg-gray-800 text-gray-500"}`}>{sv.isActive ? "Active" : "Inactive"}</span>
+                <span className="text-[10px] text-gray-600">{sv.responses} responses</span>
               </div>
               <p className="text-xs text-gray-500 mt-0.5">{sv.description}</p>
               <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-600 flex-wrap">
                 <span className="flex items-center gap-1"><BarChart3 className="w-3 h-3" />{sv.questions.length} questions</span>
-                <span className="flex items-center gap-1"><Users className="w-3 h-3" />{sv.responses} responses</span>
                 {sv.campaignName && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{sv.campaignName}</span>}
+                <span className="flex items-center gap-1"><Users className="w-3 h-3" />{sv.responses} responses</span>
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 {sv.questions.map(q => {
@@ -215,6 +264,8 @@ export default function CampaignSurveys() {
               </div>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
+              <button onClick={() => setPreviewSurvey(sv)} className="p-1.5 text-gray-600 hover:text-n0va-400" title="Preview"><Eye className="w-3.5 h-3.5" /></button>
+              <button onClick={() => simulateResponsesFor(sv.id)} className="p-1.5 text-gray-600 hover:text-purple-400" title="Simulate responses"><Play className="w-3.5 h-3.5" /></button>
               <button onClick={() => toggleActive(sv.id)} className="p-1.5 text-gray-600 hover:text-yellow-400"><CheckCircle className="w-3.5 h-3.5" /></button>
               <button onClick={() => duplicateSurvey(sv.id)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-3.5 h-3.5" /></button>
               <button onClick={() => { resetForm(sv); setEditingId(sv.id); setShowForm(true); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Edit3 className="w-3.5 h-3.5" /></button>
@@ -223,6 +274,35 @@ export default function CampaignSurveys() {
           </div>
         </div>
       ))}
+
+      {previewSurvey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setPreviewSurvey(null)}>
+          <div className="w-full max-w-lg max-h-[80vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2"><ClipboardList className="w-5 h-5 text-n0va-400" /> {previewSurvey.title}</h3>
+              <button onClick={() => setPreviewSurvey(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            {previewSurvey.description && <p className="text-sm text-gray-400 mb-4">{previewSurvey.description}</p>}
+            {previewSurvey.campaignName && <p className="text-xs text-gray-600 mb-4">Campaign: {previewSurvey.campaignName}</p>}
+            <div className="space-y-3">
+              {previewSurvey.questions.map((q, i) => (
+                <div key={q.id} className="card p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-n0va-400">Q{i + 1}</span>
+                    <span className="text-xs text-gray-400">{QT_META[q.type]?.label}</span>
+                  </div>
+                  <p className="text-sm text-white mb-2">{q.question}</p>
+                  {q.type === "rating" && <div className="flex gap-1">{[1, 2, 3, 4, 5].map(n => <span key={n} className="w-8 h-8 rounded bg-gray-800 text-gray-500 flex items-center justify-center text-xs">{n}</span>)}</div>}
+                  {q.type === "yesno" && <div className="flex gap-2"><span className="px-4 py-1.5 rounded bg-gray-800 text-xs text-green-400">Yes</span><span className="px-4 py-1.5 rounded bg-gray-800 text-xs text-red-400">No</span></div>}
+                  {q.type === "multiple_choice" && q.options.map((o, oi) => <div key={oi} className="flex items-center gap-2 text-xs text-gray-400 py-1"><Circle className="w-3 h-3 text-gray-600" />{o}</div>)}
+                  {q.type === "text" && <div className="h-16 rounded bg-gray-800 border border-gray-700" />}
+                  {q.type === "likert" && <div className="flex gap-1">{q.options.map((o, oi) => <span key={oi} className="flex-1 text-[10px] text-center text-gray-500 bg-gray-800 rounded p-1">{o}</span>)}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
