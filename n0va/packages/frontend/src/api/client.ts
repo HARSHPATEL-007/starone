@@ -651,4 +651,49 @@ export const api = {
     markRead: (id: string) => request<any>(`/mentions/${id}/read`, { method: "PATCH" }),
     markAllRead: () => request<any>("/mentions/read-all", { method: "POST" }),
   },
+  developerPortal: {
+    keys: () => request<any[]>("/developer-portal/keys"),
+    createKey: (data: Record<string, unknown>) =>
+      request<any>("/developer-portal/keys", { method: "POST", body: JSON.stringify(data) }),
+    revokeKey: (id: string) => request<any>(`/developer-portal/keys/${id}/revoke`, { method: "POST" }),
+    deleteKey: (id: string) => request<void>(`/developer-portal/keys/${id}`, { method: "DELETE" }),
+    scopes: () => request<any[]>("/developer-portal/scopes"),
+    webhookLogs: () => request<any[]>("/developer-portal/webhook-logs"),
+    usage: () => request<any>("/developer-portal/usage"),
+  },
+  audienceInsights: {
+    insights: (audienceId?: string) =>
+      request<any>(`/audience-insights/insights${audienceId ? `?audienceId=${audienceId}` : ""}`),
+    lookalike: () => request<any>("/audience-insights/lookalike"),
+  },
+  reportBuilder: {
+    list: () => request<any[]>("/report-builder/reports"),
+    get: (id: string) => request<any>(`/report-builder/reports/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/report-builder/reports", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/report-builder/reports/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/report-builder/reports/${id}`, { method: "DELETE" }),
+    generate: (id: string) => request<any>(`/report-builder/reports/${id}/generate`, { method: "POST" }),
+    schedule: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/report-builder/reports/${id}/schedule`, { method: "POST", body: JSON.stringify(data) }),
+    unschedule: (id: string) => request<any>(`/report-builder/reports/${id}/unschedule`, { method: "POST" }),
+    metrics: () => request<{ metrics: any[]; chartTypes: any[] }>("/report-builder/metrics"),
+    defaultWidgets: () => request<any[]>("/report-builder/default-widgets"),
+  },
+  optimizerV2: {
+    dashboard: () => request<{ suggestions: any[]; counts: { high: number; medium: number; low: number }; totalPotentialValue: number; totalOpen: number }>("/optimizer-v2/dashboard"),
+    suggestions: () => request<any[]>("/optimizer-v2/suggestions"),
+    applySuggestion: (id: string) => request<any>(`/optimizer-v2/suggestions/${id}/apply`, { method: "POST" }),
+    dismissSuggestion: (id: string) => request<any>(`/optimizer-v2/suggestions/${id}/dismiss`, { method: "POST" }),
+    platforms: () => request<any[]>("/optimizer-v2/platforms"),
+    portfolio: () => request<any>("/optimizer-v2/portfolio", { method: "POST" }),
+  },
+  oauth: {
+    configs: () => request<any[]>("/oauth/configs"),
+    authorize: (platform: string, redirectUri: string) =>
+      request<{ authUrl: string; state: string; platform: string }>("/oauth/authorize", { method: "POST", body: JSON.stringify({ platform, redirectUri }) }),
+    status: () => request<{ platforms: { platform: string; connected: boolean; active: boolean; label: string | null; expiresAt: string | null; accountId: string | null }[]; totalConnected: number }>("/oauth/status"),
+    refresh: (platform: string) => request<any>(`/oauth/refresh/${platform}`, { method: "POST" }),
+  },
 };

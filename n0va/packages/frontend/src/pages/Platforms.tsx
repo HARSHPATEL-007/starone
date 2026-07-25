@@ -21,6 +21,7 @@ export default function Platforms() {
   const [editForm, setEditForm] = useState({ name: "", authType: "" });
   const [showDisconnect, setShowDisconnect] = useState<string | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<any[]>([]);
+  const [oauthStatus, setOauthStatus] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function Platforms() {
       api.platforms.list().then(setPlatforms),
       api.platforms.health().then(setHealth),
       api.platforms.connected().then(setConnectedAccounts).catch(() => {}),
+      api.oauth.status().then(setOauthStatus).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -41,6 +43,18 @@ export default function Platforms() {
       const accounts = await api.platforms.connected();
       setConnectedAccounts(accounts);
     } catch { addToast("error", "Failed to connect platform"); }
+  }
+
+  async function handleOAuthConnect(platform: string) {
+    try {
+      const redirectUri = `${window.location.origin}/platforms`;
+      const result = await api.oauth.authorize(platform, redirectUri);
+      window.open(result.authUrl, "oauth_popup", "width=600,height=700");
+    } catch { addToast("error", "Failed to initiate OAuth"); }
+  }
+
+  function getOAuthStatus(platform: string) {
+    return oauthStatus?.platforms?.find((p: any) => p.platform === platform);
   }
 
   async function openDetail(p: any) {
@@ -108,7 +122,7 @@ export default function Platforms() {
           <p className="text-gray-500 mt-1">N0VA1O Gateway — connect and manage ad platforms</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={() => { Promise.all([api.platforms.list().then(setPlatforms), api.platforms.health().then(setHealth), api.platforms.connected().then(setConnectedAccounts).catch(() => {})]); addToast("success", "Refreshed"); }}>
+          <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={() => { Promise.all([api.platforms.list().then(setPlatforms), api.platforms.health().then(setHealth), api.platforms.connected().then(setConnectedAccounts).catch(() => {}), api.oauth.status().then(setOauthStatus).catch(() => {})]); addToast("success", "Refreshed"); }}>
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
           <button className="btn-primary flex items-center gap-2" onClick={() => setShowConnect(true)}>
@@ -295,27 +309,44 @@ export default function Platforms() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((p) => (
-            <div key={p.id} className="card cursor-pointer hover:border-gray-700 transition-colors" onClick={() => openDetail(p)}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center"><Share2 className="w-5 h-5 text-n0va-400" /></div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-semibold truncate">{p.name}</h3>
-                  <p className="text-xs text-gray-500">v{p.version}</p>
+          {filtered.map((p) => {
+            const oa = getOAuthStatus(p.platform);
+            return (
+              <div key={p.id} className="card cursor-pointer hover:border-gray-700 transition-colors" onClick={() => openDetail(p)}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center"><Share2 className="w-5 h-5 text-n0va-400" /></div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-semibold truncate">{p.name}</h3>
+                    <p className="text-xs text-gray-500">v{p.version}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {oa ? (
+                      oa.active ? (
+                        <span className="text-[10px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded-full">Connected</span>
+                      ) : (
+                        <span className="text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded-full">Expired</span>
+                      )
+                    ) : (
+                      <button onClick={(e) => { e.stopPropagation(); handleOAuthConnect(p.platform); }} className="btn-ghost text-[10px] p-1" title="Connect with OAuth">
+                        <Link2 className="w-3 h-3 text-gray-500" />
+                      </button>
+                    )}
+                    <div className={`w-2 h-2 rounded-full ${health?.status === "online" ? "bg-green-400" : "bg-gray-600"}`} />
+                  </div>
                 </div>
-                <div className={`w-2 h-2 rounded-full ${health?.status === "online" ? "bg-green-400" : "bg-gray-600"}`} />
-              </div>
-              <div className="space-y-2 text-xs text-gray-500">
-                <p>Auth: {p.authType}</p>
-                <div className="flex flex-wrap gap-1">
-                  {p.actions?.slice(0, 4).map((a: string) => (
-                    <span key={a} className="badge bg-gray-800 text-gray-400">{a}</span>
-                  ))}
-                  {p.actions?.length > 4 && <span className="badge bg-gray-800 text-gray-500">+{p.actions.length - 4}</span>}
+                <div className="space-y-2 text-xs text-gray-500">
+                  <p>Auth: {p.authType}</p>
+                  {oa?.expiresAt && <p className="text-[10px] text-gray-600">Token expires: {new Date(oa.expiresAt).toLocaleDateString()}</p>}
+                  <div className="flex flex-wrap gap-1">
+                    {p.actions?.slice(0, 4).map((a: string) => (
+                      <span key={a} className="badge bg-gray-800 text-gray-400">{a}</span>
+                    ))}
+                    {p.actions?.length > 4 && <span className="badge bg-gray-800 text-gray-500">+{p.actions.length - 4}</span>}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

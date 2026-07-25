@@ -98,6 +98,10 @@ import DeliveryDashboard from "./pages/DeliveryDashboard";
 import BudgetPacing from "./pages/BudgetPacing";
 import SharedCampaignView from "./pages/SharedCampaignView";
 import MentionsPage from "./pages/MentionsPage";
+import CampaignOptimizer from "./pages/CampaignOptimizer";
+import ReportBuilder from "./pages/ReportBuilder";
+import AudienceInsights from "./pages/AudienceInsights";
+import DeveloperPortal from "./pages/DeveloperPortal";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -212,6 +216,10 @@ export default function App() {
                 <Route path="/sandbox-console" element={<SandboxConsole />} />
                 <Route path="/delivery" element={<DeliveryDashboard />} />
                 <Route path="/budget-pacing" element={<BudgetPacing />} />
+                <Route path="/campaign-optimizer" element={<CampaignOptimizer />} />
+                <Route path="/report-builder" element={<ReportBuilder />} />
+                <Route path="/audience-insights" element={<AudienceInsights />} />
+                <Route path="/developer-portal" element={<DeveloperPortal />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

@@ -70,6 +70,11 @@ import summaryRoutes from "./routes/summaries";
 import exportDataRoutes from "./routes/export-data";
 import shareRoutes from "./routes/shares";
 import mentionRoutes from "./routes/mentions";
+import oauthRoutes from "./routes/oauth";
+import optimizerV2Routes from "./routes/optimizer-v2";
+import reportBuilderRoutes from "./routes/report-builder";
+import audienceInsightsRoutes from "./routes/audience-insights";
+import developerPortalRoutes from "./routes/developer-portal";
 
 const app = express();
 const httpServer = createServer(app);
@@ -154,6 +159,11 @@ app.use("/api/v1/summaries", authMiddleware, tenantMiddleware, summaryRoutes);
 app.use("/api/v1/export-data", authMiddleware, tenantMiddleware, exportDataRoutes);
 app.use("/api/v1/shares", authMiddleware, tenantMiddleware, shareRoutes);
 app.use("/api/v1/mentions", authMiddleware, tenantMiddleware, mentionRoutes);
+app.use("/api/v1/oauth", authMiddleware, tenantMiddleware, oauthRoutes);
+app.use("/api/v1/optimizer-v2", authMiddleware, tenantMiddleware, optimizerV2Routes);
+app.use("/api/v1/report-builder", authMiddleware, tenantMiddleware, reportBuilderRoutes);
+app.use("/api/v1/audience-insights", authMiddleware, tenantMiddleware, audienceInsightsRoutes);
+app.use("/api/v1/developer-portal", authMiddleware, tenantMiddleware, developerPortalRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);
