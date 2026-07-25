@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { MemoryStore } from "../services/MemoryStore";
+import { io } from "../index";
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.post(
       userName: userName || req.user!.userId,
       timestamp: new Date().toISOString(),
     });
+    io.to(`tenant:${tenantId}`).emit("activity:new", activity);
     res.status(201).json(activity);
   })
 );

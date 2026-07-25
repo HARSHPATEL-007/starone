@@ -34,6 +34,17 @@ export class AgentService {
     }).sort({ createdAt: -1 });
   }
 
+  async update(id: string, tenantId: string, data: Record<string, unknown>): Promise<IAgent | null> {
+    return Agent.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(id),
+        tenantId: new mongoose.Types.ObjectId(tenantId),
+      },
+      { ...data, updatedAt: new Date() },
+      { new: true }
+    );
+  }
+
   async updateStatus(id: string, tenantId: string, status: AgentStatus): Promise<IAgent | null> {
     return Agent.findOneAndUpdate(
       {

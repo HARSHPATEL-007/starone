@@ -86,6 +86,8 @@ io.on("connection", (socket) => {
   socket.on("unsubscribe:campaign", (id: string) => socket.leave(`campaign:${id}`));
   socket.on("subscribe:fraud", () => socket.join("fraud_alerts"));
   socket.on("subscribe:budget", () => socket.join("budget_alerts"));
+  socket.on("subscribe:tenant", (id: string) => { socket.join(`tenant:${id}`); console.log(`Client ${socket.id} joined tenant:${id}`); });
+  socket.on("unsubscribe:tenant", (id: string) => socket.leave(`tenant:${id}`));
   socket.on("disconnect", () => console.log(`Client disconnected: ${socket.id}`));
 });
 

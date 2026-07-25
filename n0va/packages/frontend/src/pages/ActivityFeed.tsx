@@ -4,6 +4,7 @@ import { RefreshCw, Filter, Clock, User, FileText, Megaphone, Palette, Users, Bo
 import { api } from "../api/client";
 import { SkeletonRow } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
+import { useTenantActivity } from "../hooks/useSocket";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const entityIcons: Record<string, any> = {
@@ -68,6 +69,18 @@ export default function ActivityFeed() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const liveActivities = useTenantActivity("tenant_001");
+
+  useEffect(() => {
+    if (liveActivities.length > 0) {
+      setActivities((prev) => {
+        const existingIds = new Set(prev.map((a: any) => a._id));
+        const newOnes = liveActivities.filter((a: any) => !existingIds.has(a._id));
+        if (newOnes.length === 0) return prev;
+        return [...newOnes, ...prev].slice(0, 500);
+      });
+    }
+  }, [liveActivities]);
 
   useEffect(() => { loadActivities(); }, []);
 

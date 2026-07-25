@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { MemoryStore } from "./MemoryStore";
 
 interface WebhookConfig {
   id: string;
@@ -21,6 +22,15 @@ interface WebhookEvent {
   source: string;
   payload: Record<string, unknown>;
   timestamp: Date;
+}
+
+interface WebhookAction {
+  id: string;
+  type: string;
+  label: string;
+  eventType: string;
+  action: "create_notification" | "log_activity" | "emit_socket" | "update_campaign_status" | "custom";
+  config: Record<string, unknown>;
 }
 
 interface WebhookDelivery {
@@ -177,24 +187,56 @@ export class WebhookService {
     return this.webhooks.delete(id);
   }
 
+  private store() {
+    return MemoryStore.getInstance();
+  }
+
+  private createNotification(tenantId: string, type: string, title: string, message: string, severity: string, link?: string): void {
+    this.store().insert("notifications", {
+      tenantId, type, title, message, severity, read: false, link,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  private logActivity(tenantId: string, action: string, entityType: string, entityName: string, details: string): void {
+    this.store().insert("activities", {
+      tenantId, action, entityType, entityId: "", entityName, details,
+      userId: "system", userName: "N0VA System", timestamp: new Date().toISOString(),
+    });
+  }
+
   registerInternalEvents(): void {
     this.on("campaign.created", async (event) => {
       console.log(`[Webhook] Campaign created: ${event.payload.name}`);
+      this.createNotification(event.tenantId, "campaign_update", "Campaign Created", `Campaign "${event.payload.name}" was created`, "success", "/campaigns");
+      this.logActivity(event.tenantId, "created", "campaign", event.payload.name as string, "Campaign auto-created via webhook");
     });
     this.on("campaign.launched", async (event) => {
       console.log(`[Webhook] Campaign launched: ${event.payload.name}`);
+      this.createNotification(event.tenantId, "campaign_update", "Campaign Launched", `Campaign "${event.payload.name}" is now live`, "success", `/campaigns/${event.payload.id}`);
+      this.logActivity(event.tenantId, "launched", "campaign", event.payload.name as string, "Campaign launched and going live");
     });
     this.on("budget.alert", async (event) => {
       console.log(`[Webhook] Budget alert: ${event.payload.message}`);
+      this.createNotification(event.tenantId, "budget_alert", "Budget Alert", (event.payload.message as string) || "Budget threshold crossed", "warning", "/budget-strategy");
+      this.logActivity(event.tenantId, "alert", "budget", "Budget Alert", event.payload.message as string);
     });
     this.on("fraud.detected", async (event) => {
       console.log(`[Webhook] Fraud detected: ${event.payload.description}`);
+      this.createNotification(event.tenantId, "fraud_alert", "Fraud Detected", (event.payload.description as string) || "Suspicious activity flagged", "error", "/fraud-evaluation");
+      this.logActivity(event.tenantId, "detected", "fraud", "Fraud Flag", event.payload.description as string);
     });
     this.on("creative.fatigue", async (event) => {
       console.log(`[Webhook] Creative fatigue: ${event.payload.creativeName}`);
+      this.createNotification(event.tenantId, "campaign_update", "Creative Fatigue", `Creative "${event.payload.creativeName}" showing fatigue`, "warning", "/creative-fatigue");
     });
     this.on("audience.updated", async (event) => {
       console.log(`[Webhook] Audience updated: ${event.payload.name}`);
+      this.logActivity(event.tenantId, "updated", "audience", event.payload.name as string, "Audience data refreshed automatically");
+    });
+    this.on("campaign.paused", async (event) => {
+      console.log(`[Webhook] Campaign paused: ${event.payload.name}`);
+      this.createNotification(event.tenantId, "campaign_update", "Campaign Paused", `Campaign "${event.payload.name}" was paused`, "info", `/campaigns/${event.payload.id}`);
     });
   }
 

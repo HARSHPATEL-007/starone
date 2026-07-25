@@ -32,12 +32,20 @@ export function useSocket() {
     socketRef.current?.emit("subscribe:budget");
   }, []);
 
+  const subscribeTenant = useCallback((id: string) => {
+    socketRef.current?.emit("subscribe:tenant", id);
+  }, []);
+
+  const unsubscribeTenant = useCallback((id: string) => {
+    socketRef.current?.emit("unsubscribe:tenant", id);
+  }, []);
+
   const on = useCallback((event: string, handler: (...args: any[]) => void) => {
     socketRef.current?.on(event, handler);
     return () => { socketRef.current?.off(event, handler); };
   }, []);
 
-  return { connected, subscribeCampaign, unsubscribeCampaign, subscribeFraud, subscribeBudget, on, socket: socketRef };
+  return { connected, subscribeCampaign, unsubscribeCampaign, subscribeFraud, subscribeBudget, subscribeTenant, unsubscribeTenant, on, socket: socketRef };
 }
 
 export function useCampaignLive(id: string | undefined) {
@@ -80,4 +88,18 @@ export function useBudgetAlerts() {
   }, [connected, subscribeBudget, on]);
 
   return alerts;
+}
+
+export function useTenantActivity(tenantId: string) {
+  const { connected, subscribeTenant, unsubscribeTenant, on } = useSocket();
+  const [liveActivities, setLiveActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!connected) return;
+    subscribeTenant(tenantId);
+    const cleanup = on("activity:new", (activity: any) => setLiveActivities((prev) => [activity, ...prev].slice(0, 100)));
+    return () => { unsubscribeTenant(tenantId); cleanup(); };
+  }, [tenantId, connected, subscribeTenant, unsubscribeTenant, on]);
+
+  return liveActivities;
 }

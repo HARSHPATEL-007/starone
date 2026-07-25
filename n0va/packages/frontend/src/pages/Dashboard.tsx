@@ -1,11 +1,28 @@
 import { useEffect, useState, useCallback } from "react";
-import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw, Download } from "lucide-react";
+import { Link } from "react-router-dom";
+import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw, Download, ExternalLink, Clock } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useNavigate } from "react-router-dom";
-import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
+import { useFraudAlerts, useBudgetAlerts, useTenantActivity } from "../hooks/useSocket";
 import { useCsvExport } from "../hooks/useCsvExport";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
+
+const entityRoutes: Record<string, string> = {
+  campaign: "/campaigns", creative: "/creatives", audience: "/audiences",
+  agent: "/agents", recipe: "/recipes",
+};
+
+function getTimeAgo(timestamp: string): string {
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -17,6 +34,8 @@ export default function Dashboard() {
   const [agents, setAgents] = useState<any[]>([]);
   const [attribution, setAttribution] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [activities, setActivities] = useState<any[]>([]);
+  const liveActivities = useTenantActivity("tenant_001");
 
   const liveFraudAlerts = useFraudAlerts();
   const liveBudgetAlerts = useBudgetAlerts();
@@ -37,7 +56,18 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); api.activity.list().then((r) => setActivities(r || [])).catch(() => {}); }, [loadData]);
+
+  useEffect(() => {
+    if (liveActivities.length > 0) {
+      setActivities((prev) => {
+        const existingIds = new Set(prev.map((a: any) => a._id));
+        const newOnes = liveActivities.filter((a: any) => !existingIds.has(a._id));
+        if (newOnes.length === 0) return prev;
+        return [...newOnes, ...prev].slice(0, 200);
+      });
+    }
+  }, [liveActivities]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -277,6 +307,40 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Recent Activity Widget */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-n0va-400" />
+            <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+          </div>
+          <Link to="/activity" className="text-xs text-n0va-400 hover:text-n0va-300">View All</Link>
+        </div>
+        <div className="space-y-1">
+          {activities.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">No recent activity</p>
+          ) : (
+            activities.slice(0, 8).map((a: any) => {
+              const route = entityRoutes[a.entityType];
+              return (
+                <div key={a._id} className="flex items-center gap-3 py-2 border-b border-gray-800/50 last:border-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-n0va-500 shrink-0" />
+                  <span className="text-xs text-gray-500 min-w-[60px]">{getTimeAgo(a.timestamp)}</span>
+                  <span className={`text-xs font-medium capitalize px-1.5 py-0.5 rounded ${a.action === "created" ? "text-green-400" : a.action === "launched" ? "text-n0va-400" : a.action === "paused" ? "text-yellow-400" : "text-gray-400"}`}>{a.action}</span>
+                  {route ? (
+                    <Link to={`${route}/${a.entityId}`} className="text-xs text-gray-300 hover:text-n0va-400 truncate flex items-center gap-1">
+                      {a.entityName || a.entityId} <ExternalLink className="w-2.5 h-2.5" />
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-gray-300 truncate">{a.entityName || a.entityType}</span>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }

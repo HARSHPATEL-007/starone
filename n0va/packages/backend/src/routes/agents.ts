@@ -77,6 +77,23 @@ router.post(
 );
 
 router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const tenantId = req.user!.tenantId;
+    if (!DataStore.usingMemory()) {
+      const agent = await agentService.update(id, tenantId, req.body);
+      if (!agent) throw new AppError(404, "Agent not found");
+      res.json(agent);
+    } else {
+      const agent = await DataStore.updateAgent(id, tenantId, req.body);
+      if (!agent) throw new AppError(404, "Agent not found");
+      res.json(agent);
+    }
+  })
+);
+
+router.patch(
   "/:id/status",
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;

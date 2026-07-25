@@ -66,6 +66,8 @@ export const api = {
     defaults: () => request<any[]>("/agents/defaults"),
     create: (data: Record<string, unknown>) =>
       request<any>("/agents", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/agents/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     updateStatus: (id: string, status: string) =>
       request<any>(`/agents/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
     recordRun: (id: string, data: Record<string, unknown>) =>
