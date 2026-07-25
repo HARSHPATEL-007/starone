@@ -4,7 +4,7 @@ export interface ChecklistItem {
   id: string;
   label: string;
   description: string;
-  category: "creative" | "audience" | "budget" | "schedule" | "platform" | "tracking" | "approval";
+  category: string;
 }
 
 export interface CampaignChecklist {
@@ -22,21 +22,37 @@ const DEFAULT_ITEMS: ChecklistItem[] = [
   { id: "approval", label: "Campaign approved", description: "Campaign has been reviewed and approved", category: "approval" },
 ];
 
-const STORAGE_KEY = "n0va_launch_checklists";
+const ITEMS_KEY = "n0va_checklist_items";
+const CHECKLISTS_KEY = "n0va_launch_checklists";
 
-function load(): Record<string, CampaignChecklist> {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+function loadItems(): ChecklistItem[] {
+  try {
+    const raw = localStorage.getItem(ITEMS_KEY);
+    if (raw) return JSON.parse(raw);
+    localStorage.setItem(ITEMS_KEY, JSON.stringify(DEFAULT_ITEMS));
+    return DEFAULT_ITEMS;
+  } catch { return DEFAULT_ITEMS; }
+}
+
+function saveItems(items: ChecklistItem[]) {
+  localStorage.setItem(ITEMS_KEY, JSON.stringify(items));
+}
+
+function loadChecklists(): Record<string, CampaignChecklist> {
+  try { return JSON.parse(localStorage.getItem(CHECKLISTS_KEY) || "{}"); }
   catch { return {}; }
 }
 
-function save(data: Record<string, CampaignChecklist>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveChecklists(data: Record<string, CampaignChecklist>) {
+  localStorage.setItem(CHECKLISTS_KEY, JSON.stringify(data));
 }
 
 export function useLaunchChecklist(campaignId?: string) {
-  const [all, setAll] = useState<Record<string, CampaignChecklist>>({});
+  const [items, setItems] = useState<ChecklistItem[]>(() => loadItems());
+  const [all, setAll] = useState<Record<string, CampaignChecklist>>(() => loadChecklists());
 
-  useEffect(() => { setAll(load()); }, []);
+  useEffect(() => { saveItems(items); }, [items]);
+  useEffect(() => { saveChecklists(all); }, [all]);
 
   const getChecklist = useCallback((id: string): CampaignChecklist => {
     return all[id] || { campaignId: id, completed: [] };
@@ -48,22 +64,34 @@ export function useLaunchChecklist(campaignId?: string) {
       const completed = current.completed.includes(itemId)
         ? current.completed.filter((c) => c !== itemId)
         : [...current.completed, itemId];
-      const updated = { ...prev, [id]: { ...current, completed } };
-      save(updated);
-      return updated;
+      return { ...prev, [id]: { ...current, completed } };
     });
   }, []);
 
   const resetChecklist = useCallback((id: string) => {
-    setAll((prev) => {
-      const updated = { ...prev, [id]: { campaignId: id, completed: [] } };
-      save(updated);
-      return updated;
-    });
+    setAll((prev) => ({ ...prev, [id]: { campaignId: id, completed: [] } }));
+  }, []);
+
+  const addItem = useCallback((item: { label: string; description: string; category: string }) => {
+    const newItem: ChecklistItem = {
+      id: "custom-" + Date.now().toString(36),
+      label: item.label,
+      description: item.description,
+      category: item.category,
+    };
+    setItems((prev) => [...prev, newItem]);
+  }, []);
+
+  const updateItem = useCallback((id: string, updates: Partial<ChecklistItem>) => {
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...updates } : i));
+  }, []);
+
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
   const current = campaignId ? getChecklist(campaignId) : null;
-  const progress = current ? Math.round((current.completed.length / DEFAULT_ITEMS.length) * 100) : 0;
+  const progress = current ? Math.round((current.completed.length / items.length) * 100) : 0;
 
-  return { items: DEFAULT_ITEMS, getChecklist, toggleItem, resetChecklist, current, progress };
+  return { items, getChecklist, toggleItem, resetChecklist, addItem, updateItem, removeItem, current, progress };
 }

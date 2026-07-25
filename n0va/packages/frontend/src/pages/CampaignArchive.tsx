@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Archive, Search, RotateCcw, Trash2, Filter, Calendar, Megaphone, DollarSign, BarChart3, Clock, Target, Eye } from "lucide-react";
+import { Archive, Search, RotateCcw, Trash2, Filter, Calendar, Megaphone, DollarSign, BarChart3, Clock, Target, Eye, Loader, AlertCircle } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
+import { SkeletonCard } from "../components/Skeleton";
 
 interface ArchivedCampaign {
   id: string;
@@ -33,10 +34,12 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 export default function CampaignArchive() {
   const { addToast } = useToast();
-  const { data: campaigns, loading, remove, replaceAll } = useEntityData<ArchivedCampaign>("campaign_archive");
+  const { data: campaigns, loading, error, remove, replaceAll, refresh } = useEntityData<ArchivedCampaign>("campaign_archive");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [restoring, setRestoring] = useState<string | null>(null);
+  const [batchIds, setBatchIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   function handleRestore(id: string) {
     setRestoring(id);
@@ -55,6 +58,37 @@ export default function CampaignArchive() {
     addToast("success", `"${name}" permanently deleted`);
   }
 
+  function handleBatchRestore() {
+    const names: string[] = [];
+    const restored = campaigns.filter(c => {
+      if (batchIds.has(c.id)) names.push(c.name);
+      return !batchIds.has(c.id);
+    });
+    replaceAll(restored);
+    addToast("success", `Restored ${names.length} campaign${names.length !== 1 ? "s" : ""}`);
+    setBatchIds(new Set());
+  }
+
+  function handleBatchDelete() {
+    const names: string[] = [];
+    const remaining = campaigns.filter(c => {
+      if (batchIds.has(c.id)) names.push(c.name);
+      return !batchIds.has(c.id);
+    });
+    replaceAll(remaining);
+    addToast("success", `Deleted ${names.length} campaign${names.length !== 1 ? "s" : ""}`);
+    setBatchIds(new Set());
+    setShowDeleteConfirm(false);
+  }
+
+  function toggleBatch(id: string) {
+    setBatchIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
   const filtered = campaigns.filter(c => {
     if (filterStatus !== "all" && c.status !== filterStatus) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.description.toLowerCase().includes(search.toLowerCase())) return false;
@@ -63,6 +97,27 @@ export default function CampaignArchive() {
 
   const totalSpent = campaigns.reduce((s, c) => s + c.spent, 0);
   const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
+        <div className="grid grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+        <SkeletonCard /><SkeletonCard />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card p-12 flex flex-col items-center justify-center text-center">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-300 mb-2">Failed to load archive</h3>
+        <p className="text-sm text-gray-500 mb-4">{error}</p>
+        <button onClick={refresh} className="btn-primary text-sm"><RotateCcw className="w-4 h-4 inline mr-1.5" /> Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -74,12 +129,21 @@ export default function CampaignArchive() {
           </h1>
           <p className="text-gray-400 mt-1">{campaigns.length} archived campaigns · ${(totalBudget - totalSpent).toLocaleString()} unspent</p>
         </div>
+        <div className="flex items-center gap-2">
+          {batchIds.size > 0 && (
+            <>
+              <button onClick={handleBatchRestore} className="btn-ghost text-xs flex items-center gap-1"><RotateCcw className="w-3 h-3" /> Restore ({batchIds.size})</button>
+              <button onClick={() => setShowDeleteConfirm(true)} className="btn-ghost text-xs text-red-400 flex items-center gap-1"><Trash2 className="w-3 h-3" /> Delete ({batchIds.size})</button>
+            </>
+          )}
+          <button onClick={refresh} className="btn-ghost text-sm"><RotateCcw className="w-4 h-4 inline mr-1" /> Refresh</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         <div className="card p-4"><p className="text-xs text-gray-500">Total Budget</p><p className="text-lg font-bold text-white mt-1">${fmt(totalBudget)}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Total Spent</p><p className="text-lg font-bold text-white mt-1">${fmt(totalSpent)}</p></div>
-        <div className="card p-4"><p className="text-xs text-gray-500">Avg. ROAS</p><p className="text-lg font-bold text-white mt-1">{((campaigns.reduce((s, c) => s + c.conversions, 0) * 50) / totalSpent).toFixed(1)}x</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Avg. ROAS</p><p className="text-lg font-bold text-white mt-1">{((campaigns.reduce((s, c) => s + c.conversions, 0) * 50) / Math.max(totalSpent, 1)).toFixed(1)}x</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Completed</p><p className="text-lg font-bold text-white mt-1">{campaigns.filter(c => c.status === "completed").length}</p></div>
       </div>
 
@@ -90,10 +154,7 @@ export default function CampaignArchive() {
         </div>
         <select className="input py-2 text-sm w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="all">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="paused">Paused</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="archived">Archived</option>
+          {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
       </div>
 
@@ -112,8 +173,11 @@ export default function CampaignArchive() {
         return (
           <div key={c.id} className={`card p-5 transition-all ${restoring === c.id ? "opacity-40 scale-95" : ""}`}>
             <div className="flex items-start gap-4">
-              <div className={`p-2 rounded-lg ${sm.color.replace("text-", "bg-").replace("green-400", "green-500/10").replace("yellow-400", "yellow-500/10").replace("red-400", "red-500/10")}`}>
-                <Archive className="w-5 h-5" />
+              <div className="flex items-center gap-3">
+                <input type="checkbox" checked={batchIds.has(c.id)} onChange={() => toggleBatch(c.id)} className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-n0va-500 focus:ring-n0va-500" />
+                <div className={`p-2 rounded-lg ${sm.color.replace("text-", "bg-").replace("green-400", "green-500/10").replace("yellow-400", "yellow-500/10").replace("red-400", "red-500/10")}`}>
+                  <Archive className="w-5 h-5" />
+                </div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -149,6 +213,20 @@ export default function CampaignArchive() {
           </div>
         );
       })}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-white text-center mb-2">Delete {batchIds.size} campaign{batchIds.size !== 1 ? "s" : ""}?</h3>
+            <p className="text-sm text-gray-500 text-center mb-4">This action cannot be undone. Campaigns will be permanently removed.</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary">Cancel</button>
+              <button onClick={handleBatchDelete} className="btn-primary bg-red-600 hover:bg-red-500">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

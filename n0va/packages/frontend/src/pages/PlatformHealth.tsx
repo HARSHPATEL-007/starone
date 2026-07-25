@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Shield, RefreshCw, Activity, Server, Link2, Zap, AlertTriangle, CheckCircle, Database, Cpu, FileJson } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Shield, RefreshCw, Activity, Server, Link2, Zap, AlertTriangle, CheckCircle, Database, Cpu, FileJson, Clock, Loader } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 
@@ -8,11 +8,14 @@ export default function PlatformHealth() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [fraudHealth, setFraudHealth] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { loadAll(); }, []);
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const [h, a, f] = await Promise.all([
         api.platforms.health(),
@@ -22,12 +25,26 @@ export default function PlatformHealth() {
       setHealth(h);
       setAccounts(a);
       setFraudHealth(f);
+      setLastRefreshed(new Date().toLocaleTimeString());
+    } catch (e: any) {
+      setError(e.message || "Failed to load platform health");
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  if (loading) {
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    if (autoRefresh) {
+      intervalRef.current = setInterval(loadAll, 30000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [autoRefresh, loadAll]);
+
+  if (loading && !health) {
     return (
       <div className="space-y-6">
         <div className="h-8 w-48 bg-gray-800 rounded animate-pulse" />
@@ -35,6 +52,17 @@ export default function PlatformHealth() {
           {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
         <SkeletonCard />
+      </div>
+    );
+  }
+
+  if (error && !health) {
+    return (
+      <div className="card p-12 flex flex-col items-center justify-center text-center">
+        <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-300 mb-2">Connection Error</h3>
+        <p className="text-sm text-gray-500 mb-4">{error}</p>
+        <button onClick={loadAll} className="btn-primary text-sm"><RefreshCw className="w-4 h-4 inline mr-1.5" /> Retry</button>
       </div>
     );
   }
@@ -50,9 +78,17 @@ export default function PlatformHealth() {
           <h1 className="text-2xl font-bold text-white">Platform Health</h1>
           <p className="text-gray-500 mt-1">N0VA1O Gateway, connected accounts, and fraud detection status</p>
         </div>
-        <button className="btn-secondary flex items-center gap-2" onClick={loadAll}>
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {error && <span className="text-xs text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {error}</span>}
+          {lastRefreshed && <span className="text-xs text-gray-600 flex items-center gap-1"><Clock className="w-3 h-3" /> {lastRefreshed}</span>}
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+            <input type="checkbox" checked={autoRefresh} onChange={() => setAutoRefresh(!autoRefresh)} className="w-3 h-3 rounded border-gray-700 bg-gray-800 text-n0va-500 focus:ring-n0va-500" />
+            Auto (30s)
+          </label>
+          <button className="btn-secondary flex items-center gap-2" onClick={loadAll} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -90,31 +126,19 @@ export default function PlatformHealth() {
           <h3 className="text-lg font-semibold text-white mb-4">N0VA1O Gateway Details</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm text-gray-300">Registered Intents</span>
-              </div>
+              <div className="flex items-center gap-3"><Zap className="w-4 h-4 text-yellow-400" /><span className="text-sm text-gray-300">Registered Intents</span></div>
               <span className="text-sm text-white font-bold">{health?.router?.registeredIntents || 0}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Activity className="w-4 h-4 text-blue-400" />
-                <span className="text-sm text-gray-300">Registered Actions</span>
-              </div>
+              <div className="flex items-center gap-3"><Activity className="w-4 h-4 text-blue-400" /><span className="text-sm text-gray-300">Registered Actions</span></div>
               <span className="text-sm text-white font-bold">{health?.router?.registeredActions || 0}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <FileJson className="w-4 h-4 text-n0va-400" />
-                <span className="text-sm text-gray-300">Cached Recipes</span>
-              </div>
+              <div className="flex items-center gap-3"><FileJson className="w-4 h-4 text-n0va-400" /><span className="text-sm text-gray-300">Cached Recipes</span></div>
               <span className="text-sm text-white font-bold">{health?.recipes?.cachedRecipes || 0}</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Link2 className="w-4 h-4 text-green-400" />
-                <span className="text-sm text-gray-300">Available Connectors</span>
-              </div>
+              <div className="flex items-center gap-3"><Link2 className="w-4 h-4 text-green-400" /><span className="text-sm text-gray-300">Available Connectors</span></div>
               <span className="text-sm text-white font-bold">{health?.connections || 0}</span>
             </div>
           </div>
@@ -153,30 +177,19 @@ export default function PlatformHealth() {
             <h3 className="text-lg font-semibold text-white">Fraud Detection Health</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-white">{fraudHealth.totalFlags}</p>
-              <p className="text-xs text-gray-500">Total Flags</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-red-400">{fraudHealth.activeFlags}</p>
-              <p className="text-xs text-gray-500">Active</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-orange-400">{fraudHealth.highFlags || 0}</p>
-              <p className="text-xs text-gray-500">High Risk</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-purple-400">{fraudHealth.autoPaused || 0}</p>
-              <p className="text-xs text-gray-500">Auto-Paused</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-blue-400">{fraudHealth.mediumFlags || 0}</p>
-              <p className="text-xs text-gray-500">Medium Risk</p>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-400">{fraudHealth.lowFlags || 0}</p>
-              <p className="text-xs text-gray-500">Low Risk</p>
-            </div>
+            {[
+              { label: "Total Flags", value: fraudHealth.totalFlags, color: "text-white" },
+              { label: "Active", value: fraudHealth.activeFlags, color: "text-red-400" },
+              { label: "High Risk", value: fraudHealth.highFlags || 0, color: "text-orange-400" },
+              { label: "Auto-Paused", value: fraudHealth.autoPaused || 0, color: "text-purple-400" },
+              { label: "Medium Risk", value: fraudHealth.mediumFlags || 0, color: "text-blue-400" },
+              { label: "Low Risk", value: fraudHealth.lowFlags || 0, color: "text-green-400" },
+            ].map((item) => (
+              <div key={item.label} className="bg-gray-800 rounded-lg p-3 text-center">
+                <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+                <p className="text-xs text-gray-500">{item.label}</p>
+              </div>
+            ))}
           </div>
           {fraudHealth.topCategories?.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-800">
