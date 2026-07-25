@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, CheckCircle, Clock, AlertCircle, CreditCard, FileText, Calendar, DollarSign, Hash, User, Building, MapPin, Mail, Loader } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle, Clock, AlertCircle, CreditCard, FileText, Calendar, DollarSign, Hash, Building, X, Copy, Send, Trash2, Edit3, Loader, Check } from "lucide-react";
 import { api } from "../api/client";
+import { useToast } from "../components/Toast";
 
 interface InvoiceData {
   _id?: string;
@@ -19,12 +20,14 @@ interface InvoiceData {
   subtotal?: number;
   tax?: number;
   total?: number;
+  history?: { action: string; date: string; note?: string }[];
 }
 
 function extractInvoice(raw: any): InvoiceData {
+  if (!raw) return { id: "", amount: 0, currency: "USD", status: "pending", dueDate: new Date().toISOString() };
   const src = raw?.data || raw;
   return {
-    _id: raw?._id,
+    _id: raw?._id || src?._id,
     id: src.id || raw?.id || src._id || raw?._id || "",
     amount: src.amount || 0,
     currency: src.currency || "USD",
@@ -39,27 +42,79 @@ function extractInvoice(raw: any): InvoiceData {
     subtotal: src.subtotal,
     tax: src.tax,
     total: src.total,
+    history: src.history || [],
   };
 }
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-    api.billing.getInvoice(id).then((r) => {
-      setInvoice(extractInvoice(r));
-      setLoading(false);
-    }).catch((e) => {
-      setError(e.message || "Failed to load invoice");
-      setLoading(false);
-    });
+    loadInvoice();
   }, [id]);
+
+  async function loadInvoice() {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await api.billing.getInvoice(id!);
+      setInvoice(extractInvoice(r));
+    } catch (e: any) {
+      setError(e.message || "Failed to load invoice");
+    }
+    setLoading(false);
+  }
+
+  async function handleMarkPaid() {
+    if (!invoice) return;
+    try {
+      await api.billing.updateSubscription({ invoiceId: invoice._id || invoice.id, status: "paid", paidAt: new Date().toISOString() });
+      addToast("success", "Invoice marked as paid");
+      loadInvoice();
+    } catch { addToast("error", "Failed to mark invoice as paid"); }
+  }
+
+  async function handleDelete() {
+    if (!invoice) return;
+    try {
+      await api.entities.delete("invoices", invoice._id || invoice.id);
+      addToast("success", "Invoice deleted");
+      navigate("/billing");
+    } catch { addToast("error", "Failed to delete invoice"); }
+  }
+
+  function handleDownload() {
+    if (!invoice) return;
+    const json = JSON.stringify(invoice, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `invoice-${invoice.id}.json`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", "Invoice downloaded");
+  }
+
+  function handleCopyId() {
+    if (!invoice) return;
+    navigator.clipboard.writeText(invoice.id);
+    addToast("success", "Invoice ID copied");
+  }
+
+  function handleEmailInvoice() {
+    if (!invoice) return;
+    addToast("info", `Invoice ${invoice.id} will be emailed to the billing contact`);
+  }
+
+  function handlePrint() {
+    window.print();
+  }
 
   if (loading) return <div className="flex items-center justify-center min-h-[400px]"><Loader className="w-6 h-6 animate-spin text-n0va-400" /></div>;
   if (error || !invoice) return (
@@ -97,11 +152,14 @@ export default function InvoiceDetail() {
           <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full ${statusMeta.bg} ${statusMeta.color}`}>
             <StatusIcon className="w-3.5 h-3.5" />{statusMeta.label}
           </span>
-          <button onClick={() => window.print()} className="btn-ghost text-sm flex items-center gap-1.5"><Download className="w-4 h-4" /> PDF</button>
+          <button onClick={handleCopyId} className="btn-ghost text-xs flex items-center gap-1.5" title="Copy Invoice ID"><Copy className="w-3.5 h-3.5" /></button>
+          <button onClick={handleDownload} className="btn-ghost text-xs flex items-center gap-1.5" title="Download JSON"><Download className="w-3.5 h-3.5" /></button>
+          <button onClick={handleEmailInvoice} className="btn-ghost text-xs flex items-center gap-1.5" title="Email Invoice"><Send className="w-3.5 h-3.5" /></button>
+          <button onClick={handlePrint} className="btn-ghost text-xs flex items-center gap-1.5" title="Print"><FileText className="w-3.5 h-3.5" /></button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="card p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-n0va-500/10 flex items-center justify-center"><DollarSign className="w-5 h-5 text-n0va-400" /></div>
           <div><p className="text-xs text-gray-500">Amount</p><p className="text-lg font-bold text-white">${invoice.amount.toLocaleString()} {invoice.currency}</p></div>
@@ -113,6 +171,10 @@ export default function InvoiceDetail() {
         <div className="card p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center"><Hash className="w-5 h-5 text-purple-400" /></div>
           <div><p className="text-xs text-gray-500">Invoice ID</p><p className="text-sm font-bold text-white font-mono truncate">{invoice.id}</p></div>
+        </div>
+        <div className="card p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center"><CreditCard className="w-5 h-5 text-amber-400" /></div>
+          <div><p className="text-xs text-gray-500">Currency</p><p className="text-lg font-bold text-white">{invoice.currency}</p></div>
         </div>
       </div>
 
@@ -139,7 +201,7 @@ export default function InvoiceDetail() {
           </tbody>
           <tfoot>
             <tr><td colSpan={3} className="pt-3 text-right text-gray-500">Subtotal</td><td className="pt-3 text-right text-gray-300">${subtotal.toLocaleString()}</td></tr>
-            {tax > 0 && <tr><td colSpan={3} className="text-right text-gray-500">Tax</td><td className="text-right text-gray-300">${tax.toLocaleString()}</td></tr>}
+            {tax > 0 && <tr><td colSpan={3} className="text-right text-gray-500">Tax ({(tax / Math.max(subtotal, 1) * 100).toFixed(1)}%)</td><td className="text-right text-gray-300">${tax.toLocaleString()}</td></tr>}
             <tr><td colSpan={3} className="text-right text-white font-semibold pt-1">Total</td><td className="text-right text-white font-bold pt-1">${total.toLocaleString()} {invoice.currency}</td></tr>
           </tfoot>
         </table>
@@ -168,29 +230,61 @@ export default function InvoiceDetail() {
                 <p className="text-xs text-gray-500">•••• {invoice.paymentMethod.last4}</p>
               </div>
             </div>
-            {invoice.paidAt && <p className="text-xs text-green-400 mt-3">Paid on {new Date(invoice.paidAt).toLocaleDateString()}</p>}
+            {invoice.paidAt && <p className="text-xs text-green-400 mt-3 flex items-center gap-1"><Check className="w-3 h-3" /> Paid on {new Date(invoice.paidAt).toLocaleDateString()}</p>}
           </div>
         )}
-        {invoice.createdAt && (
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3"><Calendar className="w-4 h-4 text-gray-500" /> Dates</h3>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-gray-500">Created</span><span className="text-gray-300">{invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : "—"}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Due</span><span className="text-gray-300">{new Date(invoice.dueDate).toLocaleDateString()}</span></div>
+            {invoice.paidAt && <div className="flex justify-between"><span className="text-gray-500">Paid</span><span className="text-green-400">{new Date(invoice.paidAt).toLocaleDateString()}</span></div>}
+          </div>
+        </div>
+        {(invoice.history && invoice.history.length > 0) && (
           <div className="card p-5">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3"><Calendar className="w-4 h-4 text-gray-500" /> Dates</h3>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Created</span><span className="text-gray-300">{new Date(invoice.createdAt).toLocaleDateString()}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Due</span><span className="text-gray-300">{new Date(invoice.dueDate).toLocaleDateString()}</span></div>
-              {invoice.paidAt && <div className="flex justify-between"><span className="text-gray-500">Paid</span><span className="text-green-400">{new Date(invoice.paidAt).toLocaleDateString()}</span></div>}
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3"><Clock className="w-4 h-4 text-gray-500" /> Payment History</h3>
+            <div className="space-y-2">
+              {invoice.history.map((h, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-n0va-400 mt-1.5 shrink-0" />
+                  <div>
+                    <p className="text-gray-300 capitalize">{h.action.replace(/_/g, " ")}</p>
+                    <p className="text-gray-600">{new Date(h.date).toLocaleString()}{h.note ? ` — ${h.note}` : ""}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex justify-between items-center">
-        <button onClick={() => navigate("/billing")} className="btn-ghost text-sm"><ArrowLeft className="w-4 h-4 inline mr-1" /> Back to Billing</button>
+      <div className="flex justify-between items-center pb-8">
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate("/billing")} className="btn-ghost text-sm"><ArrowLeft className="w-4 h-4 inline mr-1" /> Back to Billing</button>
+          {invoice.status !== "paid" && (
+            <button onClick={() => setShowDelete(true)} className="btn-ghost text-sm text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4 inline mr-1" /> Delete</button>
+          )}
+        </div>
         {invoice.status !== "paid" && (
-          <button onClick={() => { api.billing.getInvoice(id!).then(r => api.billing.updateSubscription({ ...r, status: "paid", paidAt: new Date().toISOString() })).then(() => { setInvoice(prev => prev ? { ...prev, status: "paid", paidAt: new Date().toISOString() } : prev); }).catch(() => {}); }} className="btn-primary text-sm">
+          <button onClick={handleMarkPaid} className="btn-primary text-sm">
             <CheckCircle className="w-4 h-4 inline mr-1" /> Mark as Paid
           </button>
         )}
       </div>
+
+      {showDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDelete(false)}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Delete Invoice</h3>
+            <p className="text-sm text-gray-400 mb-4">Are you sure you want to delete invoice <span className="text-white font-mono">{invoice.id}</span>? This cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowDelete(false)} className="btn-secondary">Cancel</button>
+              <button onClick={handleDelete} className="btn-primary bg-red-600 hover:bg-red-500 border-red-600">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
