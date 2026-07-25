@@ -10,6 +10,9 @@ export interface CampaignHealthScore {
   efficiency: number;
   issues: { type: string; severity: "critical" | "warning" | "info"; message: string }[];
   trend: "up" | "down" | "stable";
+  _saturation?: { penalty: number; beta: number };
+  _volatility?: { penalty: number; cv: number };
+  _trendDetails?: { ctrDelta: number; roasDelta: number; convDelta: number; compositeDelta: number };
 }
 
 export class CampaignHealthService {
@@ -76,17 +79,75 @@ export class CampaignHealthService {
       issues.push({ type: "low_cvr", severity: "critical", message: `CVR ${cvr.toFixed(2)}% — conversion bottleneck` });
     }
 
-    const overall = Math.round((budgetScore + perfScore + engagementScore + efficiencyScore) / 4);
+    // ─── Saturation-aware adjustment ──────────────────────────────────
+    const sortedMetrics = [...campaignMetrics].sort((a: any, b: any) =>
+      new Date(a.date || a.createdAt).getTime() - new Date(b.date || b.createdAt).getTime());
+    const cumSpend: number[] = [];
+    const cumConv: number[] = [];
+    for (const m of sortedMetrics) {
+      const s = Number(m.spend) || 0;
+      const c = Number(m.conversions) || 0;
+      cumSpend.push((cumSpend[cumSpend.length - 1] || 0) + s);
+      cumConv.push((cumConv[cumSpend.length - 1] || 0) + c);
+    }
 
+    let saturationPenalty = 0;
+    let betaVal = 0.5;
+    if (cumSpend.length >= 5) {
+      const n = cumSpend.length;
+      const logX = cumSpend.slice(1).map((x) => Math.log(Math.max(x, 0.01)));
+      const logY = cumConv.slice(1).map((y) => Math.log(Math.max(y, 0.01)));
+      const mx = logX.reduce((a, b) => a + b, 0) / logX.length;
+      const my = logY.reduce((a, b) => a + b, 0) / logY.length;
+      let num = 0, den = 0;
+      for (let i = 0; i < logX.length; i++) {
+        num += (logX[i] - mx) * (logY[i] - my);
+        den += (logX[i] - mx) ** 2;
+      }
+      betaVal = den > 0 ? num / den : 0.5;
+      if (betaVal < 0.2) saturationPenalty = 30;
+      else if (betaVal < 0.4) saturationPenalty = 15;
+      else if (betaVal < 0.6) saturationPenalty = 5;
+    }
+
+    let volatilityPenalty = 0;
+    let cvVal = 0;
+    if (campaignMetrics.length >= 7) {
+      const recentSpends = campaignMetrics.slice(-7).map((m: any) => Number(m.spend) || 0);
+      const mean = recentSpends.reduce((a: number, b: number) => a + b, 0) / recentSpends.length;
+      const variance = recentSpends.reduce((a: number, b: number) => a + (b - mean) ** 2, 0) / recentSpends.length;
+      cvVal = mean > 0 ? Math.sqrt(variance) / mean : 0;
+      if (cvVal > 1.5) volatilityPenalty = 20;
+      else if (cvVal > 1.0) volatilityPenalty = 10;
+      else if (cvVal > 0.5) volatilityPenalty = 5;
+    }
+
+    const overall = Math.max(0, Math.round((budgetScore + perfScore + engagementScore + efficiencyScore) / 4 - saturationPenalty - volatilityPenalty));
+
+    if (saturationPenalty > 0) issues.push({ type: "diminishing_returns", severity: saturationPenalty >= 30 ? "critical" : "warning", message: `Saturation detected (beta=${betaVal.toFixed(2)}). Marginal ROI declining.` });
+    if (volatilityPenalty > 15) issues.push({ type: "high_volatility", severity: "warning", message: "Spend volatility is high. Consider pacing adjustments." });
+
+    // ─── Multi-metric trend detection ───────────────────────────────
     const recent = campaignMetrics.slice(-7);
-    const recentCtr = recent.length > 0
-      ? recent.reduce((s: number, m: any) => s + ((m.impressions || 0) > 0 ? ((m.clicks || 0) / (m.impressions || 1)) * 100 : 0), 0) / recent.length
-      : 0;
     const older = campaignMetrics.slice(0, Math.max(0, campaignMetrics.length - 7));
+    const recentCtr = recent.length > 0
+      ? recent.reduce((s: number, m: any) => s + ((m.impressions || 0) > 0 ? ((m.clicks || 0) / (m.impressions || 1)) * 100 : 0), 0) / recent.length : 0;
     const olderCtr = older.length > 0
-      ? older.reduce((s: number, m: any) => s + ((m.impressions || 0) > 0 ? ((m.clicks || 0) / (m.impressions || 1)) * 100 : 0), 0) / older.length
-      : 0;
-    const trend: "up" | "down" | "stable" = recentCtr > olderCtr * 1.05 ? "up" : recentCtr < olderCtr * 0.95 ? "down" : "stable";
+      ? older.reduce((s: number, m: any) => s + ((m.impressions || 0) > 0 ? ((m.clicks || 0) / (m.impressions || 1)) * 100 : 0), 0) / older.length : 0;
+
+    const recentRoas = recent.length > 0
+      ? recent.reduce((s: number, m: any) => s + ((m.spend || 0) > 0 ? ((m.revenue || 0) / (m.spend || 1)) : 0), 0) / recent.length : 0;
+    const olderRoas = older.length > 0
+      ? older.reduce((s: number, m: any) => s + ((m.spend || 0) > 0 ? ((m.revenue || 0) / (m.spend || 1)) : 0), 0) / older.length : 0;
+
+    // Composite trend from CTR + ROAS + conversions
+    const ctrDelta = olderCtr > 0 ? (recentCtr - olderCtr) / olderCtr : 0;
+    const roasDelta = olderRoas > 0 ? (recentRoas - olderRoas) / olderRoas : 0;
+    const convDelta = campaignMetrics.length >= 14
+      ? (recent.reduce((s: number, m: any) => s + (Number(m.conversions) || 0), 0) - older.reduce((s: number, m: any) => s + (Number(m.conversions) || 0), 0)) / Math.max(older.reduce((s: number, m: any) => s + (Number(m.conversions) || 0), 0), 1) : 0;
+
+    const compositeDelta = ctrDelta * 0.3 + roasDelta * 0.4 + convDelta * 0.3;
+    const trend: "up" | "down" | "stable" = compositeDelta > 0.05 ? "up" : compositeDelta < -0.05 ? "down" : "stable";
 
     return {
       campaignId: campaign._id,
@@ -98,6 +159,9 @@ export class CampaignHealthService {
       efficiency: efficiencyScore,
       issues,
       trend,
+      _saturation: { penalty: saturationPenalty, beta: betaVal },
+      _volatility: { penalty: volatilityPenalty, cv: cvVal },
+      _trendDetails: { ctrDelta: Math.round(ctrDelta * 1000) / 1000, roasDelta: Math.round(roasDelta * 1000) / 1000, convDelta: Math.round(convDelta * 1000) / 1000, compositeDelta: Math.round(compositeDelta * 1000) / 1000 },
     };
   }
 

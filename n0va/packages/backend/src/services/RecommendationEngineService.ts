@@ -151,6 +151,182 @@ export class RecommendationEngineService {
   ): Recommendation {
     return { id: `rec_${type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, type, title, description, impact, effort, campaignId, campaignName, action, metric, currentValue, suggestedValue, potentialGain };
   }
+
+  // ─── Multi-Armed Bandit ──────────────────────────────────────────────
+
+  private banditArms: Map<string, BanditArm> = new Map();
+
+  /**
+   * Register or update a bandit arm (recommendation type/category).
+   * Each arm tracks: plays (n), rewards sum, and reward history.
+   */
+  registerArm(armId: string, label: string): void {
+    if (!this.banditArms.has(armId)) {
+      this.banditArms.set(armId, { armId, label, plays: 0, rewardSum: 0, rewards: [], lastPlayed: null });
+    }
+  }
+
+  /**
+   * Select the best arm using ε-greedy or UCB1.
+   */
+  selectArm(strategy: "epsilon_greedy" | "ucb1" = "ucb1", epsilon = 0.1): { armId: string; label: string; expectedReward: number; method: string } {
+    const arms = Array.from(this.banditArms.values());
+    if (arms.length === 0) throw new Error("No bandit arms registered. Call registerArm first.");
+
+    // Exploration
+    if (strategy === "epsilon_greedy" && Math.random() < epsilon) {
+      const chosen = arms[Math.floor(Math.random() * arms.length)];
+      return { armId: chosen.armId, label: chosen.label, expectedReward: this.armAverage(chosen), method: "explore" };
+    }
+
+    // Exploitation
+    const totalPlays = arms.reduce((s, a) => s + a.plays, 0);
+    let best: { arm: BanditArm; value: number } | null = null;
+
+    for (const arm of arms) {
+      let value: number;
+      if (strategy === "ucb1") {
+        // UCB1: upper confidence bound
+        const avg = this.armAverage(arm);
+        const exploration = arm.plays > 0 ? Math.sqrt(2 * Math.log(Math.max(totalPlays, 1)) / arm.plays) : Infinity;
+        value = avg + exploration;
+      } else {
+        // ε-greedy exploitation = expected value
+        value = this.armAverage(arm);
+      }
+      if (!best || value > best.value) best = { arm, value };
+    }
+
+    return { armId: best!.arm.armId, label: best!.arm.label, expectedReward: Math.round(this.armAverage(best!.arm) * 10000) / 10000, method: strategy };
+  }
+
+  /**
+   * Record a reward for a given arm.
+   */
+  rewardArm(armId: string, reward: number): void {
+    const arm = this.banditArms.get(armId);
+    if (!arm) throw new Error(`Arm "${armId}" not found`);
+    arm.plays++;
+    arm.rewardSum += reward;
+    arm.rewards.push(reward);
+    arm.lastPlayed = new Date().toISOString();
+  }
+
+  /**
+   * Get bandit state for all arms.
+   */
+  banditState(): { arms: BanditArm[]; bestArm: { armId: string; expectedReward: number } | null; totalPlays: number } {
+    const arms = Array.from(this.banditArms.values());
+    const totalPlays = arms.reduce((s, a) => s + a.plays, 0);
+    let best: BanditArm | null = null;
+    let bestAvg = -Infinity;
+    for (const arm of arms) {
+      const avg = this.armAverage(arm);
+      if (avg > bestAvg) { bestAvg = avg; best = arm; }
+    }
+    return {
+      arms: arms.map((a) => ({ ...a, expectedReward: this.armAverage(a) })),
+      bestArm: best ? { armId: best.armId, expectedReward: Math.round(bestAvg * 10000) / 10000 } : null,
+      totalPlays,
+    };
+  }
+
+  private armAverage(arm: BanditArm): number {
+    return arm.plays > 0 ? arm.rewardSum / arm.plays : 0;
+  }
+
+  // ─── Adaptive Threshold Tuning ──────────────────────────────────────
+
+  private thresholdHistory: Map<string, { threshold: number; successRate: number; hits: number; misses: number; lastAdjusted: string }> = new Map();
+
+  /**
+   * Adjusts a threshold based on observed hit/miss rate using multiplicative update.
+   * If success rate is too high, the threshold is too easy — tighten it.
+   * If success rate is too low, the threshold is too strict — loosen it.
+   */
+  tuneThreshold(
+    thresholdId: string,
+    currentValue: number,
+    didHit: boolean,
+    targetSuccessRate = 0.3,
+    adjustmentFactor = 0.05,
+    minValue = 0.1,
+    maxValue = 100,
+  ): { adjustedThreshold: number; successRate: number; direction: "tightened" | "loosened" | "unchanged" } {
+    const state = this.thresholdHistory.get(thresholdId) || { threshold: currentValue, successRate: 0, hits: 0, misses: 0, lastAdjusted: "" };
+    if (didHit) state.hits++; else state.misses++;
+    const total = state.hits + state.misses;
+    state.successRate = state.hits / Math.max(total, 1);
+
+    let direction: "tightened" | "loosened" | "unchanged" = "unchanged";
+    if (total >= 10) {
+      const diff = state.successRate - targetSuccessRate;
+      if (diff > 0.1) {
+        // Too easy — tighten
+        state.threshold = Math.min(maxValue, state.threshold * (1 + adjustmentFactor));
+        direction = "tightened";
+      } else if (diff < -0.1) {
+        // Too strict — loosen
+        state.threshold = Math.max(minValue, state.threshold * (1 - adjustmentFactor));
+        direction = "loosened";
+      }
+      state.hits = 0;
+      state.misses = 0;
+      state.lastAdjusted = new Date().toISOString();
+    }
+
+    this.thresholdHistory.set(thresholdId, state);
+    return { adjustedThreshold: Math.round(state.threshold * 100) / 100, successRate: Math.round(state.successRate * 100) / 100, direction };
+  }
+
+  getThresholdState(thresholdId: string): { threshold: number; successRate: number; hits: number; misses: number; lastAdjusted: string } | null {
+    return this.thresholdHistory.get(thresholdId) || null;
+  }
+
+  /**
+   * Generate recommendations using bandit-selected arms for adaptive suggestions.
+   */
+  generateBanditRecommendations(campaigns: CampaignData[]): { recommendations: Recommendation[]; banditSelection: { armId: string; label: string } } {
+    // Register arms if not yet done
+    const armDefs = [
+      { id: "budget_realloc", label: "Budget Reallocation" },
+      { id: "creative_refresh", label: "Creative Refresh" },
+      { id: "audience_tune", label: "Audience Tuning" },
+      { id: "platform_expand", label: "Platform Expansion" },
+      { id: "bid_optimize", label: "Bid Optimization" },
+    ];
+    for (const arm of armDefs) this.registerArm(arm.id, arm.label);
+
+    // Select best arm
+    const selected = this.selectArm("ucb1");
+    const baseRecs = this.generateCampaignRecommendations(campaigns[0] || { id: "", name: "", status: "", type: "", platforms: [], budget: { daily: 0, lifetime: 0, spent: 0, remaining: 0, currency: "USD" } });
+
+    // Filter/rank recommendations based on selected arm type
+    const armTypeMap: Record<string, string> = {
+      budget_realloc: "budget",
+      creative_refresh: "creative",
+      audience_tune: "audience",
+      platform_expand: "platform",
+      bid_optimize: "optimization",
+    };
+    const preferredType = armTypeMap[selected.armId] || "optimization";
+    const sorted = [...baseRecs].sort((a, b) => {
+      const aMatch = a.type === preferredType ? 1 : 0;
+      const bMatch = b.type === preferredType ? 1 : 0;
+      return bMatch - aMatch || (b.impact === "high" ? 1 : 0) - (a.impact === "high" ? 1 : 0);
+    });
+
+    return { recommendations: sorted.slice(0, 5), banditSelection: { armId: selected.armId, label: selected.label } };
+  }
+}
+
+interface BanditArm {
+  armId: string;
+  label: string;
+  plays: number;
+  rewardSum: number;
+  rewards: number[];
+  lastPlayed: string | null;
 }
 
 function isNearEnd(endDate?: string): boolean {
