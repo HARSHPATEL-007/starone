@@ -293,6 +293,10 @@ export const api = {
     subscription: () => request<any>("/billing/subscription"),
     invoices: () => request<any[]>("/billing/invoices"),
     getInvoice: (id: string) => request<any>(`/billing/invoices/${id}`),
+    updateSubscription: (data: Record<string, unknown>) =>
+      request<any>("/billing/subscription", { method: "POST", body: JSON.stringify(data) }),
+    createInvoice: (data: Record<string, unknown>) =>
+      request<any>("/billing/invoices", { method: "POST", body: JSON.stringify(data) }),
   },
   scheduler: {
     list: () => request<any[]>("/scheduler"),

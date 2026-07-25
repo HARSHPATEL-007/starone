@@ -59,8 +59,15 @@ export default function AccountPage() {
     if (!user) return;
     setProfileLoading(true);
     try {
-      await api.settings.updateTenant({ name: editName });
       const updated = { ...user, name: editName, email: editEmail };
+      await api.settings.updateTenant({ name: editName });
+      await api.entities.list("user_profile").then((profiles) => {
+        if (profiles && profiles.length > 0) {
+          api.entities.update("user_profile", profiles[0]._id, updated).catch(() => {});
+        } else {
+          api.entities.create("user_profile", updated).catch(() => {});
+        }
+      }).catch(() => api.entities.create("user_profile", updated).catch(() => {}));
       localStorage.setItem("n0va_user", JSON.stringify(updated));
       setUser(updated);
       addToast("success", "Profile updated");

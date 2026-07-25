@@ -38,6 +38,7 @@ import CampaignCalendar from "./pages/CampaignCalendar";
 import ReportCenter from "./pages/ReportCenter";
 import AudienceBuilder from "./pages/AudienceBuilder";
 import Billing from "./pages/Billing";
+import InvoiceDetail from "./pages/InvoiceDetail";
 import AgentCreator from "./pages/AgentCreator";
 import CreativeBuilder from "./pages/CreativeBuilder";
 import RecipeBuilder from "./pages/RecipeBuilder";
@@ -199,6 +200,7 @@ export default function App() {
                 <Route path="/hyper-context" element={<HyperContext />} />
                 <Route path="/reports" element={<ReportCenter />} />
                 <Route path="/billing" element={<Billing />} />
+                <Route path="/billing/invoices/:id" element={<InvoiceDetail />} />
                 <Route path="/campaign-scheduler" element={<CampaignScheduler />} />
                 <Route path="/intent-console" element={<IntentConsole />} />
                 <Route path="/sandbox-console" element={<SandboxConsole />} />

@@ -75,10 +75,20 @@ export default function Approvals() {
     setProcessing(`${item.type}-${item.id}`);
     try {
       const newStatus = action === "approved" ? "active" : "draft";
+      const actor = (() => { try { return JSON.parse(localStorage.getItem("n0va_user") || "{}").name || "You"; } catch { return "You"; } })();
+
+      const approvalReq = await api.approvals.create({
+        type: item.type, entityId: item.id, name: item.name,
+        requestedBy: actor, status: "pending",
+      }).catch(() => null);
+
       if (item.type === "campaign") await api.campaigns.updateStatus(item.id, newStatus);
       else await api.creatives.updateStatus(item.id, newStatus);
 
-      const actor = (() => { try { return JSON.parse(localStorage.getItem("n0va_user") || "{}").name || "You"; } catch { return "You"; } })();
+      if (approvalReq?._id) {
+        await api.approvals.act(approvalReq._id, action === "approved" ? "approve" : "reject").catch(() => {});
+      }
+
       const entry: ApprovalAction = {
         itemId: item.id, itemType: item.type, action, comment: comment.trim(),
         timestamp: new Date().toISOString(), actor, itemName: item.name,
