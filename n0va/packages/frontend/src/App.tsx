@@ -96,6 +96,8 @@ import IntentConsole from "./pages/IntentConsole";
 import SandboxConsole from "./pages/SandboxConsole";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 import BudgetPacing from "./pages/BudgetPacing";
+import SharedCampaignView from "./pages/SharedCampaignView";
+import MentionsPage from "./pages/MentionsPage";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -108,6 +110,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/shared/:token" element={<SharedCampaignView />} />
       <Route
         path="/*"
         element={
@@ -199,6 +202,7 @@ export default function App() {
                 <Route path="/audience-overlap" element={<AudienceOverlap />} />
                 <Route path="/activity" element={<ActivityFeed />} />
                 <Route path="/notifications" element={<NotificationCenter />} />
+                <Route path="/mentions" element={<MentionsPage />} />
                 <Route path="/hyper-context" element={<HyperContext />} />
                 <Route path="/reports" element={<ReportCenter />} />
                 <Route path="/billing" element={<Billing />} />

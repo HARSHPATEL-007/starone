@@ -33,9 +33,10 @@ interface Props {
   entityId: string;
   entityName: string;
   entityType: string;
+  onCommentSaved?: (text: string) => void;
 }
 
-export default function CommentsSection({ entityId, entityName, entityType }: Props) {
+export default function CommentsSection({ entityId, entityName, entityType, onCommentSaved }: Props) {
   const { addToast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -53,6 +54,7 @@ export default function CommentsSection({ entityId, entityName, entityType }: Pr
       setComments([fromApi(created), ...comments]);
       setNewComment("");
       addToast("success", "Comment added");
+      onCommentSaved?.(created.body);
     } catch { addToast("error", "Failed to add comment"); }
   }
 
@@ -64,6 +66,7 @@ export default function CommentsSection({ entityId, entityName, entityType }: Pr
       setReplyText("");
       setReplyTo(null);
       addToast("success", "Reply added");
+      onCommentSaved?.(created.body);
     } catch { addToast("error", "Failed to reply"); }
   }
 

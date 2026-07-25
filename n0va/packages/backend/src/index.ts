@@ -67,6 +67,9 @@ import annotationRoutes from "./routes/annotations";
 import pacingRoutes from "./routes/pacing";
 import creativeVersionRoutes from "./routes/creative-versions";
 import summaryRoutes from "./routes/summaries";
+import exportDataRoutes from "./routes/export-data";
+import shareRoutes from "./routes/shares";
+import mentionRoutes from "./routes/mentions";
 
 const app = express();
 const httpServer = createServer(app);
@@ -148,6 +151,9 @@ app.use("/api/v1/annotations", authMiddleware, tenantMiddleware, annotationRoute
 app.use("/api/v1/pacing", authMiddleware, tenantMiddleware, pacingRoutes);
 app.use("/api/v1/creative-versions", authMiddleware, tenantMiddleware, creativeVersionRoutes);
 app.use("/api/v1/summaries", authMiddleware, tenantMiddleware, summaryRoutes);
+app.use("/api/v1/export-data", authMiddleware, tenantMiddleware, exportDataRoutes);
+app.use("/api/v1/shares", authMiddleware, tenantMiddleware, shareRoutes);
+app.use("/api/v1/mentions", authMiddleware, tenantMiddleware, mentionRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

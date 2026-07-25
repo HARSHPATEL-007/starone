@@ -13,9 +13,10 @@ interface NotesWidgetProps {
   entityType: string;
   entityId: string;
   entityName: string;
+  onNoteSaved?: (text: string) => void;
 }
 
-export default function NotesWidget({ entityType, entityId, entityName }: NotesWidgetProps) {
+export default function NotesWidget({ entityType, entityId, entityName, onNoteSaved }: NotesWidgetProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [text, setText] = useState("");
   const [author] = useState(() => {
@@ -53,6 +54,7 @@ export default function NotesWidget({ entityType, entityId, entityName }: NotesW
         timestamp: created.createdAt,
       }, ...prev]);
       setText("");
+      onNoteSaved?.(created.text);
     } catch {}
   }
 

@@ -618,4 +618,37 @@ export const api = {
     portfolio: () => request<any>("/summaries/portfolio"),
     campaign: (id: string) => request<any>(`/summaries/campaign/${id}`),
   },
+  exportData: {
+    csv: (entityType: string, fields?: string[], filters?: Record<string, unknown>) => {
+      const params = new URLSearchParams();
+      const url = `/export-data`;
+      return request<any>(url, {
+        method: "POST",
+        body: JSON.stringify({ entityType, fields, format: "csv", filters }),
+      });
+    },
+    json: (entityType: string, fields?: string[], filters?: Record<string, unknown>) =>
+      request<any>("/export-data", {
+        method: "POST", body: JSON.stringify({ entityType, fields, format: "json", filters }),
+      }),
+    fields: (entityType: string) => request<{ entityType: string; fields: string[] }>(`/export-data/fields/${entityType}`),
+  },
+  shares: {
+    create: (data: Record<string, unknown>) =>
+      request<any>("/shares", { method: "POST", body: JSON.stringify(data) }),
+    list: () => request<any[]>("/shares"),
+    get: (id: string) => request<any>(`/shares/${id}`),
+    delete: (id: string) => request<void>(`/shares/${id}`, { method: "DELETE" }),
+    access: (token: string, password?: string) =>
+      request<any>(`/shares/access/${token}${password ? `?password=${password}` : ""}`),
+  },
+  mentions: {
+    create: (data: Record<string, unknown>) =>
+      request<any>("/mentions", { method: "POST", body: JSON.stringify(data) }),
+    list: (unreadOnly?: boolean) =>
+      request<any[]>(`/mentions${unreadOnly ? "?unreadOnly=true" : ""}`),
+    unreadCount: () => request<{ count: number }>("/mentions/unread-count"),
+    markRead: (id: string) => request<any>(`/mentions/${id}/read`, { method: "PATCH" }),
+    markAllRead: () => request<any>("/mentions/read-all", { method: "POST" }),
+  },
 };

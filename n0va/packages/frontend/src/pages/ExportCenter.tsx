@@ -102,6 +102,7 @@ export default function ExportCenter() {
   const { exportToCsv } = useCsvExport();
   const [selected, setSelected] = useState<Set<string>>(new Set(ENTITIES.map((e) => e.key)));
   const [format, setFormat] = useState<"csv" | "json">("csv");
+  const [exportMethod, setExportMethod] = useState<"client" | "server">("client");
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [data, setData] = useState<Record<string, any[]>>({});
@@ -136,9 +137,28 @@ export default function ExportCenter() {
     });
   }
 
+  async function handleServerExport(entityType: string, format: string) {
+    try {
+      const res = format === "csv"
+        ? await api.exportData.csv(entityType)
+        : await api.exportData.json(entityType);
+      const blob = new Blob([res], { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = `${entityType}_export_${Date.now()}.${format}`; a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", `${entityType} exported as ${format.toUpperCase()}`);
+    } catch { addToast("error", "Export failed"); }
+  }
+
   function handleExport() {
     const toExport = ENTITIES.filter((e) => selected.has(e.key));
     if (toExport.length === 0) { addToast("error", "Select at least one entity to export"); return; }
+    if (exportMethod === "server") {
+      setExporting(true);
+      Promise.all(toExport.map((e) => handleServerExport(e.key, format)))
+        .finally(() => setExporting(false));
+      return;
+    }
     setExporting(true);
     setTimeout(() => {
       for (const entity of toExport) {
@@ -224,6 +244,17 @@ export default function ExportCenter() {
             </button>
             <button onClick={() => setFormat("json")} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${format === "json" ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-800 text-gray-400 hover:border-gray-700"}`}>
               <FileJson className="w-4 h-4" /> JSON
+            </button>
+          </div>
+
+          {/* Export method */}
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-400">Export method:</span>
+            <button onClick={() => setExportMethod("client")} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${exportMethod === "client" ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-800 text-gray-400 hover:border-gray-700"}`}>
+              Client-side
+            </button>
+            <button onClick={() => setExportMethod("server")} className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${exportMethod === "server" ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-800 text-gray-400 hover:border-gray-700"}`}>
+              Server-side
             </button>
           </div>
 

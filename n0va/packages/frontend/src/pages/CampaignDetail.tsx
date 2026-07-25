@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle, Download, Plus, Award } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle, Download, Plus, Award, Share2, Lock } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
@@ -35,6 +35,12 @@ export default function CampaignDetail() {
   const [annotationText, setAnnotationText] = useState("");
   const [annotationDate, setAnnotationDate] = useState("");
   const [annotationType, setAnnotationType] = useState<"note" | "event" | "milestone" | "change">("note");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareLink, setShareLink] = useState<any>(null);
+  const [shareExpiry, setShareExpiry] = useState(24);
+  const [sharePassword, setSharePassword] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+  const [mentionCount, setMentionCount] = useState(0);
 
   const mergedAnalytics = liveData ? {
     ...analytics,
@@ -56,6 +62,31 @@ export default function CampaignDetail() {
       api.annotations.list(campaignId).then(setAnnotations).catch(() => {});
     }
   }, [campaignId]);
+
+  useEffect(() => {
+    api.mentions.unreadCount().then(r => setMentionCount(r.count)).catch(() => {});
+  }, []);
+
+  function extractMentions(text: string): string[] {
+    const matches = text.match(/@(\w+)/g);
+    if (!matches) return [];
+    return [...new Set(matches.map(m => m.slice(1)))];
+  }
+
+  async function handleMentionDetected(text: string) {
+    const mentionedUsers = extractMentions(text);
+    if (mentionedUsers.length > 0 && campaignId) {
+      try {
+        await api.mentions.create({
+          entityType: "campaigns",
+          entityId: campaignId,
+          mentionedUsers,
+          context: text.substring(0, 200),
+        });
+        addToast("success", `Mentioned ${mentionedUsers.length} user(s)`);
+      } catch {}
+    }
+  }
 
   async function loadCampaign() {
     if (!id) return;
@@ -226,6 +257,9 @@ export default function CampaignDetail() {
           <button className="btn-danger flex items-center gap-2" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 className="w-4 h-4" /> Delete
           </button>
+          <button className="btn-secondary flex items-center gap-2" onClick={() => setShowShareModal(true)}>
+            <Share2 className="w-4 h-4" /> Share
+          </button>
         </div>
       </div>
 
@@ -267,6 +301,9 @@ export default function CampaignDetail() {
           return (
             <button key={t.id} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${tab === t.id ? "border-n0va-500 text-n0va-400" : "border-transparent text-gray-500 hover:text-gray-300"}`} onClick={() => setTab(t.id)}>
               <Icon className="w-4 h-4" /> {t.label}
+              {t.id === "comments" && mentionCount > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{mentionCount}</span>
+              )}
             </button>
           );
         })}
@@ -522,7 +559,7 @@ export default function CampaignDetail() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">Campaign Notes</h3>
           </div>
-          <NotesWidget entityType="campaign" entityId={campaign._id || campaign.id} entityName={campaign.name} />
+          <NotesWidget entityType="campaign" entityId={campaign._id || campaign.id} entityName={campaign.name} onNoteSaved={handleMentionDetected} />
         </div>
       )}
 
@@ -572,7 +609,7 @@ export default function CampaignDetail() {
 
       {tab === "comments" && campaign && (
         <div className="card p-6">
-          <CommentsSection entityType="campaigns" entityId={campaign._id || campaign.id} entityName={campaign.name} />
+          <CommentsSection entityType="campaigns" entityId={campaign._id || campaign.id} entityName={campaign.name} onCommentSaved={handleMentionDetected} />
         </div>
       )}
 
@@ -663,6 +700,67 @@ export default function CampaignDetail() {
                   </div>
                 );
               })
+            )}
+          </div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { setShowShareModal(false); setShareLink(null); }}>
+          <div className="w-full max-w-sm bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Share Campaign</h3>
+              <button onClick={() => { setShowShareModal(false); setShareLink(null); }} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            {!shareLink ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Expires in</label>
+                  <select className="input w-full" value={shareExpiry} onChange={(e) => setShareExpiry(Number(e.target.value))}>
+                    <option value={1}>1 hour</option>
+                    <option value={24}>24 hours</option>
+                    <option value={168}>7 days</option>
+                    <option value={720}>30 days</option>
+                    <option value={0}>Never</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Password (optional)</label>
+                  <input type="text" className="input w-full" placeholder="Set a password..." value={sharePassword} onChange={(e) => setSharePassword(e.target.value)} />
+                </div>
+                <button className="btn-primary w-full flex items-center justify-center gap-2" disabled={shareLoading} onClick={async () => {
+                  setShareLoading(true);
+                  try {
+                    const result = await api.shares.create({
+                      entityType: "campaigns",
+                      entityId: campaignId,
+                      expiresInHours: shareExpiry || undefined,
+                      password: sharePassword || undefined,
+                    });
+                    setShareLink(result);
+                  } catch {
+                    addToast("error", "Failed to generate share link");
+                  } finally {
+                    setShareLoading(false);
+                  }
+                }}>
+                  <Lock className="w-4 h-4" /> {shareLoading ? "Generating..." : "Generate Link"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-400">Share this link with your team:</p>
+                <div className="flex gap-2">
+                  <input className="input w-full text-sm" readOnly value={`${window.location.origin}/shared/${shareLink.token}`} />
+                  <button className="btn-primary flex items-center gap-1 shrink-0" onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/shared/${shareLink.token}`);
+                    addToast("success", "Link copied to clipboard");
+                  }}>
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <button className="btn-ghost w-full text-sm" onClick={() => { setShowShareModal(false); setShareLink(null); }}>Close</button>
+              </div>
             )}
           </div>
         </div>

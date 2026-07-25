@@ -66,6 +66,7 @@ import {
   Terminal,
   Code2,
   Mail,
+  AtSign,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -134,6 +135,7 @@ const navItems = [
   { to: "/activity", icon: Activity, label: "Activity Feed" },
   { to: "/audit-log", icon: ScrollText, label: "Audit Log" },
   { to: "/notifications", icon: Bell, label: "Notifications" },
+  { to: "/mentions", icon: AtSign, label: "Mentions" },
   { to: "/hyper-context", icon: Layers, label: "Hyper-Context" },
   { to: "/webhooks", icon: Webhook, label: "Webhooks" },
   { to: "/brand-kit", icon: Palette, label: "Brand Kit" },
@@ -164,10 +166,12 @@ const typeIcons: Record<string, any> = {
 export default function Sidebar() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-  const { recent } = useRecentItems();
+  const [mentionCount, setMentionCount] = useState(0);
+  const [recent, setRecent] = useState<RecentItem[]>([]);
 
   useEffect(() => {
     api.notifications.unreadCount().then((res) => setUnreadCount(res.count)).catch(() => {});
+    api.mentions.unreadCount().then((res) => setMentionCount(res.count)).catch(() => {});
   }, []);
 
   function handleLogout() {
@@ -209,6 +213,11 @@ export default function Sidebar() {
             {item.to === "/notifications" && unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                 {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+            {item.to === "/mentions" && mentionCount > 0 && (
+              <span className="bg-n0va-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                {mentionCount > 99 ? "99+" : mentionCount}
               </span>
             )}
           </NavLink>
