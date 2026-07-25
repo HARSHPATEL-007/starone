@@ -109,6 +109,8 @@ const navItems = [
   { to: "/predictive-forecasting", icon: TrendingUp, label: "Forecasting" },
   { to: "/ab-test-statistics", icon: Sigma, label: "A/B Stats" },
   { to: "/anomaly-detection", icon: AlertTriangle, label: "Anomaly Detection" },
+  { to: "/portfolio-budget-optimizer", icon: DollarSign, label: "Budget Optimizer" },
+  { to: "/campaign-saturation", icon: TrendingDown, label: "Saturation" },
   { to: "/cost-tracker", icon: DollarSign, label: "Cost Tracker" },
   { to: "/forms", icon: FileInput, label: "Marketing Forms" },
   { to: "/channel-performance", icon: BarChart3, label: "Channel Perf." },

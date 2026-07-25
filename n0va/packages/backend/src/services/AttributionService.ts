@@ -257,13 +257,232 @@ export class AttributionService {
     return results;
   }
 
+  // ─── Shapley Value Attribution ────────────────────────────────────────
+  shapleyValue(paths: ConversionPath[]): AttributionResult {
+    // Aggregate channels across all paths
+    const channelSet = new Set<string>();
+    const pathChannels: { channels: string[]; revenue: number }[] = [];
+
+    for (const path of paths) {
+      const channels = [...new Set(path.touchpoints.map((tp) => tp.platform))];
+      channels.forEach((c) => channelSet.add(c));
+      pathChannels.push({ channels, revenue: path.totalRevenue });
+    }
+
+    const channels = Array.from(channelSet);
+    const n = channels.length;
+    const shapleyScores: Record<string, number> = {};
+    channels.forEach((c) => (shapleyScores[c] = 0));
+
+    // Compute Shapley value: φ_i = Σ_{S ⊆ N\{i}} (|S|! (n-|S|-1)!) / n! * (v(S∪{i}) - v(S))
+    for (const channel of channels) {
+      const others = channels.filter((c) => c !== channel);
+      let totalScore = 0;
+
+      // Iterate over all subsets of other channels (2^(n-1) subsets)
+      for (let mask = 0; mask < (1 << others.length); mask++) {
+        const subset = new Set<string>();
+        for (let j = 0; j < others.length; j++) {
+          if (mask & (1 << j)) subset.add(others[j]);
+        }
+
+        const s = subset.size;
+        const weight = this.factorial(s) * this.factorial(n - s - 1) / this.factorial(n);
+
+        const valWith = this.coalitionValue(pathChannels, new Set([...subset, channel]));
+        const valWithout = this.coalitionValue(pathChannels, subset);
+
+        totalScore += weight * (valWith - valWithout);
+      }
+
+      shapleyScores[channel] = Math.max(0, totalScore);
+    }
+
+    const totalShapley = Object.values(shapleyScores).reduce((a, b) => a + b, 0) || 1;
+
+    // Map Shapley weights back to individual touchpoints
+    for (const path of paths) {
+      const platformGroups: Record<string, Touchpoint[]> = {};
+      for (const tp of path.touchpoints) {
+        if (!platformGroups[tp.platform]) platformGroups[tp.platform] = [];
+        platformGroups[tp.platform].push(tp);
+      }
+
+      for (const [platform, tps] of Object.entries(platformGroups)) {
+        const platformShare = shapleyScores[platform] / totalShapley;
+        const perTpWeight = platformShare / tps.length;
+        for (const tp of tps) {
+          tp.weight = perTpWeight;
+        }
+      }
+    }
+
+    return this.buildResult(paths, "shapley_value" as any, 30);
+  }
+
+  // ─── Markov Chain Attribution with Removal Effects ─────────────────────
+
+  markovChainAttribution(paths: ConversionPath[]): AttributionResult & { removalEffects: Record<string, number>; transitionMatrix: Record<string, Record<string, number>> } {
+    // Extract unique channels + START + CONVERSION + NULL states
+    const channels = new Set<string>();
+    for (const path of paths) {
+      for (const tp of path.touchpoints) channels.add(tp.platform);
+    }
+    const states = ["(start)", "(conversion)", "(null)", ...Array.from(channels)];
+
+    // Initialize transition counts
+    const transitions: Record<string, Record<string, number>> = {};
+    states.forEach((s) => {
+      transitions[s] = {};
+      states.forEach((t) => (transitions[s][t] = 0));
+    });
+
+    // Count transitions from conversion paths
+    let totalConversions = 0;
+    let totalNull = 0;
+
+    for (const path of paths) {
+      const sorted = [...path.touchpoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      let prev = "(start)";
+      for (const tp of sorted) {
+        if (tp.type === "conversion") {
+          transitions[prev]["(conversion)"]++;
+          totalConversions++;
+        } else {
+          transitions[prev][tp.platform]++;
+          prev = tp.platform;
+        }
+      }
+      if (prev !== "(start)" && prev !== "(conversion)") {
+        transitions[prev]["(null)"]++;
+        totalNull++;
+      }
+    }
+
+    // Convert to probabilities
+    const transitionProbs: Record<string, Record<string, number>> = {};
+    states.forEach((s) => {
+      transitionProbs[s] = {};
+      const total = Object.values(transitions[s]).reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        states.forEach((t) => (transitionProbs[s][t] = t === "(null)" ? 1 : 0));
+      } else {
+        states.forEach((t) => (transitionProbs[s][t] = transitions[s][t] / total));
+      }
+    });
+
+    // Compute conversion probability given all channels
+    const allConvProb = this.markovConversionProb(transitionProbs, states);
+
+    // Removal effects: remove each channel and recompute
+    const removalEffects: Record<string, number> = {};
+    for (const ch of channels) {
+      const reducedStates = states.filter((s) => s !== ch);
+      const reducedProbs: Record<string, Record<string, number>> = {};
+      reducedStates.forEach((s) => {
+        reducedProbs[s] = {};
+        reducedStates.forEach((t) => {
+          if (s === ch || t === ch) {
+            reducedProbs[s][t] = 0;
+          } else {
+            reducedProbs[s][t] = transitionProbs[s][t];
+          }
+        });
+        // Redirect transitions that went through ch
+        if (s !== ch && s !== "(conversion)" && s !== "(null)") {
+          const removedWeight = transitionProbs[s][ch] || 0;
+          if (removedWeight > 0) {
+            const remaining = Object.entries(transitionProbs[s])
+              .filter(([k]) => k !== s && k !== ch)
+              .reduce((a, [, v]) => a + v, 0);
+            if (remaining > 0) {
+              const scale = (1 - removedWeight) / remaining;
+              reducedStates.forEach((t) => {
+                if (t !== s && t !== ch) {
+                  reducedProbs[s][t] = (transitionProbs[s][t] || 0) * scale;
+                }
+              });
+            } else {
+              reducedProbs[s]["(null)"] = 1;
+            }
+          }
+        }
+      });
+
+      const convProb = this.markovConversionProb(reducedProbs, reducedStates);
+      removalEffects[ch] = Math.max(0, 1 - convProb / Math.max(allConvProb, 0.001));
+    }
+
+    // Normalize removal effects to get attribution weights
+    const totalRemoval = Object.values(removalEffects).reduce((a, b) => a + b, 0) || 1;
+
+    // Apply Markov weights to touchpoints
+    for (const path of paths) {
+      const platformGroups: Record<string, Touchpoint[]> = {};
+      for (const tp of path.touchpoints) {
+        if (!platformGroups[tp.platform]) platformGroups[tp.platform] = [];
+        platformGroups[tp.platform].push(tp);
+      }
+      for (const [platform, tps] of Object.entries(platformGroups)) {
+        const weight = (removalEffects[platform] || 0) / totalRemoval;
+        for (const tp of tps) tp.weight = weight / tps.length;
+      }
+    }
+
+    return {
+      ...this.buildResult(paths, "markov_chain" as any, 30),
+      removalEffects,
+      transitionMatrix: transitionProbs,
+    };
+  }
+
+  private factorial(n: number): number {
+    if (n <= 1) return 1;
+    let r = 1;
+    for (let i = 2; i <= n; i++) r *= i;
+    return r;
+  }
+
+  private coalitionValue(paths: { channels: string[]; revenue: number }[], coalition: Set<string>): number {
+    return paths
+      .filter((p) => p.channels.some((c) => coalition.has(c)))
+      .reduce((s, p) => s + p.revenue, 0);
+  }
+
+  private markovConversionProb(probs: Record<string, Record<string, number>>, states: string[]): number {
+    // Solve linear system: P(conversion from state i) using iterative method
+    const probsFrom: Record<string, number> = {};
+    states.forEach((s) => (probsFrom[s] = 0));
+    probsFrom["(conversion)"] = 1;
+    probsFrom["(null)"] = 0;
+
+    // Iterate until convergence (value iteration)
+    for (let iter = 0; iter < 100; iter++) {
+      let maxDiff = 0;
+      for (const s of states) {
+        if (s === "(conversion)" || s === "(null)") continue;
+        let newProb = 0;
+        for (const t of states) {
+          newProb += (probs[s][t] || 0) * probsFrom[t];
+        }
+        const diff = Math.abs(newProb - probsFrom[s]);
+        if (diff > maxDiff) maxDiff = diff;
+        probsFrom[s] = newProb;
+      }
+      if (maxDiff < 0.0001) break;
+    }
+
+    return probsFrom["(start)"] || 0;
+  }
+
   generateSamplePaths(
     count: number = 100,
     campaigns: { id: string; name: string; platform: string }[] = []
   ): ConversionPath[] {
+    let activeCampaigns = campaigns;
     const paths: ConversionPath[] = [];
-    if (campaigns.length === 0) {
-      campaigns = [
+    if (activeCampaigns.length === 0) {
+      activeCampaigns = [
         { id: "camp_1", name: "Q3 Enterprise SaaS Push", platform: "meta" },
         { id: "camp_2", name: "Brand Awareness", platform: "google" },
         { id: "camp_3", name: "Retargeting", platform: "linkedin" },
@@ -278,7 +497,7 @@ export class AttributionService {
       let totalRevenue = Math.floor(Math.random() * 500) + 50;
 
       for (let j = 0; j < numTps; j++) {
-        const campaign = campaigns[Math.floor(Math.random() * campaigns.length)];
+        const campaign = activeCampaigns[Math.floor(Math.random() * activeCampaigns.length)];
         const daysBefore = Math.floor(Math.random() * 30);
         const tp: Touchpoint = {
           id: `tp_${i}_${j}`,

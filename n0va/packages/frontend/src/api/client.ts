@@ -157,6 +157,10 @@ export const api = {
     analyze: (data: Record<string, unknown>) =>
       request<any>("/attribution/analyze", { method: "POST", body: JSON.stringify(data) }),
     compare: () => request<any>("/attribution/compare", { method: "POST" }),
+    shapley: (data?: Record<string, unknown>) =>
+      request<any>("/attribution/shapley", { method: "POST", body: JSON.stringify(data || {}) }),
+    markov: (data?: Record<string, unknown>) =>
+      request<any>("/attribution/markov", { method: "POST", body: JSON.stringify(data || {}) }),
     savePath: (data: Record<string, unknown>) =>
       request<any>("/attribution/paths", { method: "POST", body: JSON.stringify(data) }),
     getPaths: () => request<any[]>("/attribution/paths"),
@@ -812,6 +816,16 @@ export const api = {
       request<any>("/anomaly-detection/detect", { method: "POST", body: JSON.stringify(data) }),
     scanCampaign: (data: Record<string, unknown>) =>
       request<any>("/anomaly-detection/scan-campaign", { method: "POST", body: JSON.stringify(data) }),
+  },
+  portfolioBudgetOptimizer: {
+    allocate: (data: Record<string, unknown>) =>
+      request<any>("/portfolio-budget-optimizer/allocate", { method: "POST", body: JSON.stringify(data) }),
+    efficientFrontier: (data: Record<string, unknown>) =>
+      request<any>("/portfolio-budget-optimizer/efficient-frontier", { method: "POST", body: JSON.stringify(data) }),
+  },
+  campaignSaturation: {
+    analyze: (campaignId: string) => request<any>(`/campaign-saturation/${campaignId}`),
+    analyzeAll: () => request<any>("/campaign-saturation"),
   },
   oauth: {
     configs: () => request<any[]>("/oauth/configs"),

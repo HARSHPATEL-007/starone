@@ -17,6 +17,7 @@ router.delete("/:id", asyncHandler(async (req, res) => { workflowBuilderService.
 router.post("/:id/activate", asyncHandler(async (req, res) => { const w = workflowBuilderService.activateWorkflow(req.user!.tenantId, req.params.id); if (!w) throw new AppError(404, "Workflow not found"); res.json(w); }));
 router.post("/:id/deactivate", asyncHandler(async (req, res) => { const w = workflowBuilderService.deactivateWorkflow(req.user!.tenantId, req.params.id); if (!w) throw new AppError(404, "Workflow not found"); res.json(w); }));
 router.post("/:id/test-run", asyncHandler(async (req, res) => { try { const result = workflowBuilderService.testRun(req.user!.tenantId, req.params.id); res.json(result); } catch (e: any) { throw new AppError(400, e.message); } }));
+router.post("/:id/execute", asyncHandler(async (req, res) => { try { const result = workflowBuilderService.executeWorkflow(req.user!.tenantId, req.params.id, req.body); res.json(result); } catch (e: any) { throw new AppError(400, e.message); } }));
 router.get("/:id/executions", asyncHandler(async (req, res) => res.json(workflowBuilderService.getExecutions(req.user!.tenantId, req.params.id))));
 
 export default router;

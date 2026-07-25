@@ -105,6 +105,26 @@ router.post(
 );
 
 router.post(
+  "/shapley",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { paths: inputPaths } = req.body;
+    let paths = inputPaths;
+    if (!paths || paths.length === 0) paths = attributionService.generateSamplePaths(50);
+    res.json(attributionService.shapleyValue(paths));
+  })
+);
+
+router.post(
+  "/markov",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { paths: inputPaths } = req.body;
+    let paths = inputPaths;
+    if (!paths || paths.length === 0) paths = attributionService.generateSamplePaths(50);
+    res.json(attributionService.markovChainAttribution(paths));
+  })
+);
+
+router.post(
   "/paths",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;

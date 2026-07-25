@@ -114,6 +114,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import PredictiveForecasting from "./pages/PredictiveForecasting";
 import ABTestStatistics from "./pages/ABTestStatistics";
 import AnomalyDetection from "./pages/AnomalyDetection";
+import PortfolioBudgetOptimizer from "./pages/PortfolioBudgetOptimizer";
+import CampaignSaturation from "./pages/CampaignSaturation";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -244,6 +246,8 @@ export default function App() {
                 <Route path="/predictive-forecasting" element={<PredictiveForecasting />} />
                 <Route path="/ab-test-statistics" element={<ABTestStatistics />} />
                 <Route path="/anomaly-detection" element={<AnomalyDetection />} />
+                <Route path="/portfolio-budget-optimizer" element={<PortfolioBudgetOptimizer />} />
+                <Route path="/campaign-saturation" element={<CampaignSaturation />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

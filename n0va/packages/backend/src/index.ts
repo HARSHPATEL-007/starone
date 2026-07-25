@@ -87,6 +87,8 @@ import adminRoutes from "./routes/admin";
 import predictiveForecastingRoutes from "./routes/predictive-forecasting";
 import abTestStatisticsRoutes from "./routes/ab-test-statistics";
 import anomalyDetectionRoutes from "./routes/anomaly-detection";
+import portfolioBudgetOptimizerRoutes from "./routes/portfolio-budget-optimizer";
+import campaignSaturationRoutes from "./routes/campaign-saturation";
 
 const app = express();
 const httpServer = createServer(app);
@@ -188,6 +190,8 @@ app.use("/api/v1/admin", authMiddleware, tenantMiddleware, adminRoutes);
 app.use("/api/v1/predictive-forecasting", authMiddleware, tenantMiddleware, predictiveForecastingRoutes);
 app.use("/api/v1/ab-test-statistics", authMiddleware, tenantMiddleware, abTestStatisticsRoutes);
 app.use("/api/v1/anomaly-detection", authMiddleware, tenantMiddleware, anomalyDetectionRoutes);
+app.use("/api/v1/portfolio-budget-optimizer", authMiddleware, tenantMiddleware, portfolioBudgetOptimizerRoutes);
+app.use("/api/v1/campaign-saturation", authMiddleware, tenantMiddleware, campaignSaturationRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);
