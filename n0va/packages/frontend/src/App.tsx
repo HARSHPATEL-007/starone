@@ -107,6 +107,10 @@ import LandingPageBuilder from "./pages/LandingPageBuilder";
 import InfluencerManagement from "./pages/InfluencerManagement";
 import CampaignIssues from "./pages/CampaignIssues";
 import CompetitiveBenchmarking from "./pages/CompetitiveBenchmarking";
+import CustomerDataPlatform from "./pages/CustomerDataPlatform";
+import WorkflowBuilder from "./pages/WorkflowBuilder";
+import CampaignScorecard from "./pages/CampaignScorecard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -230,6 +234,10 @@ export default function App() {
                 <Route path="/influencer-management" element={<InfluencerManagement />} />
                 <Route path="/campaign-issues" element={<CampaignIssues />} />
                 <Route path="/competitive-benchmarking" element={<CompetitiveBenchmarking />} />
+                <Route path="/cdp" element={<CustomerDataPlatform />} />
+                <Route path="/workflow-builder" element={<WorkflowBuilder />} />
+                <Route path="/campaign-scorecard" element={<CampaignScorecard />} />
+                <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

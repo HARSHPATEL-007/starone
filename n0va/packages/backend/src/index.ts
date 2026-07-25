@@ -80,6 +80,10 @@ import landingPageBuilderRoutes from "./routes/landing-page-builder";
 import influencerRoutes from "./routes/influencer";
 import campaignIssueRoutes from "./routes/campaign-issues";
 import competitiveBenchmarkingRoutes from "./routes/competitive-benchmarking";
+import cdpRoutes from "./routes/cdp";
+import workflowBuilderRoutes from "./routes/workflow-builder";
+import campaignScorecardRoutes from "./routes/campaign-scorecard";
+import adminRoutes from "./routes/admin";
 
 const app = express();
 const httpServer = createServer(app);
@@ -174,6 +178,10 @@ app.use("/api/v1/landing-page-builder", authMiddleware, tenantMiddleware, landin
 app.use("/api/v1/influencers", authMiddleware, tenantMiddleware, influencerRoutes);
 app.use("/api/v1/campaign-issues", authMiddleware, tenantMiddleware, campaignIssueRoutes);
 app.use("/api/v1/competitive-benchmarking", authMiddleware, tenantMiddleware, competitiveBenchmarkingRoutes);
+app.use("/api/v1/cdp", authMiddleware, tenantMiddleware, cdpRoutes);
+app.use("/api/v1/workflow-builder", authMiddleware, tenantMiddleware, workflowBuilderRoutes);
+app.use("/api/v1/campaign-scorecard", authMiddleware, tenantMiddleware, campaignScorecardRoutes);
+app.use("/api/v1/admin", authMiddleware, tenantMiddleware, adminRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

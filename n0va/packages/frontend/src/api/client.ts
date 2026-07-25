@@ -697,6 +697,57 @@ export const api = {
       request<any>(`/campaign-issues/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/campaign-issues/${id}`, { method: "DELETE" }),
   },
+  cdp: {
+    stats: () => request<any>("/cdp/stats"),
+    profiles: (search?: string, segment?: string) =>
+      request<any[]>(`/cdp/profiles${search ? `?search=${search}` : ""}${segment ? `${search ? "&" : "?"}segment=${segment}` : ""}`),
+    getProfile: (id: string) => request<any>(`/cdp/profiles/${id}`),
+    updateProfile: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/cdp/profiles/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    events: (profileId?: string, type?: string, limit?: number) => {
+      const params = new URLSearchParams();
+      if (profileId) params.set("profileId", profileId);
+      if (type) params.set("type", type);
+      if (limit) params.set("limit", String(limit));
+      return request<any[]>(`/cdp/events?${params.toString()}`);
+    },
+    eventTypes: () => request<string[]>("/cdp/event-types"),
+    eventTypeStats: () => request<any[]>("/cdp/event-type-stats"),
+    trackEvent: (data: Record<string, unknown>) =>
+      request<any>("/cdp/events", { method: "POST", body: JSON.stringify(data) }),
+    segments: () => request<any[]>("/cdp/segments"),
+    updateSegment: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/cdp/segments/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    deleteSegment: (id: string) => request<void>(`/cdp/segments/${id}`, { method: "DELETE" }),
+  },
+  workflowBuilder: {
+    list: () => request<any[]>("/workflow-builder"),
+    get: (id: string) => request<any>(`/workflow-builder/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/workflow-builder", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/workflow-builder/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/workflow-builder/${id}`, { method: "DELETE" }),
+    activate: (id: string) => request<any>(`/workflow-builder/${id}/activate`, { method: "POST" }),
+    deactivate: (id: string) => request<any>(`/workflow-builder/${id}/deactivate`, { method: "POST" }),
+    testRun: (id: string) => request<any>(`/workflow-builder/${id}/test-run`, { method: "POST" }),
+    executions: (id: string) => request<any[]>(`/workflow-builder/${id}/executions`),
+    nodeTypes: () => request<any[]>("/workflow-builder/node-types"),
+    categories: () => request<any[]>("/workflow-builder/categories"),
+  },
+  campaignScorecard: {
+    get: (campaignId?: string) =>
+      request<any>(`/campaign-scorecard${campaignId ? `?campaignId=${campaignId}` : ""}`),
+  },
+  admin: {
+    stats: () => request<any>("/admin/stats"),
+    tenants: () => request<any[]>("/admin/tenants"),
+    getTenant: (id: string) => request<any>(`/admin/tenants/${id}`),
+    updateTenant: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/admin/tenants/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    features: () => request<string[]>("/admin/features"),
+    auditLog: (limit?: number) => request<any[]>(`/admin/audit-log${limit ? `?limit=${limit}` : ""}`),
+  },
   competitiveBenchmarking: {
     get: (industry?: string) =>
       request<any>(`/competitive-benchmarking${industry ? `?industry=${industry}` : ""}`),

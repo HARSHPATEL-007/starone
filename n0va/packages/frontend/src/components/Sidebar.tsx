@@ -69,6 +69,7 @@ import {
   AtSign,
   Play,
   AlertTriangle,
+  Database,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -100,6 +101,10 @@ const navItems = [
   { to: "/influencer-management", icon: Users, label: "Influencers" },
   { to: "/campaign-issues", icon: AlertTriangle, label: "Campaign Issues" },
   { to: "/competitive-benchmarking", icon: BarChart3, label: "Benchmarking" },
+  { to: "/cdp", icon: Database, label: "Customer Data" },
+  { to: "/campaign-scorecard", icon: Award, label: "Scorecard" },
+  { to: "/workflow-builder", icon: GitBranch, label: "Workflow Builder" },
+  { to: "/admin", icon: Shield, label: "Admin Panel" },
   { to: "/cost-tracker", icon: DollarSign, label: "Cost Tracker" },
   { to: "/forms", icon: FileInput, label: "Marketing Forms" },
   { to: "/channel-performance", icon: BarChart3, label: "Channel Perf." },
