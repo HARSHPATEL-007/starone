@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { ArrowLeft, Check, ChevronRight, Image, Video, Layout, AlignLeft, Palette, FileText, Eye, Download, BarChart3 } from "lucide-react";
@@ -19,6 +19,8 @@ export default function CreativeBuilder() {
   const { addToast } = useToast();
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [creatives, setCreatives] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -66,13 +68,18 @@ export default function CreativeBuilder() {
   async function handleCreate() {
     setCreating(true);
     try {
+      let assetUrl = form.assetUrl;
+      if (selectedFile) {
+        const uploadRes = await api.upload.single(selectedFile, "creative");
+        assetUrl = uploadRes.file.path;
+      }
       await api.creatives.create({
         name: form.name,
         type: form.type,
         headline: form.headline,
         body: form.body,
         cta: form.cta,
-        assetUrl: form.assetUrl,
+        assetUrl,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       });
       addToast("success", "Creative created");
@@ -175,8 +182,35 @@ export default function CreativeBuilder() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Asset URL (optional)</label>
-              <input className="input" placeholder="https://example.com/image.jpg" value={form.assetUrl} onChange={(e) => update("assetUrl", e.target.value)} />
+              <label className="block text-sm text-gray-400 mb-1">Asset (optional)</label>
+              <input ref={fileInputRef} type="file" accept="image/*,.png,.jpg,.jpeg,.gif,.webp,.svg" className="hidden" onChange={(e) => { const f = e.target.files?.[0] || null; setSelectedFile(f); if (!f) update("assetUrl", ""); }} />
+              {!selectedFile && !form.assetUrl ? (
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full border-2 border-dashed border-gray-700 hover:border-n0va-500 rounded-lg p-8 text-center transition-colors cursor-pointer">
+                  <p className="text-sm text-gray-400">Click to upload creative asset</p>
+                  <p className="text-[10px] text-gray-600 mt-1">PNG, JPG, GIF, WebP, SVG</p>
+                </button>
+              ) : (
+                <div className="flex items-center gap-3 bg-gray-800/50 rounded-lg p-3">
+                  {selectedFile && (
+                    <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-900 flex items-center justify-center">
+                      <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{selectedFile?.name || form.assetUrl}</p>
+                    <p className="text-[10px] text-gray-500">Image · {(selectedFile!.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <button type="button" onClick={() => { setSelectedFile(null); fileInputRef.current!.value = ""; update("assetUrl", ""); }} className="text-xs text-gray-400 hover:text-white shrink-0">
+                    Remove
+                  </button>
+                </div>
+              )}
+              {!selectedFile && (
+                <div className="mt-2">
+                  <label className="block text-xs text-gray-500 mb-1">Or paste a URL instead</label>
+                  <input className="input text-sm" placeholder="https://example.com/image.jpg" value={form.assetUrl} onChange={(e) => update("assetUrl", e.target.value)} />
+                </div>
+              )}
             </div>
 
             {form.headline || form.body || form.cta ? (
@@ -216,7 +250,7 @@ export default function CreativeBuilder() {
               <div className="col-span-2">
                 <ReviewField label="Body" value={form.body || "—"} />
               </div>
-              <ReviewField label="Asset URL" value={form.assetUrl || "—"} />
+              <ReviewField label="Asset" value={selectedFile ? selectedFile.name : (form.assetUrl || "—")} />
               <ReviewField label="Tags" value={form.tags || "None"} />
             </div>
 

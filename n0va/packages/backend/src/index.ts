@@ -60,6 +60,8 @@ import reportRoutes from "./routes/reports";
 import notificationPrefRoutes from "./routes/notification-preferences";
 import bulkImportRoutes from "./routes/bulk-import";
 import uploadRoutes from "./routes/upload";
+import userRoutes from "./routes/users";
+import recommendationRoutes from "./routes/recommendations";
 
 const app = express();
 const httpServer = createServer(app);
@@ -134,6 +136,8 @@ app.use("/api/v1/reports", authMiddleware, tenantMiddleware, reportRoutes);
 app.use("/api/v1/notification-preferences", authMiddleware, tenantMiddleware, notificationPrefRoutes);
 app.use("/api/v1/bulk-import", authMiddleware, tenantMiddleware, bulkImportRoutes);
 app.use("/api/v1/upload", authMiddleware, tenantMiddleware, uploadRoutes);
+app.use("/api/v1/users", authMiddleware, tenantMiddleware, userRoutes);
+app.use("/api/v1/recommendations", authMiddleware, tenantMiddleware, recommendationRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

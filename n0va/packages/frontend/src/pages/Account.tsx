@@ -83,10 +83,15 @@ export default function AccountPage() {
     if (!currentPw) { addToast("error", "Enter current password"); return; }
     if (!newPw || newPw.length < 6) { addToast("error", "New password must be at least 6 characters"); return; }
     if (newPw !== confirmPw) { addToast("error", "Passwords do not match"); return; }
-    addToast("success", "Password changed successfully");
-    setCurrentPw("");
-    setNewPw("");
-    setConfirmPw("");
+    try {
+      const res = await api.users.changePassword(currentPw, newPw);
+      addToast("success", res.message || "Password changed successfully");
+      setCurrentPw("");
+      setNewPw("");
+      setConfirmPw("");
+    } catch (err: any) {
+      addToast("error", err?.message || "Failed to change password");
+    }
   }
 
   async function createKey() {

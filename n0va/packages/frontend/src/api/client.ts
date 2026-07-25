@@ -572,4 +572,17 @@ export const api = {
     get: (id: string) => request<any>(`/upload/${id}`),
     delete: (id: string) => request<void>(`/upload/${id}`, { method: "DELETE" }),
   },
+  users: {
+    me: () => request<any>("/users/me"),
+    updateProfile: (data: Record<string, unknown>) =>
+      request<any>("/users/me", { method: "PATCH", body: JSON.stringify(data) }),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      request<any>("/auth/change-password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }),
+  },
+  recommendations: {
+    list: () => request<any[]>("/recommendations"),
+    crossCampaign: () => request<any[]>("/recommendations/cross-campaign"),
+    campaign: (id: string) => request<any[]>(`/recommendations/campaign/${id}`),
+    all: () => request<{ recommendations: any[]; crossCampaign: any[]; total: number }>("/recommendations/all"),
+  },
 };

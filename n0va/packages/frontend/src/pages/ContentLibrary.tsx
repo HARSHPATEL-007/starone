@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw, BarChart3, PieChart as PieIcon, CheckSquare, Download, Share2, Users } from "lucide-react";
+import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw, BarChart3, PieChart as PieIcon, CheckSquare, Download, Share2, Users, Upload } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -39,17 +39,25 @@ export default function ContentLibrary() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api.contentLibrary.list().then(d => setAssets(d || [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   async function handleAdd() {
-    if (!addForm.name.trim() || !addForm.url.trim()) { addToast("error", "Name and URL are required"); return; }
+    if (!addForm.name.trim()) { addToast("error", "Name is required"); return; }
+    if (!selectedFile && !addForm.url.trim()) { addToast("error", "Upload a file or enter a URL"); return; }
+    let assetUrl = addForm.url.trim();
+    if (selectedFile) {
+      const filePath = await api.upload.single(selectedFile, "content_asset");
+      assetUrl = filePath;
+    }
     const asset = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       name: addForm.name.trim(),
-      url: addForm.url.trim(),
+      url: assetUrl,
       type: addForm.type,
       contentType: addForm.contentType,
       status: addForm.status,
@@ -63,6 +71,7 @@ export default function ContentLibrary() {
     const created = await api.contentLibrary.create(asset as any);
     setAssets(prev => [created, ...prev]);
     setAddForm({ name: "", url: "", type: "image", contentType: "blog_post", status: "published", tags: "" });
+    setSelectedFile(null);
     setShowAdd(false);
     addToast("success", `"${asset.name}" added to library`);
   }
@@ -205,7 +214,29 @@ export default function ContentLibrary() {
                 <input className="input" placeholder="e.g. Hero Banner" value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} autoFocus />
               </div>
               <div>
-                <label className="label">URL</label>
+                <label className="label">File</label>
+                <input type="file" id="cl-file-input" ref={fileInputRef} className="hidden" accept="image/*,video/mp4,.pdf,.doc,.docx,.csv,.json,.txt,.zip" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                {!selectedFile ? (
+                  <label htmlFor="cl-file-input" className="flex flex-col items-center justify-center border-2 border-dashed border-gray-700 rounded-lg p-6 cursor-pointer hover:border-n0va-500/50 transition-colors">
+                    <Upload className="w-8 h-8 text-gray-600 mb-2" />
+                    <p className="text-sm text-gray-400">Click to upload or drag & drop</p>
+                    <p className="text-xs text-gray-600 mt-1">Images, video, PDF, docs, and more</p>
+                  </label>
+                ) : (
+                  <div className="flex items-center justify-between border border-gray-700 rounded-lg p-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <File className="w-6 h-6 text-n0va-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-white truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB · {selectedFile.type || "unknown"}</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="text-red-400 hover:text-red-300 text-xs shrink-0 ml-2">Remove</button>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="label">Or paste a URL</label>
                 <input className="input" placeholder="https://example.com/image.jpg" value={addForm.url} onChange={(e) => setAddForm({ ...addForm, url: e.target.value })} />
               </div>
               <div>

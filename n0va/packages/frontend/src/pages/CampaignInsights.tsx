@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Lightbulb, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Target, Clock, Users, BarChart3, RefreshCw, Calendar, Download, X, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Lightbulb, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Target, Clock, Users, BarChart3, RefreshCw, Calendar, Download, X, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
@@ -17,6 +17,20 @@ interface Insight {
   value?: string;
 }
 
+interface Recommendation {
+  _id: string;
+  type: string;
+  title: string;
+  description: string;
+  impact: "high" | "medium" | "low";
+  effort: "high" | "medium" | "low";
+  campaignId?: string;
+  campaignName?: string;
+  potentialGain?: string;
+  metric?: string;
+  value?: string;
+}
+
 export default function CampaignInsights() {
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -27,6 +41,8 @@ export default function CampaignInsights() {
   const [filter, setFilter] = useState<string>("all");
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [drillDown, setDrillDown] = useState<Insight | null>(null);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"insights" | "recommendations">("insights");
 
   function generateInsights(camps: any[], fraud: any): Insight[] {
     const result: Insight[] = [];
@@ -184,10 +200,16 @@ export default function CampaignInsights() {
     Promise.all([
       api.campaigns.list().then((r) => Array.isArray(r) ? r : r.campaigns || []).catch(() => []),
       api.fraud.health().catch(() => null),
-    ]).then(([camps, fraud]) => {
+      api.recommendations.all().catch(() => ({ recommendations: [], crossCampaign: [], total: 0 })),
+    ]).then(([camps, fraud, recs]) => {
       setCampaigns(camps);
       setFraudHealth(fraud);
       setInsights(generateInsights(camps, fraud));
+      const merged = [
+        ...(recs.crossCampaign || []).map((rc: any) => ({ ...rc, type: "cross_campaign" })),
+        ...(recs.recommendations || []),
+      ];
+      setRecommendations(merged);
       setLoading(false);
     });
   }, []);
@@ -197,10 +219,16 @@ export default function CampaignInsights() {
     Promise.all([
       api.campaigns.list().then((r) => Array.isArray(r) ? r : r.campaigns || []).catch(() => []),
       api.fraud.health().catch(() => null),
-    ]).then(([camps, fraud]) => {
+      api.recommendations.all().catch(() => ({ recommendations: [], crossCampaign: [], total: 0 })),
+    ]).then(([camps, fraud, recs]) => {
       setCampaigns(camps);
       setFraudHealth(fraud);
       setInsights(generateInsights(camps, fraud));
+      const merged = [
+        ...(recs.crossCampaign || []).map((rc: any) => ({ ...rc, type: "cross_campaign" })),
+        ...(recs.recommendations || []),
+      ];
+      setRecommendations(merged);
       setLoading(false);
     });
   }
@@ -244,6 +272,31 @@ export default function CampaignInsights() {
     info: "text-blue-400 bg-blue-500/10",
   };
 
+  const effortColors: Record<string, string> = {
+    high: "bg-orange-500/10 border-orange-500/30 text-orange-400",
+    medium: "bg-yellow-500/10 border-yellow-500/30 text-yellow-400",
+    low: "bg-green-500/10 border-green-500/30 text-green-400",
+  };
+
+  const groupedRecs = recommendations.reduce((acc: Record<string, any[]>, rec) => {
+    const t = rec.type || "other";
+    if (!acc[t]) acc[t] = [];
+    acc[t].push(rec);
+    return acc;
+  }, {});
+
+  const typeOrder = ["cross_campaign", "budget", "creative", "audience", "platform", "scheduling", "optimization"];
+
+  const groupLabels: Record<string, string> = {
+    cross_campaign: "Cross-Campaign",
+    budget: "Budget",
+    creative: "Creative",
+    audience: "Audience",
+    platform: "Platform",
+    scheduling: "Scheduling",
+    optimization: "Optimization",
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -268,58 +321,126 @@ export default function CampaignInsights() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-3">
-            {(["all", "warning", "action", "positive"] as const).map((t) => (
-              <button key={t} onClick={() => setFilter(t)} className={`card text-center p-4 transition-all ${filter === t ? "ring-2 ring-n0va-500" : ""}`}>
-                <p className="text-2xl font-bold text-white">{counts[t]}</p>
-                <p className="text-xs text-gray-500 capitalize">{t === "all" ? "Total Insights" : t === "positive" ? "Positive" : t === "warning" ? "Warnings" : "Actions Needed"}</p>
-              </button>
-            ))}
+          <div className="flex gap-1 border-b border-gray-800">
+            <button
+              onClick={() => setActiveTab("insights")}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === "insights" ? "text-n0va-400 border-b-2 border-n0va-500" : "text-gray-500 hover:text-gray-300"}`}
+            >
+              Campaign Insights
+            </button>
+            <button
+              onClick={() => setActiveTab("recommendations")}
+              className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "recommendations" ? "text-n0va-400 border-b-2 border-n0va-500" : "text-gray-500 hover:text-gray-300"}`}
+            >
+              AI Recommendations
+              {recommendations.length > 0 && (
+                <span className="ml-1.5 text-[10px] font-bold bg-n0va-500/20 text-n0va-400 px-1.5 py-0.5 rounded-full">{recommendations.length}</span>
+              )}
+            </button>
           </div>
 
-          {filteredInsights.length === 0 ? (
-            <div className="card text-center py-12">
-              <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-              <p className="text-gray-500">No {filter === "all" ? "" : filter} insights — everything looks good!</p>
-            </div>
+          {activeTab === "insights" ? (
+            <>
+              <div className="grid grid-cols-4 gap-3">
+                {(["all", "warning", "action", "positive"] as const).map((t) => (
+                  <button key={t} onClick={() => setFilter(t)} className={`card text-center p-4 transition-all ${filter === t ? "ring-2 ring-n0va-500" : ""}`}>
+                    <p className="text-2xl font-bold text-white">{counts[t]}</p>
+                    <p className="text-xs text-gray-500 capitalize">{t === "all" ? "Total Insights" : t === "positive" ? "Positive" : t === "warning" ? "Warnings" : "Actions Needed"}</p>
+                  </button>
+                ))}
+              </div>
+
+              {filteredInsights.length === 0 ? (
+                <div className="card text-center py-12">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+                  <p className="text-gray-500">No {filter === "all" ? "" : filter} insights — everything looks good!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredInsights.map((insight) => {
+                    const Icon = typeIcons[insight.type];
+                    return (
+                      <div key={insight.id} className={`card border-l-4 ${insight.type === "positive" ? "border-l-green-500" : insight.type === "warning" ? "border-l-yellow-500" : insight.type === "action" ? "border-l-n0va-500" : "border-l-blue-500"}`}>
+                        <div className="flex items-start gap-4">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${typeColors[insight.type]}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-sm font-semibold text-white">{insight.title}</h3>
+                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${impactColors[insight.impact]}`}>
+                                {insight.impact}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-400">{insight.description}</p>
+                            {insight.campaignId && (
+                              <button onClick={() => navigate(`/campaigns/${insight.campaignId}`)} className="text-xs text-n0va-400 hover:text-n0va-300 mt-1.5 inline-flex items-center gap-1">
+                                <Target className="w-3 h-3" /> View campaign
+                              </button>
+                            )}
+                          </div>
+                          {insight.metric && (
+                            <div className="text-right shrink-0">
+                              <p className="text-[10px] text-gray-600">{insight.metric}</p>
+                              <p className="text-sm font-bold text-white">{insight.value}</p>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 ml-2">
+                            <button onClick={() => setDrillDown(insight)} className="p-1 text-gray-600 hover:text-n0va-400"><ChevronDown className="w-4 h-4" /></button>
+                            <button onClick={() => setDismissedIds(prev => new Set([...prev, insight.id]))} className="p-1 text-gray-600 hover:text-red-400"><X className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           ) : (
-            <div className="space-y-3">
-              {filteredInsights.map((insight) => {
-                const Icon = typeIcons[insight.type];
-                return (
-                  <div key={insight.id} className={`card border-l-4 ${insight.type === "positive" ? "border-l-green-500" : insight.type === "warning" ? "border-l-yellow-500" : insight.type === "action" ? "border-l-n0va-500" : "border-l-blue-500"}`}>
-                    <div className="flex items-start gap-4">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${typeColors[insight.type]}`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-sm font-semibold text-white">{insight.title}</h3>
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${impactColors[insight.impact]}`}>
-                            {insight.impact}
-                          </span>
+            <div className="space-y-6">
+              {recommendations.length === 0 ? (
+                <div className="card text-center py-12">
+                  <Sparkles className="w-10 h-10 text-n0va-400 mx-auto mb-3" />
+                  <p className="text-gray-500">No AI recommendations yet. Create more campaigns to get personalized suggestions.</p>
+                </div>
+              ) : (
+                typeOrder.filter(t => groupedRecs[t]).map((type) => (
+                  <div key={type}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-sm font-semibold text-white">{groupLabels[type] || type}</h3>
+                      <span className="text-[10px] text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded">{groupedRecs[type].length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {groupedRecs[type].map((rec: any, idx: number) => (
+                        <div key={rec._id || idx} className="card p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 className="text-sm font-semibold text-white">{rec.title}</h4>
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${impactColors[rec.impact] || ""}`}>{rec.impact}</span>
+                                {rec.effort && (
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${effortColors[rec.effort] || ""}`}>effort: {rec.effort}</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400">{rec.description}</p>
+                              {rec.potentialGain && (
+                                <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                                  <TrendingUp className="w-3 h-3" /> Potential gain: {rec.potentialGain}
+                                </p>
+                              )}
+                              {rec.campaignId && (
+                                <button onClick={() => navigate(`/campaigns/${rec.campaignId}`)} className="text-xs text-n0va-400 hover:text-n0va-300 mt-1.5 inline-flex items-center gap-1">
+                                  <Target className="w-3 h-3" /> View campaign
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-400">{insight.description}</p>
-                        {insight.campaignId && (
-                          <button onClick={() => navigate(`/campaigns/${insight.campaignId}`)} className="text-xs text-n0va-400 hover:text-n0va-300 mt-1.5 inline-flex items-center gap-1">
-                            <Target className="w-3 h-3" /> View campaign
-                          </button>
-                        )}
-                      </div>
-                      {insight.metric && (
-                        <div className="text-right shrink-0">
-                          <p className="text-[10px] text-gray-600">{insight.metric}</p>
-                          <p className="text-sm font-bold text-white">{insight.value}</p>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 ml-2">
-                        <button onClick={() => setDrillDown(insight)} className="p-1 text-gray-600 hover:text-n0va-400"><ChevronDown className="w-4 h-4" /></button>
-                        <button onClick={() => setDismissedIds(prev => new Set([...prev, insight.id]))} className="p-1 text-gray-600 hover:text-red-400"><X className="w-4 h-4" /></button>
-                      </div>
+                      ))}
                     </div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           )}
         </>

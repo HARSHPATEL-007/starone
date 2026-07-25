@@ -138,8 +138,35 @@ router.get(
   })
 );
 
+router.post(
+  "/change-password",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) throw new AppError(400, "Current and new password required");
+    if (newPassword.length < 6) throw new AppError(400, "New password must be at least 6 characters");
+    const { userId } = req.user!;
+
+    if (isConnected()) {
+      const user = await User.findById(userId);
+      if (!user) throw new AppError(404, "User not found");
+      const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!valid) throw new AppError(401, "Current password is incorrect");
+      user.passwordHash = await bcrypt.hash(newPassword, 12);
+      await user.save();
+      return res.json({ success: true, message: "Password changed" });
+    }
+
+    const user = USERS.find((u) => u.userId === userId);
+    if (!user) throw new AppError(404, "User not found");
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) throw new AppError(401, "Current password is incorrect");
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    res.json({ success: true, message: "Password changed" });
+  })
+);
+
 seedUsers();
 export default router;
-export { JWT_SECRET };
+export { JWT_SECRET, USERS, isConnected };
 
 
