@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, Cell } from "recharts";
 import { api } from "../api/client";
-import { TrendingUp, DollarSign, Target, RefreshCw, CheckCircle, History, ChevronDown, ChevronRight } from "lucide-react";
+import { TrendingUp, DollarSign, Target, RefreshCw, CheckCircle, History, ChevronDown, ChevronRight, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { SkeletonCard } from "../components/Skeleton";
 
 interface BudgetPlan {
@@ -25,6 +26,7 @@ interface BudgetPlan {
 
 export default function BudgetStrategy() {
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [plans, setPlans] = useState<Record<string, BudgetPlan> | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -191,7 +193,10 @@ export default function BudgetStrategy() {
 
       {plan && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">{strategyLabels[selectedStrategy]} — Detailed Allocation</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">{strategyLabels[selectedStrategy]} — Detailed Allocation</h3>
+            <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(plan.campaigns.map((c: any) => ({ Campaign: c.name, CurrentBudget: c.currentBudget, AllocatedBudget: c.allocatedBudget, ShiftPercent: c.shift, ExpectedRevenue: c.expectedRevenue, ExpectedROAS: c.expectedRoas, Reason: c.reason })), `budget_allocation_${selectedStrategy}`); addToast("success", "Allocation data exported"); }}><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

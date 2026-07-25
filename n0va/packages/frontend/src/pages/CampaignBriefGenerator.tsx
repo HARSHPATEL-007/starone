@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Wand2, Target, Globe, Users, DollarSign, Calendar, Lightbulb, Layers, BarChart3, MessageSquare, Copy, Check, Save, RefreshCw, Sparkles, Loader } from "lucide-react";
+import { Wand2, Target, Globe, Users, DollarSign, Calendar, Lightbulb, Layers, BarChart3, MessageSquare, Copy, Check, Save, RefreshCw, Sparkles, Loader, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
 
 const objectives = [
   "Brand Awareness", "Lead Generation", "Website Traffic", "Engagement",
@@ -22,6 +23,7 @@ interface BriefResult {
 export default function CampaignBriefGenerator() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [name, setName] = useState("");
   const [objective, setObjective] = useState("");
   const [audience, setAudience] = useState("");
@@ -392,6 +394,7 @@ export default function CampaignBriefGenerator() {
                   {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                   {copied ? "Copied!" : "Copy Brief"}
                 </button>
+                <button onClick={() => { exportToCsv(result.platforms.map(p => ({ Platform: p, BudgetPct: result.budgetAllocation.find(a => a.platform === p)?.pct || 0, CreativeDirection: result.creativeDirections.join("; "), AudienceSegments: result.audienceSegments.join("; "), KPIs: result.kpis.join("; "), KeyMessaging: result.keyMessaging.join("; ") })), `brief_${name.replace(/\s+/g, "_")}`); addToast("success", "Brief plan exported"); }} className="btn-ghost flex items-center gap-2"><Download className="w-4 h-4" /> Export Plan</button>
                 <button onClick={generateBrief} disabled={generating} className="btn-ghost flex items-center gap-2">
                   <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} />
                   Regenerate

@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts";
-import { TrendingUp, DollarSign, Target, Eye, MousePointerClick, BarChart3, RefreshCw } from "lucide-react";
+import { TrendingUp, DollarSign, Target, Eye, MousePointerClick, BarChart3, RefreshCw, Download } from "lucide-react";
 import { SkeletonChart } from "../components/Skeleton";
 import { api } from "../api/client";
+import { useCsvExport } from "../hooks/useCsvExport";
+import { useToast } from "../components/Toast";
 
 const COLORS = ["#1a6dff", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#ec4899"];
 
 export default function Analytics() {
+  const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [crossPlatform, setCrossPlatform] = useState<any>(null);
   const [overview, setOverview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -167,7 +171,10 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">Platform Metrics</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Platform Metrics</h3>
+            <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(platforms.map((p: any) => ({ Platform: p.platform, Spend: p.spend, Revenue: p.revenue, ROAS: p.roas || 0, CTR: p.ctr || 0, CPC: p.cpc || 0 })), "platform_metrics"); addToast("success", "Platform metrics exported"); }}><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

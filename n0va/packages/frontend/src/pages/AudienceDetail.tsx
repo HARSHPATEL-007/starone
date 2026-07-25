@@ -2,16 +2,18 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { api } from "../api/client";
-import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw, Play, Pause, Target, DollarSign, MessageSquare } from "lucide-react";
+import { ArrowLeft, Edit3, Users, BarChart3, Globe, Activity, Trash2, RefreshCw, Play, Pause, Target, DollarSign, MessageSquare, Download } from "lucide-react";
 import NotesWidget from "../components/NotesWidget";
 import { useToast } from "../components/Toast";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { useCsvExport } from "../hooks/useCsvExport";
 
 export default function AudienceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { track } = useRecentItems();
+  const { exportToCsv } = useCsvExport();
   const [audience, setAudience] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,6 +167,7 @@ export default function AudienceDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => { exportToCsv([{ Name: audience.name, Type: audience.type, Platform: audience.platform, Size: audience.size || 0, Status: audience.status, Description: audience.description || "", Impressions: perf.impressions || 0, Conversions: perf.conversions || 0, Spend: perf.spend || 0, Revenue: perf.revenue || 0, ROAS: (perf.roas || 0).toFixed(2), Tags: (audience.tags || []).join("; "), Source: audience.source || "" }], `audience_${audienceId}`); addToast("success", "Audience data exported"); }}><Download className="w-4 h-4" /> Export</button>
           {(audience.status === "active") ? (
             <button className="btn-secondary flex items-center gap-1.5 text-sm" onClick={() => handleStatus("paused")}>
               <Pause className="w-4 h-4" /> Pause

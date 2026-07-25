@@ -4,15 +4,17 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
-import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText, MessageSquare } from "lucide-react";
+import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText, MessageSquare, Download } from "lucide-react";
 import NotesWidget from "../components/NotesWidget";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { useCsvExport } from "../hooks/useCsvExport";
 
 export default function CreativeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { track } = useRecentItems();
+  const { exportToCsv } = useCsvExport();
   const [creative, setCreative] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,6 +195,9 @@ export default function CreativeDetail() {
               <Play className="w-4 h-4" /> Activate
             </button>
           )}
+          <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => { exportToCsv([{ Name: creative.name, Type: creative.type, Status: creative.status, Headline: creative.headline || "", Body: creative.body || "", CTA: creative.cta || "", Impressions: perf.impressions || 0, Clicks: perf.clicks || 0, CTR: ((perf.ctr || 0) * 100).toFixed(2) + "%", Tags: (creative.tags || []).join("; ") }, ...Object.entries(platformVariants).map(([p, v]: [string, any]) => ({ Name: creative.name + ` (${p})`, Type: "variant", Status: creative.status, Headline: v.headline || "", Body: v.body || "", CTA: v.cta || "", Impressions: 0, Clicks: 0, CTR: "0%", Tags: "" }))], `creative_${creativeId}`); addToast("success", "Creative data exported"); }}>
+            <Download className="w-4 h-4" /> Export
+          </button>
           <button className="text-red-400 hover:text-red-300 flex items-center gap-1.5 text-sm" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 className="w-4 h-4" /> Delete
           </button>

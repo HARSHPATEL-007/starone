@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle, Download } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
@@ -10,6 +10,7 @@ import NotesWidget from "../components/NotesWidget";
 import { useTemplates } from "../hooks/useTemplates";
 import { useRecentItems } from "../hooks/useRecentItems";
 import { useLaunchChecklist } from "../hooks/useLaunchChecklist";
+import { useCsvExport } from "../hooks/useCsvExport";
 import CommentsSection from "../components/CommentsSection";
 
 type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes" | "checklist" | "comments";
@@ -21,6 +22,7 @@ export default function CampaignDetail() {
   const liveData = useCampaignLive(id);
   const { createTemplate } = useTemplates();
   const { track } = useRecentItems();
+  const { exportToCsv } = useCsvExport();
   const { items: checklistItems, current: checklist, toggleItem: toggleChecklist, progress: checklistProgress } = useLaunchChecklist(id);
   const [campaign, setCampaign] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
@@ -260,8 +262,11 @@ export default function CampaignDetail() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="card lg:col-span-2">
-              <h3 className="text-lg font-semibold text-white mb-4">Performance</h3>
-              <div className="h-72">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Performance</h3>
+                  <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(dailyData.map((d: any) => ({ Date: d.date, Revenue: d.revenue || 0, Spend: d.spend || 0, Impressions: d.impressions || 0, Clicks: d.clicks || 0, Conversions: d.conversions || 0 })), `campaign_${id}_daily`); addToast("success", "Daily data exported"); }}><Download className="w-3 h-3" /> Export CSV</button>
+                </div>
+                <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={dailyData}>
                     <defs>

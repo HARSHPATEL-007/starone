@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { BarChart3, Download, FileText, Calendar, RefreshCw, Clock, CheckCircle } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -207,6 +208,21 @@ export default function ReportCenter() {
             {cat === "all" ? "All Reports" : cat}
           </button>
         ))}
+      </div>
+
+      <div className="card p-4">
+        <h3 className="text-sm font-semibold text-white mb-3">Reports by Category</h3>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={Object.entries(REPORT_TEMPLATES.reduce((acc: Record<string, number>, t) => { acc[t.category] = (acc[t.category] || 0) + 1; return acc; }, {})).map(([category, count]) => ({ category, count }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="category" stroke="#6b7280" fontSize={11} />
+              <YAxis stroke="#6b7280" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+              <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Templates" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {loading ? (

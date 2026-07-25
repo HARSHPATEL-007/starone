@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Calendar, Target, DollarSign, BarChart3, Megaphone, Globe, CheckCircle, Clock } from "lucide-react";
+import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Calendar, Target, DollarSign, BarChart3, Megaphone, Globe, CheckCircle, Clock, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { api } from "../api/client";
 
 type BriefStatus = "draft" | "in_review" | "approved" | "archived";
@@ -50,6 +52,7 @@ const SEED_BRIEFS: Brief[] = [
 
 export default function Briefs() {
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [briefs, setBriefs] = useState<Brief[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -139,6 +142,8 @@ export default function Briefs() {
 
   const viewingBrief = viewingId ? briefs.find(b => b.id === viewingId) : null;
 
+  const objectiveChartData = Object.entries(briefs.reduce((acc: Record<string, number>, b) => { acc[b.objective] = (acc[b.objective] || 0) + 1; return acc; }, {})).map(([key, count]) => ({ objective: OBJECTIVES.find(o => o.value === key)?.label || key, count, value: key }));
+
   if (loading) {
     return <div className="card p-12 flex items-center justify-center text-gray-400"><FileText className="w-5 h-5 animate-spin mr-2" /> Loading briefs...</div>;
   }
@@ -154,6 +159,29 @@ export default function Briefs() {
           <p className="text-gray-400 mt-1">{briefs.length} briefs · {briefs.filter(b => b.status === "approved").length} approved · {briefs.filter(b => b.status === "draft").length} drafts</p>
         </div>
         <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Brief</button>
+      </div>
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Briefs by Objective</h3>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(briefs.map(b => ({ Title: b.title, Campaign: b.campaignName, Objective: OBJECTIVES.find(o => o.value === b.objective)?.label, Status: b.status, Budget: b.budget, TargetAudience: b.targetAudience, Channels: b.channels.join("; "), KeyMessage: b.keyMessage })), "campaign_briefs"); addToast("success", "Briefs exported"); }}><Download className="w-3 h-3" /> Export CSV</button>
+        </div>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={objectiveChartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="objective" stroke="#6b7280" fontSize={11} />
+              <YAxis stroke="#6b7280" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {objectiveChartData.map((entry, i) => {
+                  const objColor: Record<string, string> = { awareness: "#3b82f6", consideration: "#06b6d4", conversion: "#10b981", retention: "#8b5cf6", engagement: "#f59e0b", other: "#6b7280" };
+                  return <Cell key={i} fill={objColor[entry.value] || "#6b7280"} />;
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">

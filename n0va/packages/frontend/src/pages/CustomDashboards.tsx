@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { LayoutDashboard, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, GripVertical, Save, Eye, EyeOff, Copy, BarChart3, TrendingUp, DollarSign, Target, Users, Megaphone, CheckCircle, Activity, Bot, Palette, Calendar, Bell, Zap, Crosshair, Star, Clock, Loader } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { api } from "../api/client";
 
 interface DashboardWidget {
@@ -556,12 +557,13 @@ export default function CustomDashboards() {
               <LayoutDashboard className="w-3.5 h-3.5 inline mr-1.5" />{db.name}
             </button>
           ))}
-          <button onClick={() => { setEditName(""); setShowCreate(true); }} className="text-sm px-3 py-2 text-gray-600 hover:text-gray-400"><Plus className="w-3.5 h-3.5" /></button>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {active && <button onClick={() => duplicateDashboard(active.id)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-4 h-4" /></button>}
-          {active && <button onClick={() => { setEditingId(active.id); setEditName(active.name); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Edit3 className="w-4 h-4" /></button>}
-          {active && <button onClick={() => handleDelete(active.id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>}
+                <button onClick={() => { setEditName(""); setShowCreate(true); }} className="text-sm px-3 py-2 text-gray-600 hover:text-gray-400"><Plus className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {active && <button onClick={() => { exportToCsv(active.widgets.map(w => ({ Widget: w.label, Type: w.type, Visible: w.visible, Width: w.width })), `dashboard_${active.id}_widgets`); addToast("success", "Widget config exported"); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Download className="w-4 h-4" /></button>}
+                {active && <button onClick={() => duplicateDashboard(active.id)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-4 h-4" /></button>}
+                {active && <button onClick={() => { setEditingId(active.id); setEditName(active.name); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Edit3 className="w-4 h-4" /></button>}
+                {active && <button onClick={() => handleDelete(active.id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>}
         </div>
       </div>
 

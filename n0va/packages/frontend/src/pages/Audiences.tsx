@@ -4,6 +4,7 @@ import { Plus, Users, Search, Download, Filter, TrendingUp, DollarSign, Target, 
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { SkeletonRow } from "../components/Skeleton";
 
 export default function Audiences() {
@@ -82,6 +83,7 @@ export default function Audiences() {
 
   const typeColors: Record<string, string> = { lookalike: "text-purple-400", retargeting: "text-blue-400", custom: "text-green-400", saved: "text-gray-400" };
   const statusBadge: Record<string, string> = { active: "badge-active", paused: "badge-paused", building: "badge-draft" };
+  const typeChartData = Object.entries(audiences.reduce((acc: Record<string, number>, a) => { const t = a.type || "unknown"; acc[t] = (acc[t] || 0) + 1; return acc; }, {})).map(([type, count]) => ({ type: type.charAt(0).toUpperCase() + type.slice(1), count }));
 
   return (
     <div className="space-y-6">
@@ -123,6 +125,23 @@ export default function Audiences() {
           </button>
         ))}
       </div>
+
+      {typeChartData.length > 0 && (
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-white mb-3">Audience Distribution by Type</h3>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={typeChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="type" stroke="#6b7280" fontSize={11} />
+                <YAxis stroke="#6b7280" fontSize={11} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Count" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {selected.size > 0 && (
         <div className="flex items-center gap-3 p-3 bg-n0va-600/10 border border-n0va-600/30 rounded-lg">

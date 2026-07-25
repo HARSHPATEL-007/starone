@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Edit3, Archive, Trash2, Target, Clock, DollarSign, Calendar, ExternalLink, Search, CheckCircle, CheckSquare, Square, MessageSquare, ThumbsUp, ThumbsDown, Filter, ArrowUpDown, Loader } from "lucide-react";
+import { ArrowLeft, Play, Edit3, Archive, Trash2, Target, Clock, DollarSign, Calendar, ExternalLink, Search, CheckCircle, CheckSquare, Square, MessageSquare, ThumbsUp, ThumbsDown, Filter, ArrowUpDown, Loader, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { SkeletonCard } from "../components/Skeleton";
 
 const STATUS_GROUPS = [
@@ -16,6 +18,7 @@ type SortKey = "name" | "budget" | "spend" | "date";
 export default function CampaignReview() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -161,6 +164,28 @@ export default function CampaignReview() {
           </button>
         </div>
       )}
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Status Breakdown</h3>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => exportToCsv(grouped.map(g => ({ Status: g.label, Count: g.items.length })), "campaign_review_status")}><Download className="w-3 h-3" /> Export CSV</button>
+        </div>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={grouped.map(g => ({ status: g.label, count: g.items.length }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="status" stroke="#6b7280" fontSize={11} />
+              <YAxis stroke="#6b7280" fontSize={11} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <Cell fill="#6b7280" />
+                <Cell fill="#eab308" />
+                <Cell fill="#ef4444" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-3 gap-4">{[1, 2, 3].map(i => <SkeletonCard key={i} />)}</div>

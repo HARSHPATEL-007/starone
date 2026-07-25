@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import { api } from "../api/client";
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, RefreshCw, X, Plus, History, GitCompare, Eye, DollarSign } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, RefreshCw, X, Plus, History, GitCompare, Eye, DollarSign, Download } from "lucide-react";
 import { SkeletonChart } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
 
 const MODEL_COLORS: Record<string, string> = {
   first_click: "#8b5cf6",
@@ -27,6 +28,7 @@ type Tab = "compare" | "paths" | "reports";
 
 export default function AttributionComparison() {
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [tab, setTab] = useState<Tab>("compare");
   const [comparison, setComparison] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ export default function AttributionComparison() {
           </h1>
           <p className="text-gray-500 mt-1">Multi-touch attribution with 6 models, conversion paths, and report history</p>
         </div>
-        {tab === "compare" && <button className="btn-secondary text-sm flex items-center gap-1.5" onClick={loadData}><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>}
+        {tab === "compare" && <><button className="btn-secondary text-sm flex items-center gap-1.5" onClick={loadData}><RefreshCw className="w-3.5 h-3.5" /> Refresh</button><button className="btn-secondary text-sm flex items-center gap-1.5" onClick={() => { exportToCsv(modelSummaryData, "attribution_comparison"); addToast("success", "Comparison data exported"); }}><Download className="w-3.5 h-3.5" /> Export CSV</button></>}
       </div>
 
       <div className="flex gap-1 border-b border-gray-800 pb-0">
