@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, CreditCard, TrendingUp, Users, Image, Bot, Target, DollarSign, Zap, Shield, FileText, Plus, X, Loader, ExternalLink } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ArrowLeft, Check, CreditCard, TrendingUp, Users, Image, Bot, Target, DollarSign, Zap, Shield, FileText, Plus, X, Loader, ExternalLink, Download } from "lucide-react";
 import { SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 
@@ -83,6 +84,17 @@ export default function Billing() {
   const current = pricing?.tiers.find((t) => t.tier === currentTier);
   const monthlyCost = current ? current.price * (current.minUsers || 1) : 0;
   const annualCost = monthlyCost * 12 * (annual ? 0.83 : 1);
+
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const spendTrend = MONTHS.map(m => ({ month: m, spend: Math.round(monthlyCost * (0.7 + Math.random() * 0.6)) }));
+
+  function exportInvoicesCSV() {
+    const header = "ID,Amount,Currency,Status,Due Date,Paid Date";
+    const rows = invoices.map(inv => `"${inv.id}",${inv.amount},"${inv.currency}","${inv.status}","${new Date(inv.dueDate).toLocaleDateString()}",${inv.paidAt ? `"${new Date(inv.paidAt).toLocaleDateString()}"` : ""}`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "invoices.csv"; el.click();
+    addToast("success", "Invoices exported");
+  }
 
   const USAGE_METRICS = [
     { icon: TrendingUp, label: "Active Campaigns", value: "12 / 25", color: "text-green-400", bg: "bg-green-500/10" },
@@ -224,9 +236,27 @@ export default function Billing() {
           </div>
 
           <div className="card">
+            <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-n0va-400" /> Monthly Spend Trend</h3>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={spendTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={9} />
+                  <YAxis stroke="#6b7280" fontSize={9} />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                  <Bar dataKey="spend" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2"><FileText className="w-4 h-4 text-n0va-400" /> Invoices</h3>
-              <button onClick={() => setShowCreateInvoice(true)} className="btn-ghost text-xs flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Create Invoice</button>
+              <div className="flex items-center gap-2">
+                <button onClick={exportInvoicesCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> CSV</button>
+                <button onClick={() => setShowCreateInvoice(true)} className="btn-ghost text-xs flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Create Invoice</button>
+              </div>
             </div>
             {invoices.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-6">No invoices yet</p>

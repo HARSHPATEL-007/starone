@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, ChevronRight, Users, Tag, Globe, Sparkles, Sliders, UserCheck } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ArrowLeft, Check, ChevronRight, Users, Tag, Globe, Sparkles, Sliders, UserCheck, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 
 const AUDIENCE_TYPES = [
@@ -28,7 +29,34 @@ const INTEREST_OPTIONS = [
 
 const GENDER_OPTIONS = ["all", "male", "female", "non-binary"];
 
-const STEPS = ["Basics", "Demographics", "Interests", "Platform", "Review"];
+  const STEPS = ["Basics", "Demographics", "Interests", "Platform", "Review"];
+
+  const PLATFORM_SIZES = [
+    { name: "Meta Ads", reach: Math.round(form.size * 0.58) },
+    { name: "Google Ads", reach: Math.round(form.size * 0.42) },
+    { name: "LinkedIn", reach: Math.round(form.size * 0.23) },
+    { name: "TikTok", reach: Math.round(form.size * 0.31) },
+    { name: "Snapchat", reach: Math.round(form.size * 0.18) },
+    { name: "X/Twitter", reach: Math.round(form.size * 0.14) },
+  ];
+
+  function exportCSV() {
+    const rows = [
+      `"Name","${form.name}"`,
+      `"Type","${form.type}"`,
+      `"Age Range","${form.ageMin}-${form.ageMax}"`,
+      `"Gender","${form.gender}"`,
+      `"Locations","${form.locations || "All"}"`,
+      `"Platform","${form.platform}"`,
+      `"Interests","${form.interests.join("; ")}"`,
+      `"Tags","${form.tags}"`,
+      `"Estimated Reach","${form.size.toLocaleString()}"`,
+      ...PLATFORM_SIZES.map(p => `"${p.name}","${p.reach.toLocaleString()}"`),
+    ];
+    const blob = new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "audience_criteria.csv"; el.click();
+    addToast("success", "Audience criteria exported");
+  }
 
 export default function AudienceBuilder() {
   const navigate = useNavigate();
@@ -308,6 +336,21 @@ export default function AudienceBuilder() {
                 <ReviewField label="Estimated Reach" value={`${form.size.toLocaleString()} users`} />
               </div>
             </div>
+            <div className="mt-4">
+              <h3 className="text-xs font-semibold text-white mb-2">Estimated Reach by Platform</h3>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={PLATFORM_SIZES}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                    <YAxis stroke="#6b7280" fontSize={9} />
+                    <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                    <Bar dataKey="reach" fill="#1a6dff" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <button onClick={exportCSV} className="btn-ghost text-xs flex items-center gap-1 mt-2"><Download className="w-3 h-3" /> Export CSV</button>
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
-import { AlertTriangle, CheckCircle, Shield, RefreshCw, Play, Flag, Ban } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AlertTriangle, CheckCircle, Shield, RefreshCw, Play, Flag, Ban, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { SkeletonTable } from "../components/Skeleton";
 
@@ -103,6 +104,22 @@ export default function FraudEvaluation() {
   }
 
   const unresolved = flags.filter((f) => !f.resolved);
+
+  const severityChart = [
+    { name: "Low", count: flags.filter(f => f.severity === "low").length },
+    { name: "Medium", count: flags.filter(f => f.severity === "medium").length },
+    { name: "High", count: flags.filter(f => f.severity === "high").length },
+    { name: "Critical", count: flags.filter(f => f.severity === "critical").length },
+  ];
+
+  function exportFlagsCSV() {
+    const header = "Campaign,Type,Severity,Value,Threshold,Description,Resolved";
+    const rows = flags.map(f => `"${f.campaignName}","${f.type}","${f.severity}",${f.value},${f.threshold},"${f.description}",${f.resolved}`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "fraud_flags.csv"; el.click();
+    addToast("success", "Flags exported");
+  }
+
   const severityColors: Record<string, string> = {
     low: "text-blue-400 bg-blue-500/10",
     medium: "text-yellow-400 bg-yellow-500/10",
@@ -166,6 +183,30 @@ export default function FraudEvaluation() {
           <Ban className="w-4 h-4 text-blue-400 mb-2" />
           <p className="text-lg font-bold text-white">{health?.resolvedFlags || flags.filter((f) => f.resolved).length}</p>
           <p className="text-xs text-gray-500">Resolved</p>
+        </div>
+      </div>
+
+      {/* Severity Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><Flag className="w-3.5 h-3.5 text-n0va-400" /> Flags by Severity</h3>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={severityChart}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                <YAxis stroke="#6b7280" fontSize={9} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card flex items-center justify-center">
+          <div className="text-center">
+            <button onClick={exportFlagsCSV} className="btn-ghost text-sm flex items-center gap-1.5 mx-auto"><Download className="w-4 h-4" /> Export Flags CSV</button>
+            <p className="text-xs text-gray-600 mt-2">{flags.length} flags · {unresolved.length} unresolved</p>
+          </div>
         </div>
       </div>
 

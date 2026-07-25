@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Columns3, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, DollarSign, Target, BarChart3, Megaphone, CheckCircle, Clock, ArrowRight, GripVertical } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Columns3, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, DollarSign, Target, BarChart3, Megaphone, CheckCircle, Clock, ArrowRight, GripVertical, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -163,6 +164,16 @@ export default function CampaignBoard() {
 
   const filteredCards = activeBoard.cards.filter(c => !search || c.title.toLowerCase().includes(search.toLowerCase()) || c.campaignName.toLowerCase().includes(search.toLowerCase()) || c.assignee.toLowerCase().includes(search.toLowerCase()));
 
+  const statusChart = STATUSES.map(s => ({ name: STATUS_META[s].label, cards: activeBoard.cards.filter(c => c.status === s).length }));
+
+  function exportBoardCSV() {
+    const header = "Title,Status,Priority,Assignee,Campaign,Due Date,Labels";
+    const rows = activeBoard.cards.map(c => `"${c.title}","${c.status}","${c.priority}","${c.assignee}","${c.campaignName}","${c.dueDate.slice(0, 10)}","${c.labels.join("; ")}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = `board_${activeBoard.name.replace(/\s+/g, "_")}.csv`; el.click();
+    addToast("success", "Board exported");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -191,6 +202,22 @@ export default function CampaignBoard() {
             <button onClick={() => deleteBoard(b.id)} className="p-1 text-gray-600 hover:text-red-400"><X className="w-2.5 h-2.5" /></button>
           </div>
         ))}
+      </div>
+
+      {/* Status chart + export */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 h-28">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={statusChart}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+              <YAxis stroke="#6b7280" fontSize={9} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+              <Bar dataKey="cards" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <button onClick={exportBoardCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Export CSV</button>
       </div>
 
       {/* Kanban columns */}

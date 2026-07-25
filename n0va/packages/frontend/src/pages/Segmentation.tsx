@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Split, Plus, X, Edit3, Trash2, Copy, Users, MapPin, Globe, Calendar, ShoppingCart, MousePointerClick, Eye, Smartphone, Laptop, Target, User, Hash, DollarSign, Clock, ChevronDown, ChevronRight, Save, Download, Search } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
@@ -139,6 +140,16 @@ export default function Segmentation() {
 
   const filtered = segments.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()));
 
+  const sizeChart = [...segments].sort((a, b) => b.estimatedSize - a.estimatedSize).slice(0, 10).map(s => ({ name: s.name.length > 16 ? s.name.substring(0, 16) + "..." : s.name, size: s.estimatedSize }));
+
+  function exportSegmentsCSV() {
+    const header = "Name,Description,Groups,Rules,Estimated Size,Created,Updated";
+    const rows = segments.map(s => `"${s.name}","${s.description}",${s.groups.length},${s.groups.reduce((t, g) => t + g.rules.length, 0)},${s.estimatedSize},"${new Date(s.createdAt).toLocaleDateString()}","${new Date(s.updatedAt).toLocaleDateString()}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "segments.csv"; el.click();
+    addToast("success", "Segments exported");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -152,11 +163,31 @@ export default function Segmentation() {
         <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Segment</button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-        <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search segments..." value={search} onChange={e => setSearch(e.target.value)} />
+      {/* Search + export */}
+      <div className="flex items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+          <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search segments..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <button onClick={exportSegmentsCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Export CSV</button>
       </div>
+
+      {segments.length > 1 && (
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-n0va-400" /> Segment Size Comparison (top 10)</h3>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sizeChart} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis type="number" stroke="#6b7280" fontSize={9} />
+                <YAxis type="category" dataKey="name" stroke="#6b7280" fontSize={9} width={110} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="size" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Form modal */}
       {showForm && (

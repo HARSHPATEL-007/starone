@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Target, TrendingUp, Users, Award, Eye, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, Circle, CheckCircle2, AlertTriangle, Flag } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { Target, TrendingUp, Users, Award, Eye, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, Circle, CheckCircle2, AlertTriangle, Flag, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -125,6 +126,22 @@ export default function Goals() {
   const allExpanded = expanded.size === filtered.length && filtered.length > 0;
   const totalProgress = filtered.length ? Math.round(filtered.reduce((s, g) => s + progress(g.keyResults), 0) / filtered.length) : 0;
 
+  const progressDist = [
+    { name: "Behind", value: goals.filter(g => progress(g.keyResults) < 40).length },
+    { name: "At Risk", value: goals.filter(g => { const p = progress(g.keyResults); return p >= 40 && p < 75; }).length },
+    { name: "On Track", value: goals.filter(g => { const p = progress(g.keyResults); return p >= 75 && p < 100; }).length },
+    { name: "Completed", value: goals.filter(g => progress(g.keyResults) >= 100).length },
+  ].filter(d => d.value > 0);
+  const PIE_COLORS_GOALS = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
+
+  function exportGoalsCSV() {
+    const header = "Name,Quarter,Year,Type,Progress,Status,Key Results";
+    const rows = goals.map(g => `"${g.name}","${g.quarter}","${g.year}","${g.type}",${progress(g.keyResults)}%,"${statusLabel(progress(g.keyResults)).label}","${g.keyResults.map(kr => `${kr.description}: ${kr.current}/${kr.target} ${kr.unit}`).join("; ")}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "goals.csv"; el.click();
+    addToast("success", "Goals exported");
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -160,6 +177,29 @@ export default function Goals() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2">Progress Distribution</h3>
+          <div className="h-32 flex items-center justify-center">
+            {progressDist.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={progressDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={50} label={({ name, value }) => `${name}: ${value}`}>
+                    {progressDist.map((_, i) => <Cell key={i} fill={PIE_COLORS_GOALS[i % PIE_COLORS_GOALS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <p className="text-xs text-gray-600">No data</p>}
+          </div>
+        </div>
+        <div className="card flex items-center justify-center">
+          <div className="text-center">
+            <button onClick={exportGoalsCSV} className="btn-ghost text-sm flex items-center gap-1.5 mx-auto"><Download className="w-4 h-4" /> Export CSV</button>
+            <p className="text-xs text-gray-600 mt-2">{goals.length} goals · {goals.reduce((s, g) => s + g.keyResults.length, 0)} key results</p>
+          </div>
+        </div>
+      </div>
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <select className="input text-sm w-auto" value={filterQuarter} onChange={(e) => setFilterQuarter(e.target.value)}>
