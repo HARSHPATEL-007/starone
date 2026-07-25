@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, Cell } from "recharts";
 import { api } from "../api/client";
-import { TrendingUp, DollarSign, Target, RefreshCw, CheckCircle } from "lucide-react";
+import { TrendingUp, DollarSign, Target, RefreshCw, CheckCircle, History, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
 
@@ -29,6 +29,9 @@ export default function BudgetStrategy() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState<string>("balanced");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -221,6 +224,52 @@ export default function BudgetStrategy() {
           </div>
         </div>
       )}
+
+      {/* Optimization History */}
+      <div className="card">
+        <button onClick={async () => { setHistoryOpen(!historyOpen); if (!historyOpen && history.length === 0) { setHistoryLoading(true); try { const h = await api.optimizer.budgetHistory(); setHistory(h || []); } catch {} setHistoryLoading(false); }}} className="w-full flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2"><History className="w-5 h-5 text-n0va-400" /> Optimization History</h3>
+          {historyOpen ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+        </button>
+        {historyOpen && (
+          <div className="mt-4">
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-n0va-400" /></div>
+            ) : history.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-8">No optimization history yet. Run a budget optimization to save results.</p>
+            ) : (
+              <div className="space-y-3">
+                {history.map((h: any, i: number) => (
+                  <div key={h._id || i} className="bg-gray-800 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium capitalize px-2 py-0.5 rounded-full bg-n0va-500/20 text-n0va-400">{h.strategy || "balanced"}</span>
+                        <span className="text-xs text-gray-500">{h.createdAt ? new Date(h.createdAt).toLocaleString() : "—"}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-white">{(h.expectedPortfolioRoas || 0).toFixed(2)}x ROAS</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><p className="text-[10px] text-gray-500">Current Budget</p><p className="text-sm font-medium text-white">${(h.totalCurrentBudget || 0).toLocaleString()}</p></div>
+                      <div><p className="text-[10px] text-gray-500">Recommended</p><p className="text-sm font-medium text-n0va-400">${(h.totalRecommendedBudget || 0).toLocaleString()}</p></div>
+                      <div><p className="text-[10px] text-gray-500">Change</p><p className={`text-sm font-medium ${(h.totalChangePercent || 0) > 0 ? "text-green-400" : "text-red-400"}`}>{(h.totalChangePercent || 0) > 0 ? "+" : ""}{(h.totalChangePercent || 0).toFixed(1)}%</p></div>
+                    </div>
+                    {h.recommendations && h.recommendations.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-700">
+                        <p className="text-[10px] text-gray-500 mb-1">Recommendations</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {h.recommendations.map((r: any, ri: number) => (
+                            <span key={ri} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700 text-gray-400">{r.campaignName || r.recommendation}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">

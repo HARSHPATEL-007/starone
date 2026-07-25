@@ -131,6 +131,10 @@ export const api = {
     analyze: (data: Record<string, unknown>) =>
       request<any>("/attribution/analyze", { method: "POST", body: JSON.stringify(data) }),
     compare: () => request<any>("/attribution/compare", { method: "POST" }),
+    savePath: (data: Record<string, unknown>) =>
+      request<any>("/attribution/paths", { method: "POST", body: JSON.stringify(data) }),
+    getPaths: () => request<any[]>("/attribution/paths"),
+    getReports: () => request<any[]>("/attribution/reports"),
   },
   fraud: {
     health: () => request<any>("/fraud/health"),
@@ -147,10 +151,16 @@ export const api = {
     budget: (data?: Record<string, unknown>) =>
       request<any>("/optimizer/budget", { method: "POST", body: JSON.stringify(data || {}) }),
     budgetMock: () => request<any>("/optimizer/budget/mock"),
+    budgetHistory: () => request<any[]>("/optimizer/budget/history"),
     creativeFatigue: (data?: Record<string, unknown>) =>
       request<any>("/optimizer/creative/fatigue", { method: "POST", body: JSON.stringify(data || {}) }),
     creativeMock: () => request<any>("/optimizer/creative/mock"),
     abTest: (type = "creative") => request<any>(`/optimizer/ab-test/${type}`),
+    listABTests: () => request<any[]>("/optimizer/ab-test"),
+    createABTest: (data: Record<string, unknown>) =>
+      request<any>("/optimizer/ab-test", { method: "POST", body: JSON.stringify(data) }),
+    updateABTest: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/optimizer/ab-test/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   },
   hypercontext: {
     tasks: {

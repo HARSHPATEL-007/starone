@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { HeartPulse, Search, TrendingUp, TrendingDown, DollarSign, Eye, MousePointerClick, Target, Users, AlertTriangle, CheckCircle, Clock, Activity } from "lucide-react";
+import { HeartPulse, Search, TrendingUp, TrendingDown, DollarSign, Eye, MousePointerClick, Target, Users, AlertTriangle, CheckCircle, Clock, Activity, X, RefreshCw, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -13,6 +13,7 @@ interface CampaignHealth {
   efficiency: number;
   issues: { type: string; severity: string; message: string }[];
   trend: "up" | "down" | "stable";
+  metrics?: { impressions: number; clicks: number; conversions: number; spend: number; revenue: number; ctr: number; cvr: number; cpc: number; roas: number };
 }
 
 function fmt(n: number): string {
@@ -32,19 +33,30 @@ export default function CampaignHealth() {
   const [data, setData] = useState<CampaignHealth[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<CampaignHealth | null>(null);
 
-  useEffect(() => {
-    api.insights.health.all()
-      .then(setData)
-      .catch(() => api.insights.health.sample().then(setData))
-      .finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try { setData(await api.insights.health.all()); }
+    catch { try { setData(await api.insights.health.sample()); } catch {} }
+    setLoading(false);
+  }
+
+  async function loadDetail(c: CampaignHealth) {
+    try {
+      const detail = await api.insights.health.get(c.campaignId);
+      setSelected({ ...c, ...detail });
+    } catch {
+      setSelected(c);
+    }
+  }
 
   const healthy = data.filter(d => d.overall >= 80).length;
   const warning = data.filter(d => d.overall >= 60 && d.overall < 80).length;
   const critical = data.filter(d => d.overall < 60).length;
   const avgScore = data.length > 0 ? Math.round(data.reduce((s, d) => s + d.overall, 0) / data.length) : 0;
-
   const filtered = data.filter(d => !search || d.campaignName.toLowerCase().includes(search.toLowerCase()));
 
   return (
@@ -57,13 +69,15 @@ export default function CampaignHealth() {
           </h1>
           <p className="text-gray-400 mt-1">{data.length} campaigns · {healthy} healthy · {warning} warning · {critical} critical</p>
         </div>
+        <button onClick={loadData} className="btn-ghost text-sm flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <div className="card p-4"><p className="text-xs text-gray-500">Average Score</p><p className="text-xl font-bold text-white mt-1">{avgScore}/100</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Healthy</p><p className="text-xl font-bold text-green-400 mt-1">{healthy}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Warning</p><p className="text-xl font-bold text-yellow-400 mt-1">{warning}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Critical</p><p className="text-xl font-bold text-red-400 mt-1">{critical}</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Total Issues</p><p className="text-xl font-bold text-amber-400 mt-1">{data.reduce((s, d) => s + d.issues.length, 0)}</p></div>
       </div>
 
       <div className="relative max-w-sm">
@@ -86,62 +100,123 @@ export default function CampaignHealth() {
         </div>
       )}
 
-      {filtered.map(c => {
-        const sm = statusFromScore(c.overall);
-        const SI = sm.icon;
-        return (
-          <div key={c.campaignId} className={`card p-5 border-l-4 ${sm.border}`}>
-            <div className="flex items-start gap-4">
-              <div className="relative w-14 h-14 shrink-0">
-                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="#1f2937" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke={c.overall >= 80 ? "#22c55e" : c.overall >= 60 ? "#eab308" : "#ef4444"} strokeWidth="3" strokeDasharray={`${(c.overall / 100) * 97} 97`} />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">{c.overall}</span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base font-semibold text-white">{c.campaignName}</h3>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${sm.color}`}>{sm.label}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-3 mt-3">
-                  <div className="bg-gray-800/50 rounded p-2">
-                    <p className="text-[9px] text-gray-600">Budget</p>
-                    <p className={`text-xs font-semibold ${c.budget >= 80 ? "text-green-400" : c.budget >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.budget}/100</p>
-                  </div>
-                  <div className="bg-gray-800/50 rounded p-2">
-                    <p className="text-[9px] text-gray-600">Performance</p>
-                    <p className={`text-xs font-semibold ${c.performance >= 80 ? "text-green-400" : c.performance >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.performance}/100</p>
-                  </div>
-                  <div className="bg-gray-800/50 rounded p-2">
-                    <p className="text-[9px] text-gray-600">Engagement</p>
-                    <p className={`text-xs font-semibold ${c.engagement >= 80 ? "text-green-400" : c.engagement >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.engagement}/100</p>
-                  </div>
-                  <div className="bg-gray-800/50 rounded p-2">
-                    <p className="text-[9px] text-gray-600">Efficiency</p>
-                    <p className={`text-xs font-semibold ${c.efficiency >= 80 ? "text-green-400" : c.efficiency >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.efficiency}/100</p>
+      <div className="grid grid-cols-1 gap-4">
+        {filtered.map(c => {
+          const sm = statusFromScore(c.overall);
+          const SI = sm.icon;
+          return (
+            <div key={c.campaignId} className={`card p-5 border-l-4 ${sm.border} cursor-pointer hover:bg-gray-800/50 transition-colors`} onClick={() => loadDetail(c)}>
+              <div className="flex items-start gap-4">
+                <div className="relative w-14 h-14 shrink-0">
+                  <svg className="w-14 h-14 -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#1f2937" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke={c.overall >= 80 ? "#22c55e" : c.overall >= 60 ? "#eab308" : "#ef4444"} strokeWidth="3" strokeDasharray={`${(c.overall / 100) * 97} 97`} />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">{c.overall}</span>
                   </div>
                 </div>
-                {c.issues.length > 0 && (
-                  <div className="mt-2 space-y-0.5">
-                    {c.issues.map((issue, i) => (
-                      <p key={i} className="flex items-center gap-1 text-[10px] text-red-400"><AlertTriangle className="w-3 h-3" />{issue.message}</p>
-                    ))}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-semibold text-white">{c.campaignName}</h3>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${sm.color}`}>{sm.label}</span>
+                    <span className="text-[10px] text-gray-600 ml-auto flex items-center gap-1"><BarChart3 className="w-3 h-3" /> Click to drill down</span>
                   </div>
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-gray-600">Trend:</span>
-                  {c.trend === "up" && <TrendingUp className="w-3 h-3 text-green-400" />}
-                  {c.trend === "down" && <TrendingDown className="w-3 h-3 text-red-400" />}
-                  {c.trend === "stable" && <Activity className="w-3 h-3 text-gray-400" />}
+                  <div className="grid grid-cols-4 gap-3 mt-3">
+                    <div className="bg-gray-800/50 rounded p-2"><p className="text-[9px] text-gray-600">Budget</p><p className={`text-xs font-semibold ${c.budget >= 80 ? "text-green-400" : c.budget >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.budget}/100</p></div>
+                    <div className="bg-gray-800/50 rounded p-2"><p className="text-[9px] text-gray-600">Performance</p><p className={`text-xs font-semibold ${c.performance >= 80 ? "text-green-400" : c.performance >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.performance}/100</p></div>
+                    <div className="bg-gray-800/50 rounded p-2"><p className="text-[9px] text-gray-600">Engagement</p><p className={`text-xs font-semibold ${c.engagement >= 80 ? "text-green-400" : c.engagement >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.engagement}/100</p></div>
+                    <div className="bg-gray-800/50 rounded p-2"><p className="text-[9px] text-gray-600">Efficiency</p><p className={`text-xs font-semibold ${c.efficiency >= 80 ? "text-green-400" : c.efficiency >= 60 ? "text-yellow-400" : "text-red-400"}`}>{c.efficiency}/100</p></div>
+                  </div>
+                  {c.issues.length > 0 && (
+                    <div className="mt-2 space-y-0.5">
+                      {c.issues.map((issue, i) => (
+                        <p key={i} className="flex items-center gap-1 text-[10px] text-red-400"><AlertTriangle className="w-3 h-3" />{issue.message}</p>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[10px] text-gray-600">Trend:</span>
+                    {c.trend === "up" && <TrendingUp className="w-3 h-3 text-green-400" />}
+                    {c.trend === "down" && <TrendingDown className="w-3 h-3 text-red-400" />}
+                    {c.trend === "stable" && <Activity className="w-3 h-3 text-gray-400" />}
+                  </div>
                 </div>
               </div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Drill-down modal */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setSelected(null)}>
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="relative w-12 h-12 shrink-0">
+                  <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#1f2937" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" stroke={selected.overall >= 80 ? "#22c55e" : selected.overall >= 60 ? "#eab308" : "#ef4444"} strokeWidth="3" strokeDasharray={`${(selected.overall / 100) * 97} 97`} />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center"><span className="text-xs font-bold text-white">{selected.overall}</span></div>
+                </div>
+                <div><h3 className="text-lg font-semibold text-white">{selected.campaignName}</h3><p className="text-xs text-gray-500">Health Score Details</p></div>
+              </div>
+              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-[10px] text-gray-500 mb-1">Budget</p>
+                <div className="flex items-center gap-2"><DollarSign className="w-3 h-3 text-gray-500" /><div className="flex-1 h-2 bg-gray-700 rounded-full"><div className={`h-full rounded-full ${selected.budget >= 80 ? "bg-green-500" : selected.budget >= 60 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${selected.budget}%` }} /></div><span className="text-xs font-medium text-white">{selected.budget}/100</span></div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-[10px] text-gray-500 mb-1">Performance</p>
+                <div className="flex items-center gap-2"><BarChart3 className="w-3 h-3 text-gray-500" /><div className="flex-1 h-2 bg-gray-700 rounded-full"><div className={`h-full rounded-full ${selected.performance >= 80 ? "bg-green-500" : selected.performance >= 60 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${selected.performance}%` }} /></div><span className="text-xs font-medium text-white">{selected.performance}/100</span></div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-[10px] text-gray-500 mb-1">Engagement</p>
+                <div className="flex items-center gap-2"><Activity className="w-3 h-3 text-gray-500" /><div className="flex-1 h-2 bg-gray-700 rounded-full"><div className={`h-full rounded-full ${selected.engagement >= 80 ? "bg-green-500" : selected.engagement >= 60 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${selected.engagement}%` }} /></div><span className="text-xs font-medium text-white">{selected.engagement}/100</span></div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-[10px] text-gray-500 mb-1">Efficiency</p>
+                <div className="flex items-center gap-2"><Target className="w-3 h-3 text-gray-500" /><div className="flex-1 h-2 bg-gray-700 rounded-full"><div className={`h-full rounded-full ${selected.efficiency >= 80 ? "bg-green-500" : selected.efficiency >= 60 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${selected.efficiency}%` }} /></div><span className="text-xs font-medium text-white">{selected.efficiency}/100</span></div>
+              </div>
+            </div>
+
+            {selected.metrics && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-white mb-2">Campaign Metrics</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">Impressions</p><p className="text-sm font-semibold text-white">{fmt(selected.metrics.impressions)}</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">Clicks</p><p className="text-sm font-semibold text-white">{fmt(selected.metrics.clicks)}</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">Conv.</p><p className="text-sm font-semibold text-white">{fmt(selected.metrics.conversions)}</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">CTR</p><p className="text-sm font-semibold text-white">{(selected.metrics.ctr * 100).toFixed(2)}%</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">CVR</p><p className="text-sm font-semibold text-white">{(selected.metrics.cvr * 100).toFixed(2)}%</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">CPC</p><p className="text-sm font-semibold text-white">${(selected.metrics.cpc || 0).toFixed(2)}</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">Spend</p><p className="text-sm font-semibold text-white">${fmt(selected.metrics.spend)}</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">Revenue</p><p className="text-sm font-semibold text-green-400">${fmt(selected.metrics.revenue)}</p></div>
+                  <div className="bg-gray-800 rounded-lg p-2"><p className="text-[10px] text-gray-500">ROAS</p><p className={`text-sm font-semibold ${selected.metrics.roas >= 1 ? "text-green-400" : "text-red-400"}`}>{(selected.metrics.roas || 0).toFixed(2)}x</p></div>
+                </div>
+              </div>
+            )}
+
+            {selected.issues.length > 0 && (
+              <div><p className="text-sm font-medium text-white mb-2">Active Issues ({selected.issues.length})</p>
+                <div className="space-y-1.5">
+                  {selected.issues.map((issue, i) => (
+                    <div key={i} className="flex items-start gap-2 p-2 bg-red-500/5 rounded-lg border border-red-500/10">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 mt-0.5 shrink-0" />
+                      <div><p className="text-xs text-red-300">{issue.message}</p><p className="text-[10px] text-red-400/70 capitalize">{issue.type} · {issue.severity}</p></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 }
