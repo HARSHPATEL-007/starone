@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
-import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText, MessageSquare, Download } from "lucide-react";
+import { ArrowLeft, Edit3, Palette, Eye, MousePointer, Target, Trash2, RefreshCw, Play, Pause, CheckCircle, XCircle, Image, Video, Film, FileText, MessageSquare, Download, Clock, RotateCcw, History } from "lucide-react";
 import NotesWidget from "../components/NotesWidget";
 import { useRecentItems } from "../hooks/useRecentItems";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -23,6 +23,10 @@ export default function CreativeDetail() {
   const [editHeadline, setEditHeadline] = useState("");
   const [editBody, setEditBody] = useState("");
   const [editCta, setEditCta] = useState("");
+  const [versions, setVersions] = useState<any[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [versionDiff, setVersionDiff] = useState<{ before: any; after: any } | null>(null);
+  const [tab, setTab] = useState<"overview" | "versions">("overview");
 
   useEffect(() => { loadData(); }, [id, navigate]);
 
@@ -60,6 +64,20 @@ export default function CreativeDetail() {
       addToast("error", "Failed to save creative");
     }
   }
+
+  async function loadVersions() {
+    if (!id) return;
+    setVersionsLoading(true);
+    try {
+      const v = await api.creativeVersions.list(id);
+      setVersions(v);
+    } catch {}
+    finally { setVersionsLoading(false); }
+  }
+
+  useEffect(() => {
+    if (tab === "versions" && id) loadVersions();
+  }, [tab, id]);
 
   async function handleDelete() {
     if (!creative) return;
@@ -131,6 +149,11 @@ export default function CreativeDetail() {
   const linkedCampaigns = Array.isArray(campaigns) ? campaigns.filter((c: any) =>
     c.creatives?.some((cr: any) => (cr._id || cr) === creativeId)
   ) : [];
+
+  const tabs: { id: "overview" | "versions"; label: string; icon: any }[] = [
+    { id: "overview", label: "Overview", icon: Eye },
+    { id: "versions", label: "Versions", icon: History },
+  ];
 
   return (
     <div className="space-y-6">
@@ -217,6 +240,19 @@ export default function CreativeDetail() {
         </div>
       )}
 
+      <div className="flex gap-1 border-b border-gray-800 mb-4">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button key={t.id} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${tab === t.id ? "border-n0va-500 text-n0va-400" : "border-transparent text-gray-500 hover:text-gray-300"}`} onClick={() => setTab(t.id)}>
+              <Icon className="w-4 h-4" /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "overview" && (
+        <>
       <div className="grid grid-cols-3 gap-3">
         <div className="card text-center">
           <Eye className="w-4 h-4 text-n0va-400 mx-auto mb-1" />
@@ -376,8 +412,87 @@ export default function CreativeDetail() {
         </div>
         <NotesWidget entityType="creative" entityId={creative._id || creative.id} entityName={creative.name} />
       </div>
+        </>
+      )}
+
+      {tab === "versions" && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <History className="w-5 h-5 text-n0va-400" /> Version History
+            </h3>
+            <button className="btn-secondary flex items-center gap-1.5 text-sm" onClick={async () => {
+              try {
+                await api.creativeVersions.create(creativeId, { snapshot: { name: creative.name, headline: creative.headline, body: creative.body, cta: creative.cta, tags: creative.tags, status: creative.status }, changeDescription: "Manual save" });
+                addToast("success", "Version saved");
+                loadVersions();
+              } catch { addToast("error", "Failed to save version"); }
+            }}>
+              <RotateCcw className="w-4 h-4" /> Save Current as Version
+            </button>
+          </div>
+
+          {versionDiff ? (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-white">Diff View</h4>
+                <button className="text-xs text-n0va-400 hover:text-n0va-300" onClick={() => setVersionDiff(null)}>Close diff</button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-800 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-2">Before (v{versionDiff.before.version})</p>
+                  <pre className="text-xs text-gray-300 whitespace-pre-wrap">{JSON.stringify(versionDiff.before.snapshot, null, 2)}</pre>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-2">After (current)</p>
+                  <pre className="text-xs text-gray-300 whitespace-pre-wrap">{JSON.stringify(versionDiff.after, null, 2)}</pre>
+                </div>
+              </div>
+            </div>
+          ) : versionsLoading ? (
+            <div className="text-center text-gray-500 py-8">Loading versions...</div>
+          ) : versions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <History className="w-8 h-8 mx-auto mb-2 text-gray-600" />
+              <p className="text-sm">No versions saved yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {[...versions].reverse().map((v: any, i: number) => (
+                <div key={v._id || v.id || i} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-n0va-500/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-n0va-400">v{versions.length - i}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{v.changeDescription || "No description"}</p>
+                      <p className="text-xs text-gray-500">{v.createdBy || "Unknown"} · {timeAgo(v.createdAt)}</p>
+                    </div>
+                  </div>
+                  <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => setVersionDiff({ before: v, after: { name: creative.name, headline: creative.headline, body: creative.body, cta: creative.cta, tags: creative.tags, status: creative.status } })}>
+                    <Eye className="w-3 h-3" /> View
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+function timeAgo(date: string) {
+  if (!date) return "";
+  const ms = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(date).toLocaleDateString();
 }
 
 function DetailField({ label, value }: { label: string; value: string }) {

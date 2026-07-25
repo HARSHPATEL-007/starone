@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw, Download, ExternalLink, Clock } from "lucide-react";
+import { BarChart3, DollarSign, TrendingUp, TrendingDown, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw, Download, ExternalLink, Clock, Sparkles, AlertTriangle } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [crossPlatformData, setCrossPlatformData] = useState<any>(null);
   const [prevPeriodData, setPrevPeriodData] = useState<any>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [portfolioSummary, setPortfolioSummary] = useState<any>(null);
   const liveActivities = useTenantActivity("tenant_001");
 
   const liveFraudAlerts = useFraudAlerts();
@@ -56,12 +57,14 @@ export default function Dashboard() {
       api.analytics.crossPlatform(days).catch(() => ({ platforms: [] })),
       api.analytics.overview("60").catch(() => ({ dailyMetrics: [] })),
       api.campaigns.list().catch(() => []),
+      api.summaries.portfolio().catch(() => null),
     ])
-      .then(([d, analytics, fraud, agentList, attr, crossPlatform, prevAnalytics, campaignList]) => {
+      .then(([d, analytics, fraud, agentList, attr, crossPlatform, prevAnalytics, campaignList, summary]) => {
         setData(d); setDailyData(analytics.dailyMetrics || []); setFraudHealth(fraud); setAgents(agentList); setAttribution(attr);
         setCrossPlatformData(crossPlatform);
         setPrevPeriodData(prevAnalytics);
         setCampaigns(Array.isArray(campaignList) ? campaignList : campaignList?.campaigns || []);
+        setPortfolioSummary(summary);
       })
       .finally(() => setLoading(false));
   }, [days]);
@@ -282,6 +285,57 @@ export default function Dashboard() {
             </div>
             <button className="btn-secondary text-xs" onClick={() => navigate("/notifications")}>View</button>
           </div>
+        </div>
+      )}
+
+      {portfolioSummary && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-n0va-400" />
+              Campaign Portfolio Summary
+            </h3>
+            <span className="text-xs text-gray-500">AI-generated</span>
+          </div>
+          <p className="text-sm text-gray-300 mb-3">{portfolioSummary.summary}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">{portfolioSummary.totalCampaigns}</p>
+              <p className="text-xs text-gray-500">Total Campaigns</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-400">{portfolioSummary.activeCount}</p>
+              <p className="text-xs text-gray-500">Active</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-white">${(portfolioSummary.totalSpend || 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-500">Total Spend</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-n0va-400">{portfolioSummary.overallROAS}x</p>
+              <p className="text-xs text-gray-500">Overall ROAS</p>
+            </div>
+          </div>
+          {portfolioSummary.topPerformers?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-800">
+              <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3 text-green-400" /> Top Performers</p>
+              <div className="flex flex-wrap gap-1.5">
+                {portfolioSummary.topPerformers.map((name: string) => (
+                  <span key={name} className="px-2 py-0.5 bg-green-500/10 text-green-400 rounded text-xs">{name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {portfolioSummary.needsAttention?.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs text-gray-500 mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-amber-400" /> Needs Attention</p>
+              <div className="flex flex-wrap gap-1.5">
+                {portfolioSummary.needsAttention.map((name: string) => (
+                  <span key={name} className="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded text-xs">{name}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

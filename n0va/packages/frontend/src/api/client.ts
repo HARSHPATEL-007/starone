@@ -601,4 +601,21 @@ export const api = {
       request<any>(`/annotations/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/annotations/${id}`, { method: "DELETE" }),
   },
+  pacing: {
+    list: () => request<any[]>("/pacing"),
+    summary: () => request<{ results: any[]; summary: any }>("/pacing/summary"),
+    campaign: (id: string) => request<any>(`/pacing/campaign/${id}`),
+  },
+  creativeVersions: {
+    list: (creativeId: string) => request<any[]>(`/creative-versions/${creativeId}`),
+    create: (creativeId: string, data: Record<string, unknown>) =>
+      request<any>(`/creative-versions/${creativeId}`, { method: "POST", body: JSON.stringify(data) }),
+    latest: (creativeId: string) => request<any>(`/creative-versions/${creativeId}/latest`),
+    delete: (versionId: string) => request<void>(`/creative-versions/${versionId}`, { method: "DELETE" }),
+  },
+  summaries: {
+    list: () => request<any[]>("/summaries"),
+    portfolio: () => request<any>("/summaries/portfolio"),
+    campaign: (id: string) => request<any>(`/summaries/campaign/${id}`),
+  },
 };

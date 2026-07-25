@@ -116,6 +116,7 @@ const navItems = [
   { to: "/war-room", icon: Shield, label: "War Room" },
   { to: "/fraud-evaluation", icon: SearchX, label: "Fraud Center" },
   { to: "/budget-strategy", icon: Wallet, label: "Budget Strategy" },
+  { to: "/budget-pacing", icon: TrendingUp, label: "Budget Pacing" },
   { to: "/roi-calculator", icon: Calculator, label: "ROI Calculator" },
   { to: "/agents", icon: Bot, label: "AI Agents" },
   { to: "/agents/new", icon: Bot, label: "New Agent" },

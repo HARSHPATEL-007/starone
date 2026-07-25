@@ -64,6 +64,9 @@ import userRoutes from "./routes/users";
 import recommendationRoutes from "./routes/recommendations";
 import deliveryRoutes from "./routes/delivery";
 import annotationRoutes from "./routes/annotations";
+import pacingRoutes from "./routes/pacing";
+import creativeVersionRoutes from "./routes/creative-versions";
+import summaryRoutes from "./routes/summaries";
 
 const app = express();
 const httpServer = createServer(app);
@@ -142,6 +145,9 @@ app.use("/api/v1/users", authMiddleware, tenantMiddleware, userRoutes);
 app.use("/api/v1/recommendations", authMiddleware, tenantMiddleware, recommendationRoutes);
 app.use("/api/v1/delivery", authMiddleware, tenantMiddleware, deliveryRoutes);
 app.use("/api/v1/annotations", authMiddleware, tenantMiddleware, annotationRoutes);
+app.use("/api/v1/pacing", authMiddleware, tenantMiddleware, pacingRoutes);
+app.use("/api/v1/creative-versions", authMiddleware, tenantMiddleware, creativeVersionRoutes);
+app.use("/api/v1/summaries", authMiddleware, tenantMiddleware, summaryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);
