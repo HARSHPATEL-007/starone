@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BookOpen, Plus, X, Edit3, Trash2, Copy, Search, Download, Users, Eye, BarChart3, Globe, DollarSign, Smartphone, Monitor, Target, Share2 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface MediaKitSection {
   id: string;
@@ -23,43 +24,6 @@ interface MediaKit {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_media_kits";
-
-const DEFAULT_KITS: MediaKit[] = [
-  {
-    id: "mk-1", brandName: "N0VA", tagline: "AI-Powered Marketing Platform",
-    description: "N0VA is the all-in-one marketing platform that helps businesses create, manage, and optimize campaigns with AI-powered insights and automation.",
-    website: "https://n0va.ai", logoUrl: "",
-    sections: [
-      { id: "mks-1", title: "About Us", content: "Founded in 2024, N0VA has grown to serve over 10,000 marketing teams worldwide. Our platform combines AI-driven analytics, campaign automation, and cross-channel optimization to deliver measurable results." },
-      { id: "mks-2", title: "Key Features", content: "• AI Campaign Optimization\n• Cross-Channel Analytics\n• Automated Workflows\n• Audience Segmentation\n• Creative Testing & Optimization\n• Real-time Reporting" },
-      { id: "mks-3", title: "Press Contact", content: "Media Relations\npress@n0va.ai\n1-800-N0VA-HELP" },
-    ],
-    audience: "Marketing professionals, agencies, enterprise marketing teams", reach: 50000, categories: ["Marketing Technology", "AI/ML", "SaaS"],
-    createdAt: new Date(Date.now() - 86400000 * 60).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "mk-2", brandName: "StarOne", tagline: "Next-Gen Creative Suite",
-    description: "StarOne empowers creative teams to design, preview, and deploy stunning ad creatives across all digital platforms.",
-    website: "https://starone.io", logoUrl: "",
-    sections: [
-      { id: "mks-4", title: "About StarOne", content: "StarOne is a creative technology company focused on transforming how marketing teams design and deploy advertising creatives." },
-      { id: "mks-5", title: "Audience Demographics", content: "Primary: Creative directors, marketing managers\nAge: 25-54\nIndustries: Advertising, marketing, media, technology" },
-    ],
-    audience: "Creative teams, ad agencies, brand managers", reach: 25000, categories: ["Creative Tech", "Design", "AdTech"],
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-];
-
-function load(): MediaKit[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_KITS));
-    return DEFAULT_KITS;
-  } catch { return []; }
-}
-
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
@@ -68,7 +32,7 @@ function fmt(n: number): string {
 
 export default function MediaKit() {
   const { addToast } = useToast();
-  const [kits, setKits] = useState<MediaKit[]>([]);
+  const { data: kits, loading, create, update, remove, replaceAll } = useEntityData<MediaKit>("media_kits");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -77,12 +41,7 @@ export default function MediaKit() {
     brandName: "", tagline: "", description: "", website: "", logoUrl: "", sections: [], audience: "", reach: 0, categories: "",
   });
 
-  useEffect(() => { setKits(load()); }, []);
 
-  function persist(updated: MediaKit[]) {
-    setKits(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(k?: MediaKit) {
     if (k) setForm({ brandName: k.brandName, tagline: k.tagline, description: k.description, website: k.website, logoUrl: k.logoUrl, sections: k.sections.map(s => ({ ...s })), audience: k.audience, reach: k.reach, categories: k.categories.join(", ") });
@@ -112,17 +71,15 @@ export default function MediaKit() {
       audience: form.audience.trim(), reach: form.reach, categories: form.categories.split(",").map(c => c.trim()).filter(Boolean),
       createdAt: editingId ? kits.find(k => k.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: MediaKit[];
-    if (editingId) { updated = kits.map(k => k.id === editingId ? kit : k); addToast("success", "Media kit updated"); }
-    else { updated = [kit, ...kits]; addToast("success", "Media kit created"); }
-    persist(updated);
+    if (editingId) { update(editingId, kit); addToast("success", "Media kit updated"); }
+    else { create(kit); addToast("success", "Media kit created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = kits.find(k => k.id === id)?.brandName;
-    persist(kits.filter(k => k.id !== id));
+    remove(id);
     if (viewingId === id) setViewingId(null);
     addToast("success", `"${name}" deleted`);
   }

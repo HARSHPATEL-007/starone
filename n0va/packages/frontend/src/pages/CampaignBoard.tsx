@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Columns3, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, DollarSign, Target, BarChart3, Megaphone, CheckCircle, Clock, ArrowRight, GripVertical } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type BoardStatus = "idea" | "planning" | "in_progress" | "review" | "completed" | "on_hold";
 
@@ -25,8 +26,6 @@ interface CampaignBoard {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_campaign_boards";
-
 const STATUS_META: Record<string, { label: string; color: string }> = {
   idea: { label: "Idea", color: "bg-gray-700 text-gray-300" },
   planning: { label: "Planning", color: "bg-blue-500/20 text-blue-400" },
@@ -45,42 +44,9 @@ const PRIORITY_META: Record<string, { color: string }> = {
 
 const STATUSES: BoardStatus[] = ["idea", "planning", "in_progress", "review", "completed", "on_hold"];
 
-const DEFAULT_BOARDS: CampaignBoard[] = [
-  {
-    id: "cb-1", name: "Q3 Campaign Planning",
-    cards: [
-      { id: "bc-1", title: "Brainstorm creative concepts", description: "Team brainstorming for Q3 campaign creative direction", status: "completed", assignee: "Alex", priority: "high", dueDate: new Date(Date.now() - 86400000 * 10).toISOString(), campaignName: "Product Launch Q3", labels: ["creative", "brainstorm"], createdAt: new Date(Date.now() - 86400000 * 20).toISOString() },
-      { id: "bc-2", title: "Design landing page mockups", description: "Create 3 landing page variants for A/B testing", status: "in_progress", assignee: "Sarah", priority: "high", dueDate: new Date(Date.now() + 86400000 * 2).toISOString(), campaignName: "Product Launch Q3", labels: ["design", "landing-page"], createdAt: new Date(Date.now() - 86400000 * 12).toISOString() },
-      { id: "bc-3", title: "Set up Google Ads campaigns", description: "Configure campaign structure, ad groups, and keywords", status: "planning", assignee: "Mike", priority: "high", dueDate: new Date(Date.now() + 86400000 * 5).toISOString(), campaignName: "Product Launch Q3", labels: ["ads", "google"], createdAt: new Date(Date.now() - 86400000 * 8).toISOString() },
-      { id: "bc-4", title: "Write ad copy variants", description: "10 headlines, 5 body copies, 3 CTAs per variant", status: "idea", assignee: "Emily", priority: "medium", dueDate: new Date(Date.now() + 86400000 * 7).toISOString(), campaignName: "Product Launch Q3", labels: ["copy", "creative"], createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-      { id: "bc-5", title: "Review creative assets", description: "Final review of all creatives before launch", status: "on_hold", assignee: "James", priority: "critical", dueDate: new Date(Date.now() + 86400000 * 3).toISOString(), campaignName: "Product Launch Q3", labels: ["review", "creative"], createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-      { id: "bc-6", title: "Set up conversion tracking", description: "Configure GA4 and platform-specific conversion pixels", status: "planning", assignee: "Mike", priority: "high", dueDate: new Date(Date.now() + 86400000 * 4).toISOString(), campaignName: "Product Launch Q3", labels: ["tracking", "tech"], createdAt: new Date(Date.now() - 86400000 * 6).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 25).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    id: "cb-2", name: "Summer Campaign Tasks",
-    cards: [
-      { id: "bc-7", title: "Select influencer partners", description: "Research and shortlist 10 micro-influencers", status: "completed", assignee: "Sarah", priority: "medium", dueDate: new Date(Date.now() - 86400000 * 5).toISOString(), campaignName: "Summer Sale 2025", labels: ["influencer"], createdAt: new Date(Date.now() - 86400000 * 15).toISOString() },
-      { id: "bc-8", title: "Create Instagram Story templates", description: "5 story templates for the sale announcement", status: "in_progress", assignee: "Emily", priority: "high", dueDate: new Date(Date.now() + 86400000 * 1).toISOString(), campaignName: "Summer Sale 2025", labels: ["design", "social"], createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-      { id: "bc-9", title: "Schedule social posts", description: "Schedule 2 weeks of social content", status: "idea", assignee: "Alex", priority: "medium", dueDate: new Date(Date.now() + 86400000 * 6).toISOString(), campaignName: "Summer Sale 2025", labels: ["social"], createdAt: new Date(Date.now() - 86400000 * 7).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-];
-
-function load(): CampaignBoard[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_BOARDS));
-    return DEFAULT_BOARDS;
-  } catch { return []; }
-}
-
 export default function CampaignBoard() {
   const { addToast } = useToast();
-  const [boards, setBoards] = useState<CampaignBoard[]>([]);
+  const { data: boards, loading, create, remove, replaceAll } = useEntityData<CampaignBoard>("campaign_boards");
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -90,17 +56,10 @@ export default function CampaignBoard() {
   const [showNewBoard, setShowNewBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
 
-  useEffect(() => { setBoards(load()); }, []);
-
   const activeBoard = boards.find(b => b.id === activeBoardId) || boards[0];
 
-  function persist(updated: CampaignBoard[]) {
-    setBoards(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
-
   function updateBoard(updated: CampaignBoard) {
-    persist(boards.map(b => b.id === updated.id ? updated : b));
+    replaceAll(boards.map(b => b.id === updated.id ? updated : b));
   }
 
   function addCard(status: BoardStatus) {
@@ -162,7 +121,7 @@ export default function CampaignBoard() {
     if (!newBoardName.trim()) { addToast("error", "Board name required"); return; }
     const now = new Date().toISOString();
     const board: CampaignBoard = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: newBoardName.trim(), cards: [], createdAt: now, updatedAt: now };
-    persist([board, ...boards]);
+    create(board as any);
     setActiveBoardId(board.id);
     setNewBoardName("");
     setShowNewBoard(false);
@@ -171,7 +130,7 @@ export default function CampaignBoard() {
 
   function deleteBoard(id: string) {
     const name = boards.find(b => b.id === id)?.name;
-    persist(boards.filter(b => b.id !== id));
+    remove(id);
     if (activeBoardId === id) setActiveBoardId(null);
     addToast("success", `"${name}" deleted`);
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ListFilter, Plus, X, Edit3, Trash2, Copy, Search, Tag, Eye, Users, Megaphone, Palette, BarChart3, Bot, FileJson, Target, Share2, Star } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type EntityType = "campaign" | "creative" | "audience" | "analytics" | "agent" | "recipe" | "platform" | "generic";
 
@@ -23,8 +24,6 @@ interface FilterRule {
   value: string;
 }
 
-const STORAGE_KEY = "n0va_smart_lists";
-
 const ENTITY_TYPES: { value: EntityType; label: string; icon: any; color: string }[] = [
   { value: "campaign", label: "Campaigns", icon: Megaphone, color: "text-blue-400 bg-blue-500/10" },
   { value: "creative", label: "Creatives", icon: Palette, color: "text-purple-400 bg-purple-500/10" },
@@ -36,43 +35,11 @@ const ENTITY_TYPES: { value: EntityType; label: string; icon: any; color: string
   { value: "generic", label: "Generic", icon: Target, color: "text-gray-400 bg-gray-500/10" },
 ];
 
-const DEFAULT_LISTS: SmartList[] = [
-  {
-    id: "sl-1", name: "High-Performing Campaigns", description: "Campaigns with ROAS above 3x",
-    entityType: "campaign", filters: [{ id: "flt-1", field: "ROAS", operator: ">", value: "3" }],
-    isFavorite: true, usageCount: 24, createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "sl-2", name: "Underperforming Creatives", description: "Creatives with CTR below 1%",
-    entityType: "creative", filters: [{ id: "flt-2", field: "CTR", operator: "<", value: "1" }],
-    isFavorite: true, usageCount: 18, createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "sl-3", name: "New Audiences (Last 30 Days)", description: "Audiences created in the last 30 days",
-    entityType: "audience", filters: [{ id: "flt-3", field: "Created Date", operator: "last_n_days", value: "30" }],
-    isFavorite: false, usageCount: 12, createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-  {
-    id: "sl-4", name: "Active Agents", description: "AI agents currently in production",
-    entityType: "agent", filters: [{ id: "flt-4", field: "Status", operator: "=", value: "Active" }],
-    isFavorite: false, usageCount: 7, createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 8).toISOString(),
-  },
-];
-
-function load(): SmartList[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_LISTS));
-    return DEFAULT_LISTS;
-  } catch { return []; }
-}
-
 const FIELD_PRESETS = ["Status", "ROAS", "CTR", "CPC", "CPA", "Revenue", "Impressions", "Clicks", "Conversions", "Created Date", "Owner", "Platform", "Budget", "Spend", "Frequency"];
 
 export default function SmartLists() {
   const { addToast } = useToast();
-  const [lists, setLists] = useState<SmartList[]>([]);
+  const { data: lists, loading, create, update, remove, replaceAll } = useEntityData<SmartList>("smart_lists");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<EntityType | "all">("all");
   const [showFavorites, setShowFavorites] = useState(false);
@@ -80,12 +47,7 @@ export default function SmartLists() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ name: string; description: string; entityType: EntityType; filters: FilterRule[] }>({ name: "", description: "", entityType: "campaign", filters: [] });
 
-  useEffect(() => { setLists(load()); }, []);
 
-  function persist(updated: SmartList[]) {
-    setLists(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(l?: SmartList) {
     if (l) setForm({ name: l.name, description: l.description, entityType: l.entityType, filters: l.filters.map(f => ({ ...f })) });
@@ -115,29 +77,27 @@ export default function SmartLists() {
       usageCount: editingId ? lists.find(l => l.id === editingId)!.usageCount : 0,
       createdAt: editingId ? lists.find(l => l.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: SmartList[];
-    if (editingId) { updated = lists.map(l => l.id === editingId ? list : l); addToast("success", "Smart list updated"); }
-    else { updated = [list, ...lists]; addToast("success", "Smart list created"); }
-    persist(updated);
+    if (editingId) { update(editingId, list); addToast("success", "Smart list updated"); }
+    else { create(list); addToast("success", "Smart list created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = lists.find(l => l.id === id)?.name;
-    persist(lists.filter(l => l.id !== id));
+    remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
   function toggleFavorite(id: string) {
-    persist(lists.map(l => l.id === id ? { ...l, isFavorite: !l.isFavorite } : l));
+    replaceAll(lists.map(l => l.id === id ? { ...l, isFavorite: !l.isFavorite } : l));
   }
 
   function duplicate(id: string) {
     const l = lists.find(li => li.id === id);
     if (!l) return;
     const copy: SmartList = { ...l, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${l.name} (Copy)`, usageCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    persist([copy, ...lists]);
+    replaceAll([copy, ...lists]);
     addToast("success", "Smart list duplicated");
   }
 

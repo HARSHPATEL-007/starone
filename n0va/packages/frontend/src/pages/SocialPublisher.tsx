@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Send, Plus, X, Edit3, Trash2, Copy, Search, Calendar, Clock, Globe, Image, Smartphone, Monitor, Hash, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type SocialPlatform = "facebook" | "instagram" | "linkedin" | "twitter" | "tiktok" | "youtube";
 type PostStatus = "draft" | "scheduled" | "published" | "failed";
@@ -18,8 +19,6 @@ interface SocialPost {
   publishedAt?: string;
   engagement: { likes: number; comments: number; shares: number };
 }
-
-const STORAGE_KEY = "n0va_social_posts";
 
 const PLATFORM_META: Record<string, { label: string; icon: any; color: string }> = {
   facebook: { label: "Facebook", icon: Globe, color: "bg-blue-600" },
@@ -39,38 +38,16 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 const PLATFORMS: SocialPlatform[] = ["facebook", "instagram", "linkedin", "twitter", "tiktok", "youtube"];
 
-const DEFAULT_POSTS: SocialPost[] = [
-  { id: "sp-1", content: "Excited to announce our Q3 product launch! 🚀 New features that will transform your workflow. Check out the full announcement here:", platforms: ["linkedin", "twitter"], scheduledDate: new Date(Date.now() + 86400000 * 3).toISOString(), status: "scheduled", mediaUrls: [], link: "https://example.com/launch", campaignName: "Product Launch Q3", createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), engagement: { likes: 0, comments: 0, shares: 0 } },
-  { id: "sp-2", content: "Summer sale is HERE! ☀️ Get 30% off all products for a limited time. Shop now:", platforms: ["facebook", "instagram", "tiktok"], scheduledDate: new Date(Date.now() + 86400000 * 7).toISOString(), status: "draft", mediaUrls: [], link: "https://example.com/summer", campaignName: "Summer Sale 2025", createdAt: new Date(Date.now() - 86400000 * 1).toISOString(), engagement: { likes: 0, comments: 0, shares: 0 } },
-  { id: "sp-3", content: "Webinar alert! Join us on Aug 15 for a deep dive into campaign optimization strategies. Register free:", platforms: ["linkedin", "facebook"], scheduledDate: new Date(Date.now() - 86400000 * 5).toISOString(), status: "published", mediaUrls: [], link: "https://example.com/webinar", campaignName: "Webinar Series", createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), publishedAt: new Date(Date.now() - 86400000 * 5).toISOString(), engagement: { likes: 124, comments: 18, shares: 45 } },
-  { id: "sp-4", content: "We're hiring! Join our growing marketing team. Multiple positions available:", platforms: ["linkedin"], scheduledDate: new Date(Date.now() - 86400000 * 3).toISOString(), status: "published", mediaUrls: [], link: "https://example.com/careers", campaignName: "Brand Awareness", createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), publishedAt: new Date(Date.now() - 86400000 * 3).toISOString(), engagement: { likes: 89, comments: 12, shares: 34 } },
-  { id: "sp-5", content: "Behind the scenes: Building the next-gen marketing platform 🛠️", platforms: ["instagram", "tiktok"], scheduledDate: new Date(Date.now() + 86400000 * 1).toISOString(), status: "scheduled", mediaUrls: ["https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400"], link: "", campaignName: "Brand Awareness", createdAt: new Date(Date.now() - 86400000 * 1).toISOString(), engagement: { likes: 0, comments: 0, shares: 0 } },
-];
-
-function load(): SocialPost[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_POSTS));
-    return DEFAULT_POSTS;
-  } catch { return []; }
-}
-
 export default function SocialPublisher() {
   const { addToast } = useToast();
-  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const { data: posts, loading, create, update, remove, replaceAll } = useEntityData<SocialPost>("social_posts");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<PostStatus | "all">("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ content: string; platforms: SocialPlatform[]; scheduledDate: string; link: string; campaignName: string; mediaUrls: string[]; status: PostStatus }>({ content: "", platforms: [], scheduledDate: "", link: "", campaignName: "", mediaUrls: [], status: "draft" });
 
-  useEffect(() => { setPosts(load()); }, []);
 
-  function persist(updated: SocialPost[]) {
-    setPosts(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(p?: SocialPost) {
     if (p) setForm({ content: p.content, platforms: [...p.platforms], scheduledDate: p.scheduledDate, link: p.link, campaignName: p.campaignName, mediaUrls: [...p.mediaUrls], status: p.status });
@@ -92,22 +69,20 @@ export default function SocialPublisher() {
       campaignName: form.campaignName.trim(), createdAt: editingId ? posts.find(p => p.id === editingId)!.createdAt : now,
       engagement: editingId ? posts.find(p => p.id === editingId)!.engagement : { likes: 0, comments: 0, shares: 0 },
     };
-    let updated: SocialPost[];
-    if (editingId) { updated = posts.map(p => p.id === editingId ? post : p); addToast("success", "Post updated"); }
-    else { updated = [post, ...posts]; addToast("success", "Post created"); }
-    persist(updated);
+    if (editingId) { update(editingId, post); addToast("success", "Post updated"); }
+    else { create(post); addToast("success", "Post created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = posts.find(p => p.id === id)?.content.slice(0, 40);
-    persist(posts.filter(p => p.id !== id));
+    remove(id);
     addToast("success", `Post "${name}..." deleted`);
   }
 
   function publishNow(id: string) {
-    persist(posts.map(p => p.id === id ? { ...p, status: "published" as PostStatus, publishedAt: new Date().toISOString() } : p));
+    replaceAll(posts.map(p => p.id === id ? { ...p, status: "published" as PostStatus, publishedAt: new Date().toISOString() } : p));
     addToast("success", "Post published!");
   }
 

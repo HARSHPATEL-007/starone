@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Archive, Search, RotateCcw, Trash2, Filter, Calendar, Megaphone, DollarSign, BarChart3, Clock, Target, Eye } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface ArchivedCampaign {
   id: string;
@@ -15,26 +16,6 @@ interface ArchivedCampaign {
   archivedAt: string;
   endedAt: string;
   reason: string;
-}
-
-const STORAGE_KEY = "n0va_campaign_archive";
-
-const DEFAULT_ARCHIVE: ArchivedCampaign[] = [
-  { id: "ac-1", name: "Q1 Product Launch", description: "Initial product launch campaign across all channels", status: "completed", budget: 150000, spent: 142000, impressions: 1250000, clicks: 38000, conversions: 3200, archivedAt: new Date(Date.now() - 86400000 * 90).toISOString(), endedAt: new Date(Date.now() - 86400000 * 95).toISOString(), reason: "Campaign completed successfully" },
-  { id: "ac-2", name: "Holiday Flash Sale", description: "24-hour flash sale for holiday shoppers", status: "completed", budget: 50000, spent: 48500, impressions: 890000, clicks: 28000, conversions: 4200, archivedAt: new Date(Date.now() - 86400000 * 60).toISOString(), endedAt: new Date(Date.now() - 86400000 * 62).toISOString(), reason: "Campaign completed successfully" },
-  { id: "ac-3", name: "Spring Brand Awareness", description: "Brand awareness push for spring collection", status: "paused", budget: 80000, spent: 32000, impressions: 520000, clicks: 12500, conversions: 680, archivedAt: new Date(Date.now() - 86400000 * 30).toISOString(), endedAt: new Date(Date.now() - 86400000 * 35).toISOString(), reason: "Budget reallocation to higher-performing campaigns" },
-  { id: "ac-4", name: "Influencer Pilot Program", description: "Test campaign with micro-influencers", status: "cancelled", budget: 25000, spent: 8000, impressions: 95000, clicks: 2100, conversions: 89, archivedAt: new Date(Date.now() - 86400000 * 20).toISOString(), endedAt: new Date(Date.now() - 86400000 * 22).toISOString(), reason: "Low ROI - paused after 2-week test" },
-  { id: "ac-5", name: "Retargeting Q2", description: "Q2 retargeting for abandoned cart users", status: "archived", budget: 45000, spent: 44000, impressions: 320000, clicks: 9800, conversions: 1450, archivedAt: new Date(Date.now() - 86400000 * 15).toISOString(), endedAt: new Date(Date.now() - 86400000 * 18).toISOString(), reason: "Replaced by new retargeting strategy" },
-  { id: "ac-6", name: "Beta Tester Recruitment", description: "Recruit beta testers for new platform feature", status: "completed", budget: 10000, spent: 9200, impressions: 180000, clicks: 5400, conversions: 340, archivedAt: new Date(Date.now() - 86400000 * 10).toISOString(), endedAt: new Date(Date.now() - 86400000 * 12).toISOString(), reason: "Target reached - 340 beta signups" },
-];
-
-function load(): ArchivedCampaign[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ARCHIVE));
-    return DEFAULT_ARCHIVE;
-  } catch { return []; }
 }
 
 function fmt(n: number): string {
@@ -52,24 +33,17 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 export default function CampaignArchive() {
   const { addToast } = useToast();
-  const [campaigns, setCampaigns] = useState<ArchivedCampaign[]>([]);
+  const { data: campaigns, loading, remove, replaceAll } = useEntityData<ArchivedCampaign>("campaign_archive");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [restoring, setRestoring] = useState<string | null>(null);
-
-  useEffect(() => { setCampaigns(load()); }, []);
-
-  function persist(updated: ArchivedCampaign[]) {
-    setCampaigns(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function handleRestore(id: string) {
     setRestoring(id);
     setTimeout(() => {
       const name = campaigns.find(c => c.id === id)?.name;
       const restored = campaigns.filter(c => c.id !== id);
-      persist(restored);
+      replaceAll(restored);
       addToast("success", `"${name}" restored to active campaigns`);
       setRestoring(null);
     }, 600);
@@ -77,7 +51,7 @@ export default function CampaignArchive() {
 
   function handleDelete(id: string) {
     const name = campaigns.find(c => c.id === id)?.name;
-    persist(campaigns.filter(c => c.id !== id));
+    remove(id);
     addToast("success", `"${name}" permanently deleted`);
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Split, Plus, X, Edit3, Trash2, Copy, Users, MapPin, Globe, Calendar, ShoppingCart, MousePointerClick, Eye, Smartphone, Laptop, Target, User, Hash, DollarSign, Clock, ChevronDown, ChevronRight, Save, Download, Search } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type RuleField = "age" | "gender" | "location" | "device" | "os" | "browser" | "visited_page" | "clicked" | "converted" | "purchased" | "session_count" | "days_since_last_visit" | "total_revenue" | "custom_attribute";
 type RuleOperator = "equals" | "not_equals" | "contains" | "not_contains" | "gt" | "gte" | "lt" | "lte" | "between" | "in" | "not_in";
@@ -30,8 +31,6 @@ interface Segment {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_segments";
-
 const FIELD_META: Record<string, { label: string; icon: any; operators: RuleOperator[]; placeholder: string }> = {
   age: { label: "Age", icon: User, operators: ["equals", "gt", "gte", "lt", "lte", "between"], placeholder: "e.g. 25" },
   gender: { label: "Gender", icon: User, operators: ["equals", "not_equals"], placeholder: "male, female, other" },
@@ -54,59 +53,6 @@ const OPERATOR_LABELS: Record<string, string> = {
   gt: ">", gte: "≥", lt: "<", lte: "≤", between: "between", in: "in", not_in: "not in",
 };
 
-const DEFAULT_SEGMENTS: Segment[] = [
-  {
-    id: "seg-1", name: "High-Value Returning Customers",
-    description: "Customers with high lifetime value who visited in the last 30 days",
-    groups: [
-      { id: "g1", logic: "and", rules: [
-        { id: "r1", field: "total_revenue", operator: "gt", value: "1000" },
-        { id: "r2", field: "days_since_last_visit", operator: "lte", value: "30" },
-        { id: "r3", field: "session_count", operator: "gte", value: "5" },
-      ]},
-    ],
-    estimatedSize: 12450, createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "seg-2", name: "Mobile Engaged Non-Buyers",
-    description: "Mobile users who visited product pages but never purchased",
-    estimatedSize: 38700,
-    groups: [
-      { id: "g2", logic: "and", rules: [
-        { id: "r4", field: "device", operator: "in", value: "mobile, tablet" },
-        { id: "r5", field: "visited_page", operator: "contains", value: "/products" },
-        { id: "r6", field: "converted", operator: "equals", value: "false" },
-      ]},
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "seg-3", name: "GeoTargeted Campaign Audience",
-    description: "Users in US/UK who are active on desktop",
-    estimatedSize: 89200,
-    groups: [
-      { id: "g3", logic: "and", rules: [
-        { id: "r7", field: "location", operator: "in", value: "United States, United Kingdom" },
-        { id: "r8", field: "device", operator: "equals", value: "desktop" },
-      ]},
-      { id: "g4", logic: "or", rules: [
-        { id: "r9", field: "age", operator: "between", value: "25", value2: "54" },
-        { id: "r10", field: "total_revenue", operator: "gt", value: "500" },
-      ]},
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-];
-
-function load(): Segment[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SEGMENTS));
-    return DEFAULT_SEGMENTS;
-  } catch { return []; }
-}
-
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
@@ -115,19 +61,14 @@ function fmt(n: number): string {
 
 export default function Segmentation() {
   const { addToast } = useToast();
-  const [segments, setSegments] = useState<Segment[]>([]);
+  const { data: segments, loading, create, update, remove, replaceAll } = useEntityData<Segment>("segments");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ name: string; description: string; groups: RuleGroup[] }>({ name: "", description: "", groups: [] });
 
-  useEffect(() => { setSegments(load()); }, []);
 
-  function persist(updated: Segment[]) {
-    setSegments(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function toggle(id: string) { setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
@@ -177,16 +118,14 @@ export default function Segmentation() {
       createdAt: editingId ? segments.find(s => s.id === editingId)!.createdAt : now,
       updatedAt: now,
     };
-    let updated: Segment[];
-    if (editingId) { updated = segments.map(s => s.id === editingId ? segment : s); addToast("success", "Segment updated"); }
-    else { updated = [segment, ...segments]; addToast("success", "Segment created"); }
-    persist(updated);
+    if (editingId) { update(editingId, segment); addToast("success", "Segment updated"); }
+    else { create(segment); addToast("success", "Segment created"); }
     setShowForm(false);
   }
 
   function handleDelete(id: string) {
     const name = segments.find(s => s.id === id)?.name;
-    persist(segments.filter(s => s.id !== id));
+    remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
@@ -194,7 +133,7 @@ export default function Segmentation() {
     const s = segments.find(seg => seg.id === id);
     if (!s) return;
     const copy: Segment = { ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${s.name} (Copy)`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    persist([copy, ...segments]);
+    replaceAll([copy, ...segments]);
     addToast("success", "Segment duplicated");
   }
 

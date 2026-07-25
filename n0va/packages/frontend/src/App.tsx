@@ -87,7 +87,9 @@ import AdCopyGenerator from "./pages/AdCopyGenerator";
 import CampaignSurveys from "./pages/CampaignSurveys";
 import CampaignHealth from "./pages/CampaignHealth";
 import CustomerJourneyBuilder from "./pages/CustomerJourneyBuilder";
-
+import CampaignBoard from "./pages/CampaignBoard";
+import LaunchReadiness from "./pages/LaunchReadiness";
+import MediaKit from "./pages/MediaKit";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -180,6 +182,9 @@ export default function App() {
                 <Route path="/surveys" element={<CampaignSurveys />} />
                 <Route path="/campaign-health" element={<CampaignHealth />} />
                 <Route path="/customer-journey" element={<CustomerJourneyBuilder />} />
+                <Route path="/campaign-board" element={<CampaignBoard />} />
+                <Route path="/launch-readiness" element={<LaunchReadiness />} />
+                <Route path="/media-kit" element={<MediaKit />} />
                 <Route path="/webhooks" element={<WebhooksPage />} />
                 <Route path="/webhooks/:id" element={<WebhookDetail />} />
                 <Route path="/attribution" element={<AttributionComparison />} />

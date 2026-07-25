@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Plus, X, Edit3, Trash2, Copy, TrendingUp, TrendingDown, Minus, Filter, Globe, Hash, Target } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface Keyword {
+  _id?: string;
   id: string;
   term: string;
   volume: number;
@@ -15,32 +17,7 @@ interface Keyword {
   lastUpdated: string;
 }
 
-const STORAGE_KEY = "n0va_keywords";
 const GROUPS = ["Brand", "Product", "Competitor", "Informational", "Long-tail", "Seasonal"];
-
-const DEFAULT_KEYWORDS: Keyword[] = [
-  { id: "kw-1", term: "marketing automation software", volume: 14200, difficulty: 72, position: 4, previousPosition: 6, cpc: 12.45, traffic: 2850, group: "Product", lastUpdated: new Date(Date.now() - 86400000 * 1).toISOString() },
-  { id: "kw-2", term: "email marketing platform", volume: 9800, difficulty: 65, position: 3, previousPosition: 3, cpc: 8.90, traffic: 3200, group: "Product", lastUpdated: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "kw-3", term: "n0va ads", volume: 2400, difficulty: 18, position: 1, previousPosition: 1, cpc: 0, traffic: 1800, group: "Brand", lastUpdated: new Date(Date.now() - 86400000 * 1).toISOString() },
-  { id: "kw-4", term: "best marketing tools 2025", volume: 8200, difficulty: 58, position: 7, previousPosition: 9, cpc: 5.20, traffic: 1100, group: "Competitor", lastUpdated: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "kw-5", term: "how to create ad campaign", volume: 5600, difficulty: 42, position: 5, previousPosition: 4, cpc: 3.75, traffic: 1400, group: "Informational", lastUpdated: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { id: "kw-6", term: "facebook ads manager tutorial", volume: 3800, difficulty: 35, position: 2, previousPosition: 2, cpc: 4.10, traffic: 2100, group: "Informational", lastUpdated: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "kw-7", term: "ppc campaign optimization", volume: 2900, difficulty: 55, position: 8, previousPosition: 11, cpc: 9.80, traffic: 650, group: "Product", lastUpdated: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "kw-8", term: "social media scheduling tool", volume: 6300, difficulty: 48, position: 6, previousPosition: 5, cpc: 6.50, traffic: 980, group: "Competitor", lastUpdated: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "kw-9", term: "a/b testing for landing pages", volume: 1800, difficulty: 28, position: 3, previousPosition: 3, cpc: 2.95, traffic: 780, group: "Long-tail", lastUpdated: new Date(Date.now() - 86400000 * 6).toISOString() },
-  { id: "kw-10", term: "holiday email campaign ideas", volume: 3200, difficulty: 31, position: 10, previousPosition: 14, cpc: 3.40, traffic: 520, group: "Seasonal", lastUpdated: new Date(Date.now() - 86400000 * 7).toISOString() },
-  { id: "kw-11", term: "retargeting strategies 2025", volume: 2100, difficulty: 38, position: 9, previousPosition: 12, cpc: 7.20, traffic: 410, group: "Long-tail", lastUpdated: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { id: "kw-12", term: "n0va vs hubspot", volume: 890, difficulty: 22, position: 2, previousPosition: 2, cpc: 0, traffic: 670, group: "Brand", lastUpdated: new Date(Date.now() - 86400000 * 3).toISOString() },
-];
-
-function load(): Keyword[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_KEYWORDS));
-    return DEFAULT_KEYWORDS;
-  } catch { return []; }
-}
 
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -50,19 +27,12 @@ function fmt(n: number): string {
 
 export default function KeywordManager() {
   const { addToast } = useToast();
-  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const { data: keywords, create, update, remove, replaceAll } = useEntityData<Keyword>("keywords");
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ term: string; volume: number; difficulty: number; position: number; previousPosition: number; cpc: number; group: string }>({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, group: "Product" });
-
-  useEffect(() => { setKeywords(load()); }, []);
-
-  function persist(updated: Keyword[]) {
-    setKeywords(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   const avgPos = keywords.length > 0 ? (keywords.reduce((s, k) => s + k.position, 0) / keywords.length) : 0;
   const totalVolume = keywords.reduce((s, k) => s + k.volume, 0);
@@ -73,21 +43,19 @@ export default function KeywordManager() {
     else setForm({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, group: "Product" });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.term.trim()) { addToast("error", "Keyword term is required"); return; }
     const now = new Date().toISOString();
     const kw: Keyword = { ...form, term: form.term.trim(), id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6), traffic: Math.floor(form.volume * (11 - Math.min(form.position, 10)) / 20), lastUpdated: now };
-    let updated: Keyword[];
-    if (editingId) { updated = keywords.map(k => k.id === editingId ? kw : k); addToast("success", "Keyword updated"); }
-    else { updated = [kw, ...keywords]; addToast("success", "Keyword added"); }
-    persist(updated);
+    if (editingId) { await update(editingId, kw as any); addToast("success", "Keyword updated"); }
+    else { await create(kw as any); addToast("success", "Keyword added"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = keywords.find(k => k.id === id)?.term;
-    persist(keywords.filter(k => k.id !== id));
+    await remove(id);
     addToast("success", `"${name}" removed`);
   }
 

@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Zap, Plus, X, Power, PowerOff, Edit3, Trash2, ChevronDown, ChevronRight, Clock, Activity, AlertTriangle, Bell, Megaphone, PauseCircle, RefreshCw, Copy, CheckCircle } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type Trigger = "campaign_launched" | "campaign_completed" | "campaign_paused" | "budget_exceeded" | "creative_approved" | "review_submitted" | "daily_report" | "schedule_reminder";
 type Action = "send_notification" | "pause_campaign" | "update_status" | "create_alert" | "send_report" | "notify_team";
@@ -18,7 +19,6 @@ interface AutomationRule {
   createdAt: string;
 }
 
-const STORAGE_KEY = "n0va_automation_rules";
 const TRIGGERS: { value: Trigger; label: string; icon: any; desc: string }[] = [
   { value: "campaign_launched", label: "Campaign Launched", icon: Megaphone, desc: "When a campaign status changes to active" },
   { value: "campaign_completed", label: "Campaign Completed", icon: CheckCircle, desc: "When a campaign reaches its end date" },
@@ -38,23 +38,6 @@ const ACTIONS: { value: Action; label: string; icon: any; desc: string }[] = [
   { value: "notify_team", label: "Notify Team", icon: Bell, desc: "Send notification to all team members" },
 ];
 
-const DEFAULT_RULES: AutomationRule[] = [
-  { id: "auto-1", name: "Budget Exceeded Alert", description: "Notify the team when campaign spend exceeds 80% of budget", trigger: "budget_exceeded", action: "create_alert", config: { threshold: "80", channel: "in-app" }, enabled: true, lastRun: new Date(Date.now() - 3600000 * 2).toISOString(), runCount: 12, createdAt: new Date(Date.now() - 86400000 * 14).toISOString() },
-  { id: "auto-2", name: "Campaign Launch Notification", description: "Send a notification when any campaign goes live", trigger: "campaign_launched", action: "send_notification", config: { priority: "high" }, enabled: true, lastRun: new Date(Date.now() - 3600000 * 8).toISOString(), runCount: 8, createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-  { id: "auto-3", name: "Auto-Pause on Budget", description: "Pause campaigns that exceed their budget", trigger: "budget_exceeded", action: "pause_campaign", config: { threshold: "100" }, enabled: false, lastRun: null, runCount: 0, createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "auto-4", name: "Daily Performance Summary", description: "Send daily summary of campaign performance to team", trigger: "daily_report", action: "send_report", config: { time: "09:00", format: "summary" }, enabled: true, lastRun: new Date(Date.now() - 86400000 * 1).toISOString(), runCount: 45, createdAt: new Date(Date.now() - 86400000 * 30).toISOString() },
-  { id: "auto-5", name: "Campaign End Reminder", description: "Alert team when a campaign ends within 24 hours", trigger: "schedule_reminder", action: "notify_team", config: { advance: "24h" }, enabled: true, lastRun: new Date(Date.now() - 3600000 * 6).toISOString(), runCount: 6, createdAt: new Date(Date.now() - 86400000 * 20).toISOString() },
-];
-
-function load(): AutomationRule[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_RULES));
-    return DEFAULT_RULES;
-  } catch { return []; }
-}
-
 function timeAgo(date: string | null): string {
   if (!date) return "Never";
   const diff = Date.now() - new Date(date).getTime();
@@ -70,26 +53,19 @@ function timeAgo(date: string | null): string {
 
 export default function Automation() {
   const { addToast } = useToast();
-  const [rules, setRules] = useState<AutomationRule[]>([]);
+  const { data: rules, loading, create, update, remove, replaceAll } = useEntityData<AutomationRule>("automation_rules");
   const [filterEnabled, setFilterEnabled] = useState<string>("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", trigger: "campaign_launched" as Trigger, action: "send_notification" as Action, config: {} as Record<string, string> });
 
-  useEffect(() => { setRules(load()); }, []);
-
-  function persist(updated: AutomationRule[]) {
-    setRules(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
-
   function toggle(id: string) {
     setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
   function toggleEnabled(id: string) {
-    persist(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+    replaceAll(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
     const rule = rules.find(r => r.id === id);
     addToast("success", `"${rule?.name}" ${rule?.enabled ? "disabled" : "enabled"}`);
   }
@@ -98,13 +74,13 @@ export default function Automation() {
     const rule = rules.find(r => r.id === id);
     if (!rule) return;
     const copy: AutomationRule = { ...rule, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${rule.name} (Copy)`, enabled: false, lastRun: null, runCount: 0, createdAt: new Date().toISOString() };
-    persist([copy, ...rules]);
+    replaceAll([copy, ...rules]);
     addToast("success", "Rule duplicated");
   }
 
   function handleDelete(id: string) {
     const name = rules.find(r => r.id === id)?.name;
-    persist(rules.filter(r => r.id !== id));
+    remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
@@ -127,15 +103,13 @@ export default function Automation() {
       runCount: editingId ? rules.find(r => r.id === editingId)?.runCount ?? 0 : 0,
       createdAt: editingId ? rules.find(r => r.id === editingId)!.createdAt : new Date().toISOString(),
     };
-    let updated: AutomationRule[];
-    if (editingId) { updated = rules.map(r => r.id === editingId ? rule : r); addToast("success", "Rule updated"); }
-    else { updated = [rule, ...rules]; addToast("success", "Rule created"); }
-    persist(updated);
+    if (editingId) { update(editingId, rule as any); addToast("success", "Rule updated"); }
+    else { create(rule as any); addToast("success", "Rule created"); }
     setShowForm(false);
   }
 
   function simulateRun(id: string) {
-    persist(rules.map(r => r.id === id ? { ...r, lastRun: new Date().toISOString(), runCount: r.runCount + 1 } : r));
+    replaceAll(rules.map(r => r.id === id ? { ...r, lastRun: new Date().toISOString(), runCount: r.runCount + 1 } : r));
     addToast("success", "Rule triggered (simulated)");
   }
 

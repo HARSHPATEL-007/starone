@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ExternalLink, Plus, X, Edit3, Trash2, Copy, Search, Globe, Eye, Calendar, BarChart3, Smartphone, Monitor, Link2, MousePointerClick } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface LandingPage {
+  _id?: string;
   id: string;
   name: string;
   url: string;
@@ -15,25 +17,6 @@ interface LandingPage {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_landing_pages";
-
-const DEFAULT_PAGES: LandingPage[] = [
-  { id: "lp-1", name: "Product Launch Q3 - Signup", url: "https://example.com/launch-q3", campaignName: "Product Launch Q3", description: "Early access signup page for Q3 product launch", tags: ["signup", "product", "launch"], views: 12450, conversions: 890, createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "lp-2", name: "Summer Sale - Main Offer", url: "https://example.com/summer-sale", campaignName: "Summer Sale 2025", description: "Landing page for summer promotional campaign", tags: ["sale", "seasonal", "promo"], views: 28300, conversions: 1450, createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "lp-3", name: "Enterprise Demo Request", url: "https://example.com/demo", campaignName: "Enterprise Q3", description: "Enterprise demo booking with case study highlights", tags: ["demo", "enterprise", "b2b"], views: 5200, conversions: 620, createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 8).toISOString() },
-  { id: "lp-4", name: "Webinar Registration", url: "https://example.com/webinar-aug", campaignName: "Webinar Series", description: "Registration page for August product webinar", tags: ["webinar", "event", "registration"], views: 3800, conversions: 1100, createdAt: new Date(Date.now() - 86400000 * 12).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-  { id: "lp-5", name: "Holiday Campaign 2025", url: "https://example.com/holiday", campaignName: "Holiday 2025", description: "Main holiday season campaign landing page", tags: ["holiday", "seasonal", "gifts"], views: 0, conversions: 0, createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-];
-
-function load(): LandingPage[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PAGES));
-    return DEFAULT_PAGES;
-  } catch { return []; }
-}
-
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
@@ -42,25 +25,18 @@ function fmt(n: number): string {
 
 export default function LandingPages() {
   const { addToast } = useToast();
-  const [pages, setPages] = useState<LandingPage[]>([]);
+  const { data: pages, create, update, remove, replaceAll } = useEntityData<LandingPage>("landing_pages");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", url: "", campaignName: "", description: "", tags: "", views: 0, conversions: 0 });
-
-  useEffect(() => { setPages(load()); }, []);
-
-  function persist(updated: LandingPage[]) {
-    setPages(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(lp?: LandingPage) {
     if (lp) setForm({ name: lp.name, url: lp.url, campaignName: lp.campaignName, description: lp.description, tags: lp.tags.join(", "), views: lp.views, conversions: lp.conversions });
     else setForm({ name: "", url: "", campaignName: "", description: "", tags: "", views: 0, conversions: 0 });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim() || !form.url.trim()) { addToast("error", "Name and URL are required"); return; }
     const now = new Date().toISOString();
     const lp: LandingPage = {
@@ -71,29 +47,29 @@ export default function LandingPages() {
       conversions: editingId ? pages.find(p => p.id === editingId)!.conversions : 0,
       createdAt: editingId ? pages.find(p => p.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: LandingPage[];
-    if (editingId) { updated = pages.map(p => p.id === editingId ? lp : p); addToast("success", "Landing page updated"); }
-    else { updated = [lp, ...pages]; addToast("success", "Landing page added"); }
-    persist(updated);
+    if (editingId) { await update(editingId, lp as any); addToast("success", "Landing page updated"); }
+    else { await create(lp as any); addToast("success", "Landing page added"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = pages.find(p => p.id === id)?.name;
-    persist(pages.filter(p => p.id !== id));
+    await remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
-  function incrementViews(id: string) {
-    persist(pages.map(p => p.id === id ? { ...p, views: p.views + 1 } : p));
+  async function incrementViews(id: string) {
+    const p = pages.find(pp => pp.id === id);
+    if (!p) return;
+    await update(id, { ...p, views: p.views + 1 } as any);
   }
 
-  function duplicatePage(id: string) {
+  async function duplicatePage(id: string) {
     const p = pages.find(pp => pp.id === id);
     if (!p) return;
     const copy: LandingPage = { ...p, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${p.name} (Copy)`, views: 0, conversions: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    persist([copy, ...pages]);
+    await create(copy as any);
     addToast("success", "Landing page duplicated");
   }
 

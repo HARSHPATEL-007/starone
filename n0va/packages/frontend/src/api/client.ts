@@ -263,6 +263,37 @@ export const api = {
       sample: () => request<any[]>("/insights/roi/sample"),
     },
   },
+  search: {
+    global: (q: string) => request<{ entityType: string; _id: string; label: string; subtitle: string }[]>(`/search?q=${encodeURIComponent(q)}`),
+  },
+  team: {
+    list: () => request<any[]>("/team"),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/team", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/team/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/team/${id}`, { method: "DELETE" }),
+  },
+  comments: {
+    list: (entityType: string, entityId: string) =>
+      request<any[]>(`/comments/${entityType}/${entityId}`),
+    create: (entityType: string, entityId: string, data: Record<string, unknown>) =>
+      request<any>(`/comments/${entityType}/${entityId}`, { method: "POST", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/comments/${id}`, { method: "DELETE" }),
+  },
+  approvals: {
+    list: (status?: string) =>
+      request<any[]>(`/approvals${status ? `?status=${status}` : ""}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/approvals", { method: "POST", body: JSON.stringify(data) }),
+    act: (id: string, action: string) =>
+      request<any>(`/approvals/${id}/${action}`, { method: "PATCH" }),
+  },
+  billing: {
+    subscription: () => request<any>("/billing/subscription"),
+    invoices: () => request<any[]>("/billing/invoices"),
+    getInvoice: (id: string) => request<any>(`/billing/invoices/${id}`),
+  },
   scheduler: {
     list: () => request<any[]>("/scheduler"),
     get: (id: string) => request<any>(`/scheduler/${id}`),

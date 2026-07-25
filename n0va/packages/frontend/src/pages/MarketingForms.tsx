@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FileInput, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, GripVertical, AlignLeft, Hash, CheckSquare, Circle, ListOrdered, Mail, Phone, Calendar, Globe, Upload } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type FieldType = "text" | "email" | "phone" | "textarea" | "select" | "checkbox" | "radio" | "number" | "date" | "file";
 
@@ -24,8 +25,6 @@ interface MarketingForm {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_forms";
-
 const FIELD_TYPES: { value: FieldType; label: string; icon: any }[] = [
   { value: "text", label: "Text", icon: AlignLeft },
   { value: "email", label: "Email", icon: Mail },
@@ -45,63 +44,16 @@ const FIELD_ICONS: Record<string, any> = {
   number: Hash, date: Calendar, file: Upload,
 };
 
-const DEFAULT_FORMS: MarketingForm[] = [
-  {
-    id: "fm-1", name: "Newsletter Signup", description: "Simple email capture for weekly newsletter",
-    fields: [
-      { id: "ff-1", type: "text", label: "Full Name", placeholder: "John Doe", required: true, options: [] },
-      { id: "ff-2", type: "email", label: "Email Address", placeholder: "john@example.com", required: true, options: [] },
-      { id: "ff-3", type: "checkbox", label: "Marketing Consent", placeholder: "", required: true, options: ["I agree to receive marketing emails"] },
-    ],
-    submissionCount: 1240, isActive: true, createdAt: new Date(Date.now() - 86400000 * 45).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "fm-2", name: "Demo Request Form", description: "Enterprise demo booking form with qualification",
-    fields: [
-      { id: "ff-4", type: "text", label: "Full Name", placeholder: "John Doe", required: true, options: [] },
-      { id: "ff-5", type: "email", label: "Work Email", placeholder: "john@company.com", required: true, options: [] },
-      { id: "ff-6", type: "phone", label: "Phone Number", placeholder: "+1 555-0000", required: false, options: [] },
-      { id: "ff-7", type: "text", label: "Company Name", placeholder: "Acme Inc.", required: true, options: [] },
-      { id: "ff-8", type: "select", label: "Company Size", placeholder: "", required: true, options: ["1-10", "11-50", "51-200", "201-1000", "1000+"] },
-      { id: "ff-9", type: "textarea", label: "Message", placeholder: "Tell us about your needs...", required: false, options: [] },
-    ],
-    submissionCount: 456, isActive: true, createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "fm-3", name: "Event Registration", description: "Webinar registration form with session selection",
-    fields: [
-      { id: "ff-10", type: "text", label: "Name", placeholder: "Your name", required: true, options: [] },
-      { id: "ff-11", type: "email", label: "Email", placeholder: "your@email.com", required: true, options: [] },
-      { id: "ff-12", type: "radio", label: "Session", placeholder: "", required: true, options: ["Morning (10AM EST)", "Afternoon (2PM EST)", "Evening (6PM EST)"] },
-    ],
-    submissionCount: 892, isActive: false, createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-];
-
-function load(): MarketingForm[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_FORMS));
-    return DEFAULT_FORMS;
-  } catch { return []; }
-}
-
 export default function MarketingForms() {
   const { addToast } = useToast();
-  const [forms, setForms] = useState<MarketingForm[]>([]);
+  const { data: forms, loading, create, update, remove, replaceAll } = useEntityData<MarketingForm>("marketing_forms");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [form, setForm] = useState<{ name: string; description: string; fields: FormField[]; isActive: boolean }>({ name: "", description: "", fields: [], isActive: true });
 
-  useEffect(() => { setForms(load()); }, []);
 
-  function persist(updated: MarketingForm[]) {
-    setForms(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(f?: MarketingForm) {
     if (f) setForm({ name: f.name, description: f.description, fields: f.fields.map(fld => ({ ...fld, options: [...fld.options] })), isActive: f.isActive });
@@ -149,17 +101,15 @@ export default function MarketingForms() {
       isActive: form.isActive,
       createdAt: editingId ? forms.find(fm => fm.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: MarketingForm[];
-    if (editingId) { updated = forms.map(fm => fm.id === editingId ? mf : fm); addToast("success", "Form updated"); }
-    else { updated = [mf, ...forms]; addToast("success", "Form created"); }
-    persist(updated);
+    if (editingId) { update(editingId, mf); addToast("success", "Form updated"); }
+    else { create(mf); addToast("success", "Form created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = forms.find(f => f.id === id)?.name;
-    persist(forms.filter(f => f.id !== id));
+    remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
@@ -167,12 +117,12 @@ export default function MarketingForms() {
     const f = forms.find(fm => fm.id === id);
     if (!f) return;
     const copy: MarketingForm = { ...f, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${f.name} (Copy)`, submissionCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), fields: f.fields.map(fld => ({ ...fld, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4) })) };
-    persist([copy, ...forms]);
+    replaceAll([copy, ...forms]);
     addToast("success", "Form duplicated");
   }
 
   function toggleActive(id: string) {
-    persist(forms.map(f => f.id === id ? { ...f, isActive: !f.isActive } : f));
+    replaceAll(forms.map(f => f.id === id ? { ...f, isActive: !f.isActive } : f));
     const f = forms.find(fm => fm.id === id);
     addToast("success", `"${f?.name}" ${f?.isActive ? "deactivated" : "activated"}`);
   }

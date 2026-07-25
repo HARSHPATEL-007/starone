@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Camera, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, DollarSign, Target, Eye, Download, Clock, TrendingUp, Users } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface SnapshotMetric {
   label: string;
@@ -9,6 +10,7 @@ interface SnapshotMetric {
 }
 
 interface CampaignSnapshot {
+  _id?: string;
   id: string;
   name: string;
   description: string;
@@ -19,64 +21,7 @@ interface CampaignSnapshot {
   tags: string[];
 }
 
-const STORAGE_KEY = "n0va_campaign_snapshots";
 
-const DEFAULT_SNAPSHOTS: CampaignSnapshot[] = [
-  {
-    id: "cs-1", name: "Product Launch - Week 1", description: "First week performance snapshot", campaignName: "Product Launch Q3",
-    metrics: [
-      { label: "Impressions", value: 185000, format: "number" },
-      { label: "Clicks", value: 6200, format: "number" },
-      { label: "CTR", value: 3.35, format: "percent" },
-      { label: "Spend", value: 12400, format: "currency" },
-      { label: "Revenue", value: 48500, format: "currency" },
-      { label: "ROAS", value: 3.91, format: "rate" },
-      { label: "Conversions", value: 312, format: "number" },
-      { label: "CPA", value: 39.74, format: "currency" },
-    ],
-    notes: "Strong start. CPC lower than expected at $2.00. Creative A outperforming B by 23%.", tags: ["product", "launch", "week-1"],
-    createdAt: new Date(Date.now() - 86400000 * 25).toISOString(),
-  },
-  {
-    id: "cs-2", name: "Summer Sale - Mid Campaign", description: "Mid-point check for summer campaign", campaignName: "Summer Sale 2025",
-    metrics: [
-      { label: "Impressions", value: 420000, format: "number" },
-      { label: "Clicks", value: 15800, format: "number" },
-      { label: "CTR", value: 3.76, format: "percent" },
-      { label: "Spend", value: 22500, format: "currency" },
-      { label: "Revenue", value: 89200, format: "currency" },
-      { label: "ROAS", value: 3.96, format: "rate" },
-      { label: "Conversions", value: 680, format: "number" },
-      { label: "CPA", value: 33.09, format: "currency" },
-    ],
-    notes: "TikTok outperforming other channels. Instagram Stories driving strong engagement.", tags: ["summer", "sale", "mid-campaign"],
-    createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
-  },
-  {
-    id: "cs-3", name: "Enterprise Q3 - Month 1", description: "First month results for enterprise campaign", campaignName: "Enterprise Q3",
-    metrics: [
-      { label: "Impressions", value: 95000, format: "number" },
-      { label: "Clicks", value: 2850, format: "number" },
-      { label: "CTR", value: 3.0, format: "percent" },
-      { label: "Spend", value: 28500, format: "currency" },
-      { label: "Revenue", value: 98000, format: "currency" },
-      { label: "ROAS", value: 3.44, format: "rate" },
-      { label: "Conversions", value: 180, format: "number" },
-      { label: "CPA", value: 158.33, format: "currency" },
-    ],
-    notes: "Higher CPA than ideal but strong lead quality. 15 demo requests booked.", tags: ["enterprise", "q3", "month-1"],
-    createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
-  },
-];
-
-function load(): CampaignSnapshot[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SNAPSHOTS));
-    return DEFAULT_SNAPSHOTS;
-  } catch { return []; }
-}
 
 function fmtValue(val: number, format: string): string {
   if (format === "currency") return "$" + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -89,7 +34,7 @@ const FORMAT_OPTIONS = ["number", "currency", "percent", "rate"] as const;
 
 export default function CampaignSnapshots() {
   const { addToast } = useToast();
-  const [snapshots, setSnapshots] = useState<CampaignSnapshot[]>([]);
+  const { data: snapshots, create, update, remove, replaceAll } = useEntityData<CampaignSnapshot>("campaign_snapshots");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -106,13 +51,6 @@ export default function CampaignSnapshots() {
       { label: "CPA", value: 0, format: "currency" },
     ], notes: "", tags: "",
   });
-
-  useEffect(() => { setSnapshots(load()); }, []);
-
-  function persist(updated: CampaignSnapshot[]) {
-    setSnapshots(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(s?: CampaignSnapshot) {
     if (s) setForm({ name: s.name, description: s.description, campaignName: s.campaignName, metrics: s.metrics.map(m => ({ ...m })), notes: s.notes, tags: s.tags.join(", ") });
@@ -140,7 +78,7 @@ export default function CampaignSnapshots() {
     setForm(f => ({ ...f, metrics: f.metrics.filter((_, i) => i !== idx) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim() || !form.campaignName.trim()) { addToast("error", "Name and campaign name required"); return; }
     const now = new Date().toISOString();
     const snap: CampaignSnapshot = {
@@ -150,26 +88,24 @@ export default function CampaignSnapshots() {
       notes: form.notes.trim(), tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
       createdAt: editingId ? snapshots.find(s => s.id === editingId)!.createdAt : now,
     };
-    let updated: CampaignSnapshot[];
-    if (editingId) { updated = snapshots.map(s => s.id === editingId ? snap : s); addToast("success", "Snapshot updated"); }
-    else { updated = [snap, ...snapshots]; addToast("success", "Snapshot saved"); }
-    persist(updated);
+    if (editingId) { await update(editingId, snap as any); addToast("success", "Snapshot updated"); }
+    else { await create(snap as any); addToast("success", "Snapshot saved"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = snapshots.find(s => s.id === id)?.name;
-    persist(snapshots.filter(s => s.id !== id));
+    await remove(id);
     if (viewingId === id) setViewingId(null);
     addToast("success", `"${name}" deleted`);
   }
 
-  function cloneSnapshot(id: string) {
+  async function cloneSnapshot(id: string) {
     const s = snapshots.find(sn => sn.id === id);
     if (!s) return;
     const copy: CampaignSnapshot = { ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${s.name} (Copy)`, createdAt: new Date().toISOString() };
-    persist([copy, ...snapshots]);
+    await create(copy as any);
     addToast("success", "Snapshot duplicated");
   }
 

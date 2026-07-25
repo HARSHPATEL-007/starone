@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ClipboardList, Plus, X, Edit3, Trash2, Copy, Search, CheckCircle, Circle, Users, Eye, Calendar, Star, ThumbsUp, MessageSquare, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type QuestionType = "rating" | "yesno" | "multiple_choice" | "text" | "likert";
 
@@ -12,6 +13,7 @@ interface SurveyQuestion {
 }
 
 interface Survey {
+  _id?: string;
   id: string;
   title: string;
   description: string;
@@ -23,8 +25,6 @@ interface Survey {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_surveys";
-
 const QT_META: Record<string, { label: string; icon: any }> = {
   rating: { label: "Rating (1-5)", icon: Star },
   yesno: { label: "Yes/No", icon: CheckCircle },
@@ -35,48 +35,13 @@ const QT_META: Record<string, { label: string; icon: any }> = {
 
 const QUESTION_TYPES: QuestionType[] = ["rating", "yesno", "multiple_choice", "text", "likert"];
 
-const DEFAULT_SURVEYS: Survey[] = [
-  { id: "sv-1", title: "Campaign Feedback Survey", description: "Post-campaign satisfaction survey for stakeholders", campaignName: "Product Launch Q3", questions: [
-    { id: "sq-1", type: "rating", question: "How would you rate the campaign's overall performance?", options: [] },
-    { id: "sq-2", type: "yesno", question: "Did the campaign meet its stated objectives?", options: [] },
-    { id: "sq-3", type: "multiple_choice", question: "Which channel performed best?", options: ["Google Ads", "LinkedIn", "Email", "YouTube"] },
-    { id: "sq-4", type: "text", question: "What would you improve for the next campaign?", options: [] },
-  ], responses: 24, isActive: true, createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "sv-2", title: "Customer Satisfaction Survey", description: "Measure customer satisfaction with our marketing communications", campaignName: "Brand Awareness", questions: [
-    { id: "sq-5", type: "likert", question: "Our marketing content is relevant to my needs", options: ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"] },
-    { id: "sq-6", type: "rating", question: "How relevant is our advertising to you?", options: [] },
-    { id: "sq-7", type: "text", question: "What topics would you like to see more of?", options: [] },
-  ], responses: 156, isActive: true, createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "sv-3", title: "Channel Preference Poll", description: "Understand which channels our audience prefers", campaignName: "Market Research", questions: [
-    { id: "sq-8", type: "multiple_choice", question: "Which social platform do you use most?", options: ["Instagram", "TikTok", "LinkedIn", "YouTube", "Facebook", "Twitter/X"] },
-    { id: "sq-9", type: "multiple_choice", question: "How did you hear about us?", options: ["Social Media", "Search Engine", "Friend/Referral", "Email", "Advertisement", "Blog/Article"] },
-    { id: "sq-10", type: "text", question: "Any other feedback?", options: [] },
-  ], responses: 89, isActive: false, createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-];
-
-function load(): Survey[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SURVEYS));
-    return DEFAULT_SURVEYS;
-  } catch { return []; }
-}
-
 export default function CampaignSurveys() {
   const { addToast } = useToast();
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const { data: surveys, create, update, remove, replaceAll } = useEntityData<Survey>("surveys");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ title: string; description: string; campaignName: string; questions: SurveyQuestion[]; isActive: boolean }>({ title: "", description: "", campaignName: "", questions: [], isActive: true });
-
-  useEffect(() => { setSurveys(load()); }, []);
-
-  function persist(updated: Survey[]) {
-    setSurveys(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(s?: Survey) {
     if (s) setForm({ title: s.title, description: s.description, campaignName: s.campaignName, questions: s.questions.map(q => ({ ...q, options: [...q.options] })), isActive: s.isActive });
@@ -107,7 +72,7 @@ export default function CampaignSurveys() {
     setForm(f => ({ ...f, questions: f.questions.map(q => q.id === qId ? { ...q, options: q.options.filter((_, i) => i !== idx) } : q) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.title.trim()) { addToast("error", "Survey title required"); return; }
     if (form.questions.filter(q => q.question.trim()).length === 0) { addToast("error", "Add at least one question"); return; }
     const validQuestions = form.questions.filter(q => q.question.trim()).map(q => ({ ...q, question: q.question.trim(), options: q.options.filter(o => o.trim()).map(o => o.trim()) }));
@@ -118,30 +83,30 @@ export default function CampaignSurveys() {
       questions: validQuestions, responses: editingId ? surveys.find(s => s.id === editingId)!.responses : 0,
       isActive: form.isActive, createdAt: editingId ? surveys.find(s => s.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: Survey[];
-    if (editingId) { updated = surveys.map(s => s.id === editingId ? survey : s); addToast("success", "Survey updated"); }
-    else { updated = [survey, ...surveys]; addToast("success", "Survey created"); }
-    persist(updated);
+    if (editingId) { await update(editingId, survey as any); addToast("success", "Survey updated"); }
+    else { await create(survey as any); addToast("success", "Survey created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = surveys.find(s => s.id === id)?.title;
-    persist(surveys.filter(s => s.id !== id));
+    await remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
-  function duplicateSurvey(id: string) {
+  async function duplicateSurvey(id: string) {
     const s = surveys.find(sv => sv.id === id);
     if (!s) return;
     const copy: Survey = { ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: `${s.title} (Copy)`, responses: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), questions: s.questions.map(q => ({ ...q, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4) })) };
-    persist([copy, ...surveys]);
+    await create(copy as any);
     addToast("success", "Survey duplicated");
   }
 
-  function toggleActive(id: string) {
-    persist(surveys.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
+  async function toggleActive(id: string) {
+    const s = surveys.find(sv => sv.id === id);
+    if (!s) return;
+    await update(id, { ...s, isActive: !s.isActive } as any);
   }
 
   const filtered = surveys.filter(s => !search || s.title.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()) || s.campaignName.toLowerCase().includes(search.toLowerCase()));

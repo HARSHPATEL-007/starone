@@ -31,6 +31,7 @@ import activityRoutes from "./routes/activity";
 import schedulerRoutes from "./routes/scheduler";
 import entityRoutes from "./routes/entities";
 import insightsRoutes from "./routes/insights";
+import platformServicesRoutes from "./routes/platform-services";
 
 const app = express();
 const httpServer = createServer(app);
@@ -75,6 +76,7 @@ app.use("/api/v1/activity", authMiddleware, tenantMiddleware, activityRoutes);
 app.use("/api/v1/scheduler", authMiddleware, tenantMiddleware, schedulerRoutes);
 app.use("/api/v1/entities", authMiddleware, tenantMiddleware, entityRoutes);
 app.use("/api/v1/insights", authMiddleware, tenantMiddleware, insightsRoutes);
+app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);
 

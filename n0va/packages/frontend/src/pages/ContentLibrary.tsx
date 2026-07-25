@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface Asset {
+  _id?: string;
   id: string;
   name: string;
   url: string;
@@ -12,28 +14,14 @@ interface Asset {
   viewCount: number;
 }
 
-const STORAGE_KEY = "n0va_content_library";
-const DEFAULT_ASSETS: Asset[] = [
-  { id: "demo-1", name: "Hero Banner", url: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&q=80", type: "image", tags: ["banner", "hero"], addedAt: new Date().toISOString(), viewCount: 12 },
-  { id: "demo-2", name: "Product Shot", url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80", type: "image", tags: ["product", "lifestyle"], addedAt: new Date().toISOString(), viewCount: 8 },
-  { id: "demo-3", name: "Brand Logo", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&q=80", type: "image", tags: ["logo", "brand"], addedAt: new Date().toISOString(), viewCount: 24 },
-];
 
-function loadAssets(): Asset[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ASSETS));
-    return DEFAULT_ASSETS;
-  } catch { return []; }
-}
 
 const typeIcons: Record<string, any> = { image: Image, video: Video, document: File, other: Link };
 const typeColors: Record<string, string> = { image: "bg-blue-500/10 text-blue-400", video: "bg-purple-500/10 text-purple-400", document: "bg-amber-500/10 text-amber-400", other: "bg-gray-500/10 text-gray-400" };
 
 export default function ContentLibrary() {
   const { addToast } = useToast();
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const { data: assets, create, update, remove, replaceAll, setData: setAssets } = useEntityData<Asset>("content_library");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -41,14 +29,7 @@ export default function ContentLibrary() {
   const [addForm, setAddForm] = useState({ name: "", url: "", type: "image" as Asset["type"], tags: "" });
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  useEffect(() => { setAssets(loadAssets()); }, []);
-
-  function persist(updated: Asset[]) {
-    setAssets(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
-
-  function handleAdd() {
+  async function handleAdd() {
     if (!addForm.name.trim() || !addForm.url.trim()) { addToast("error", "Name and URL are required"); return; }
     const asset: Asset = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -59,15 +40,14 @@ export default function ContentLibrary() {
       addedAt: new Date().toISOString(),
       viewCount: 0,
     };
-    persist([asset, ...assets]);
+    await create(asset as any);
     setAddForm({ name: "", url: "", type: "image", tags: "" });
     setShowAdd(false);
     addToast("success", `"${asset.name}" added to library`);
   }
 
-  function handleDelete(id: string) {
-    const updated = assets.filter((a) => a.id !== id);
-    persist(updated);
+  async function handleDelete(id: string) {
+    await remove(id);
     addToast("success", "Asset removed from library");
   }
 
@@ -78,10 +58,9 @@ export default function ContentLibrary() {
     setAssets((prev) => prev.map((a) => a.id === id ? { ...a, viewCount: a.viewCount + 1 } : a));
   }
 
-  function resetToDefaults() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ASSETS));
-    setAssets([...DEFAULT_ASSETS]);
-    addToast("success", "Reset to default assets");
+  async function resetToDefaults() {
+    await replaceAll([]);
+    addToast("success", "Assets cleared");
   }
 
   const filtered = assets.filter((a) => {

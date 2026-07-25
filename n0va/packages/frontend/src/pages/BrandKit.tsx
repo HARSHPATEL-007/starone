@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Palette, Type, MessageSquare, Image, Save, Undo2, Check, RefreshCw, Plus, X } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface BrandKitData {
   name: string;
@@ -11,8 +12,6 @@ interface BrandKitData {
   voice: { tone: string; values: string[] };
   updatedAt: string;
 }
-
-const STORAGE_KEY = "n0va_brand_kit";
 
 const DEFAULT: BrandKitData = {
   name: "",
@@ -43,20 +42,14 @@ const toneOptions = [
   "Aspirational & premium",
 ];
 
-function load(): BrandKitData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...DEFAULT, ...JSON.parse(raw), updatedAt: DEFAULT.updatedAt } : { ...DEFAULT };
-  } catch { return { ...DEFAULT }; }
-}
-
 function validateHex(hex: string) {
   return /^#[0-9a-fA-F]{6}$/.test(hex);
 }
 
 export default function BrandKit() {
   const { addToast } = useToast();
-  const [data, setData] = useState<BrandKitData>({ ...DEFAULT });
+  const { data: kits, loading, create, replaceAll } = useEntityData<BrandKitData>("brand_kits");
+  const [data, setData] = useState<BrandKitData>(DEFAULT);
   const [loaded, setLoaded] = useState(false);
   const [newColorLabel, setNewColorLabel] = useState("");
   const [newColorValue, setNewColorValue] = useState("#6366f1");
@@ -64,20 +57,25 @@ export default function BrandKit() {
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
 
   useEffect(() => {
-    setData(load());
-    setLoaded(true);
-  }, []);
+    if (kits && kits.length > 0) {
+      setData(kits[0]);
+      setLoaded(true);
+    } else if (!loading) {
+      setLoaded(true);
+    }
+  }, [kits, loading]);
 
   function save() {
     const updated = { ...data, updatedAt: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     setData(updated);
+    replaceAll([updated]);
     addToast("success", "Brand Kit saved");
   }
 
   function reset() {
-    setData({ ...DEFAULT });
-    localStorage.removeItem(STORAGE_KEY);
+    const d = { ...DEFAULT, updatedAt: new Date().toISOString() };
+    setData(d);
+    replaceAll([d]);
     addToast("success", "Brand Kit reset to defaults");
   }
 
@@ -124,7 +122,7 @@ export default function BrandKit() {
     setData((prev) => ({ ...prev, voice: { ...prev.voice, values: prev.voice.values.filter((_, idx) => idx !== i) } }));
   }
 
-  if (!loaded) return null;
+  if (!loaded || loading) return null;
 
   return (
     <div className="space-y-6">

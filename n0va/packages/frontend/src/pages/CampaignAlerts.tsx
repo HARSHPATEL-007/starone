@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, Plus, X, Edit3, Trash2, Copy, Search, BellOff, BellRing, TrendingUp, TrendingDown, DollarSign, Eye, MousePointerClick, Target, Megaphone, Users } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type AlertMetric = "ctr" | "cpc" | "cpa" | "roas" | "spend" | "impressions" | "clicks" | "conversions" | "revenue" | "frequency";
 type AlertCondition = "gt" | "lt" | "gte" | "lte" | "eq" | "change_pct";
@@ -23,8 +24,6 @@ interface CampaignAlert {
   createdAt: string;
 }
 
-const STORAGE_KEY = "n0va_campaign_alerts";
-
 const METRIC_META: Record<string, { label: string; icon: any; unit: string }> = {
   ctr: { label: "CTR", icon: TrendingUp, unit: "%" },
   cpc: { label: "CPC", icon: DollarSign, unit: "$" },
@@ -44,26 +43,9 @@ const CONDITION_LABELS: Record<string, string> = {
 
 const ALERT_CHANNELS: AlertChannel[] = ["email", "slack", "webhook", "in_app"];
 
-const DEFAULT_ALERTS: CampaignAlert[] = [
-  { id: "ca-1", name: "CTR Drop Alert", description: "Fires when CTR drops below 2%", metric: "ctr", condition: "lt", threshold: 2, channels: ["email", "in_app"], campaignFilter: "all", cooldownHours: 6, lastTriggered: new Date(Date.now() - 86400000 * 2).toISOString(), triggerCount: 3, status: "active", createdAt: new Date(Date.now() - 86400000 * 30).toISOString() },
-  { id: "ca-2", name: "Budget Threshold Warning", description: "Notify when daily spend exceeds $5000", metric: "spend", condition: "gt", threshold: 5000, channels: ["slack", "in_app"], campaignFilter: "Product Launch Q3", cooldownHours: 1, lastTriggered: new Date(Date.now() - 86400000 * 5).toISOString(), triggerCount: 8, status: "active", createdAt: new Date(Date.now() - 86400000 * 25).toISOString() },
-  { id: "ca-3", name: "ROAS Performance Alert", description: "Alert when ROAS drops below 2.5x", metric: "roas", condition: "lt", threshold: 2.5, channels: ["email", "slack"], campaignFilter: "all", cooldownHours: 12, lastTriggered: null, triggerCount: 1, status: "active", createdAt: new Date(Date.now() - 86400000 * 20).toISOString() },
-  { id: "ca-4", name: "High CPA Alert", description: "Fires when CPA exceeds $100", metric: "cpa", condition: "gt", threshold: 100, channels: ["in_app"], campaignFilter: "Enterprise Q3", cooldownHours: 24, lastTriggered: new Date(Date.now() - 86400000 * 1).toISOString(), triggerCount: 5, status: "triggered", createdAt: new Date(Date.now() - 86400000 * 15).toISOString() },
-  { id: "ca-5", name: "Conversion Spike Monitor", description: "Notify on 50% increase in conversions", metric: "conversions", condition: "change_pct", threshold: 50, channels: ["email"], campaignFilter: "all", cooldownHours: 4, lastTriggered: new Date(Date.now() - 86400000 * 10).toISOString(), triggerCount: 2, status: "paused", createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-];
-
-function load(): CampaignAlert[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ALERTS));
-    return DEFAULT_ALERTS;
-  } catch { return []; }
-}
-
 export default function CampaignAlerts() {
   const { addToast } = useToast();
-  const [alerts, setAlerts] = useState<CampaignAlert[]>([]);
+  const { data: alerts, loading, create, update, remove, replaceAll } = useEntityData<CampaignAlert>("campaign_alerts");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<AlertStatus | "all">("all");
   const [showForm, setShowForm] = useState(false);
@@ -71,13 +53,6 @@ export default function CampaignAlerts() {
   const [form, setForm] = useState<{ name: string; description: string; metric: AlertMetric; condition: AlertCondition; threshold: number; channels: AlertChannel[]; campaignFilter: string; cooldownHours: number; status: AlertStatus }>({
     name: "", description: "", metric: "ctr", condition: "lt", threshold: 0, channels: ["email"], campaignFilter: "all", cooldownHours: 6, status: "active",
   });
-
-  useEffect(() => { setAlerts(load()); }, []);
-
-  function persist(updated: CampaignAlert[]) {
-    setAlerts(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(a?: CampaignAlert) {
     if (a) setForm({ name: a.name, description: a.description, metric: a.metric, condition: a.condition, threshold: a.threshold, channels: [...a.channels], campaignFilter: a.campaignFilter, cooldownHours: a.cooldownHours, status: a.status });
@@ -100,28 +75,26 @@ export default function CampaignAlerts() {
       triggerCount: editingId ? alerts.find(a => a.id === editingId)!.triggerCount : 0,
       status: form.status, createdAt: editingId ? alerts.find(a => a.id === editingId)!.createdAt : now,
     };
-    let updated: CampaignAlert[];
-    if (editingId) { updated = alerts.map(a => a.id === editingId ? alert : a); addToast("success", "Alert updated"); }
-    else { updated = [alert, ...alerts]; addToast("success", "Alert created"); }
-    persist(updated);
+    if (editingId) { update(editingId, alert as any); addToast("success", "Alert updated"); }
+    else { create(alert as any); addToast("success", "Alert created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = alerts.find(a => a.id === id)?.name;
-    persist(alerts.filter(a => a.id !== id));
+    remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
   function toggleStatus(id: string) {
-    persist(alerts.map(a => a.id === id ? { ...a, status: (a.status === "active" ? "paused" : "active") as AlertStatus } : a));
+    replaceAll(alerts.map(a => a.id === id ? { ...a, status: (a.status === "active" ? "paused" : "active") as AlertStatus } : a));
     const a = alerts.find(al => al.id === id);
     addToast("success", `"${a?.name}" ${a?.status === "active" ? "paused" : "activated"}`);
   }
 
   function resetTriggerCount(id: string) {
-    persist(alerts.map(a => a.id === id ? { ...a, triggerCount: 0, lastTriggered: null, status: "active" as AlertStatus } : a));
+    replaceAll(alerts.map(a => a.id === id ? { ...a, triggerCount: 0, lastTriggered: null, status: "active" as AlertStatus } : a));
     addToast("success", "Trigger count reset");
   }
 

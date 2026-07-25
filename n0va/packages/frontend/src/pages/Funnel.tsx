@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TrendingDown, Plus, X, Edit3, Trash2, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, Target, ChevronDown, ChevronRight, BarChart3, RefreshCw } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface FunnelStage {
   id: string;
@@ -10,6 +11,7 @@ interface FunnelStage {
 }
 
 interface Funnel {
+  _id?: string;
   id: string;
   name: string;
   stages: FunnelStage[];
@@ -17,60 +19,11 @@ interface Funnel {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_funnels";
-
 const STAGE_COLORS = [
   "bg-blue-500", "bg-cyan-500", "bg-teal-500", "bg-green-500",
   "bg-yellow-500", "bg-orange-500", "bg-red-500", "bg-purple-500",
   "bg-pink-500", "bg-indigo-500",
 ];
-
-const DEFAULT_FUNNELS: Funnel[] = [
-  {
-    id: "funnel-1", name: "Main Marketing Funnel",
-    stages: [
-      { id: "fs-1", name: "Visitors", count: 125000, color: "bg-blue-500" },
-      { id: "fs-2", name: "Leads", count: 42000, color: "bg-cyan-500" },
-      { id: "fs-3", name: "MQLs", count: 18500, color: "bg-teal-500" },
-      { id: "fs-4", name: "SQLs", count: 7200, color: "bg-green-500" },
-      { id: "fs-5", name: "Opportunities", count: 3100, color: "bg-yellow-500" },
-      { id: "fs-6", name: "Customers", count: 1200, color: "bg-green-600" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    id: "funnel-2", name: "Paid Ads Funnel",
-    stages: [
-      { id: "fs-7", name: "Impressions", count: 890000, color: "bg-blue-500" },
-      { id: "fs-8", name: "Clicks", count: 28500, color: "bg-cyan-500" },
-      { id: "fs-9", name: "Landing Page", count: 22300, color: "bg-teal-500" },
-      { id: "fs-10", name: "Form Starts", count: 8400, color: "bg-green-500" },
-      { id: "fs-11", name: "Submissions", count: 3100, color: "bg-yellow-500" },
-      { id: "fs-12", name: "Conversions", count: 890, color: "bg-green-600" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "funnel-3", name: "Email Campaign Funnel",
-    stages: [
-      { id: "fs-13", name: "Sent", count: 250000, color: "bg-blue-500" },
-      { id: "fs-14", name: "Delivered", count: 242500, color: "bg-cyan-500" },
-      { id: "fs-15", name: "Opened", count: 65475, color: "bg-teal-500" },
-      { id: "fs-16", name: "Clicked", count: 18333, color: "bg-green-500" },
-      { id: "fs-17", name: "Converted", count: 2750, color: "bg-green-600" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-];
-
-function load(): Funnel[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_FUNNELS));
-    return DEFAULT_FUNNELS;
-  } catch { return []; }
-}
 
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -80,19 +33,12 @@ function fmt(n: number): string {
 
 export default function Funnel() {
   const { addToast } = useToast();
-  const [funnels, setFunnels] = useState<Funnel[]>([]);
+  const { data: funnels, create, update, remove, replaceAll } = useEntityData<Funnel>("funnels");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ name: string; stages: FunnelStage[] }>({ name: "", stages: [] });
   const [editStageIdx, setEditStageIdx] = useState<number | null>(null);
-
-  useEffect(() => { setFunnels(load()); }, []);
-
-  function persist(updated: Funnel[]) {
-    setFunnels(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(f?: Funnel) {
     if (f) setForm({ name: f.name, stages: f.stages.map(s => ({ ...s })) });
@@ -118,7 +64,7 @@ export default function Funnel() {
     setForm(f => ({ ...f, stages: f.stages.map((s, i) => i === idx ? { ...s, [field]: value } : s) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "Funnel name is required"); return; }
     if (form.stages.length < 2) { addToast("error", "Add at least 2 stages"); return; }
     if (form.stages.some(s => !s.name.trim() || s.count < 0)) { addToast("error", "All stages need a name and valid count"); return; }
@@ -129,17 +75,15 @@ export default function Funnel() {
       stages: validStages,
       createdAt: editingId ? funnels.find(f => f.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: Funnel[];
-    if (editingId) { updated = funnels.map(f => f.id === editingId ? funnel : f); addToast("success", "Funnel updated"); }
-    else { updated = [funnel, ...funnels]; addToast("success", "Funnel created"); }
-    persist(updated);
+    if (editingId) { await update(editingId, funnel as any); addToast("success", "Funnel updated"); }
+    else { await create(funnel as any); addToast("success", "Funnel created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = funnels.find(f => f.id === id)?.name;
-    persist(funnels.filter(f => f.id !== id));
+    await remove(id);
     addToast("success", `"${name}" deleted`);
     if (expandedId === id) setExpandedId(null);
   }

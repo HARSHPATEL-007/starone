@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Rocket, Plus, X, Edit3, Trash2, Search, CheckCircle, Circle, AlertTriangle, CheckSquare, Clock, Users, Target, ListChecks, ArrowRight } from "lucide-react";
+import { Rocket, Plus, X, Edit3, Trash2, Search, CheckCircle, Circle, AlertTriangle, CheckSquare, Clock, Users, Target, ListChecks, ArrowRight, Square } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface ReadinessItem {
   id: string;
@@ -23,64 +24,16 @@ interface ReadinessCheck {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_launch_readiness";
-
 const CATEGORIES = ["Creative", "Audience", "Budget", "Tracking", "Platform", "Compliance", "Content", "Team"];
-
-const DEFAULT_ITEMS: ReadinessItem[] = [
-  { id: "ri-1", task: "All creatives approved and uploaded", category: "Creative", completed: true, assignedTo: "Sarah", completedBy: "Sarah", completedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "ri-2", task: "Ad copy variants finalized", category: "Creative", completed: true, assignedTo: "Emily", completedBy: "Emily", completedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "ri-3", task: "Landing pages published and tested", category: "Creative", completed: false, assignedTo: "Mike", completedBy: "", completedAt: "" },
-  { id: "ri-4", task: "Target audience segments created", category: "Audience", completed: true, assignedTo: "Alex", completedBy: "Alex", completedAt: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { id: "ri-5", task: "Exclusion lists configured", category: "Audience", completed: false, assignedTo: "Alex", completedBy: "", completedAt: "" },
-  { id: "ri-6", task: "Budget allocated across channels", category: "Budget", completed: true, assignedTo: "James", completedBy: "James", completedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "ri-7", task: "Daily budget caps set", category: "Budget", completed: false, assignedTo: "James", completedBy: "", completedAt: "" },
-  { id: "ri-8", task: "Conversion tracking pixels installed", category: "Tracking", completed: true, assignedTo: "Mike", completedBy: "Mike", completedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "ri-9", task: "UTM parameters configured", category: "Tracking", completed: true, assignedTo: "Mike", completedBy: "Mike", completedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "ri-10", task: "Campaigns created in all platforms", category: "Platform", completed: false, assignedTo: "Sarah", completedBy: "", completedAt: "" },
-  { id: "ri-11", task: "Platform accounts verified", category: "Platform", completed: true, assignedTo: "James", completedBy: "James", completedAt: new Date(Date.now() - 86400000 * 6).toISOString() },
-  { id: "ri-12", task: "Ad compliance review passed", category: "Compliance", completed: false, assignedTo: "Emily", completedBy: "", completedAt: "" },
-  { id: "ri-13", task: "Legal disclaimers added", category: "Compliance", completed: true, assignedTo: "Emily", completedBy: "Emily", completedAt: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { id: "ri-14", task: "Social posts scheduled", category: "Content", completed: false, assignedTo: "Alex", completedBy: "", completedAt: "" },
-  { id: "ri-15", task: "Email campaigns prepared", category: "Content", completed: false, assignedTo: "Emily", completedBy: "", completedAt: "" },
-  { id: "ri-16", task: "Team roles and permissions set", category: "Team", completed: true, assignedTo: "James", completedBy: "James", completedAt: new Date(Date.now() - 86400000 * 7).toISOString() },
-  { id: "ri-17", task: "Launch approval from manager", category: "Team", completed: false, assignedTo: "James", completedBy: "", completedAt: "" },
-];
-
-const DEFAULTS: ReadinessCheck[] = [
-  { id: "rc-1", campaignName: "Product Launch Q3", launchDate: new Date(Date.now() + 86400000 * 5).toISOString(), items: DEFAULT_ITEMS.map(i => ({ ...i })), status: "in_progress", notes: "Most items completed. Need landing pages and compliance review before launch.", createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 1).toISOString() },
-  { id: "rc-2", campaignName: "Summer Sale 2025", launchDate: new Date(Date.now() + 86400000 * 10).toISOString(), items: [
-    { id: "ri-18", task: "Creative assets ready", category: "Creative", completed: true, assignedTo: "Sarah", completedBy: "Sarah", completedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-    { id: "ri-19", task: "Influencer contracts signed", category: "Team", completed: false, assignedTo: "Emily", completedBy: "", completedAt: "" },
-    { id: "ri-20", task: "Discount codes generated", category: "Content", completed: true, assignedTo: "Mike", completedBy: "Mike", completedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-    { id: "ri-21", task: "Landing page ready", category: "Creative", completed: false, assignedTo: "Sarah", completedBy: "", completedAt: "" },
-  ], status: "draft", notes: "", createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-];
-
-function load(): ReadinessCheck[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULTS));
-    return DEFAULTS;
-  } catch { return []; }
-}
 
 export default function LaunchReadiness() {
   const { addToast } = useToast();
-  const [checks, setChecks] = useState<ReadinessCheck[]>([]);
+  const { data: checks, loading, create, update, remove, replaceAll } = useEntityData<ReadinessCheck>("launch_readiness");
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ campaignName: string; launchDate: string; notes: string }>({ campaignName: "", launchDate: "", notes: "" });
-
-  useEffect(() => { setChecks(load()); }, []);
-
-  function persist(updated: ReadinessCheck[]) {
-    setChecks(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   const activeCheck = checks.find(c => c.id === activeId) || checks[0];
   const completedItems = activeCheck?.items.filter(i => i.completed).length || 0;
@@ -95,7 +48,7 @@ export default function LaunchReadiness() {
   function toggleItem(itemId: string) {
     if (!activeCheck) return;
     const now = new Date().toISOString();
-    persist(checks.map(c => c.id === activeCheck.id ? ({
+    replaceAll(checks.map(c => c.id === activeCheck.id ? ({
       ...c, items: c.items.map(i => i.id === itemId ? { ...i, completed: !i.completed, completedAt: !i.completed ? now : "", completedBy: !i.completed ? "You" : "" } : i),
       updatedAt: now,
     }) : c));
@@ -103,11 +56,10 @@ export default function LaunchReadiness() {
 
   function addItem() {
     if (!activeCheck) return;
-    if (!activeCheck) return;
     const label = prompt("Task description:");
     if (!label) return;
     const category = prompt("Category (Creative, Audience, Budget, Tracking, Platform, Compliance, Content, Team):") || "Other";
-    persist(checks.map(c => c.id === activeCheck.id ? {
+    replaceAll(checks.map(c => c.id === activeCheck.id ? {
       ...c, items: [...c.items, { id: Date.now().toString(36), task: label, category, completed: false, assignedTo: "", completedBy: "", completedAt: "" }],
       updatedAt: new Date().toISOString(),
     } : c));
@@ -116,7 +68,7 @@ export default function LaunchReadiness() {
 
   function removeItem(itemId: string) {
     if (!activeCheck) return;
-    persist(checks.map(c => c.id === activeCheck.id ? { ...c, items: c.items.filter(i => i.id !== itemId), updatedAt: new Date().toISOString() } : c));
+    replaceAll(checks.map(c => c.id === activeCheck.id ? { ...c, items: c.items.filter(i => i.id !== itemId), updatedAt: new Date().toISOString() } : c));
     addToast("success", "Task removed");
   }
 
@@ -129,17 +81,15 @@ export default function LaunchReadiness() {
       items: editingId ? checks.find(c => c.id === editingId)!.items.map(i => ({ ...i })) : [],
       status: "draft", createdAt: editingId ? checks.find(c => c.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: ReadinessCheck[];
-    if (editingId) { updated = checks.map(c => c.id === editingId ? check : c); addToast("success", "Checklist updated"); }
-    else { updated = [check, ...checks]; addToast("success", "Checklist created"); }
-    persist(updated);
+    if (editingId) { update(editingId, check); addToast("success", "Checklist updated"); }
+    else { create(check); addToast("success", "Checklist created"); }
     setActiveId(check.id);
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
-    persist(checks.filter(c => c.id !== id));
+    remove(id);
     if (activeId === id) setActiveId(null);
     addToast("success", "Checklist deleted");
   }
@@ -264,5 +214,3 @@ export default function LaunchReadiness() {
     </div>
   );
 }
-
-import { Square } from "lucide-react";

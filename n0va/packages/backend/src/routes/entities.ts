@@ -33,6 +33,16 @@ const VALID_ENTITY_TYPES = [
   "surveys",
   "brand_kits",
   "media_kits",
+  "team_members",
+  "approvals",
+  "campaign_boards",
+  "launch_readiness",
+  "marketing_forms",
+  "audit_log",
+  "user_profile",
+  "report_history",
+  "billing_invoices",
+  "billing_subscriptions",
 ];
 
 function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {

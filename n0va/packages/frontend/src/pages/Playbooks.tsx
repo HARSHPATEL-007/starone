@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BookTemplate, Plus, X, Search, Edit3, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Star, Eye, Clock, Filter, Copy, CheckCircle, ListChecks, GripVertical } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface PlaybookSection {
   id: string;
@@ -21,70 +22,11 @@ interface Playbook {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_playbooks";
 const CATEGORIES = [
   "Campaign Strategy", "Creative Process", "Audience Targeting", "Budget Planning",
   "Launch Procedure", "Post-Campaign Review", "Brand Guidelines", "Compliance",
   "Platform Setup", "Reporting",
 ];
-
-const DEFAULT_PLAYBOOKS: Playbook[] = [
-  {
-    id: "pb-1", title: "Campaign Launch Playbook",
-    description: "Standard operating procedure for launching a new campaign from draft to active.",
-    category: "Launch Procedure", tags: ["launch", "checklist", "sop"], status: "published", favorite: true,
-    sections: [
-      { id: "s1", title: "Pre-Launch Checklist", content: "1. Verify all creatives are approved\n2. Confirm audience segments are built\n3. Validate budget allocation\n4. Check platform targeting settings\n5. Set up tracking and UTM parameters\n6. Review launch checklist in campaign detail" },
-      { id: "s2", title: "Launch Steps", content: "1. Set campaign status to Active\n2. Monitor first-hour performance\n3. Verify delivery across all platforms\n4. Check for any tracking errors\n5. Notify team of launch" },
-      { id: "s3", title: "Post-Launch Monitoring", content: "Monitor these KPIs in the first 24 hours:\n- Impression delivery rate\n- Click-through rate\n- Conversion rate\n- Budget burn rate\n- Platform distribution" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "pb-2", title: "Creative Brief Template",
-    description: "Template for creating effective creative briefs that align with campaign goals.",
-    category: "Creative Process", tags: ["creative", "brief", "template"], status: "published", favorite: true,
-    sections: [
-      { id: "s4", title: "Campaign Overview", content: "Campaign Name:\nObjective:\nTarget Audience:\nKey Message:\nTone of Voice:\nBudget Range:\nTimeline:" },
-      { id: "s5", title: "Creative Requirements", content: "Format Requirements:\n- Display ads: 300x250, 728x90, 160x600\n- Social: 1080x1080, 1080x1350\n- Video: 16:9, 9:16\n\nBrand Elements:\n- Logo placement\n- Brand colors\n- Typography\n- CTA style" },
-      { id: "s6", title: "Success Metrics", content: "Primary KPIs:\n- CTR ≥ 2%\n- Conversion rate ≥ 3%\n- Brand lift ≥ 5%\n\nSecondary KPIs:\n- Engagement rate\n- View-through rate\n- Cost per acquisition" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 45).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-  {
-    id: "pb-3", title: "Budget Planning Framework",
-    description: "Framework for planning and allocating campaign budgets across channels.",
-    category: "Budget Planning", tags: ["budget", "planning", "allocation"], status: "draft", favorite: false,
-    sections: [
-      { id: "s7", title: "Budget Allocation Model", content: "Recommended allocation by channel:\n- Search: 30-40%\n- Social: 25-35%\n- Display: 15-20%\n- Video: 10-15%\n- Other: 5-10%\n\nAdjust based on historical performance and campaign objectives." },
-      { id: "s8", title: "Phased Spend Strategy", content: "Phase 1 (Days 1-7): 15% of budget — Testing and optimization\nPhase 2 (Days 8-21): 50% of budget — Scale winning segments\nPhase 3 (Days 22-30): 35% of budget — Capture remaining conversions" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 20).toISOString(),
-  },
-  {
-    id: "pb-4", title: "A/B Testing Best Practices",
-    description: "Guidelines for setting up and analyzing A/B tests for maximum statistical significance.",
-    category: "Campaign Strategy", tags: ["ab-testing", "optimization", "best-practices"], status: "published", favorite: false,
-    sections: [
-      { id: "s9", title: "Test Design", content: "1. Define clear hypothesis\n2. Test one variable at a time\n3. Ensure sufficient sample size\n4. Run test for minimum 7 days\n5. Avoid peeking at results" },
-      { id: "s10", title: "Statistical Significance", content: "Minimum confidence level: 95%\nSample size: minimum 1,000 per variant\nWinning variant must maintain significance for 48+ hours" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 35).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-];
-
-function load(): Playbook[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PLAYBOOKS));
-    return DEFAULT_PLAYBOOKS;
-  } catch { return []; }
-}
 
 function timeAgo(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
@@ -100,7 +42,7 @@ function timeAgo(date: string): string {
 
 export default function Playbooks() {
   const { addToast } = useToast();
-  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
+  const { data: playbooks, loading, create, update, remove, replaceAll } = useEntityData<Playbook>("playbooks");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -111,19 +53,14 @@ export default function Playbooks() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", description: "", category: CATEGORIES[0], tags: "", status: "draft" as Playbook["status"], sections: [] as PlaybookSection[] });
 
-  useEffect(() => { setPlaybooks(load()); }, []);
 
-  function persist(updated: Playbook[]) {
-    setPlaybooks(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function toggle(id: string) {
     setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
   function toggleFavorite(id: string) {
-    persist(playbooks.map(p => p.id === id ? { ...p, favorite: !p.favorite } : p));
+    replaceAll(playbooks.map(p => p.id === id ? { ...p, favorite: !p.favorite } : p));
   }
 
   function resetForm(pb?: Playbook) {
@@ -159,16 +96,14 @@ export default function Playbooks() {
       createdAt: editingId ? playbooks.find(p => p.id === editingId)!.createdAt : now,
       updatedAt: now,
     };
-    let updated: Playbook[];
-    if (editingId) { updated = playbooks.map(p => p.id === editingId ? playbook : p); addToast("success", "Playbook updated"); }
-    else { updated = [playbook, ...playbooks]; addToast("success", "Playbook created"); }
-    persist(updated);
+    if (editingId) { update(editingId, playbook); addToast("success", "Playbook updated"); }
+    else { create(playbook); addToast("success", "Playbook created"); }
     setShowForm(false);
   }
 
   function handleDelete(id: string) {
     const name = playbooks.find(p => p.id === id)?.title;
-    persist(playbooks.filter(p => p.id !== id));
+    remove(id);
     if (viewingId === id) setViewingId(null);
     addToast("success", `"${name}" deleted`);
   }
@@ -181,7 +116,7 @@ export default function Playbooks() {
       title: `${pb.title} (Copy)`, status: "draft", favorite: false,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
-    persist([copy, ...playbooks]);
+    replaceAll([copy, ...playbooks]);
     addToast("success", "Playbook duplicated");
   }
 

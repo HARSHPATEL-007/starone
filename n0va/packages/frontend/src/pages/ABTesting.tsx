@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { GitCompare, Plus, X, Play, Square, Trophy, BarChart3, ChevronDown, ChevronRight, ExternalLink, Trash2, TrendingUp, Users, Clock, Target } from "lucide-react";
+import { GitCompare, Plus, X, Play, Square, Trophy, ChevronDown, ChevronRight, Trash2, BarChart3, Users, Target } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 interface Variant {
   id: string;
@@ -22,59 +23,12 @@ interface ABTest {
   winnerId: string | null;
 }
 
-const STORAGE_KEY = "n0va_ab_tests";
 const METRICS = [
   { value: "conversion_rate", label: "Conversion Rate" },
   { value: "ctr", label: "Click-Through Rate (CTR)" },
   { value: "revenue_per_visit", label: "Revenue per Visit" },
   { value: "engagement", label: "Engagement" },
 ];
-
-const DEFAULT_TESTS: ABTest[] = [
-  {
-    id: "demo-1", name: "Hero CTA Button Text",
-    description: "Compare 'Get Started' vs 'Try Free' vs 'See Plans' on the hero section CTA",
-    metric: "conversion_rate", status: "running", sampleSize: 2500,
-    winnerId: null,
-    variants: [
-      { id: "v1", name: "Control (A)", description: "'Get Started' button", impressions: 4500, conversions: 225 },
-      { id: "v2", name: "Variant B", description: "'Try Free' button", impressions: 4420, conversions: 287 },
-      { id: "v3", name: "Variant C", description: "'See Plans' button", impressions: 4480, conversions: 201 },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "demo-2", name: "Landing Page Headline",
-    description: "Testing value-prop headline variations",
-    metric: "ctr", status: "completed", sampleSize: 5000,
-    winnerId: "v2",
-    variants: [
-      { id: "v1", name: "Control (A)", description: "'Grow Your Business'", impressions: 8200, conversions: 410 },
-      { id: "v2", name: "Winner (B)", description: "'10x Your Revenue in 30 Days'", impressions: 8150, conversions: 570 },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-  {
-    id: "demo-3", name: "Pricing Page Layout",
-    description: "Side-by-side vs stacked pricing cards",
-    metric: "revenue_per_visit", status: "draft", sampleSize: 1000,
-    winnerId: null,
-    variants: [
-      { id: "v1", name: "Control (A)", description: "Side-by-side cards", impressions: 0, conversions: 0 },
-      { id: "v2", name: "Variant B", description: "Stacked cards with comparison", impressions: 0, conversions: 0 },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-];
-
-function load(): ABTest[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_TESTS));
-    return DEFAULT_TESTS;
-  } catch { return []; }
-}
 
 function rate(impressions: number, conversions: number): number {
   if (impressions === 0) return 0;
@@ -89,19 +43,12 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 
 export default function ABTesting() {
   const { addToast } = useToast();
-  const [tests, setTests] = useState<ABTest[]>([]);
+  const { data: tests, loading, create, update: updateEntity, remove: deleteEntity, replaceAll } = useEntityData<ABTest>("ab_tests");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [form, setForm] = useState({ name: "", description: "", metric: "conversion_rate" as ABTest["metric"], sampleSize: 1000, variants: [] as Variant[] });
-
-  useEffect(() => { setTests(load()); }, []);
-
-  function persist(updated: ABTest[]) {
-    setTests(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function toggle(id: string) {
     setExpanded((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -143,28 +90,26 @@ export default function ABTesting() {
       winnerId: null,
       createdAt: editingId ? tests.find(t => t.id === editingId)!.createdAt : now,
     };
-    let updated: ABTest[];
-    if (editingId) { updated = tests.map(t => t.id === editingId ? test : t); addToast("success", "Test updated"); }
-    else { updated = [test, ...tests]; addToast("success", "Test created"); }
-    persist(updated);
+    if (editingId) { updateEntity(editingId, test as any); addToast("success", "Test updated"); }
+    else { create(test as any); addToast("success", "Test created"); }
     setShowCreate(false);
   }
 
   function handleDelete(id: string) {
     const name = tests.find(t => t.id === id)?.name;
-    persist(tests.filter(t => t.id !== id));
+    deleteEntity(id);
     addToast("success", `"${name}" deleted`);
   }
 
   function updateTestStatus(id: string, status: ABTest["status"]) {
-    persist(tests.map(t => {
-      if (t.id !== id) return t;
-      if (status === "completed") {
-        const best = [...t.variants].sort((a, b) => rate(b.impressions, b.conversions) - rate(a.impressions, a.conversions))[0];
-        return { ...t, status, winnerId: best?.id || null };
-      }
-      return { ...t, status };
-    }));
+    const t = tests.find(t => t.id === id);
+    if (!t) return;
+    if (status === "completed") {
+      const best = [...t.variants].sort((a, b) => rate(b.impressions, b.conversions) - rate(a.impressions, a.conversions))[0];
+      updateEntity(id, { ...t, status, winnerId: best?.id || null } as any);
+    } else {
+      updateEntity(id, { ...t, status } as any);
+    }
     addToast("success", status === "running" ? "Test started" : "Test completed");
   }
 

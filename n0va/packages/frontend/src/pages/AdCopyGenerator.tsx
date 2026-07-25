@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Sparkles, Tag, Megaphone, Star, Heart, Target, Zap, Sun, Moon, Cloud, Flame, Smile, Frown } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type Tone = "professional" | "casual" | "urgent" | "friendly" | "humorous" | "inspirational" | "luxury" | "edgy";
 
@@ -18,8 +19,6 @@ interface AdCopy {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_ad_copy";
-
 const TONE_META: Record<string, { label: string; icon: any; color: string }> = {
   professional: { label: "Professional", icon: Target, color: "text-blue-400 bg-blue-500/10" },
   casual: { label: "Casual", icon: Smile, color: "text-green-400 bg-green-500/10" },
@@ -33,27 +32,9 @@ const TONE_META: Record<string, { label: string; icon: any; color: string }> = {
 
 const TONE_LIST: Tone[] = ["professional", "casual", "urgent", "friendly", "humorous", "inspirational", "luxury", "edgy"];
 
-const DEFAULT_COPIES: AdCopy[] = [
-  { id: "ac-1", headline: "Transform Your Workflow Today", body: "Our platform helps teams move faster, collaborate better, and deliver results that matter. Join thousands of companies already using N0VA.", cta: "Start Free Trial", tone: "professional", campaignName: "Product Launch Q3", platform: "Google Ads", tags: ["product", "b2b", "launch"], isFavorite: true, createdAt: new Date(Date.now() - 86400000 * 25).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "ac-2", headline: "Summer Sale: 30% Off Everything!", body: "Don't miss out on our biggest sale of the year. Limited time offer on all products. Summer vibes, winter prices.", cta: "Shop Now", tone: "urgent", campaignName: "Summer Sale 2025", platform: "Facebook", tags: ["sale", "seasonal", "promo"], isFavorite: true, createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "ac-3", headline: "Hey {name}, Ready to Level Up?", body: "We noticed you've been checking us out. Here's an exclusive 20% off to get you started. No strings attached!", cta: "Claim Offer →", tone: "friendly", campaignName: "Retargeting Q3", platform: "Instagram", tags: ["retargeting", "exclusive"], isFavorite: false, createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 8).toISOString() },
-  { id: "ac-4", headline: "Your Competitors Are Already Here", body: "While you're reading this, 3 of your competitors just signed up. Don't get left behind in the AI revolution.", cta: "See Why →", tone: "edgy", campaignName: "Enterprise Q3", platform: "LinkedIn", tags: ["competitive", "enterprise", "b2b"], isFavorite: false, createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 6).toISOString() },
-  { id: "ac-5", headline: "The Future of Marketing is Here", body: "Imagine what you could achieve with AI-powered insights, automated workflows, and real-time optimization. Stop imagining.", cta: "See the Future", tone: "inspirational", campaignName: "Brand Awareness", platform: "YouTube", tags: ["brand", "vision"], isFavorite: true, createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "ac-6", headline: "Why Do 10,000+ Marketers Love Us?", body: "Because we make their job easier. Campaign management, analytics, and optimization — all in one place.", cta: "Learn More", tone: "casual", campaignName: "Product Launch Q3", platform: "Twitter/X", tags: ["social-proof", "product"], isFavorite: false, createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 4).toISOString() },
-];
-
-function load(): AdCopy[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_COPIES));
-    return DEFAULT_COPIES;
-  } catch { return []; }
-}
-
 export default function AdCopyGenerator() {
   const { addToast } = useToast();
-  const [copies, setCopies] = useState<AdCopy[]>([]);
+  const { data: copies, loading, create, update, remove, replaceAll } = useEntityData<AdCopy>("ad_copy");
   const [search, setSearch] = useState("");
   const [filterTone, setFilterTone] = useState<Tone | "all">("all");
   const [showFavorites, setShowFavorites] = useState(false);
@@ -63,13 +44,6 @@ export default function AdCopyGenerator() {
   const [form, setForm] = useState<{ headline: string; body: string; cta: string; tone: Tone; campaignName: string; platform: string; tags: string }>({
     headline: "", body: "", cta: "", tone: "professional", campaignName: "", platform: "", tags: "",
   });
-
-  useEffect(() => { setCopies(load()); }, []);
-
-  function persist(updated: AdCopy[]) {
-    setCopies(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
 
   function resetForm(c?: AdCopy) {
     if (c) setForm({ headline: c.headline, body: c.body, cta: c.cta, tone: c.tone, campaignName: c.campaignName, platform: c.platform, tags: c.tags.join(", ") });
@@ -87,29 +61,27 @@ export default function AdCopyGenerator() {
       isFavorite: editingId ? copies.find(c => c.id === editingId)!.isFavorite : false,
       createdAt: editingId ? copies.find(c => c.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: AdCopy[];
-    if (editingId) { updated = copies.map(c => c.id === editingId ? copy : c); addToast("success", "Copy updated"); }
-    else { updated = [copy, ...copies]; addToast("success", "Copy saved"); }
-    persist(updated);
+    if (editingId) { update(editingId, copy as any); addToast("success", "Copy updated"); }
+    else { create(copy as any); addToast("success", "Copy saved"); }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = copies.find(c => c.id === id)?.headline;
-    persist(copies.filter(c => c.id !== id));
+    remove(id);
     addToast("success", `"${name}" deleted`);
   }
 
   function toggleFavorite(id: string) {
-    persist(copies.map(c => c.id === id ? { ...c, isFavorite: !c.isFavorite } : c));
+    replaceAll(copies.map(c => c.id === id ? { ...c, isFavorite: !c.isFavorite } : c));
   }
 
   function duplicateCopy(id: string) {
     const c = copies.find(co => co.id === id);
     if (!c) return;
     const copy: AdCopy = { ...c, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), headline: `${c.headline} (Copy)`, isFavorite: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    persist([copy, ...copies]);
+    replaceAll([copy, ...copies]);
     addToast("success", "Copy duplicated");
   }
 
@@ -125,7 +97,7 @@ export default function AdCopyGenerator() {
         platform: form.platform || "Google Ads", tags: ["ai-generated"],
         isFavorite: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
       };
-      persist([suggestion, ...copies]);
+      replaceAll([suggestion, ...copies]);
       setGenerating(false);
       addToast("success", "AI copy generated!");
     }, 800);

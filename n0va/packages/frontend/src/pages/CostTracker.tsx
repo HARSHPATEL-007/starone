@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DollarSign, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, TrendingUp, TrendingDown, PieChart, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { useEntityData } from "../hooks/useEntityData";
 
 type Channel = "google_ads" | "facebook" | "instagram" | "linkedin" | "twitter" | "tiktok" | "youtube" | "email" | "display" | "programmatic" | "other";
 
 interface CostEntry {
+  _id?: string;
   id: string;
   campaignName: string;
   channel: Channel;
@@ -15,8 +17,6 @@ interface CostEntry {
   notes: string;
   createdAt: string;
 }
-
-const STORAGE_KEY = "n0va_cost_tracker";
 
 const CHANNEL_META: Record<string, { label: string; color: string }> = {
   google_ads: { label: "Google Ads", color: "bg-blue-500/20 text-blue-400" },
@@ -35,50 +35,23 @@ const CHANNEL_META: Record<string, { label: string; color: string }> = {
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const CHANNELS = Object.keys(CHANNEL_META) as Channel[];
 
-const DEFAULT_ENTRIES: CostEntry[] = [
-  { id: "ce-1", campaignName: "Product Launch Q3", channel: "google_ads", month: "July", year: 2025, budgeted: 40000, actual: 38500, notes: "Slightly under budget due to lower CPC", createdAt: new Date(Date.now() - 86400000 * 20).toISOString() },
-  { id: "ce-2", campaignName: "Product Launch Q3", channel: "linkedin", month: "July", year: 2025, budgeted: 25000, actual: 28700, notes: "Over budget - competitive bidding", createdAt: new Date(Date.now() - 86400000 * 20).toISOString() },
-  { id: "ce-3", campaignName: "Summer Sale 2025", channel: "instagram", month: "July", year: 2025, budgeted: 30000, actual: 28500, notes: "Good performance, optimized delivery", createdAt: new Date(Date.now() - 86400000 * 15).toISOString() },
-  { id: "ce-4", campaignName: "Summer Sale 2025", channel: "tiktok", month: "July", year: 2025, budgeted: 15000, actual: 16200, notes: "Testing new creative formats", createdAt: new Date(Date.now() - 86400000 * 15).toISOString() },
-  { id: "ce-5", campaignName: "Enterprise Q3", channel: "linkedin", month: "July", year: 2025, budgeted: 50000, actual: 52100, notes: "", createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-  { id: "ce-6", campaignName: "Enterprise Q3", channel: "programmatic", month: "July", year: 2025, budgeted: 35000, actual: 31200, notes: "Under budget - paused underperforming placements", createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-  { id: "ce-7", campaignName: "Product Launch Q3", channel: "youtube", month: "August", year: 2025, budgeted: 20000, actual: 21500, notes: "Pre-launch teaser campaign", createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "ce-8", campaignName: "Loyalty Program Q3", channel: "email", month: "August", year: 2025, budgeted: 8000, actual: 7200, notes: "Low cost channel, high ROI", createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-];
-
-function load(): CostEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_ENTRIES));
-    return DEFAULT_ENTRIES;
-  } catch { return []; }
-}
-
 function fmt(n: number): string { return "$" + n.toLocaleString(); }
 
 export default function CostTracker() {
   const { addToast } = useToast();
-  const [entries, setEntries] = useState<CostEntry[]>([]);
+  const { data: entries, create, update, remove, replaceAll } = useEntityData<CostEntry>("cost_tracker");
   const [search, setSearch] = useState("");
   const [filterYear, setFilterYear] = useState<number | "all">("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ campaignName: "", channel: "google_ads" as Channel, month: MONTHS[new Date().getMonth()], year: new Date().getFullYear(), budgeted: 0, actual: 0, notes: "" });
 
-  useEffect(() => { setEntries(load()); }, []);
-
-  function persist(updated: CostEntry[]) {
-    setEntries(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  }
-
   function resetForm(e?: CostEntry) {
     if (e) setForm({ campaignName: e.campaignName, channel: e.channel, month: e.month, year: e.year, budgeted: e.budgeted, actual: e.actual, notes: e.notes });
     else setForm({ campaignName: "", channel: "google_ads", month: MONTHS[new Date().getMonth()], year: new Date().getFullYear(), budgeted: 0, actual: 0, notes: "" });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.campaignName.trim()) { addToast("error", "Campaign name is required"); return; }
     const now = new Date().toISOString();
     const entry: CostEntry = {
@@ -86,25 +59,23 @@ export default function CostTracker() {
       campaignName: form.campaignName.trim(), channel: form.channel, month: form.month, year: form.year,
       budgeted: form.budgeted, actual: form.actual, notes: form.notes.trim(), createdAt: editingId ? entries.find(e => e.id === editingId)!.createdAt : now,
     };
-    let updated: CostEntry[];
-    if (editingId) { updated = entries.map(e => e.id === editingId ? entry : e); addToast("success", "Entry updated"); }
-    else { updated = [entry, ...entries]; addToast("success", "Cost entry added"); }
-    persist(updated);
+    if (editingId) { await update(editingId, entry as any); addToast("success", "Entry updated"); }
+    else { await create(entry as any); addToast("success", "Cost entry added"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = entries.find(e => e.id === id)?.campaignName;
-    persist(entries.filter(e => e.id !== id));
+    await remove(id);
     addToast("success", `Entry for "${name}" deleted`);
   }
 
-  function duplicateEntry(id: string) {
+  async function duplicateEntry(id: string) {
     const e = entries.find(et => et.id === id);
     if (!e) return;
     const copy: CostEntry = { ...e, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString() };
-    persist([copy, ...entries]);
+    await create(copy as any);
     addToast("success", "Entry duplicated");
   }
 
