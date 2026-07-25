@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Plus, Search, Megaphone, Copy, CheckSquare, Square, Download, ChevronLeft, ChevronRight, X, SlidersHorizontal, ArrowUpDown, DollarSign, TrendingUp, Target } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { Plus, Search, Megaphone, Copy, CheckSquare, Square, Download, ChevronLeft, ChevronRight, X, SlidersHorizontal, ArrowUpDown, DollarSign, TrendingUp, Target, ChevronDown } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -31,6 +31,9 @@ export default function Campaigns() {
   const [bulkStatus, setBulkStatus] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [metrics, setMetrics] = useState<any>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
 
   function toggleSort(field: string) {
     if (sortBy === field) {
@@ -65,6 +68,11 @@ export default function Campaigns() {
   }, [buildParams]);
 
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
+
+  async function loadMetrics() {
+    setMetricsLoading(true);
+    try { const res = await api.campaigns.metricsTimeseries("30"); setMetrics(res); } catch {} finally { setMetricsLoading(false); }
+  }
 
   function resetFilters() {
     setSearch(""); setStatusFilter("all"); setTypeFilter("all"); setPlatformFilter("all"); setPage(1);
@@ -107,9 +115,13 @@ export default function Campaigns() {
     } catch { addToast("error", "Failed to clone campaign"); }
   }
 
-  async function handleBulkStatus() {
+  async function handleBulkAction() {
     if (!bulkStatus || selected.size === 0) return;
-    try { await Promise.all(Array.from(selected).map((id) => api.campaigns.updateStatus(id, bulkStatus))); addToast("success", `${selected.size} campaigns ${bulkStatus}`); setSelected(new Set()); setBulkStatus(""); loadCampaigns(); } catch { addToast("error", "Bulk update failed"); }
+    try {
+      const res = await api.campaigns.bulk({ ids: Array.from(selected), action: "status", value: bulkStatus });
+      addToast("success", `${res.succeeded} of ${res.total} campaigns ${bulkStatus}`);
+      setSelected(new Set()); setBulkStatus(""); loadCampaigns();
+    } catch { addToast("error", "Bulk update failed"); }
   }
 
   function toggleSelect(id: string) { setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
@@ -206,6 +218,75 @@ export default function Campaigns() {
         </div>
       </div>
 
+      {/* Budget Forecast */}
+      <div className="card">
+        <button onClick={() => { if (!metrics) loadMetrics(); setShowForecast(!showForecast); }} className="w-full flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-n0va-400" /> Budget Forecast & Metrics</h3>
+          <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${showForecast ? "rotate-180" : ""}`} />
+        </button>
+        {showForecast && (
+          <div className="mt-4">
+            {metricsLoading ? (
+              <div className="flex items-center justify-center py-8"><div className="animate-spin w-6 h-6 border-2 border-n0va-400 border-t-transparent rounded-full" /></div>
+            ) : metrics ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-[10px] text-gray-500">Budget Utilization</p>
+                    <p className="text-lg font-bold text-white">{metrics.budget?.utilization ?? 0}%</p>
+                    <p className="text-[10px] text-gray-500">${metrics.budget?.spent?.toLocaleString()} / ${metrics.budget?.total?.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-[10px] text-gray-500">Avg Daily Spend</p>
+                    <p className="text-lg font-bold text-white">${Math.round(metrics.forecast?.avgDailySpend || 0).toLocaleString()}</p>
+                    <p className="text-[10px] text-gray-500">over 30 days</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-[10px] text-gray-500">Days Remaining</p>
+                    <p className={`text-lg font-bold ${metrics.forecast?.willExceedBudget ? "text-red-400" : "text-green-400"}`}>{metrics.forecast?.daysRemaining ?? "—"}</p>
+                    <p className="text-[10px] text-gray-500">{metrics.forecast?.willExceedBudget ? "Budget may run out early" : "On track"}</p>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-[10px] text-gray-500">Projected End</p>
+                    <p className="text-lg font-bold text-white">{metrics.forecast?.projectedEndDate ? new Date(metrics.forecast.projectedEndDate).toLocaleDateString() : "—"}</p>
+                    <p className="text-[10px] text-gray-500">{metrics.campaignCounts?.active ?? 0} active campaigns</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gray-800 rounded-lg p-3">
+                    <p className="text-[10px] text-gray-500 mb-1">Totals (30 days)</p>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between"><span className="text-gray-400">Impressions</span><span className="text-white">{(metrics.totals?.totalImpressions || 0).toLocaleString()}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Clicks</span><span className="text-white">{(metrics.totals?.totalClicks || 0).toLocaleString()}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Conversions</span><span className="text-white">{(metrics.totals?.totalConversions || 0).toLocaleString()}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Revenue</span><span className="text-green-400">${(metrics.totals?.totalRevenue || 0).toLocaleString()}</span></div>
+                    </div>
+                  </div>
+                  {metrics.daily && metrics.daily.length > 0 && (
+                    <div className="bg-gray-800 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 mb-1">Daily Spend Trend</p>
+                      <div className="h-20">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={metrics.daily}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                            <XAxis dataKey="date" hide />
+                            <YAxis hide />
+                            <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px", fontSize: "11px" }} />
+                            <Line type="monotone" dataKey="spend" stroke="#1a6dff" strokeWidth={2} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-4">Could not load metrics. <button className="text-n0va-400 hover:underline" onClick={loadMetrics}>Retry</button></p>
+            )}
+          </div>
+        )}
+      </div>
+
       {selected.size > 0 && (
         <div className="flex items-center gap-3 p-3 bg-n0va-600/10 border border-n0va-600/30 rounded-lg">
           <span className="text-sm text-gray-300">{selected.size} selected</span>
@@ -215,7 +296,7 @@ export default function Campaigns() {
             <option value="paused">Pause</option>
             <option value="archived">Archive</option>
           </select>
-          <button className="btn-primary text-xs py-1.5" onClick={handleBulkStatus} disabled={!bulkStatus}>Apply</button>
+          <button className="btn-primary text-xs py-1.5" onClick={handleBulkAction} disabled={!bulkStatus}>Apply</button>
           <button className="btn-secondary text-xs py-1.5" onClick={() => setSelected(new Set())}>Clear</button>
         </div>
       )}

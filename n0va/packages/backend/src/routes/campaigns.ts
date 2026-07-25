@@ -68,6 +68,74 @@ router.get(
   })
 );
 
+router.post(
+  "/bulk",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { ids, action, value } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) throw new AppError(400, "Missing campaign IDs");
+    if (!action) throw new AppError(400, "Missing action (status|budget|archive)");
+
+    const results: { id: string; success: boolean; error?: string }[] = [];
+    for (const id of ids) {
+      try {
+        if (action === "status") {
+          await DataStore.updateCampaign(id, tenantId, { status: value });
+        } else if (action === "budget") {
+          const c = await DataStore.findCampaignById(id, tenantId);
+          if (c) {
+            const update: any = { "budget.daily": value.daily || c.budget?.daily };
+            if (value.lifetime) { update["budget.lifetime"] = value.lifetime; update["budget.remaining"] = value.lifetime - (c.budget?.spent || 0); }
+            await DataStore.updateCampaign(id, tenantId, update);
+          }
+        } else if (action === "archive") {
+          await DataStore.updateCampaign(id, tenantId, { status: "archived" });
+        }
+        results.push({ id, success: true });
+      } catch (e: any) {
+        results.push({ id, success: false, error: e.message });
+      }
+    }
+    res.json({ results, total: ids.length, succeeded: results.filter((r) => r.success).length });
+  })
+);
+
+router.get(
+  "/metrics/timeseries",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { days = "30", granularity = "day" } = req.query;
+    const dayCount = parseInt(days as string, 10);
+
+    const metrics = await DataStore.findDailyMetrics(tenantId, dayCount);
+    const campaigns = await DataStore.findCampaigns({ tenantId });
+
+    const totalBudget = campaigns.campaigns.reduce((s: number, c: any) => s + (c.budget?.lifetime || 0), 0);
+    const totalSpent = campaigns.campaigns.reduce((s: number, c: any) => s + (c.budget?.spent || 0), 0);
+
+    const agg = await DataStore.aggregateMetrics([
+      { $match: { tenantId } },
+      { $group: { _id: null, totalImpressions: { $sum: "$impressions" }, totalClicks: { $sum: "$clicks" }, totalConversions: { $sum: "$conversions" }, totalSpend: { $sum: "$spend" }, totalRevenue: { $sum: "$revenue" } } },
+    ]);
+
+    const totals = Array.isArray(agg) && agg.length > 0 ? agg[0] : { totalImpressions: 0, totalClicks: 0, totalConversions: 0, totalSpend: 0, totalRevenue: 0 };
+
+    const avgDailySpend = dayCount > 0 ? totals.totalSpend / dayCount : 0;
+    const remaining = totalBudget - totalSpent;
+    const daysRemaining = avgDailySpend > 0 ? Math.round(remaining / avgDailySpend) : 0;
+    const projectedEndDate = new Date();
+    projectedEndDate.setDate(projectedEndDate.getDate() + daysRemaining);
+
+    res.json({
+      daily: metrics,
+      totals,
+      budget: { total: totalBudget, spent: totalSpent, remaining, utilization: totalBudget > 0 ? parseFloat(((totalSpent / totalBudget) * 100).toFixed(1)) : 0 },
+      forecast: { avgDailySpend, daysRemaining, projectedEndDate, willExceedBudget: daysRemaining <= dayCount * 0.7 },
+      campaignCounts: { total: campaigns.campaigns.length, active: campaigns.campaigns.filter((c: any) => c.status === "active").length },
+    });
+  })
+);
+
 router.get(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

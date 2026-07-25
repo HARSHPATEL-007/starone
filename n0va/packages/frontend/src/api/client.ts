@@ -59,6 +59,9 @@ export const api = {
       request<any>(`/campaigns/${id}/clone`, { method: "POST" }),
     delete: (id: string) => request<void>(`/campaigns/${id}`, { method: "DELETE" }),
     dashboard: () => request<any>("/campaigns/dashboard"),
+    bulk: (data: Record<string, unknown>) =>
+      request<any>("/campaigns/bulk", { method: "POST", body: JSON.stringify(data) }),
+    metricsTimeseries: (days = "30") => request<any>(`/campaigns/metrics/timeseries?days=${days}`),
   },
   agents: {
     list: () => request<any[]>("/agents"),
