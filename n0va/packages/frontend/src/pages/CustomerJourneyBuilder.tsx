@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { GitBranch, Plus, X, Edit3, Trash2, Search, ArrowRight, ArrowDown, ArrowUp, Star, Home, MousePointerClick, Move, Link2, Unlink, Save, Eye } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { GitBranch, Plus, X, Edit3, Trash2, Search, ArrowRight, ArrowDown, ArrowUp, Star, Home, MousePointerClick, Move, Link2, Unlink, Save, Eye, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -156,6 +157,14 @@ export default function CustomerJourneyBuilder() {
 
   const filtered = journeys.filter(j => !search || j.name.toLowerCase().includes(search.toLowerCase()) || j.description.toLowerCase().includes(search.toLowerCase()));
 
+  function exportJourneysCSV() {
+    const header = "Name,Description,Campaign,Nodes,Edges,Created";
+    const rows = journeys.map(j => `"${j.name}","${j.description.replace(/"/g, '""')}","${j.campaignName}",${j.nodes.length},${j.edges.length},"${new Date(j.createdAt).toLocaleDateString()}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "customer_journeys.csv"; el.click();
+    addToast("success", "Journeys exported");
+  }
+
   const NODE_W = 140, NODE_H = 70;
 
   return (
@@ -183,10 +192,36 @@ export default function CustomerJourneyBuilder() {
       </div>
 
       {viewMode === "list" && (
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-          <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search journeys..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
+        <>
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+            <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search journeys..." value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          {journeys.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="card">
+                <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><GitBranch className="w-3.5 h-3.5 text-n0va-400" /> Nodes per Journey</h3>
+                <div className="h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[...journeys].sort((a, b) => b.nodes.length - a.nodes.length).slice(0, 8).map(j => ({ name: j.name.length > 14 ? j.name.substring(0, 14) + "..." : j.name, nodes: j.nodes.length }))} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis type="number" stroke="#6b7280" fontSize={9} />
+                      <YAxis type="category" dataKey="name" stroke="#6b7280" fontSize={9} width={90} />
+                      <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                      <Bar dataKey="nodes" fill="#10b981" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="card flex items-center justify-center">
+                <div className="text-center">
+                  <button onClick={exportJourneysCSV} className="btn-ghost text-sm flex items-center gap-1.5 mx-auto"><Download className="w-4 h-4" /> Export CSV</button>
+                  <p className="text-xs text-gray-600 mt-2">{journeys.length} journeys · {journeys.reduce((s, j) => s + j.nodes.length, 0)} total nodes</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {viewMode === "canvas" && (

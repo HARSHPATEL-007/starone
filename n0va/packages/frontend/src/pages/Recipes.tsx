@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X, Search, ExternalLink, Wand2 } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { FileJson, Play, Code, CheckCircle, AlertCircle, Plus, Trash2, Edit3, X, Search, ExternalLink, Wand2, Download } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
@@ -88,6 +89,21 @@ export default function Recipes() {
     } finally { setExecuting(null); }
   }
 
+  const compiledCount = recipes.filter(r => r.isCompiled).length;
+  const uncompiledCount = recipes.filter(r => !r.isCompiled).length;
+  const recipeStatusChart = [];
+  if (compiledCount > 0) recipeStatusChart.push({ name: "Compiled", value: compiledCount });
+  if (uncompiledCount > 0) recipeStatusChart.push({ name: "Uncompiled", value: uncompiledCount });
+  const PIE_COLORS = ["#10b981", "#f59e0b"];
+
+  function exportRecipesCSV() {
+    const header = "Name,Description,Trigger,Steps,Compiled,HITL Threshold,HITL Field";
+    const rows = recipes.map(r => `"${r.name}","${(r.description || "").replace(/"/g, '""')}","${r.trigger}",${(r.steps || []).length},${r.isCompiled},${r.hitlGate?.threshold || 0},"${r.hitlGate?.field || ""}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "recipes.csv"; el.click();
+    addToast("success", "Recipes exported");
+  }
+
   async function handleDelete(id: string) {
     try { await api.recipes.delete(id); setShowDelete(null); loadRecipes(); addToast("success", "Recipe deleted"); }
     catch { addToast("error", "Failed to delete recipe"); }
@@ -113,6 +129,30 @@ export default function Recipes() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
         <input className="input pl-10" placeholder="Search recipes..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2">Compilation Status</h3>
+          <div className="h-28 flex items-center justify-center">
+            {recipeStatusChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={recipeStatusChart} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={40} label={({ name, value }) => `${name}: ${value}`}>
+                    {recipeStatusChart.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : <p className="text-xs text-gray-600">No recipes</p>}
+          </div>
+        </div>
+        <div className="card flex items-center justify-center">
+          <div className="text-center">
+            <button onClick={exportRecipesCSV} className="btn-ghost text-sm flex items-center gap-1.5 mx-auto"><Download className="w-4 h-4" /> Export CSV</button>
+            <p className="text-xs text-gray-600 mt-2">{recipes.length} recipes · {compiledCount} compiled</p>
+          </div>
+        </div>
       </div>
 
       {showForm && (

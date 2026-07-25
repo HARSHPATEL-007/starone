@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Search, Megaphone, Copy, CheckSquare, Square, Download, ChevronLeft, ChevronRight, X, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Plus, Search, Megaphone, Copy, CheckSquare, Square, Download, ChevronLeft, ChevronRight, X, SlidersHorizontal, ArrowUpDown, DollarSign, TrendingUp, Target } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -75,6 +76,11 @@ export default function Campaigns() {
 
   const totalPages = Math.ceil(total / pageSize);
 
+  const statusDist = STATUS_OPTIONS.filter(s => s !== "all").map(s => ({ name: s.charAt(0).toUpperCase() + s.slice(1), count: campaigns.filter(c => c.status === s).length }));
+  const typeDist = TYPE_OPTIONS.filter(t => t !== "all").map(t => ({ name: t.charAt(0).toUpperCase() + t.slice(1), count: campaigns.filter(c => c.type === t).length }));
+  const totalBudget = campaigns.reduce((s, c) => s + (c.budget?.lifetime || 0), 0);
+  const totalSpent = campaigns.reduce((s, c) => s + (c.budget?.spent || 0), 0);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -146,6 +152,58 @@ export default function Campaigns() {
           {PLATFORM_OPTIONS.map((p) => <option key={p} value={p}>{p === "all" ? "All Platforms" : p}</option>)}
         </select>
         {hasActiveFilters() && <button className="btn-secondary text-xs py-1.5 flex items-center gap-1" onClick={resetFilters}><SlidersHorizontal className="w-3 h-3" /> Clear</button>}
+      </div>
+
+      {/* Metrics summary */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="card p-3 flex items-center gap-3">
+          <DollarSign className="w-5 h-5 text-n0va-400" />
+          <div><p className="text-lg font-bold text-white">${totalBudget.toLocaleString()}</p><p className="text-[10px] text-gray-500">Total Budget</p></div>
+        </div>
+        <div className="card p-3 flex items-center gap-3">
+          <TrendingUp className="w-5 h-5 text-green-400" />
+          <div><p className="text-lg font-bold text-white">${totalSpent.toLocaleString()}</p><p className="text-[10px] text-gray-500">Total Spent</p></div>
+        </div>
+        <div className="card p-3 flex items-center gap-3">
+          <Target className="w-5 h-5 text-purple-400" />
+          <div><p className="text-lg font-bold text-white">{campaigns.length}</p><p className="text-[10px] text-gray-500">Campaigns</p></div>
+        </div>
+        <div className="card p-3 flex items-center gap-3">
+          <Megaphone className="w-5 h-5 text-amber-400" />
+          <div><p className="text-lg font-bold text-white">{campaigns.filter(c => c.status === "active").length}</p><p className="text-[10px] text-gray-500">Active</p></div>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2">Campaigns by Status</h3>
+          <div className="h-28">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={statusDist}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                <YAxis stroke="#6b7280" fontSize={9} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="count" fill="#1a6dff" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2">Campaigns by Type</h3>
+          <div className="h-28">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={typeDist}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                <YAxis stroke="#6b7280" fontSize={9} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {selected.size > 0 && (

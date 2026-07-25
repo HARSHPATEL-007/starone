@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Users, Plus, X, UserCheck, UserX, Shield, UserCog, Mail, Clock, Copy, Check, Search, Ban } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { Users, Plus, X, UserCheck, UserX, Shield, UserCog, Mail, Clock, Copy, Check, Search, Ban, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -130,6 +131,17 @@ export default function Team() {
 
   const inviteLink = "https://app.n0va.io/invite/abc123def456";
 
+  const roleDist = ROLES.filter(r => members.some(m => m.role === r.value)).map(r => ({ name: r.label, value: members.filter(m => m.role === r.value).length }));
+  const PIE_COLORS_TEAM = ["#a855f7", "#3b82f6", "#22c55e"];
+
+  function exportTeamCSV() {
+    const header = "Name,Email,Role,Status,Joined,Last Active";
+    const rows = members.map(m => `"${m.name}","${m.email}","${m.role}","${m.status}","${new Date(m.joinedAt).toLocaleDateString()}","${m.lastActive ? new Date(m.lastActive).toLocaleDateString() : "Never"}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "team.csv"; el.click();
+    addToast("success", "Team exported");
+  }
+
   if (loading) {
     return <div className="card p-12 flex items-center justify-center text-gray-400"><Users className="w-5 h-5 animate-spin mr-2" /> Loading team...</div>;
   }
@@ -152,6 +164,28 @@ export default function Team() {
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Admins</p><p className="text-2xl font-bold text-purple-400">{members.filter(m => m.role === "admin" && m.status === "active").length}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Editors</p><p className="text-2xl font-bold text-blue-400">{members.filter(m => m.role === "editor" && m.status === "active").length}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Pending</p><p className="text-2xl font-bold text-amber-400">{members.filter(m => m.status === "invited").length}</p></div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-n0va-400" /> Role Distribution</h3>
+          <div className="h-32 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={roleDist} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={45} label={({ name, value }) => `${name}: ${value}`}>
+                  {roleDist.map((_, i) => <Cell key={i} fill={PIE_COLORS_TEAM[i % PIE_COLORS_TEAM.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card flex items-center justify-center">
+          <div className="text-center">
+            <button onClick={exportTeamCSV} className="btn-ghost text-sm flex items-center gap-1.5 mx-auto"><Download className="w-4 h-4" /> Export CSV</button>
+            <p className="text-xs text-gray-600 mt-2">{members.length} members · {members.filter(m => m.status === "active").length} active</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">

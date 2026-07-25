@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Camera, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, DollarSign, Target, Eye, Download, Clock, TrendingUp, Users } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
@@ -112,6 +113,14 @@ export default function CampaignSnapshots() {
   const filtered = snapshots.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.campaignName.toLowerCase().includes(search.toLowerCase()) || s.tags.some(t => t.toLowerCase().includes(search.toLowerCase())));
   const viewingSnap = viewingId ? snapshots.find(s => s.id === viewingId) : null;
 
+  function exportSnapshotsCSV() {
+    const header = "Name,Campaign,Description,Metrics,Notes,Tags,Created";
+    const rows = snapshots.map(s => `"${s.name}","${s.campaignName}","${s.description.replace(/"/g, '""')}","${s.metrics.map(m => `${m.label}: ${m.value}${m.format === "currency" ? "$" : m.format === "percent" ? "%" : m.format === "rate" ? "x" : ""}`).join("; ")}","${s.notes.replace(/"/g, '""')}","${s.tags.join("; ")}","${new Date(s.createdAt).toLocaleDateString()}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "snapshots.csv"; el.click();
+    addToast("success", "Snapshots exported");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -125,10 +134,33 @@ export default function CampaignSnapshots() {
         <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Snapshot</button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-        <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search snapshots..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="flex items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+          <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search snapshots..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <button onClick={exportSnapshotsCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Export CSV</button>
       </div>
+
+      {snapshots.length > 1 && (
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5 text-n0va-400" /> Metric Comparison (latest snapshots)</h3>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={(() => {
+                const snap = [...snapshots].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
+                return snap.map(s => ({ name: s.name.length > 12 ? s.name.substring(0, 12) + "..." : s.name, Metrics: s.metrics.length }));
+              })()}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                <YAxis stroke="#6b7280" fontSize={9} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="Metrics" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Form modal */}
       {showForm && (

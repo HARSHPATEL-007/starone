@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { CheckCircle, XCircle, Clock, Megaphone, Palette, AlertCircle, Check, Loader, MessageSquare, Search, RefreshCw, ExternalLink } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { CheckCircle, XCircle, Clock, Megaphone, Palette, AlertCircle, Check, Loader, MessageSquare, Search, RefreshCw, ExternalLink, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 
@@ -66,6 +67,20 @@ export default function Approvals() {
   const approvedToday = history.filter((h) => h.action === "approved" && new Date(h.timestamp).toDateString() === new Date().toDateString()).length;
   const rejectedToday = history.filter((h) => h.action === "rejected" && new Date(h.timestamp).toDateString() === new Date().toDateString()).length;
   const approvalRate = history.length > 0 ? Math.round((history.filter((h) => h.action === "approved").length / history.length) * 100) : 0;
+
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weeklyTrend = DAYS.map(d => {
+    const dayEntries = history.filter(h => new Date(h.timestamp).toLocaleDateString("en-US", { weekday: "short" }) === d);
+    return { name: d, Approved: dayEntries.filter(h => h.action === "approved").length, Rejected: dayEntries.filter(h => h.action === "rejected").length };
+  });
+
+  function exportApprovalsCSV() {
+    const header = "Item,Type,Action,Comment,Actor,Date";
+    const rows = history.map(h => `"${h.itemName}","${h.itemType}","${h.action}","${h.comment.replace(/"/g, '""')}","${h.actor}","${new Date(h.timestamp).toISOString()}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "approvals_history.csv"; el.click();
+    addToast("success", "History exported");
+  }
 
   async function handleAction(item: ApprovalItem, action: "approved" | "rejected") {
     if (action === "rejected" && !comment.trim()) {
@@ -167,6 +182,31 @@ export default function Approvals() {
           <div>
             <p className="text-2xl font-bold text-white">{approvalRate}%</p>
             <p className="text-xs text-gray-500">Approval Rate</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly trend + export */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2">Weekly Approval Activity</h3>
+          <div className="h-28">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                <YAxis stroke="#6b7280" fontSize={9} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="Approved" fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="Rejected" fill="#ef4444" radius={[4, 4, 0, 0]} stackId="a" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card flex items-center justify-center">
+          <div className="text-center">
+            <button onClick={exportApprovalsCSV} className="btn-ghost text-sm flex items-center gap-1.5 mx-auto"><Download className="w-4 h-4" /> Export History CSV</button>
+            <p className="text-xs text-gray-600 mt-2">{history.length} total actions · {approvalRate}% approval rate</p>
           </div>
         </div>
       </div>
