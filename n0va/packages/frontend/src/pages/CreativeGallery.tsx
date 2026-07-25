@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LayoutGrid, List, Search, Image, Video, Film, Type, RefreshCw, Trash2, Copy, ExternalLink, Filter, X, Eye } from "lucide-react";
+import { LayoutGrid, List, Search, Image, Video, Film, Type, RefreshCw, Trash2, Copy, ExternalLink, Filter, X, Eye, CheckCircle, XCircle, CheckSquare, Square, BarChart3, TrendingUp, Zap, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
 
 const formatIcons: Record<string, any> = { image: Image, video: Video, carousel: Film, text: Type };
 const formatColors: Record<string, string> = { image: "bg-blue-500/10 text-blue-400", video: "bg-purple-500/10 text-purple-400", carousel: "bg-amber-500/10 text-amber-400", text: "bg-gray-500/10 text-gray-400" };
+
+const BULK_ACTIONS = [
+  { status: "active", label: "Activate", icon: CheckCircle, color: "text-green-400" },
+  { status: "pending_approval", label: "Review", icon: Eye, color: "text-amber-400" },
+  { status: "draft", label: "Revert to Draft", icon: XCircle, color: "text-gray-400" },
+];
 
 export default function CreativeGallery() {
   const navigate = useNavigate();
@@ -17,6 +23,8 @@ export default function CreativeGallery() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -40,7 +48,23 @@ export default function CreativeGallery() {
     } catch { addToast("error", "Failed to clone"); }
   }
 
-  const filtered = creatives.filter((c) => {
+  async function handleBulkStatus(status: string) {
+    const ids = [...selected];
+    if (ids.length === 0) { addToast("error", "No creatives selected"); return; }
+    let success = 0;
+    for (const id of ids) {
+      try { await api.creatives.updateStatus(id, status); success++; } catch { }
+    }
+    addToast("success", `${success}/${ids.length} → ${status}`);
+    setSelected(new Set());
+    loadData();
+  }
+
+  function toggleSelect(id: string) {
+    setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  const filtered = creatives.filter(c => {
     if (search) {
       const q = search.toLowerCase();
       if (!c.name?.toLowerCase().includes(q) && !c.headline?.toLowerCase().includes(q) && !c.body?.toLowerCase().includes(q)) return false;
@@ -50,16 +74,16 @@ export default function CreativeGallery() {
     return true;
   });
 
-  const types = [...new Set(creatives.map((c) => c.type).filter(Boolean))];
-  const statuses = [...new Set(creatives.map((c) => c.status).filter(Boolean))];
+  const previewCreative = previewId ? creatives.find(c => (c._id || c.id) === previewId) : null;
+
+  const types = [...new Set(creatives.map(c => c.type).filter(Boolean))];
+  const statuses = [...new Set(creatives.map(c => c.status).filter(Boolean))];
 
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between"><div><div className="h-8 w-48 bg-gray-800 rounded animate-pulse" /><div className="h-4 w-64 bg-gray-800 rounded animate-pulse mt-2" /></div></div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">{Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       </div>
     );
   }
@@ -72,7 +96,7 @@ export default function CreativeGallery() {
             <LayoutGrid className="w-6 h-6 text-n0va-400" />
             Creative Gallery
           </h1>
-          <p className="text-gray-400 mt-1">Visual library of all ad creatives — {filtered.length} of {creatives.length}</p>
+          <p className="text-gray-400 mt-1">{filtered.length} of {creatives.length} · {selected.size} selected</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg transition-colors ${viewMode === "grid" ? "bg-n0va-500/10 text-n0va-400" : "text-gray-500 hover:text-gray-300"}`} title="Grid view"><LayoutGrid className="w-4 h-4" /></button>
@@ -81,24 +105,36 @@ export default function CreativeGallery() {
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-          <input className="input pl-10 pr-4 py-2 text-sm" placeholder="Search creatives..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input pl-10 pr-4 py-2 text-sm" placeholder="Search creatives..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="input text-sm w-auto" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+        <select className="input text-sm w-auto" value={filterType} onChange={e => setFilterType(e.target.value)}>
           <option value="all">All Types</option>
-          {types.map((t) => <option key={t} value={t}>{t}</option>)}
+          {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        <select className="input text-sm w-auto" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+        <select className="input text-sm w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="all">All Statuses</option>
-          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         {(search || filterType !== "all" || filterStatus !== "all") && (
           <button onClick={() => { setSearch(""); setFilterType("all"); setFilterStatus("all"); }} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1"><X className="w-3 h-3" /> Clear</button>
         )}
       </div>
+
+      {selected.size > 0 && (
+        <div className="card p-3 flex items-center gap-3 bg-n0va-600/10 border-n0va-600/30 flex-wrap">
+          <span className="text-sm text-white font-medium">{selected.size} selected</span>
+          {BULK_ACTIONS.map(a => (
+            <button key={a.status} onClick={() => handleBulkStatus(a.status)} className="btn-ghost text-xs flex items-center gap-1" title={a.label}>
+              <a.icon className={`w-3.5 h-3.5 ${a.color}`} /> {a.label}
+            </button>
+          ))}
+          <button onClick={() => handleBulkStatus("archived")} className="btn-ghost text-xs text-red-400">Archive</button>
+          <button onClick={() => setSelected(new Set())} className="btn-ghost text-xs">Clear</button>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
@@ -108,14 +144,13 @@ export default function CreativeGallery() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((c) => {
+          {filtered.map(c => {
             const FormatIcon = formatIcons[c.type] || Image;
-            const fmtColor = formatColors[c.type] || formatColors.image;
             const id = c._id || c.id;
+            const isSelected = selected.has(id);
             return (
-              <div key={id} className="card group relative overflow-hidden animate-slide-up">
-                {/* Preview area */}
-                <div className="aspect-[4/3] bg-gray-800/50 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+              <div key={id} className={`card group relative overflow-hidden animate-slide-up ${isSelected ? "ring-2 ring-n0va-500" : ""}`}>
+                <div className="aspect-[4/3] bg-gray-800/50 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
                   {c.assetUrl ? (
                     c.type === "video" ? (
                       <div className="relative w-full h-full flex items-center justify-center bg-gray-900">
@@ -123,78 +158,107 @@ export default function CreativeGallery() {
                         <span className="absolute bottom-2 right-2 text-xs text-gray-500 bg-gray-900/80 px-2 py-0.5 rounded">{c.type}</span>
                       </div>
                     ) : (
-                      <img src={c.assetUrl} alt={c.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = ""; (e.target as HTMLImageElement).style.display = "none"; }} />
+                      <img src={c.assetUrl} alt={c.name} className="w-full h-full object-cover" onClick={() => setPreviewId(id)} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     )
                   ) : (
-                    <div className="text-center p-4">
+                    <div className="text-center p-4" onClick={() => setPreviewId(id)}>
                       <FormatIcon className="w-10 h-10 text-gray-700 mx-auto mb-2" />
                       <p className="text-xs text-gray-600 line-clamp-3">{c.body || c.headline || "No preview"}</p>
                     </div>
                   )}
+                  {c.performance?.ctr && (
+                    <div className="absolute top-2 left-2 bg-gray-900/80 rounded px-1.5 py-0.5 flex items-center gap-1">
+                      <TrendingUp className="w-2.5 h-2.5 text-green-400" />
+                      <span className="text-[9px] text-green-400">{(c.performance.ctr * 100).toFixed(1)}%</span>
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(id)} className="w-4 h-4 rounded border-gray-600 bg-gray-900" onClick={e => e.stopPropagation()} />
+                  </div>
                 </div>
-
-                {/* Info */}
                 <div className="space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <Link to={`/creatives/${id}`} className="text-sm font-medium text-white hover:text-n0va-400 truncate flex-1">{c.name}</Link>
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${fmtColor}`}>{c.type}</span>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ${formatColors[c.type] || formatColors.image}`}>{c.type}</span>
                   </div>
                   {c.headline && <p className="text-xs text-gray-400 truncate">{c.headline}</p>}
                   {c.cta && <span className="text-[11px] text-n0va-400 bg-n0va-500/10 px-2 py-0.5 rounded-full inline-block">{c.cta}</span>}
                   <div className="flex items-center gap-2 pt-1">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      c.status === "active" ? "bg-green-900/50 text-green-300" :
-                      c.status === "draft" ? "bg-gray-700 text-gray-300" :
-                      c.status === "pending_approval" ? "bg-amber-900/50 text-amber-300" :
-                      c.status === "approved" ? "bg-blue-900/50 text-blue-300" :
-                      c.status === "rejected" ? "bg-red-900/50 text-red-300" :
-                      "bg-gray-800 text-gray-500"
-                    }`}>{c.status}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${c.status === "active" ? "bg-green-900/50 text-green-300" : c.status === "draft" ? "bg-gray-700 text-gray-300" : c.status === "pending_approval" ? "bg-amber-900/50 text-amber-300" : c.status === "approved" ? "bg-blue-900/50 text-blue-300" : c.status === "rejected" ? "bg-red-900/50 text-red-300" : "bg-gray-800 text-gray-500"}`}>{c.status}</span>
                     {c.tags?.length > 0 && <span className="text-[10px] text-gray-600 truncate flex-1 text-right">{c.tags.slice(0, 2).join(", ")}{c.tags.length > 2 ? ` +${c.tags.length - 2}` : ""}</span>}
                   </div>
                 </div>
-
-                {/* Hover actions */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-xl">
-                  <Link to={`/creatives/${id}`} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors" title="View"><Eye className="w-4 h-4 text-gray-300" /></Link>
-                  <button onClick={() => handleClone(id)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors" title="Clone"><Copy className="w-4 h-4 text-gray-300" /></button>
-                  <button onClick={() => handleDelete(id, c.name)} className="p-2 bg-gray-800 rounded-lg hover:bg-red-900/50 transition-colors" title="Delete"><Trash2 className="w-4 h-4 text-red-400" /></button>
+                  <button onClick={() => setPreviewId(id)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors" title="Preview"><Eye className="w-4 h-4 text-gray-300" /></button>
                   <Link to={`/creatives/${id}`} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors" title="Open"><ExternalLink className="w-4 h-4 text-gray-300" /></Link>
+                  <button onClick={() => handleClone(id)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700" title="Clone"><Copy className="w-4 h-4 text-gray-300" /></button>
+                  <button onClick={() => handleDelete(id, c.name)} className="p-2 bg-gray-800 rounded-lg hover:bg-red-900/50" title="Delete"><Trash2 className="w-4 h-4 text-red-400" /></button>
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        /* List view */
         <div className="space-y-1">
-          {filtered.map((c) => {
+          {filtered.map(c => {
             const FormatIcon = formatIcons[c.type] || Image;
             const id = c._id || c.id;
+            const isSelected = selected.has(id);
             return (
-              <div key={id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800/50 transition-colors group">
+              <div key={id} className={`flex items-center gap-4 p-3 rounded-lg transition-colors group ${isSelected ? "bg-n0va-600/10 border border-n0va-500/30" : "hover:bg-gray-800/50"}`}>
+                <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(id)} className="w-4 h-4 rounded border-gray-700" />
                 <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center shrink-0">
-                  {c.assetUrl && c.type !== "video" ? <img src={c.assetUrl} alt="" className="w-full h-full object-cover rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} /> : <FormatIcon className="w-5 h-5 text-gray-600" />}
+                  {c.assetUrl && c.type !== "video" ? <img src={c.assetUrl} alt="" className="w-full h-full object-cover rounded-lg" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} /> : <FormatIcon className="w-5 h-5 text-gray-600" />}
                 </div>
                 <Link to={`/creatives/${id}`} className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{c.name}</p>
                   <p className="text-xs text-gray-500 truncate">{c.headline || c.body || "—"}</p>
                 </Link>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${formatColors[c.type] || formatColors.image}`}>{c.type}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  c.status === "active" ? "bg-green-900/50 text-green-300" :
-                  c.status === "draft" ? "bg-gray-700 text-gray-300" :
-                  c.status === "pending_approval" ? "bg-amber-900/50 text-amber-300" :
-                  "bg-gray-800 text-gray-500"
-                }`}>{c.status}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${c.status === "active" ? "bg-green-900/50 text-green-300" : c.status === "draft" ? "bg-gray-700 text-gray-300" : c.status === "pending_approval" ? "bg-amber-900/50 text-amber-300" : "bg-gray-800 text-gray-500"}`}>{c.status}</span>
+                {c.performance?.ctr && <span className="text-[10px] text-green-400">{(c.performance.ctr * 100).toFixed(1)}% CTR</span>}
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Link to={`/creatives/${id}`} className="p-1.5 text-gray-500 hover:text-gray-300"><Eye className="w-3.5 h-3.5" /></Link>
+                  <button onClick={() => setPreviewId(id)} className="p-1.5 text-gray-500 hover:text-gray-300"><Eye className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleClone(id)} className="p-1.5 text-gray-500 hover:text-gray-300"><Copy className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDelete(id, c.name)} className="p-1.5 text-gray-500 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {previewCreative && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setPreviewId(null)}>
+          <div className="w-full max-w-2xl max-h-[90vh] bg-n0va-800 rounded-xl border border-gray-800 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+              <div>
+                <h3 className="text-lg font-semibold text-white">{previewCreative.name}</h3>
+                <p className="text-xs text-gray-500 capitalize">{previewCreative.type} · {previewCreative.status}</p>
+              </div>
+              <button onClick={() => setPreviewId(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6">
+              <div className="bg-gray-900 rounded-xl p-6 max-w-md mx-auto">
+                {previewCreative.assetUrl && previewCreative.type !== "video" ? (
+                  <img src={previewCreative.assetUrl} alt="" className="w-full rounded-lg mb-4" />
+                ) : null}
+                {previewCreative.headline && <h2 className="text-xl font-bold text-white mb-2">{previewCreative.headline}</h2>}
+                {previewCreative.body && <p className="text-sm text-gray-300 mb-4">{previewCreative.body}</p>}
+                {previewCreative.cta && <span className="inline-block px-4 py-2 bg-n0va-600 text-white rounded-lg text-sm font-medium">{previewCreative.cta}</span>}
+              </div>
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="bg-gray-800/50 rounded-lg p-3 text-center"><p className="text-[10px] text-gray-500">Type</p><p className="text-xs text-white font-medium capitalize">{previewCreative.type}</p></div>
+                <div className="bg-gray-800/50 rounded-lg p-3 text-center"><p className="text-[10px] text-gray-500">Status</p><p className="text-xs text-white font-medium capitalize">{previewCreative.status}</p></div>
+                {previewCreative.performance?.ctr && <div className="bg-gray-800/50 rounded-lg p-3 text-center"><p className="text-[10px] text-gray-500">CTR</p><p className="text-xs text-green-400 font-medium">{(previewCreative.performance.ctr * 100).toFixed(1)}%</p></div>}
+              </div>
+              {previewCreative.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                  {previewCreative.tags.map((t: string) => <span key={t} className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded">{t}</span>)}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
