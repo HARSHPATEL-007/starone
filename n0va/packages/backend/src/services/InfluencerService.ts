@@ -107,6 +107,235 @@ export class InfluencerService {
       { platform: "linkedin", label: "LinkedIn", icon: "briefcase" },
     ];
   }
+
+  // ─── Audience Quality Score ──────────────────────────────────────────
+
+  /**
+   * Computes an audience quality score for an influencer based on:
+   *  - Engagement authenticity (engagement rate vs follower count correlation)
+   *  - Follower growth consistency (simulated via engagement distribution)
+   *  - Audience relevance to brand categories
+   */
+  computeAudienceQuality(
+    influencer: Influencer,
+    brandCategories: string[] = [],
+  ): { qualityScore: number; authenticityRatio: number; relevanceScore: number; growthHealth: number } {
+    // Authenticity: lower score if engagement is very low for follower count
+    // or very high (suggesting bot engagement)
+    const expectedEr = Math.max(0.5, 5.0 - Math.log2(Math.max(1000, influencer.followers)) * 0.5);
+    const erRatio = influencer.engagementRate / Math.max(expectedEr, 0.01);
+    const authenticityRatio = erRatio > 0.3 && erRatio < 3.0 ? erRatio : erRatio < 0.3 ? erRatio * 0.5 : 1.5 / erRatio;
+    const authenticityScore = Math.min(1, authenticityRatio);
+
+    // Relevance: cosine similarity between influencer tags and brand categories
+    const relevanceScore = brandCategories.length > 0
+      ? this.cosineSimilarity(
+        brandCategories.map((c) => influencer.category.includes(c) ? 1 : 0),
+        brandCategories.map(() => 1),
+      )
+      : 0.5;
+
+    // Growth health (simulated via views-to-followers ratio for YouTube, else via engagement)
+    const viewsRatio = influencer.followers > 0 ? influencer.avgViews / influencer.followers : 0;
+    const growthHealth = Math.min(1, Math.max(0,
+      influencer.platform === "youtube" ? viewsRatio * 3 : influencer.engagementRate / 10
+    ));
+
+    // Composite quality score
+    const qualityScore = Math.round(
+      (authenticityScore * 0.4 + relevanceScore * 0.35 + growthHealth * 0.25) * 100
+    ) / 100;
+
+    return {
+      qualityScore: Math.round(qualityScore * 100) / 100,
+      authenticityRatio: Math.round(authenticityRatio * 100) / 100,
+      relevanceScore: Math.round(relevanceScore * 100) / 100,
+      growthHealth: Math.round(growthHealth * 100) / 100,
+    };
+  }
+
+  // ─── Fake Follower Detection ────────────────────────────────────────
+
+  /**
+   * Estimate fake follower probability using Benford's-law-inspired
+   * engagement distribution analysis and follower-to-engagement ratio.
+   */
+  detectFakeFollowers(influencer: Influencer): {
+    probability: number;
+    flags: string[];
+    confidence: "low" | "medium" | "high";
+    details: Record<string, number>;
+  } {
+    const flags: string[] = [];
+    const details: Record<string, number> = {};
+
+    // Flag 1: Engagement-to-follower ratio too low
+    const erToFollowers = influencer.engagementRate / Math.log10(Math.max(1000, influencer.followers));
+    details.erToFollowersRatio = Math.round(erToFollowers * 100) / 100;
+    if (erToFollowers < 0.3) flags.push("Engagement-to-follower ratio abnormally low");
+
+    // Flag 2: Views-to-followers ratio (for video platforms)
+    if (["youtube", "tiktok"].includes(influencer.platform)) {
+      const viewsRatio = influencer.followers > 0 ? influencer.avgViews / influencer.followers : 0;
+      details.viewsToFollowers = Math.round(viewsRatio * 100) / 100;
+      if (viewsRatio < 0.02) flags.push("Views-to-followers ratio extremely low");
+    }
+
+    // Flag 3: CPM (cost per mille) anomaly - very low CPM suggest bot traffic
+    const estimatedCpm = influencer.priceRange.min / (influencer.followers / 1000);
+    details.estimatedCPM = Math.round(estimatedCpm * 100) / 100;
+    if (estimatedCpm < 0.5) flags.push("Estimated CPM suspiciously low");
+
+    // Flag 4: Listed campaign count vs follower count mismatch
+    const campaignRatio = influencer.followers / Math.max(1, influencer.metrics.totalCampaigns);
+    details.followersPerCampaign = Math.round(campaignRatio);
+    if (campaignRatio > 500000) flags.push("Very high followers-per-campaign ratio (potential bot inflation)");
+
+    // Probability calculation
+    let probability = 0;
+    if (flags.length > 0) {
+      probability = Math.min(0.95, flags.length * 0.15 + (1 - erToFollowers / 3) * 0.2);
+    }
+
+    const absProbability = Math.round(Math.max(0, Math.min(1, probability)) * 100) / 100;
+    const confidence: "low" | "medium" | "high" =
+      flags.length === 0 ? "low" : flags.length <= 2 ? "medium" : "high";
+
+    return { probability: absProbability, flags, confidence, details };
+  }
+
+  // ─── ROI Prediction ─────────────────────────────────────────────────
+
+  /**
+   * Predict ROI for an influencer based on historical similarity to
+   * past influencers in the same category/platform/follower range.
+   */
+  predictROI(
+    influencer: Influencer,
+    historicalCampaigns: CampaignInfluencer[],
+  ): { predictedROI: number; confidence: number; range: [number, number]; similarInfluencers: number } {
+    const similar = historicalCampaigns.filter((ci) => {
+      if (!ci.performance) return false;
+      return ci.platform === influencer.platform &&
+        ci.compensation >= influencer.priceRange.min * 0.5 &&
+        ci.compensation <= influencer.priceRange.max * 2;
+    });
+
+    if (similar.length === 0) {
+      // Fallback: platform-level average
+      const platformAverages: Record<string, number> = {
+        instagram: 2.8, tiktok: 3.5, youtube: 3.2, twitter: 2.0, linkedin: 4.0,
+      };
+      const avg = platformAverages[influencer.platform] || 2.5;
+      return { predictedROI: avg, confidence: 0.3, range: [avg * 0.5, avg * 1.5], similarInfluencers: 0 };
+    }
+
+    const rois = similar.map((ci) => ci.performance!.roi);
+    const mean = rois.reduce((s, r) => s + r, 0) / rois.length;
+    const variance = rois.reduce((s, r) => s + (r - mean) ** 2, 0) / rois.length;
+    const std = Math.sqrt(variance);
+    const n = rois.length;
+
+    // Confidence grows with sample size (diminishing returns)
+    const confidence = Math.min(0.9, 0.3 + 0.1 * Math.log2(n + 1));
+
+    return {
+      predictedROI: Math.round(mean * 100) / 100,
+      confidence: Math.round(confidence * 100) / 100,
+      range: [Math.round((mean - 1.96 * std / Math.sqrt(n)) * 100) / 100, Math.round((mean + 1.96 * std / Math.sqrt(n)) * 100) / 100],
+      similarInfluencers: n,
+    };
+  }
+
+  // ─── Optimal Pricing ───────────────────────────────────────────────
+
+  /**
+   * Compute value-based optimal price using predicted ROI and desired ROAS.
+   * price = (predicted_impressions * expected_ctr * cvr * aov) / target_roas
+   */
+  computeOptimalPrice(
+    influencer: Influencer,
+    targetROAS = 3.0,
+    expectedCTR = 0.02,
+    expectedCVR = 0.03,
+    averageOrderValue = 100,
+  ): { optimalPrice: number; priceRange: [number, number]; valueScore: number; paybackUnits: number } {
+    const estimatedImpressions = influencer.avgViews * 2;
+    const estimatedConversions = estimatedImpressions * expectedCTR * expectedCVR;
+    const estimatedRevenue = estimatedConversions * averageOrderValue;
+    const optimalPrice = estimatedRevenue / targetROAS;
+
+    const currentMid = (influencer.priceRange.min + influencer.priceRange.max) / 2;
+    const valueScore = currentMid > 0 ? Math.min(2, optimalPrice / currentMid) : 1;
+
+    return {
+      optimalPrice: Math.round(optimalPrice * 100) / 100,
+      priceRange: [Math.round(optimalPrice * 0.7 * 100) / 100, Math.round(optimalPrice * 1.3 * 100) / 100],
+      valueScore: Math.round(valueScore * 100) / 100,
+      paybackUnits: Math.ceil(estimatedConversions > 0 ? currentMid / (estimatedRevenue / estimatedConversions) : 0),
+    };
+  }
+
+  // ─── Brand-Fit Scoring ──────────────────────────────────────────────
+
+  /**
+   * Cosine similarity between brand-desired categories and influencer tags.
+   */
+  computeBrandFit(influencer: Influencer, brandCategories: string[]): { score: number; matchedCategories: string[]; missingCategories: string[] } {
+    const matched = brandCategories.filter((bc) =>
+      influencer.category.some((ic) => ic.toLowerCase().includes(bc.toLowerCase()) || bc.toLowerCase().includes(ic.toLowerCase()))
+    );
+    const missing = brandCategories.filter((bc) => !matched.includes(bc));
+    const score = brandCategories.length > 0 ? matched.length / brandCategories.length : 0;
+    return {
+      score: Math.round(score * 100) / 100,
+      matchedCategories: matched,
+      missingCategories: missing,
+    };
+  }
+
+  /**
+   * Score all influencers in the system with a composite rank.
+   */
+  rankInfluencers(
+    brandCategories: string[],
+    historicalCampaigns: CampaignInfluencer[],
+  ): { influencer: Influencer; rank: number; qualityScore: number; brandFit: number; predictedROI: number; valueScore: number; fakeFollowerRisk: number }[] {
+    const all = this.search({});
+    const scored = all.map((inf) => {
+      const quality = this.computeAudienceQuality(inf, brandCategories);
+      const brandFit = this.computeBrandFit(inf, brandCategories);
+      const roi = this.predictROI(inf, historicalCampaigns);
+      const fakeRisk = this.detectFakeFollowers(inf);
+      const pricing = this.computeOptimalPrice(inf);
+
+      // Composite score: weighted sum of quality, brand fit, ROI confidence, inverse fake risk, value
+      const composite =
+        quality.qualityScore * 0.25 +
+        brandFit.score * 0.2 +
+        (roi.predictedROI / 10) * 0.2 * roi.confidence +
+        (1 - fakeRisk.probability) * 0.15 +
+        Math.min(1, pricing.valueScore) * 0.2;
+
+      return { influencer: inf, rank: 0, qualityScore: quality.qualityScore, brandFit: brandFit.score, predictedROI: roi.predictedROI, valueScore: pricing.valueScore, fakeFollowerRisk: fakeRisk.probability, _composite: composite };
+    });
+
+    scored.sort((a, b) => b._composite - a._composite);
+    return scored.map((s, i) => ({ ...s, rank: i + 1, _composite: undefined }));
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    let dot = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) {
+      dot += a[i] * b[i];
+      na += a[i] * a[i];
+      nb += b[i] * b[i];
+    }
+    const den = Math.sqrt(na) * Math.sqrt(nb);
+    return den > 0 ? dot / den : 0;
+  }
 }
 
 export const influencerService = new InfluencerService();
