@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
-import { ArrowLeft, FileJson, Code, Play, CheckCircle, AlertCircle, Clock, Terminal, RefreshCw, Trash2, Edit3, Save, X, History, Activity } from "lucide-react";
+import { ArrowLeft, FileJson, Code, Play, CheckCircle, AlertCircle, Clock, Terminal, RefreshCw, Trash2, Edit3, Save, X, History, Activity, Download } from "lucide-react";
 import { SkeletonCard } from "../components/Skeleton";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { useCsvExport } from "../hooks/useCsvExport";
 
 export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { track } = useRecentItems();
+  const { exportToCsv } = useCsvExport();
   const [recipe, setRecipe] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,6 +156,7 @@ export default function RecipeDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => { exportToCsv((recipe.steps || []).map((s: any, i: number) => ({ Step: i + 1, Action: s.action, Platform: s.platform || "" })), `recipe_${id}_steps`); addToast("success", "Steps exported"); }}><Download className="w-4 h-4" /> Export Steps</button>
           <button className="btn-secondary flex items-center gap-1.5 text-sm" onClick={() => setShowEdit(true)}>
             <Edit3 className="w-4 h-4" /> Edit
           </button>

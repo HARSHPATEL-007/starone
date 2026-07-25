@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
-import { Upload, FileSpreadsheet, FileJson, Download, Check, AlertCircle, Loader, Table, ArrowRight, X, ExternalLink } from "lucide-react";
+import { Upload, FileSpreadsheet, FileJson, Download, Check, AlertCircle, Loader, Table, ArrowRight, X, ExternalLink, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { useToast } from "../components/Toast";
 
 type EntityType = "audiences" | "creatives";
@@ -63,6 +65,7 @@ function parseJSON(text: string): { headers: string[]; rows: string[][] } {
 export default function DataImport() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [entityType, setEntityType] = useState<EntityType>("audiences");
@@ -183,6 +186,23 @@ export default function DataImport() {
           <p className="text-gray-400 mt-1">Import audiences or creatives from CSV or JSON</p>
         </div>
       </div>
+
+      {rows.length > 0 && !results && (
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-white mb-3">Parsed Data Summary</h3>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[{ name: "Columns", value: headers.length }, { name: "Rows", value: rows.length }, { name: "Fields", value: fields.length }]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                <YAxis stroke="#6b7280" fontSize={11} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {!results && (
         <div className="flex gap-2">
@@ -323,6 +343,7 @@ export default function DataImport() {
               {importing ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {importing ? `Importing ${progress.done}/${progress.total}...` : `Import ${rows.length} ${entityType}`}
             </button>
+            <button className="btn-ghost flex items-center gap-1.5" onClick={() => { exportToCsv(rows.map((row, i) => { const obj: Record<string, any> = { Row: i + 1 }; headers.forEach((h, hi) => { obj[h] = row[hi] || ""; }); return obj; }), `parsed_${entityType}`); addToast("success", "Parsed data exported"); }}><Download className="w-3.5 h-3.5" /> Export Parsed</button>
             <button onClick={() => { setRows([]); setHeaders([]); setColumnMap([]); setFile(null); }} disabled={importing} className="btn-ghost">Cancel</button>
           </div>
         </div>

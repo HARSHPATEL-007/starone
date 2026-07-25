@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { Download, FileSpreadsheet, FileJson, CheckSquare, Square, ChevronDown, ChevronUp, Loader, Search, ExternalLink, Database } from "lucide-react";
+import { Download, FileSpreadsheet, FileJson, CheckSquare, Square, ChevronDown, ChevronUp, Loader, Search, ExternalLink, Database, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useToast } from "../components/Toast";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { api } from "../api/client";
 
 interface EntityDef {
@@ -97,6 +99,7 @@ function downloadJSON(data: Record<string, any>[], filename: string) {
 
 export default function ExportCenter() {
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [selected, setSelected] = useState<Set<string>>(new Set(ENTITIES.map((e) => e.key)));
   const [format, setFormat] = useState<"csv" | "json">("csv");
   const [loading, setLoading] = useState(false);
@@ -188,6 +191,26 @@ export default function ExportCenter() {
           <p className="text-xs text-gray-500">Export Format</p>
         </div>
       </div>
+
+      {totalItems > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Data Distribution</h3>
+            <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(ENTITIES.map(e => ({ Entity: e.label, Records: data[e.key]?.length || 0 })), "export_distribution"); }}><Download className="w-3 h-3" /> Export</button>
+          </div>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ENTITIES.map(e => ({ name: e.label, records: data[e.key]?.length || 0 }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
+                <YAxis stroke="#6b7280" fontSize={11} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="records" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Records" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center min-h-[200px]"><Loader className="w-6 h-6 animate-spin text-n0va-400" /></div>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, DollarSign, RefreshCw, Bot, Play, Pause, TrendingUp, Target, Eye } from "lucide-react";
+import { Shield, AlertTriangle, DollarSign, RefreshCw, Bot, Play, Pause, TrendingUp, Target, Eye, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { api } from "../api/client";
+import { useCsvExport } from "../hooks/useCsvExport";
 
 interface FraudSummary {
   totalFlags: number;
@@ -16,6 +17,7 @@ interface FraudSummary {
 }
 
 export default function WarRoom() {
+  const { exportToCsv } = useCsvExport();
   const [fraudHealth, setFraudHealth] = useState<FraudSummary | null>(null);
   const [activeTab, setActiveTab] = useState<"fraud" | "budget" | "creative" | "alerts">("fraud");
   const [loading, setLoading] = useState(true);
@@ -137,8 +139,11 @@ export default function WarRoom() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Risk by Platform</h3>
-              <div className="h-64">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Risk by Platform</h3>
+              <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(platformRiskData.map(d => ({ Platform: d.platform, IVT: d.ivt, Viewability: d.viewability, BrandSafety: d.brandSafety, OverallRisk: d.overall })), "fraud_risk"); }}><Download className="w-3 h-3" /> Export CSV</button>
+            </div>
+            <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={platformRiskData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />

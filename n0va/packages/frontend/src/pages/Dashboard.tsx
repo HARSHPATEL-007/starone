@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback } from "react";
-import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw } from "lucide-react";
+import { BarChart3, DollarSign, TrendingUp, Users, Megaphone, MousePointerClick, Shield, Bot, Target, Bell, Activity, RefreshCw, Download } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
 import { useNavigate } from "react-router-dom";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
+import { useCsvExport } from "../hooks/useCsvExport";
 import { SkeletonCard, SkeletonChart } from "../components/Skeleton";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { exportToCsv } = useCsvExport();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dailyData, setDailyData] = useState<any[]>([]);
@@ -97,6 +99,7 @@ export default function Dashboard() {
             <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} className="w-3.5 h-3.5 text-n0va-600 bg-gray-700 border-gray-600 rounded" />
             Auto (30s)
           </label>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => { exportToCsv(chartData.map((d: any) => ({ Date: d.date, Revenue: d.revenue || 0, Spend: d.spend || 0, Impressions: d.impressions || 0, Clicks: d.clicks || 0, Conversions: d.conversions || 0 })), "dashboard_daily"); }}><Download className="w-3 h-3" /> Export</button>
           <button className="btn-secondary p-2" onClick={loadData} title="Refresh"><RefreshCw className="w-4 h-4" /></button>
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-500">
             <kbd className="text-gray-400 bg-gray-700 px-1 rounded">Ctrl</kbd><span>+</span><kbd className="text-gray-400 bg-gray-700 px-1 rounded">K</kbd><span className="ml-1">Search</span>
