@@ -62,6 +62,8 @@ import bulkImportRoutes from "./routes/bulk-import";
 import uploadRoutes from "./routes/upload";
 import userRoutes from "./routes/users";
 import recommendationRoutes from "./routes/recommendations";
+import deliveryRoutes from "./routes/delivery";
+import annotationRoutes from "./routes/annotations";
 
 const app = express();
 const httpServer = createServer(app);
@@ -138,6 +140,8 @@ app.use("/api/v1/bulk-import", authMiddleware, tenantMiddleware, bulkImportRoute
 app.use("/api/v1/upload", authMiddleware, tenantMiddleware, uploadRoutes);
 app.use("/api/v1/users", authMiddleware, tenantMiddleware, userRoutes);
 app.use("/api/v1/recommendations", authMiddleware, tenantMiddleware, recommendationRoutes);
+app.use("/api/v1/delivery", authMiddleware, tenantMiddleware, deliveryRoutes);
+app.use("/api/v1/annotations", authMiddleware, tenantMiddleware, annotationRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

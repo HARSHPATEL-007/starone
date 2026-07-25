@@ -94,6 +94,7 @@ import MediaKit from "./pages/MediaKit";
 import CampaignScheduler from "./pages/CampaignScheduler";
 import IntentConsole from "./pages/IntentConsole";
 import SandboxConsole from "./pages/SandboxConsole";
+import DeliveryDashboard from "./pages/DeliveryDashboard";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -204,6 +205,7 @@ export default function App() {
                 <Route path="/campaign-scheduler" element={<CampaignScheduler />} />
                 <Route path="/intent-console" element={<IntentConsole />} />
                 <Route path="/sandbox-console" element={<SandboxConsole />} />
+                <Route path="/delivery" element={<DeliveryDashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

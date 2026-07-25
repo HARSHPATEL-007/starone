@@ -585,4 +585,20 @@ export const api = {
     campaign: (id: string) => request<any[]>(`/recommendations/campaign/${id}`),
     all: () => request<{ recommendations: any[]; crossCampaign: any[]; total: number }>("/recommendations/all"),
   },
+  delivery: {
+    send: (data: Record<string, unknown>) =>
+      request<any>("/delivery/send", { method: "POST", body: JSON.stringify(data) }),
+    retry: (id: string) => request<any>(`/delivery/retry/${id}`, { method: "POST" }),
+    list: (params?: string) => request<any[]>(`/delivery${params ? `?${params}` : ""}`),
+    stats: () => request<{ total: number; byChannel: Record<string, number>; byStatus: Record<string, number>; successRate: number }>("/delivery/stats"),
+    get: (id: string) => request<any>(`/delivery/${id}`),
+  },
+  annotations: {
+    list: (campaignId: string) => request<any[]>(`/annotations/campaign/${campaignId}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/annotations", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/annotations/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/annotations/${id}`, { method: "DELETE" }),
+  },
 };

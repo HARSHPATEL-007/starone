@@ -60,6 +60,12 @@ import {
   User,
   Upload,
   Download,
+  Rocket,
+  Newspaper,
+  Clock,
+  Terminal,
+  Code2,
+  Mail,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -140,6 +146,13 @@ const navItems = [
   { to: "/billing", icon: CreditCard, label: "Billing" },
   { to: "/help", icon: LifeBuoy, label: "Help & Support" },
   { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/campaign-board", icon: LayoutGrid, label: "Campaign Board" },
+  { to: "/launch-readiness", icon: Rocket, label: "Launch Readiness" },
+  { to: "/media-kit", icon: Newspaper, label: "Media Kit" },
+  { to: "/campaign-scheduler", icon: Clock, label: "Scheduler" },
+  { to: "/intent-console", icon: Terminal, label: "Intent Console" },
+  { to: "/sandbox-console", icon: Code2, label: "Sandbox" },
+  { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
 
 const typeIcons: Record<string, any> = {

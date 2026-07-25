@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle, Download } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, Copy, TrendingUp, DollarSign, Target, BarChart3, Users, Image, Layers, Save, X, ExternalLink, Radio, RefreshCw, Calendar, Clock, MessageSquare, FileText, CheckSquare, Square, CheckCircle, Download, Plus, Award } from "lucide-react";
 import { useCampaignLive } from "../hooks/useSocket";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../api/client";
@@ -13,7 +13,7 @@ import { useLaunchChecklist } from "../hooks/useLaunchChecklist";
 import { useCsvExport } from "../hooks/useCsvExport";
 import CommentsSection from "../components/CommentsSection";
 
-type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes" | "checklist" | "comments";
+type Tab = "overview" | "creatives" | "audiences" | "platforms" | "hypercontext" | "schedule" | "notes" | "checklist" | "comments" | "annotations";
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -30,6 +30,11 @@ export default function CampaignDetail() {
   const [tab, setTab] = useState<Tab>("overview");
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", goal: "", daily: 0, lifetime: 0, startDate: "", endDate: "" });
+  const [annotations, setAnnotations] = useState<any[]>([]);
+  const [showAnnotationForm, setShowAnnotationForm] = useState(false);
+  const [annotationText, setAnnotationText] = useState("");
+  const [annotationDate, setAnnotationDate] = useState("");
+  const [annotationType, setAnnotationType] = useState<"note" | "event" | "milestone" | "change">("note");
 
   const mergedAnalytics = liveData ? {
     ...analytics,
@@ -43,6 +48,14 @@ export default function CampaignDetail() {
     if (!id) return;
     loadCampaign();
   }, [id]);
+
+  const campaignId = id;
+
+  useEffect(() => {
+    if (campaignId) {
+      api.annotations.list(campaignId).then(setAnnotations).catch(() => {});
+    }
+  }, [campaignId]);
 
   async function loadCampaign() {
     if (!id) return;
@@ -182,6 +195,7 @@ export default function CampaignDetail() {
     { id: "notes", label: "Notes", icon: MessageSquare },
   { id: "checklist",   label: "Checklist",    icon: CheckSquare },
   { id: "comments",    label: "Comments",     icon: MessageSquare },
+  { id: "annotations", label: "Timeline",     icon: Clock },
   ];
 
   return (
@@ -559,6 +573,98 @@ export default function CampaignDetail() {
       {tab === "comments" && campaign && (
         <div className="card p-6">
           <CommentsSection entityType="campaigns" entityId={campaign._id || campaign.id} entityName={campaign.name} />
+        </div>
+      )}
+
+      {tab === "annotations" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white">Timeline Annotations</h3>
+            <button className="btn-secondary flex items-center gap-2 text-sm" onClick={() => setShowAnnotationForm(!showAnnotationForm)}>
+              <Plus className="w-4 h-4" /> Add Note
+            </button>
+          </div>
+
+          {showAnnotationForm && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Date</label>
+                  <input type="date" className="input w-full" value={annotationDate} onChange={(e) => setAnnotationDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Type</label>
+                  <select className="input w-full" value={annotationType} onChange={(e) => setAnnotationType(e.target.value as any)}>
+                    <option value="note">Note</option>
+                    <option value="event">Event</option>
+                    <option value="milestone">Milestone</option>
+                    <option value="change">Change</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Note</label>
+                <textarea className="input w-full resize-none" rows={3} placeholder="What happened on this date?" value={annotationText} onChange={(e) => setAnnotationText(e.target.value)} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button className="btn-ghost text-sm" onClick={() => { setShowAnnotationForm(false); setAnnotationText(""); setAnnotationDate(""); setAnnotationType("note"); }}>Cancel</button>
+                <button className="btn-primary text-sm flex items-center gap-1.5" onClick={async () => {
+                  if (!annotationDate || !annotationText.trim()) return;
+                  try {
+                    await api.annotations.create({ campaignId: campaignId!, date: annotationDate, text: annotationText, type: annotationType });
+                    const list = await api.annotations.list(campaignId!);
+                    setAnnotations(list);
+                    setAnnotationText("");
+                    setAnnotationDate("");
+                    setAnnotationType("note");
+                    setShowAnnotationForm(false);
+                  } catch { /* ignore */ }
+                }}>
+                  <Save className="w-3.5 h-3.5" /> Save
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {annotations.length === 0 ? (
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center">
+                <Clock className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400 text-sm">No timeline annotations yet.</p>
+                <p className="text-gray-500 text-xs mt-1">Add notes, events, milestones, or changes to track what happens during this campaign.</p>
+              </div>
+            ) : (
+              [...annotations].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((ann: any) => {
+                const TypeIcon = ann.type === "event" ? Calendar : ann.type === "milestone" ? Award : ann.type === "change" ? RefreshCw : FileText;
+                const typeColors: Record<string, string> = { note: "bg-gray-500/20 text-gray-400", event: "bg-blue-500/20 text-blue-400", milestone: "bg-yellow-500/20 text-yellow-400", change: "bg-purple-500/20 text-purple-400" };
+                const typeColor = typeColors[ann.type] || typeColors.note;
+                const timeAgo = Math.floor((Date.now() - new Date(ann.createdAt || ann.date).getTime()) / 86400000);
+                return (
+                  <div key={ann._id || ann.id} className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 flex items-start gap-4 group">
+                    <div className="flex flex-col items-center gap-1 shrink-0 w-20">
+                      <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded text-xs font-mono text-center">{ann.date?.substring(5)}</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${typeColor}`}>
+                        <TypeIcon className="w-3 h-3" /> {ann.type}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-200 whitespace-pre-wrap">{ann.text}</p>
+                      <p className="text-xs text-gray-500 mt-1">{timeAgo === 0 ? "Today" : `${timeAgo}d ago`}</p>
+                    </div>
+                    <button className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={async () => {
+                      try {
+                        await api.annotations.delete(ann._id || ann.id);
+                        const list = await api.annotations.list(campaignId!);
+                        setAnnotations(list);
+                      } catch { /* ignore */ }
+                    }}>
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 

@@ -138,27 +138,34 @@ export default function DataImport() {
     const missing = required.filter((r) => !mapped.some((m) => m.entityField === r.key));
     if (missing.length > 0) { addToast("error", `Missing required fields: ${missing.map((m) => m.label).join(", ")}`); return; }
 
+    const parsedData = rows.map((row) => buildPayload(row));
+
     setImporting(true);
-    setProgress({ total: rows.length, done: 0, errors: 0 });
-    const errs: { row: number; msg: string }[] = [];
-    let done = 0;
+    setProgress({ total: parsedData.length, done: 0, errors: 0 });
 
-    for (let i = 0; i < rows.length; i++) {
-      try {
-        const payload = buildPayload(rows[i]);
-        if (entityType === "audiences") await api.audiences.create(payload);
-        else await api.creatives.create(payload);
-        done++;
-      } catch (e: any) {
-        errs.push({ row: i + 1, msg: e.message || "Import failed" });
+    try {
+      const result = await api.bulkImport.validate({ items: parsedData as any });
+      setProgress({ total: parsedData.length, done: 0, errors: result.errors?.length || 0 });
+      if (result.errors?.length > 0) {
+        setImporting(false);
+        setResults({ success: 0, errors: result.errors.map((e: any, i: number) => ({ row: i + 1, msg: e.message || String(e) })) });
+        return;
       }
-      setProgress({ total: rows.length, done, errors: errs.length });
-    }
 
-    setImporting(false);
-    setResults({ success: done, errors: errs });
-    if (errs.length === 0) addToast("success", `Imported ${done} ${entityType} successfully`);
-    else addToast("error", `Imported ${done} with ${errs.length} errors`);
+      const importResult = await api.bulkImport.import({ items: parsedData as any });
+      const done = importResult.success ?? parsedData.length;
+      const errs: { row: number; msg: string }[] = (importResult.errors || []).map((e: any, i: number) => ({ row: i + 1, msg: e.message || String(e) }));
+
+      setProgress({ total: parsedData.length, done, errors: errs.length });
+      setImporting(false);
+      setResults({ success: done, errors: errs });
+      if (errs.length === 0) addToast("success", `Imported ${done} ${entityType} successfully`);
+      else addToast("error", `Imported ${done} with ${errs.length} errors`);
+    } catch (e: any) {
+      setImporting(false);
+      setResults({ success: 0, errors: [{ row: 0, msg: e.message || "Import failed" }] });
+      addToast("error", `Import failed: ${e.message}`);
+    }
   }
 
   function downloadTemplate() {
@@ -171,6 +178,20 @@ export default function DataImport() {
     a.href = url; a.download = `${entityType}_template.csv`; a.click();
     URL.revokeObjectURL(url);
     addToast("success", "Template downloaded");
+  }
+
+  async function downloadApiTemplate(type: EntityType) {
+    try {
+      const template = await api.bulkImport.template(type);
+      const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${type}_template.json`; a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", `${type} template downloaded`);
+    } catch (e: any) {
+      addToast("error", `Failed to download template: ${e.message}`);
+    }
   }
 
   const previewRows = rows.slice(0, 5);
@@ -205,18 +226,30 @@ export default function DataImport() {
       )}
 
       {!results && (
-        <div className="flex gap-2">
-          {(["audiences", "creatives"] as EntityType[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => { setEntityType(t); setFile(null); setHeaders([]); setRows([]); setColumnMap([]); }}
-              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors capitalize ${
-                entityType === t ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-800 text-gray-400 hover:border-gray-700"
-              }`}
-            >
-              {t === "audiences" ? "Audiences" : "Creatives"}
-            </button>
-          ))}
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            {(["audiences", "creatives"] as EntityType[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => { setEntityType(t); setFile(null); setHeaders([]); setRows([]); setColumnMap([]); }}
+                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors capitalize ${
+                  entityType === t ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-800 text-gray-400 hover:border-gray-700"
+                }`}
+              >
+                {t === "audiences" ? "Audiences" : "Creatives"}
+              </button>
+            ))}
+          </div>
+          {rows.length === 0 && (
+            <div className="flex gap-2">
+              <button onClick={() => downloadTemplate()} className="btn-ghost text-sm">
+                <Download className="w-4 h-4 inline mr-1.5" /> CSV Template
+              </button>
+              <button onClick={() => downloadApiTemplate(entityType)} className="btn-ghost text-sm">
+                <FileJson className="w-4 h-4 inline mr-1.5" /> JSON Template
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -244,7 +277,10 @@ export default function DataImport() {
               <Upload className="w-4 h-4 inline mr-1.5" /> Choose File
             </button>
             <button className="btn-ghost text-sm" onClick={(e) => { e.stopPropagation(); downloadTemplate(); }}>
-              <Download className="w-4 h-4 inline mr-1.5" /> Download Template
+              <Download className="w-4 h-4 inline mr-1.5" /> CSV Template
+            </button>
+            <button className="btn-ghost text-sm" onClick={(e) => { e.stopPropagation(); downloadApiTemplate(entityType); }}>
+              <FileJson className="w-4 h-4 inline mr-1.5" /> JSON Template
             </button>
           </div>
           <input
