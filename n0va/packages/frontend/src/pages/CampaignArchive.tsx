@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Archive, Search, RotateCcw, Trash2, Filter, Calendar, Megaphone, DollarSign, BarChart3, Clock, Target, Eye, Loader, AlertCircle } from "lucide-react";
+import { Archive, Search, RotateCcw, Trash2, Filter, Calendar, Megaphone, DollarSign, BarChart3, Clock, Target, Eye, Loader, AlertCircle, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 import { SkeletonCard } from "../components/Skeleton";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const ARCHIVE_STATUS_COLORS: Record<string, string> = { completed: "#10b981", paused: "#f59e0b", cancelled: "#ef4444", archived: "#6b7280" };
 
 interface ArchivedCampaign {
   id: string;
@@ -145,6 +148,36 @@ export default function CampaignArchive() {
         <div className="card p-4"><p className="text-xs text-gray-500">Total Spent</p><p className="text-lg font-bold text-white mt-1">${fmt(totalSpent)}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Avg. ROAS</p><p className="text-lg font-bold text-white mt-1">{((campaigns.reduce((s, c) => s + c.conversions, 0) * 50) / Math.max(totalSpent, 1)).toFixed(1)}x</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Completed</p><p className="text-lg font-bold text-white mt-1">{campaigns.filter(c => c.status === "completed").length}</p></div>
+      </div>
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Archive Overview</h3>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+            const csv = [["Name", "Status", "Budget", "Spent", "Impressions", "Clicks", "Conversions", "Ended", "Reason"].join(","),
+              ...campaigns.map((c: any) =>
+                `"${c.name}","${c.status}",${c.budget},${c.spent},${c.impressions},${c.clicks},${c.conversions},"${c.endedAt}","${(c.reason || "").replace(/"/g, '""')}"`
+              )].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "archive_report.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+            <Download className="w-3 h-3" /> CSV
+          </button>
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={Object.entries(
+                campaigns.reduce((acc: Record<string, number>, c: any) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; }, {})
+              ).filter(([, c]) => c > 0).map(([status, count]) => ({ name: status, value: count }))}
+                cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                {Object.entries(ARCHIVE_STATUS_COLORS).map(([s, c]) => <Cell key={s} fill={c} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

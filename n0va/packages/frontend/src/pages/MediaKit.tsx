@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { BookOpen, Plus, X, Edit3, Trash2, Copy, Search, Download, Users, Eye, BarChart3, Globe, DollarSign, Smartphone, Monitor, Target, Share2 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+
+const MEDIA_COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#ec4899"];
 
 interface MediaKitSection {
   id: string;
@@ -115,6 +118,42 @@ export default function MediaKit() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
         <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search media kits..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
+
+      {kits.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Kit Overview</h3>
+            <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+              const csv = [["Brand", "Tagline", "Audience", "Reach", "Sections", "Categories", "Updated"].join(","),
+                ...kits.map((k: any) =>
+                  `"${k.brandName}","${(k.tagline || "").replace(/"/g, '""')}","${(k.audience || "").replace(/"/g, '""')}",${k.reach || 0},${(k.sections || []).length},"${(k.categories || []).join("; ")}","${k.updatedAt}"`
+                )].join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "media_kits.csv"; a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              <Download className="w-3 h-3" /> CSV
+            </button>
+          </div>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={(() => {
+                const catCounts: Record<string, number> = {};
+                kits.forEach((k: any) => (k.categories || []).forEach((c: string) => { catCounts[c] = (catCounts[c] || 0) + 1; }));
+                return Object.entries(catCounts).sort(([, a], [, b]) => b - a).slice(0, 8).map(([name, count]) => ({ name, count }));
+              })()}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, fontSize: 11 }} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {MEDIA_COLORS.map((c, i) => <Cell key={i} fill={c} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Builder modal */}
       {showForm && (

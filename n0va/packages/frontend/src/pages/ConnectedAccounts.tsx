@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link2, Link2Off, RefreshCw, Plus, AlertCircle, CheckCircle, Clock, Activity, ChevronDown, ChevronRight, DollarSign, BarChart3, Users, ExternalLink, Wifi, WifiOff } from "lucide-react";
+import { Link2, Link2Off, RefreshCw, Plus, AlertCircle, CheckCircle, Clock, Activity, ChevronDown, ChevronRight, DollarSign, BarChart3, Users, ExternalLink, Wifi, WifiOff, Download } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const ACCT_STATUS_COLORS: Record<string, string> = { active: "#10b981", error: "#ef4444", pending: "#f59e0b" };
 
 const platformIcons: Record<string, string> = {
   meta: "🔵", google: "🟢", linkedin: "🔷", tiktok: "🩷", snapchat: "⭐", twitter: "🐦", pinterest: "📌", reddit: "🔴",
@@ -124,6 +127,36 @@ export default function ConnectedAccounts() {
           )}
         </div>
       )}
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Account Status Overview</h3>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+            const csv = [["Label", "Platform", "Status", "LastSync", "Spend", "Campaigns"].join(","),
+              ...accounts.map((a: any) =>
+                `"${a.label}","${a.platform}","${a.status}","${a.lastSync || ""}",${a.metrics?.spend ?? ""},${a.metrics?.campaigns ?? ""}`
+              )].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "connected_accounts.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+            <Download className="w-3 h-3" /> CSV
+          </button>
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={Object.entries(
+                accounts.reduce((acc: Record<string, number>, a: any) => { const s = a.status || "pending"; acc[s] = (acc[s] || 0) + 1; return acc; }, {})
+              ).filter(([, c]) => c > 0).map(([status, count]) => ({ name: status, value: count }))}
+                cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                {Object.entries(ACCT_STATUS_COLORS).map(([s, c]) => <Cell key={s} fill={c} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       {showConnect && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">

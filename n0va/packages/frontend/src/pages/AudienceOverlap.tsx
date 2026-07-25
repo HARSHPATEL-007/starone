@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../api/client";
-import { RefreshCw, Users, Plus, ExternalLink } from "lucide-react";
+import { RefreshCw, Users, Plus, ExternalLink, Download } from "lucide-react";
 import { SkeletonCard } from "../components/Skeleton";
 
 interface Audience {
@@ -225,7 +225,20 @@ export default function AudienceOverlap() {
             </div>
 
             <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Overlap Breakdown</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Overlap Breakdown</h3>
+                <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+                  const csv = [["Audience A", "Audience B", "Overlap%", "Unique To A%", "Unique To B%"].join(","),
+                    ...overlapPairs.map((p: any) =>
+                      `"${p.aName}","${p.bName}",${p.overlap.toFixed(1)},${p.uniqueA.toFixed(1)},${p.uniqueB.toFixed(1)}`
+                    )].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "audience_overlap.csv"; a.click();
+                  URL.revokeObjectURL(url);
+                }}>
+                  <Download className="w-3 h-3" /> CSV
+                </button>
+              </div>
               <div className="space-y-4">
                 {overlapPairs.map((pair) => {
                   const total = pair.overlap + pair.uniqueA + pair.uniqueB;

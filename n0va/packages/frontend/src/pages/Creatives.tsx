@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft, CheckSquare, Square, Wand2 } from "lucide-react";
+import { Plus, Palette, Search, Copy, Download, Image, Video, Layout, AlignLeft, CheckSquare, Square, Wand2, BarChart3 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { useCsvExport } from "../hooks/useCsvExport";
 import { SkeletonCard } from "../components/Skeleton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+
+const CREATIVE_CHART_COLORS = ["#3b82f6", "#8b5cf6", "#f59e0b", "#10b981", "#ef4444", "#ec4899", "#6b7280"];
 
 export default function Creatives() {
   const navigate = useNavigate();
@@ -126,6 +129,31 @@ export default function Creatives() {
             {s === "all" ? "All Status" : s.replace("_", " ").charAt(0).toUpperCase() + s.replace("_", " ").slice(1)}
           </button>
         ))}
+      </div>
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Creative Overview</h3>
+          <span className="text-xs text-gray-500">{creatives.length} total</span>
+        </div>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={(() => {
+              const typeCounts: Record<string, number> = {};
+              const statusCounts: Record<string, number> = {};
+              creatives.forEach((c: any) => { typeCounts[c.type] = (typeCounts[c.type] || 0) + 1; statusCounts[c.status] = (statusCounts[c.status] || 0) + 1; });
+              const keys = [...new Set([...Object.keys(typeCounts), ...Object.keys(statusCounts)])];
+              return keys.map(k => ({ name: k, type: typeCounts[k] || 0, status: statusCounts[k] || 0 }));
+            })()}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} />
+              <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, fontSize: 11 }} />
+              <Bar dataKey="type" fill="#3b82f6" radius={[4, 4, 0, 0]} name="By Type" />
+              <Bar dataKey="status" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="By Status" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {selected.size > 0 && (

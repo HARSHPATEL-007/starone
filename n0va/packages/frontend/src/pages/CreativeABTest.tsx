@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../api/client";
-import { RefreshCw, CheckCircle, XCircle, MinusCircle } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, MinusCircle, Download } from "lucide-react";
 import { SkeletonCard } from "../components/Skeleton";
 
 interface ABTestVariant {
@@ -203,7 +203,20 @@ export default function CreativeABTest() {
           </div>
 
           <div className="card">
-            <h3 className="text-lg font-semibold text-white mb-4">Variant Comparison</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Variant Comparison</h3>
+              <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+                const csv = [["Variant", "Impressions", "Clicks", "Conversions", "CTR%", "CVR%", "Spend", "Revenue", "ROAS", "Winner"].join(","),
+                  ...currentTest.variants.map((v: any) =>
+                    `"${v.name}",${v.impressions},${v.clicks},${v.conversions},${(v.ctr * 100).toFixed(2)},${(v.cvr * 100).toFixed(2)},${v.spend},${v.revenue},${v.roas.toFixed(2)},${v.id === currentTest.winner ? "Yes" : "No"}`
+                  )].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `abtest_${currentTest.testId}_variants.csv`; a.click();
+                URL.revokeObjectURL(url);
+              }}>
+                <Download className="w-3 h-3" /> CSV
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
