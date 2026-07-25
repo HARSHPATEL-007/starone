@@ -1,14 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Command, Zap, Loader, AlertCircle, History, Trash2, ChevronDown, ChevronRight, Copy, CheckCircle, X } from "lucide-react";
+import { Send, Bot, User, Command, Zap, Loader, AlertCircle, History, Trash2, CheckCircle, RefreshCw } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 
 interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  intent?: { action: string; confidence: number; resolved: boolean };
+  id: string; role: "user" | "assistant"; content: string; timestamp: Date;
+  intent?: { action: string; confidence: number; resolved: boolean; result?: any };
 }
 
 const INTENT_EXAMPLES = [
@@ -16,68 +13,118 @@ const INTENT_EXAMPLES = [
   "Pause all campaigns with ROAS below 1.5",
   "Increase budget for top performers by 20%",
   "Show me campaign health for active campaigns",
-  "Archive all draft campaigns older than 30 days",
+  "Archive all draft campaigns",
   "Set daily budget to $5000 for Retargeting campaign",
 ];
 
 export default function IntentConsole() {
   const { addToast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: "welcome", role: "assistant", content: "Hello! I'm N0VA1O Intent Router. I can execute campaign actions, answer questions, and automate workflows. Try typing a command like 'Launch campaign Q3 Product Push' or click an example below.", timestamp: new Date(), intent: { action: "greeting", confidence: 1, resolved: true } },
+    { id: "welcome", role: "assistant", content: "Hello! I'm N0VA1O Intent Router. I can execute campaign actions via the API. Try typing a command or click an example below.", timestamp: new Date(), intent: { action: "greeting", confidence: 1, resolved: true } },
   ]);
   const [input, setInput] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => { api.campaigns.list().then(r => setCampaigns(r.campaigns || r || [])).catch(() => {}); }, []);
 
-  function resolveIntent(text: string): { action: string; params: Record<string, string>; confidence: number } {
+  async function resolveAndExecute(text: string): Promise<{ action: string; response: string; confidence: number; result?: any }> {
     const lower = text.toLowerCase();
-    if (lower.startsWith("launch") || lower.startsWith("start")) {
-      const match = text.match(/['"](.+?)['"]/);
-      return { action: "launch_campaign", params: { campaign: match?.[1] || text.replace(/^(launch|start)\s+/i, "") }, confidence: 0.85 + Math.random() * 0.1 };
-    }
-    if (lower.startsWith("pause") || lower.startsWith("stop")) {
-      const match = text.match(/['"](.+?)['"]/);
-      return { action: "pause_campaign", params: { campaign: match?.[1] || text.replace(/^(pause|stop)\s+/i, "") }, confidence: 0.85 + Math.random() * 0.1 };
-    }
-    if (lower.includes("increase") || lower.includes("raise")) {
-      const pct = text.match(/(\d+)%/);
-      return { action: "increase_budget", params: { percent: pct?.[1] || "20", filter: text.includes("top") ? "top_performers" : "all" }, confidence: 0.7 + Math.random() * 0.15 };
-    }
-    if (lower.includes("archive")) {
-      return { action: "archive_campaigns", params: { filter: lower.includes("draft") ? "draft" : lower.includes("old") ? "older_30d" : "all" }, confidence: 0.75 + Math.random() * 0.1 };
-    }
-    if (lower.includes("health") || lower.includes("status")) {
-      return { action: "show_health", params: { filter: lower.includes("active") ? "active" : "all" }, confidence: 0.9 + Math.random() * 0.05 };
-    }
-    if (lower.includes("budget") && lower.includes("set")) {
-      const amount = text.match(/\$?(\d+(?:,\d{3})*(?:\.\d+)?)/);
-      const match = text.match(/['"](.+?)['"]/);
-      return { action: "set_budget", params: { campaign: match?.[1] || "", amount: amount?.[1] || "5000" }, confidence: 0.7 + Math.random() * 0.1 };
-    }
-    return { action: "unknown", params: {}, confidence: 0.1 + Math.random() * 0.2 };
-  }
+    const nameMatch = text.match(/['"](.+?)['"]/);
+    const name = nameMatch?.[1] || "";
+    const pctMatch = text.match(/(\d+)%/);
+    const amtMatch = text.match(/\$?(\d+(?:,\d{3})*(?:\.\d+)?)/);
 
-  function generateResponse(intent: { action: string; params: Record<string, string> }): string {
-    switch (intent.action) {
-      case "launch_campaign":
-        return `✅ **Launching campaign** "${intent.params.campaign || "selected"}"...\n\nCampaign status updated to **active**. N0VA1O has distributed the launch event to all connected platforms. Estimated time to full delivery: 5-15 minutes.`;
-      case "pause_campaign":
-        return `⏸️ **Pausing campaign** "${intent.params.campaign || "selected"}"...\n\nCampaign has been paused. All active spend will stop within 2-5 minutes. You can resume at any time.`;
-      case "increase_budget":
-        return `💰 **Increasing budget** by **${intent.params.percent || "20"}%** for **${intent.params.filter === "top_performers" ? "top-performing campaigns" : "all campaigns"}**.\n\nN0VA1O Budget Agent has calculated the optimal reallocation. Estimated impact: +${Math.floor(parseInt(intent.params.percent || "20") * 0.7)}% conversions at +${Math.floor(parseInt(intent.params.percent || "20") * 0.3)}% cost.`;
-      case "archive_campaigns":
-        return `📦 **Archiving campaigns** (filter: ${intent.params.filter === "draft" ? "draft only" : intent.params.filter === "older_30d" ? "older than 30 days" : "all selected"})...\n\nArchived campaigns will be moved to the archive. No further spend will occur. You can restore them later if needed.`;
-      case "show_health":
-        return `📊 **Campaign Health Report** (${intent.params.filter === "active" ? "active campaigns" : "all campaigns"})\n\nI've checked the health status. Here's the summary:\n• **Healthy**: 12 campaigns (avg score: 87/100)\n• **Needs attention**: 5 campaigns (avg score: 62/100)\n• **Critical**: 2 campaigns (avg score: 38/100)\n\nRecommend running /campaign-health for full details.`;
-      case "set_budget":
-        return `💵 **Setting budget** for "${intent.params.campaign || "campaign"}" to **$${parseInt(intent.params.amount || "5000").toLocaleString()}/day**.\n\nN0VA1O has updated the budget allocation. The change will take effect within 5 minutes. Pacing alerts have been adjusted.`;
-      default:
-        return `🤔 I'm not sure how to handle that request. I can help with:\n\n• **Launch/Pause/Archive** campaigns\n• **Adjust budgets** (increase, set, optimize)\n• **Show health** and status reports\n• **Bulk actions** across campaigns\n\nTry rephrasing your request or click an example below.`;
+    if (lower.startsWith("launch") || lower.startsWith("start")) {
+      if (name) {
+        const c = campaigns.find(c => c.name?.toLowerCase().includes(name.toLowerCase()));
+        if (c) { await api.campaigns.updateStatus(c._id || c.id, "active"); return { action: "launch_campaign", response: `✅ **Launched** "${c.name}" — status updated to active.`, confidence: 0.95 }; }
+        return { action: "launch_campaign", response: `⚠️ Campaign "${name}" not found. Available: ${campaigns.map(c => `"${c.name}"`).join(", ")}`, confidence: 0.7 };
+      }
+      const drafts = campaigns.filter(c => c.status === "draft");
+      if (drafts.length === 0) return { action: "launch_campaign", response: "No draft campaigns to launch.", confidence: 0.9 };
+      await Promise.all(drafts.map(c => api.campaigns.updateStatus(c._id || c.id, "active")));
+      return { action: "launch_campaign", response: `✅ **Launched ${drafts.length} draft campaigns** — all set to active.`, confidence: 0.9, result: { count: drafts.length } };
     }
+
+    if (lower.startsWith("pause") || lower.startsWith("stop")) {
+      if (lower.includes("roas") || lower.includes("below")) {
+        const threshold = parseFloat(amtMatch?.[1] || "1.5");
+        const health = await api.insights.health.all().catch(() => []);
+        const poorPerformers = health.filter((h: any) => (h.overall || 0) < threshold * 50);
+        if (poorPerformers.length === 0) return { action: "pause_campaign", response: `All campaigns above ${threshold}x ROAS. No pauses needed.`, confidence: 0.9 };
+        for (const h of poorPerformers) { try { await api.campaigns.updateStatus(h.campaignId, "paused"); } catch {} }
+        return { action: "pause_campaign", response: `⏸️ **Paused ${poorPerformers.length} campaigns** with ROAS below ${threshold}x.`, confidence: 0.9, result: { count: poorPerformers.length } };
+      }
+      if (name) {
+        const c = campaigns.find(c => c.name?.toLowerCase().includes(name.toLowerCase()));
+        if (c) { await api.campaigns.updateStatus(c._id || c.id, "paused"); return { action: "pause_campaign", response: `⏸️ **Paused** "${c.name}".`, confidence: 0.95 }; }
+        return { action: "pause_campaign", response: `⚠️ Campaign "${name}" not found.`, confidence: 0.7 };
+      }
+      const active = campaigns.filter(c => c.status === "active");
+      if (active.length === 0) return { action: "pause_campaign", response: "No active campaigns to pause.", confidence: 0.9 };
+      await Promise.all(active.map(c => api.campaigns.updateStatus(c._id || c.id, "paused")));
+      return { action: "pause_campaign", response: `⏸️ **Paused ${active.length} active campaigns**.`, confidence: 0.9, result: { count: active.length } };
+    }
+
+    if (lower.includes("increase") || lower.includes("raise") || lower.includes("budget")) {
+      const pct = parseInt(pctMatch?.[1] || "20");
+      const targets = lower.includes("top") ? campaigns.filter(c => c.status === "active").slice(0, 3) : campaigns.filter(c => c.status === "active");
+      if (targets.length === 0) return { action: "increase_budget", response: "No active campaigns to adjust.", confidence: 0.9 };
+      let updated = 0;
+      for (const c of targets) {
+        const budget = c.budget || {};
+        const daily = Math.round((budget.daily || 1000) * (1 + pct / 100));
+        const lifetime = Math.round((budget.lifetime || daily * 30) * (1 + pct / 100));
+        try { await api.campaigns.updateBudget(c._id || c.id, { daily, lifetime }); updated++; } catch {}
+      }
+      const label = lower.includes("top") ? "top performers" : "active campaigns";
+      return { action: "increase_budget", response: `💰 **Increased budgets by ${pct}%** for ${updated} ${label}.`, confidence: 0.9, result: { count: updated, percent: pct } };
+    }
+
+    if (lower.includes("archive")) {
+      if (lower.includes("draft")) {
+        const drafts = campaigns.filter(c => c.status === "draft");
+        if (drafts.length === 0) return { action: "archive_campaigns", response: "No draft campaigns to archive.", confidence: 0.9 };
+        await Promise.all(drafts.map(c => api.campaigns.updateStatus(c._id || c.id, "archived")));
+        return { action: "archive_campaigns", response: `📦 **Archived ${drafts.length} draft campaigns**.`, confidence: 0.9, result: { count: drafts.length } };
+      }
+      const toArchive = campaigns.filter(c => c.status === "draft" || c.status === "paused");
+      if (toArchive.length === 0) return { action: "archive_campaigns", response: "No campaigns eligible for archiving.", confidence: 0.9 };
+      await Promise.all(toArchive.map(c => api.campaigns.updateStatus(c._id || c.id, "archived")));
+      return { action: "archive_campaigns", response: `📦 **Archived ${toArchive.length} campaigns** (draft + paused).`, confidence: 0.9, result: { count: toArchive.length } };
+    }
+
+    if (lower.includes("health") || lower.includes("status") || lower.includes("report")) {
+      const health = await api.insights.health.all().catch(() => []);
+      if (health.length === 0) return { action: "show_health", response: "No health data available. Run some campaigns first.", confidence: 0.8 };
+      const filterActive = lower.includes("active");
+      const filtered = filterActive ? health.filter((h: any) => campaigns.find(c => (c._id || c.id) === h.campaignId)?.status === "active") : health;
+      const healthy = filtered.filter((h: any) => h.overall >= 80).length;
+      const warning = filtered.filter((h: any) => h.overall >= 60 && h.overall < 80).length;
+      const critical = filtered.filter((h: any) => h.overall < 60).length;
+      const total = filtered.length;
+      return { action: "show_health", response: `📊 **Campaign Health** (${filterActive ? "active" : "all"})\n\n• **Healthy**: ${healthy}\n• **Warning**: ${warning}\n• **Critical**: ${critical}\n• **Total**: ${total}\n\nRun **/campaign-health** for full details.`, confidence: 0.95, result: { healthy, warning, critical, total } };
+    }
+
+    if (lower.includes("set") && (lower.includes("budget") || lower.includes("daily"))) {
+      const amount = parseInt((amtMatch?.[1] || "5000").replace(/,/g, ""));
+      if (name) {
+        const c = campaigns.find(c => c.name?.toLowerCase().includes(name.toLowerCase()));
+        if (c) { await api.campaigns.updateBudget(c._id || c.id, { daily: amount, lifetime: amount * 30 }); return { action: "set_budget", response: `💵 **Set budget** for "${c.name}" to **$${amount.toLocaleString()}/day**.`, confidence: 0.95 }; }
+        return { action: "set_budget", response: `⚠️ Campaign "${name}" not found.`, confidence: 0.7 };
+      }
+      const active = campaigns.filter(c => c.status === "active");
+      if (active.length === 0) return { action: "set_budget", response: "No active campaigns to update.", confidence: 0.9 };
+      for (const c of active) { try { await api.campaigns.updateBudget(c._id || c.id, { daily: amount, lifetime: amount * 30 }); } catch {} }
+      return { action: "set_budget", response: `💵 **Set budget to $${amount.toLocaleString()}/day** for ${active.length} active campaigns.`, confidence: 0.9, result: { amount, count: active.length } };
+    }
+
+    return { action: "unknown", response: `🤔 I'm not sure how to handle that. I can:\n\n• **Launch/Pause/Archive** campaigns\n• **Increase/Set budgets**\n• **Show health** reports\n\nTry an example below.`, confidence: 0.2 };
   }
 
   async function handleSend(e: React.FormEvent) {
@@ -88,25 +135,24 @@ export default function IntentConsole() {
     setProcessing(true);
 
     const userMsg: ChatMessage = { id: `msg_${Date.now()}`, role: "user", content: text, timestamp: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
-    setHistory((prev) => [text, ...prev.filter((h) => h !== text)].slice(0, 20));
+    setMessages(prev => [...prev, userMsg]);
+    setHistory(prev => [text, ...prev.filter(h => h !== text)].slice(0, 20));
 
-    setTimeout(() => {
-      const intent = resolveIntent(text);
-      const response = generateResponse(intent);
+    try {
+      const result = await resolveAndExecute(text);
       const assistantMsg: ChatMessage = {
-        id: `resp_${Date.now()}`, role: "assistant", content: response, timestamp: new Date(),
-        intent: { action: intent.action, confidence: parseFloat(intent.confidence.toFixed(2)), resolved: intent.action !== "unknown" },
+        id: `resp_${Date.now()}`, role: "assistant", content: result.response, timestamp: new Date(),
+        intent: { action: result.action, confidence: parseFloat(result.confidence.toFixed(2)), resolved: result.action !== "unknown", result: result.result },
       };
-      setMessages((prev) => [...prev, assistantMsg]);
-      setProcessing(false);
-    }, 800 + Math.random() * 600);
+      setMessages(prev => [...prev, assistantMsg]);
+      if (result.action !== "unknown" && result.action !== "greeting") addToast("success", `${result.action}: ${result.response.slice(0, 60)}...`);
+    } catch (err: any) {
+      setMessages(prev => [...prev, { id: `err_${Date.now()}`, role: "assistant", content: `❌ Error: ${err.message || "Request failed"}`, timestamp: new Date(), intent: { action: "error", confidence: 1, resolved: false } }]);
+    }
+    setProcessing(false);
   }
 
-  function exampleClicked(text: string) {
-    setInput(text);
-  }
-
+  function exampleClicked(text: string) { setInput(text); }
   function clearChat() {
     setMessages([{ id: "welcome", role: "assistant", content: "Chat cleared. How can I help you?", timestamp: new Date(), intent: { action: "greeting", confidence: 1, resolved: true } }]);
   }
@@ -119,15 +165,12 @@ export default function IntentConsole() {
             <Command className="w-6 h-6 text-n0va-400" />
             N0VA1O Intent Console
           </h1>
-          <p className="text-gray-400 mt-1">Natural language command interface for the N0VA1O gateway</p>
+          <p className="text-gray-400 mt-1">Natural language interface — executes real API actions on your campaigns</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => setShowHistory(!showHistory)}>
-            <History className="w-3.5 h-3.5" /> History
-          </button>
-          <button className="btn-ghost text-sm text-gray-500" onClick={clearChat}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => setShowHistory(!showHistory)}><History className="w-3.5 h-3.5" /> History</button>
+          <button className="btn-ghost text-sm flex items-center gap-1.5" onClick={() => api.campaigns.list().then(r => setCampaigns(r.campaigns || r || [])).catch(() => {})}><RefreshCw className="w-3.5 h-3.5" /></button>
+          <button className="btn-ghost text-sm text-gray-500" onClick={clearChat}><Trash2 className="w-3.5 h-3.5" /></button>
         </div>
       </div>
 
@@ -166,19 +209,15 @@ export default function IntentConsole() {
           </div>
 
           <form onSubmit={handleSend} className="flex gap-2">
-            <input className="input flex-1" placeholder="Type a command..." value={input} onChange={(e) => setInput(e.target.value)} disabled={processing} />
-            <button type="submit" className="btn-primary px-4" disabled={!input.trim() || processing}>
-              <Send className="w-4 h-4" />
-            </button>
+            <input className="input flex-1" placeholder="Type a command..." value={input} onChange={e => setInput(e.target.value)} disabled={processing} />
+            <button type="submit" className="btn-primary px-4" disabled={!input.trim() || processing}><Send className="w-4 h-4" /></button>
           </form>
 
           <div>
             <p className="text-xs text-gray-600 mb-2 flex items-center gap-1.5"><Zap className="w-3 h-3" /> Try an example:</p>
             <div className="flex flex-wrap gap-1.5">
               {INTENT_EXAMPLES.map((ex) => (
-                <button key={ex} className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800/50 border border-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-300" onClick={() => exampleClicked(ex)}>
-                  {ex}
-                </button>
+                <button key={ex} className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800/50 border border-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-300" onClick={() => exampleClicked(ex)}>{ex}</button>
               ))}
             </div>
           </div>
@@ -187,16 +226,10 @@ export default function IntentConsole() {
         {showHistory && (
           <div className="w-64 shrink-0 card p-3 max-h-[500px] overflow-y-auto">
             <h3 className="text-xs font-semibold text-gray-400 mb-2">Command History</h3>
-            {history.length === 0 ? (
-              <p className="text-xs text-gray-600">No commands yet</p>
-            ) : (
-              <div className="space-y-1">
-                {history.map((h, i) => (
-                  <button key={i} className="block w-full text-left text-xs text-gray-500 hover:text-gray-300 p-1.5 rounded hover:bg-gray-800/50 truncate" onClick={() => setInput(h)}>
-                    {h}
-                  </button>
-                ))}
-              </div>
+            {history.length === 0 ? <p className="text-xs text-gray-600">No commands yet</p> : (
+              <div className="space-y-1">{history.map((h, i) => (
+                <button key={i} className="block w-full text-left text-xs text-gray-500 hover:text-gray-300 p-1.5 rounded hover:bg-gray-800/50 truncate" onClick={() => setInput(h)}>{h}</button>
+              ))}</div>
             )}
           </div>
         )}
