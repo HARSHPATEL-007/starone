@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link2, Copy, Check, Trash2, Plus, X, Search, ExternalLink, Clock, Hash, Globe, Mail, Smartphone, ShoppingCart, Share2 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 interface UTMLink {
   id: string;
@@ -16,7 +17,6 @@ interface UTMLink {
   clicks: number;
 }
 
-const STORAGE_KEY = "n0va_utm_links";
 const PRESETS = [
   { label: "Google Ads", source: "google", medium: "cpc", campaign: "", term: "", content: "" },
   { label: "Facebook", source: "facebook", medium: "social", campaign: "", term: "", content: "" },
@@ -37,20 +37,11 @@ const MEDIUM_OPTIONS = [
   "sms", "push", "audio", "video", "banner", "native", "sponsor", "affiliate",
 ];
 
-function load(): UTMLink[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    const defaults: UTMLink[] = [
-      { id: "utm-1", name: "Spring Sale - Google Ads", url: "https://example.com/sale", source: "google", medium: "cpc", campaign: "spring_sale_2025", term: "spring+deals", content: "hero_banner_a", fullUrl: "", createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), clicks: 234 },
-      { id: "utm-2", name: "Newsletter - Product Launch", url: "https://example.com/product", source: "newsletter", medium: "email", campaign: "product_launch_q3", term: "", content: "header_cta", fullUrl: "", createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), clicks: 89 },
-      { id: "utm-3", name: "Facebook - Retargeting", url: "https://example.com/offers", source: "facebook", medium: "social", campaign: "retarget_q3", term: "abandoned+cart", content: "carousel_v2", fullUrl: "", createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), clicks: 412 },
-    ];
-    defaults.forEach(l => { l.fullUrl = buildUrl(l.url, l.source, l.medium, l.campaign, l.term, l.content); });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-    return defaults;
-  } catch { return []; }
-}
+const SEED_LINKS: UTMLink[] = [
+  { id: "utm-1", name: "Spring Sale - Google Ads", url: "https://example.com/sale", source: "google", medium: "cpc", campaign: "spring_sale_2025", term: "spring+deals", content: "hero_banner_a", fullUrl: "", createdAt: new Date(Date.now() - 86400000 * 7).toISOString(), clicks: 234 },
+  { id: "utm-2", name: "Newsletter - Product Launch", url: "https://example.com/product", source: "newsletter", medium: "email", campaign: "product_launch_q3", term: "", content: "header_cta", fullUrl: "", createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), clicks: 89 },
+  { id: "utm-3", name: "Facebook - Retargeting", url: "https://example.com/offers", source: "facebook", medium: "social", campaign: "retarget_q3", term: "abandoned+cart", content: "carousel_v2", fullUrl: "", createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), clicks: 412 },
+];
 
 function buildUrl(base: string, source: string, medium: string, campaign: string, term: string, content: string): string {
   const params = new URLSearchParams();
@@ -68,17 +59,26 @@ function buildUrl(base: string, source: string, medium: string, campaign: string
 export default function UTMBuilder() {
   const { addToast } = useToast();
   const [links, setLinks] = useState<UTMLink[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", url: "", source: "", medium: "", campaign: "", term: "", content: "" });
 
-  useEffect(() => { setLinks(load()); }, []);
+  useEffect(() => { load(); }, []);
 
-  function persist(updated: UTMLink[]) {
-    setLinks(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  async function load() {
+    setLoading(true);
+    try {
+      let data = await api.entities.list("utm_links");
+      if (!data || data.length === 0) {
+        for (const l of SEED_LINKS) { l.fullUrl = buildUrl(l.url, l.source, l.medium, l.campaign, l.term, l.content); await api.entities.create("utm_links", l as any); }
+        data = await api.entities.list("utm_links");
+      }
+      setLinks(data || []);
+    } catch { setLinks(SEED_LINKS.map(l => ({ ...l, fullUrl: buildUrl(l.url, l.source, l.medium, l.campaign, l.term, l.content) }))); }
+    setLoading(false);
   }
 
   function resetForm(l?: UTMLink) {
@@ -90,7 +90,7 @@ export default function UTMBuilder() {
     setForm(f => ({ ...f, source: preset.source, medium: preset.medium }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim() || !form.url.trim()) { addToast("error", "Name and URL are required"); return; }
     const fullUrl = buildUrl(form.url, form.source, form.medium, form.campaign, form.term, form.content);
     const now = new Date().toISOString();
@@ -100,30 +100,49 @@ export default function UTMBuilder() {
       source: form.source, medium: form.medium, campaign: form.campaign, term: form.term, content: form.content,
       fullUrl, createdAt: editingId ? links.find(l => l.id === editingId)!.createdAt : now, clicks: editingId ? links.find(l => l.id === editingId)!.clicks : 0,
     };
-    let updated: UTMLink[];
-    if (editingId) { updated = links.map(l => l.id === editingId ? link : l); addToast("success", "UTM link updated"); }
-    else { updated = [link, ...links]; addToast("success", "UTM link created"); }
-    persist(updated);
+    try {
+      if (editingId) {
+        await api.entities.update("utm_links", editingId, link as any);
+        setLinks(prev => prev.map(l => l.id === editingId ? link : l));
+        addToast("success", "UTM link updated");
+      } else {
+        const created = await api.entities.create("utm_links", link as any);
+        setLinks(prev => [created, ...prev]);
+        addToast("success", "UTM link created");
+      }
+    } catch {
+      setLinks(prev => editingId ? prev.map(l => l.id === editingId ? link : l) : [link, ...prev]);
+    }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = links.find(l => l.id === id)?.name;
-    persist(links.filter(l => l.id !== id));
-    addToast("success", `"${name}" deleted`);
+    try {
+      await api.entities.delete("utm_links", id);
+      setLinks(prev => prev.filter(l => l.id !== id));
+      addToast("success", `"${name}" deleted`);
+    } catch { addToast("error", "Delete failed"); }
   }
 
-  function handleCopy(fullUrl: string, id: string) {
-    navigator.clipboard.writeText(fullUrl).then(() => {
+  async function handleCopy(fullUrl: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(fullUrl);
       setCopiedId(id);
-      persist(links.map(l => l.id === id ? { ...l, clicks: l.clicks + 1 } : l));
+      const updated = links.map(l => l.id === id ? { ...l, clicks: l.clicks + 1 } : l);
+      setLinks(updated);
+      await api.entities.update("utm_links", id, { clicks: updated.find(l => l.id === id)!.clicks } as any);
       setTimeout(() => setCopiedId(null), 2000);
-    }).catch(() => addToast("error", "Failed to copy"));
+    } catch { addToast("error", "Failed to copy"); }
   }
 
   const previewUrl = form.url ? buildUrl(form.url, form.source, form.medium, form.campaign, form.term, form.content) : "";
   const filtered = links.filter(l => !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.campaign.toLowerCase().includes(search.toLowerCase()) || l.source.toLowerCase().includes(search.toLowerCase()));
+
+  if (loading) {
+    return <div className="card p-12 flex items-center justify-center text-gray-400"><Link2 className="w-5 h-5 animate-spin mr-2" /> Loading UTM links...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -143,7 +162,6 @@ export default function UTMBuilder() {
         <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search UTM links..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowForm(false)}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
@@ -156,8 +174,6 @@ export default function UTMBuilder() {
                 <div><label className="label">Link Name</label><input className="input" placeholder="e.g. Spring Sale - Google" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus /></div>
                 <div><label className="label">Base URL</label><input className="input" placeholder="https://example.com/page" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} /></div>
               </div>
-
-              {/* Presets */}
               <div><label className="label mb-2">Quick Presets</label>
                 <div className="flex flex-wrap gap-1.5">
                   {PRESETS.map(p => (
@@ -167,7 +183,6 @@ export default function UTMBuilder() {
                   ))}
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Source (utm_source) *</label>
                   <input className="input" placeholder="google, facebook, newsletter" value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} />
@@ -186,14 +201,12 @@ export default function UTMBuilder() {
                 <div><label className="label">Term (utm_term)</label><input className="input" placeholder="Keywords (paid search)" value={form.term} onChange={e => setForm({ ...form, term: e.target.value })} /></div>
                 <div><label className="label">Content (utm_content)</label><input className="input" placeholder="Ad variant or CTA" value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} /></div>
               </div>
-
               {previewUrl && (
                 <div className="bg-n0va-900 rounded-lg p-3 border border-gray-800">
                   <label className="label text-xs mb-1">Live Preview</label>
                   <p className="text-xs text-gray-300 break-all font-mono">{previewUrl}</p>
                 </div>
               )}
-
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
                 <button type="submit" className="btn-primary">{editingId ? "Save Changes" : "Create UTM Link"}</button>
@@ -203,7 +216,6 @@ export default function UTMBuilder() {
         </div>
       )}
 
-      {/* Empty */}
       {filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <Link2 className="w-12 h-12 text-gray-700 mb-4" />
@@ -213,7 +225,6 @@ export default function UTMBuilder() {
         </div>
       )}
 
-      {/* Link cards */}
       {filtered.map(l => (
         <div key={l.id} className="card p-5">
           <div className="flex items-start gap-4">

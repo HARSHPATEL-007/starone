@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { BarChart3, Search, TrendingUp, TrendingDown, Eye, MousePointerClick, DollarSign, Target, Users, Smartphone, Monitor, Tablet, Globe, Mail } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown, DollarSign, Target, Users, Smartphone, Monitor, Globe, Mail } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 type Channel = "google_ads" | "facebook" | "instagram" | "linkedin" | "twitter" | "tiktok" | "youtube" | "email" | "display" | "programmatic";
 
@@ -19,8 +20,6 @@ interface ChannelMetrics {
   reach: number;
   frequency: number;
 }
-
-const STORAGE_KEY = "n0va_channel_performance";
 
 const CHANNEL_META: Record<string, { label: string; short: string; color: string; icon: any }> = {
   google_ads: { label: "Google Ads", short: "Google", color: "bg-blue-500", icon: Globe },
@@ -44,64 +43,49 @@ const DEFAULT_DATA: ChannelMetrics[] = [
   { id: "ch-6", channel: "email", impressions: 210000, clicks: 10500, conversions: 780, spend: 8000, revenue: 142000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 195000, frequency: 1.08 },
 ];
 
-const ALL_CHANNELS = Object.keys(CHANNEL_META) as Channel[];
-
 function compute(metrics: ChannelMetrics[]): ChannelMetrics[] {
   return metrics.map(m => ({
-    ...m,
-    ctr: m.impressions > 0 ? (m.clicks / m.impressions * 100) : 0,
+    ...m, ctr: m.impressions > 0 ? (m.clicks / m.impressions * 100) : 0,
     cpc: m.clicks > 0 ? (m.spend / m.clicks) : 0,
     cvr: m.clicks > 0 ? (m.conversions / m.clicks * 100) : 0,
     roas: m.spend > 0 ? (m.revenue / m.spend) : 0,
   }));
 }
 
-function load(): ChannelMetrics[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return compute(JSON.parse(raw));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_DATA));
-    return compute(DEFAULT_DATA);
-  } catch { return []; }
-}
-
 function fmt(n: number, decimals = 1): string {
-  if (n >= 1000000) return (n / 1000000).toFixed(decimals) + "M";
-  if (n >= 1000) return (n / 1000).toFixed(decimals) + "K";
+  if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(decimals) + "M";
+  if (Math.abs(n) >= 1000) return (n / 1000).toFixed(decimals) + "K";
   return n.toLocaleString();
 }
 
-function fmtCurrency(n: number): string {
-  return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function fmtRate(n: number, decimals = 2): string {
-  return n.toFixed(decimals);
-}
+function fmtCurrency(n: number): string { return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+function fmtRate(n: number, decimals = 2): string { return n.toFixed(decimals); }
 
 export default function ChannelPerformance() {
   const { addToast } = useToast();
   const [data, setData] = useState<ChannelMetrics[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<keyof ChannelMetrics>("spend");
   const [sortDesc, setSortDesc] = useState(true);
 
-  useEffect(() => { setData(load()); }, []);
+  useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      let raw = await api.entities.list("channel_performance");
+      if (!raw || raw.length === 0) {
+        for (const d of compute(DEFAULT_DATA)) await api.entities.create("channel_performance", d as any);
+        raw = await api.entities.list("channel_performance");
+      }
+      setData(compute(raw || []));
+    } catch { setData(compute(DEFAULT_DATA)); }
+    setLoading(false);
+  }
 
   const maxImpressions = Math.max(...data.map(d => d.impressions));
-
-  const sorted = [...data].sort((a, b) => {
-    const aV = a[sortBy] as number;
-    const bV = b[sortBy] as number;
-    return sortDesc ? bV - aV : aV - bV;
-  });
-
-  const totals = {
-    impressions: data.reduce((s, d) => s + d.impressions, 0),
-    clicks: data.reduce((s, d) => s + d.clicks, 0),
-    conversions: data.reduce((s, d) => s + d.conversions, 0),
-    spend: data.reduce((s, d) => s + d.spend, 0),
-    revenue: data.reduce((s, d) => s + d.revenue, 0),
-  };
+  const sorted = [...data].sort((a, b) => { const aV = a[sortBy] as number; const bV = b[sortBy] as number; return sortDesc ? bV - aV : aV - bV; });
+  const totals = { impressions: data.reduce((s, d) => s + d.impressions, 0), clicks: data.reduce((s, d) => s + d.clicks, 0), conversions: data.reduce((s, d) => s + d.conversions, 0), spend: data.reduce((s, d) => s + d.spend, 0), revenue: data.reduce((s, d) => s + d.revenue, 0) };
 
   function toggleSort(key: keyof ChannelMetrics) {
     if (sortBy === key) setSortDesc(!sortDesc);
@@ -111,6 +95,10 @@ export default function ChannelPerformance() {
   function SortIcon({ col }: { col: keyof ChannelMetrics }) {
     if (sortBy !== col) return null;
     return sortDesc ? <TrendingDown className="w-3 h-3 inline ml-0.5" /> : <TrendingUp className="w-3 h-3 inline ml-0.5" />;
+  }
+
+  if (loading) {
+    return <div className="card p-12 flex items-center justify-center text-gray-400"><BarChart3 className="w-5 h-5 animate-spin mr-2" /> Loading channel data...</div>;
   }
 
   return (
@@ -125,7 +113,6 @@ export default function ChannelPerformance() {
         </div>
       </div>
 
-      {/* Stats bar */}
       <div className="grid grid-cols-5 gap-4">
         <div className="card p-4"><p className="text-xs text-gray-500">Total Impressions</p><p className="text-lg font-bold text-white mt-1">{fmt(totals.impressions)}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Total Clicks</p><p className="text-lg font-bold text-white mt-1">{fmt(totals.clicks)}</p></div>
@@ -134,7 +121,6 @@ export default function ChannelPerformance() {
         <div className="card p-4"><p className="text-xs text-gray-500">Total Revenue</p><p className="text-lg font-bold text-white mt-1">{fmtCurrency(totals.revenue)}</p></div>
       </div>
 
-      {/* Bar chart */}
       <div className="card p-5">
         <h3 className="text-sm font-semibold text-white mb-4">Impressions by Channel</h3>
         <div className="space-y-2.5">
@@ -156,7 +142,6 @@ export default function ChannelPerformance() {
         </div>
       </div>
 
-      {/* Comparison table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -199,7 +184,6 @@ export default function ChannelPerformance() {
         </div>
       </div>
 
-      {/* Best/worst performers */}
       <div className="grid grid-cols-2 gap-4">
         <div className="card p-4">
           <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-400" /> Best ROAS</h3>
@@ -225,5 +209,3 @@ export default function ChannelPerformance() {
     </div>
   );
 }
-
-

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Calendar, User, Target, DollarSign, BarChart3, Megaphone, Globe, CheckCircle, Clock } from "lucide-react";
+import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Calendar, Target, DollarSign, BarChart3, Megaphone, Globe, CheckCircle, Clock } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 type BriefStatus = "draft" | "in_review" | "approved" | "archived";
 type BriefObjective = "awareness" | "consideration" | "conversion" | "retention" | "engagement" | "other";
@@ -22,8 +23,6 @@ interface Brief {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_briefs";
-
 const OBJECTIVES: { value: BriefObjective; label: string; icon: any; color: string }[] = [
   { value: "awareness", label: "Awareness", icon: Globe, color: "text-blue-400 bg-blue-500/10" },
   { value: "consideration", label: "Consideration", icon: Target, color: "text-cyan-400 bg-cyan-500/10" },
@@ -42,25 +41,17 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 
 const CHANNEL_OPTIONS = ["Google Ads", "Facebook", "Instagram", "LinkedIn", "Twitter/X", "TikTok", "YouTube", "Email", "Display", "Programmatic", "TV", "Radio", "Print", "Podcast", "SMS", "Affiliate", "SEO", "Organic Social"];
 
-const DEFAULT_BRIEFS: Brief[] = [
+const SEED_BRIEFS: Brief[] = [
   { id: "br-1", title: "Q3 Product Launch Campaign", campaignName: "Product Launch Q3", objective: "conversion", status: "approved", targetAudience: "Tech-savvy professionals 25-45", keyMessage: "Revolutionary features for modern workflows", channels: ["Google Ads", "LinkedIn", "YouTube"], budget: 125000, startDate: "2025-07-01", endDate: "2025-09-30", creativeBrief: "Focus on product demos and customer testimonials. Use clean, modern visuals with emphasis on time-saving features.", createdAt: new Date(Date.now() - 86400000 * 25).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
   { id: "br-2", title: "Summer Sale Brand Awareness", campaignName: "Summer Sale 2025", objective: "awareness", status: "in_review", targetAudience: "Consumers 18-35 interested in lifestyle products", keyMessage: "Summer vibes at unbeatable prices", channels: ["Instagram", "TikTok", "Facebook"], budget: 75000, startDate: "2025-06-15", endDate: "2025-08-15", creativeBrief: "Bright, sunny aesthetics. User-generated content style. Short-form video emphasis for TikTok and Reels.", createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 1).toISOString() },
   { id: "br-3", title: "Customer Retention Email Series", campaignName: "Loyalty Program Q3", objective: "retention", status: "draft", targetAudience: "Existing customers with 6+ months tenure", keyMessage: "You're valued — exclusive perks inside", channels: ["Email", "SMS"], budget: 15000, startDate: "2025-07-15", endDate: "2025-09-15", creativeBrief: "Warm, personal tone. Include loyalty points summary and exclusive offers. A/B test subject lines.", createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
   { id: "br-4", title: "Enterprise Lead Gen Campaign", campaignName: "Enterprise Q3", objective: "consideration", status: "approved", targetAudience: "B2B decision-makers in IT and Operations", keyMessage: "Scale your infrastructure with zero friction", channels: ["LinkedIn", "Google Ads", "Programmatic"], budget: 200000, startDate: "2025-07-01", endDate: "2025-12-31", creativeBrief: "Professional, data-driven. Case studies and whitepapers as lead magnets. Focus on ROI and efficiency.", createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 7).toISOString() },
 ];
 
-function load(): Brief[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_BRIEFS));
-    return DEFAULT_BRIEFS;
-  } catch { return []; }
-}
-
 export default function Briefs() {
   const { addToast } = useToast();
   const [briefs, setBriefs] = useState<Brief[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<BriefStatus | "all">("all");
   const [showForm, setShowForm] = useState(false);
@@ -72,11 +63,19 @@ export default function Briefs() {
     startDate: "", endDate: "", creativeBrief: "", createdAt: "", updatedAt: "",
   });
 
-  useEffect(() => { setBriefs(load()); }, []);
+  useEffect(() => { loadBriefs(); }, []);
 
-  function persist(updated: Brief[]) {
-    setBriefs(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  async function loadBriefs() {
+    setLoading(true);
+    try {
+      let data = await api.entities.list("briefs");
+      if (!data || data.length === 0) {
+        for (const b of SEED_BRIEFS) await api.entities.create("briefs", b as any);
+        data = await api.entities.list("briefs");
+      }
+      setBriefs(data || []);
+    } catch { setBriefs(SEED_BRIEFS); }
+    setLoading(false);
   }
 
   function resetForm(b?: Brief) {
@@ -88,31 +87,48 @@ export default function Briefs() {
     setForm(f => ({ ...f, channels: f.channels.includes(ch) ? f.channels.filter(c => c !== ch) : [...f.channels, ch] }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.title.trim() || !form.campaignName.trim()) { addToast("error", "Title and campaign name are required"); return; }
     const now = new Date().toISOString();
     const brief: Brief = { ...form, title: form.title.trim(), campaignName: form.campaignName.trim(), id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6), createdAt: editingId ? briefs.find(b => b.id === editingId)!.createdAt : now, updatedAt: now };
-    let updated: Brief[];
-    if (editingId) { updated = briefs.map(b => b.id === editingId ? brief : b); addToast("success", "Brief updated"); }
-    else { updated = [brief, ...briefs]; addToast("success", "Brief created"); }
-    persist(updated);
+    try {
+      if (editingId) {
+        await api.entities.update("briefs", editingId, brief as any);
+        setBriefs(prev => prev.map(b => b.id === editingId ? brief : b));
+        addToast("success", "Brief updated");
+      } else {
+        const created = await api.entities.create("briefs", brief as any);
+        setBriefs(prev => [created, ...prev]);
+        addToast("success", "Brief created");
+      }
+    } catch {
+      setBriefs(prev => editingId ? prev.map(b => b.id === editingId ? brief : b) : [brief, ...prev]);
+    }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = briefs.find(b => b.id === id)?.title;
-    persist(briefs.filter(b => b.id !== id));
-    addToast("success", `"${name}" deleted`);
+    try {
+      await api.entities.delete("briefs", id);
+      setBriefs(prev => prev.filter(b => b.id !== id));
+      addToast("success", `"${name}" deleted`);
+    } catch { addToast("error", "Delete failed"); }
     if (viewingId === id) setViewingId(null);
   }
 
-  function duplicateBrief(id: string) {
+  async function duplicateBrief(id: string) {
     const b = briefs.find(b => b.id === id);
     if (!b) return;
     const copy: Brief = { ...b, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: `${b.title} (Copy)`, status: "draft", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    persist([copy, ...briefs]);
-    addToast("success", "Brief duplicated");
+    try {
+      const created = await api.entities.create("briefs", copy as any);
+      setBriefs(prev => [created, ...prev]);
+      addToast("success", "Brief duplicated");
+    } catch {
+      setBriefs(prev => [copy, ...prev]);
+    }
   }
 
   const filtered = briefs.filter(b => {
@@ -122,6 +138,10 @@ export default function Briefs() {
   });
 
   const viewingBrief = viewingId ? briefs.find(b => b.id === viewingId) : null;
+
+  if (loading) {
+    return <div className="card p-12 flex items-center justify-center text-gray-400"><FileText className="w-5 h-5 animate-spin mr-2" /> Loading briefs...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -150,7 +170,6 @@ export default function Briefs() {
         </select>
       </div>
 
-      {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowForm(false)}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
@@ -160,7 +179,6 @@ export default function Briefs() {
                 <div><label className="label">Brief Title</label><input className="input" placeholder="e.g. Q3 Product Launch" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} autoFocus /></div>
                 <div><label className="label">Campaign Name</label><input className="input" placeholder="e.g. Product Launch Q3" value={form.campaignName} onChange={e => setForm({ ...form, campaignName: e.target.value })} /></div>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Objective</label>
                   <div className="flex flex-wrap gap-1.5">
@@ -179,7 +197,6 @@ export default function Briefs() {
                   </div>
                 </div>
               </div>
-
               <div><label className="label">Target Audience</label><input className="input" placeholder="e.g. B2B decision-makers in IT" value={form.targetAudience} onChange={e => setForm({ ...form, targetAudience: e.target.value })} /></div>
               <div><label className="label">Key Message</label><textarea className="input" rows={2} placeholder="Core message..." value={form.keyMessage} onChange={e => setForm({ ...form, keyMessage: e.target.value })} /></div>
               <div><label className="label">Channels</label>
@@ -201,7 +218,6 @@ export default function Briefs() {
         </div>
       )}
 
-      {/* View detail modal */}
       {viewingBrief && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setViewingId(null)}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
@@ -227,7 +243,6 @@ export default function Briefs() {
         </div>
       )}
 
-      {/* Empty */}
       {filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <FileText className="w-12 h-12 text-gray-700 mb-4" />
@@ -237,7 +252,6 @@ export default function Briefs() {
         </div>
       )}
 
-      {/* Brief cards */}
       {filtered.map(b => {
         const sm = STATUS_META[b.status];
         return (

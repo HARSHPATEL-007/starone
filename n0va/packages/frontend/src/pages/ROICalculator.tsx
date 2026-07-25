@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calculator, TrendingUp, DollarSign, Target, Trash2, Plus, X, Copy, BarChart3, Download, Edit3 } from "lucide-react";
+import { Calculator, TrendingUp, DollarSign, Target, Trash2, Plus, X, Copy, BarChart3, Download, Edit3, Server } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -16,15 +16,9 @@ interface Scenario {
 }
 
 interface Projection {
-  clicks: number;
-  conversions: number;
-  revenue: number;
-  cpc: number;
-  cpm: number;
-  cpa: number;
-  roas: number;
-  profit: number;
-  margin: number;
+  clicks: number; conversions: number; revenue: number;
+  cpc: number; cpm: number; cpa: number;
+  roas: number; profit: number; margin: number;
 }
 
 function calc(budget: number, impressions: number, ctr: number, cvr: number, aov: number, fixed: number): Projection {
@@ -58,25 +52,30 @@ export default function ROICalculator() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", budget: 10000, impressions: 500000, ctr: 2.0, conversionRate: 3.0, aov: 75, fixedCosts: 2000 });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [serverResult, setServerResult] = useState<any>(null);
+  const [calculating, setCalculating] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.entities.list("roi_scenarios");
-        setScenarios(data || []);
-      } catch { setScenarios([]); }
-      setLoading(false);
-    })();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  async function persist(updated: Scenario[]) {
-    setScenarios(updated);
+  async function load() {
     try {
-      const existing = await api.entities.list("roi_scenarios");
-      if (existing && existing.length > 0) await api.entities.deleteAll("roi_scenarios");
-      for (const s of updated) await api.entities.create("roi_scenarios", s as any);
-    } catch {}
+      const data = await api.entities.list("roi_scenarios");
+      setScenarios(data || []);
+    } catch { setScenarios([]); }
+  }
+
+  async function save(scenario: Scenario, isNew: boolean) {
+    try {
+      if (isNew) {
+        const created = await api.entities.create("roi_scenarios", scenario as any);
+        setScenarios(prev => [created, ...prev]);
+      } else {
+        await api.entities.update("roi_scenarios", scenario.id, scenario as any);
+        setScenarios(prev => prev.map(s => s.id === scenario.id ? scenario : s));
+      }
+    } catch {
+      setScenarios(prev => isNew ? [scenario, ...prev] : prev.map(s => s.id === scenario.id ? scenario : s));
+    }
   }
 
   function toggleSelect(id: string) {
@@ -90,36 +89,60 @@ export default function ROICalculator() {
     if (!form.name.trim()) { addToast("error", "Scenario name is required"); return; }
     const scenario: Scenario = {
       id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      name: form.name.trim(),
-      budget: form.budget, impressions: form.impressions, ctr: form.ctr,
-      conversionRate: form.conversionRate, aov: form.aov, fixedCosts: form.fixedCosts,
+      name: form.name.trim(), budget: form.budget, impressions: form.impressions,
+      ctr: form.ctr, conversionRate: form.conversionRate, aov: form.aov, fixedCosts: form.fixedCosts,
       createdAt: editingId ? scenarios.find(s => s.id === editingId)!.createdAt : new Date().toISOString(),
     };
-    let updated: Scenario[];
-    if (editingId) { updated = scenarios.map(s => s.id === editingId ? scenario : s); addToast("success", "Scenario updated"); }
-    else { updated = [scenario, ...scenarios]; addToast("success", "Scenario created"); }
-    persist(updated);
+    if (editingId) { addToast("success", "Scenario updated"); } else { addToast("success", "Scenario created"); }
+    save(scenario, !editingId);
     setShowForm(false);
+    setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = scenarios.find(s => s.id === id)?.name;
-    persist(scenarios.filter(s => s.id !== id));
+    try {
+      await api.entities.delete("roi_scenarios", id);
+      setScenarios(prev => prev.filter(s => s.id !== id));
+      addToast("success", `"${name}" deleted`);
+    } catch { addToast("error", "Delete failed"); }
     selectedIds.delete(id);
-    addToast("success", `"${name}" deleted`);
   }
 
-  function duplicateScenario(id: string) {
+  async function duplicateScenario(id: string) {
     const s = scenarios.find(sc => sc.id === id);
     if (!s) return;
     const copy: Scenario = { ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${s.name} (Copy)`, createdAt: new Date().toISOString() };
-    persist([copy, ...scenarios]);
+    save(copy, true);
     addToast("success", "Scenario duplicated");
+  }
+
+  async function calculateOnServer() {
+    setCalculating(true);
+    try {
+      const input = {
+        campaignName: form.name || "Quick Calc",
+        totalSpend: form.budget,
+        totalRevenue: Math.round(form.budget * 3),
+        leadsGenerated: Math.round(form.impressions * (form.ctr / 100) * 0.1),
+        conversionRate: form.conversionRate,
+        averageDealSize: form.aov,
+        platformFees: Math.round(form.budget * 0.1),
+        creativeCosts: Math.round(form.fixedCosts * 0.5),
+        laborCosts: Math.round(form.fixedCosts * 0.5),
+        timeframeDays: 90,
+      };
+      const res = await api.insights.roi.calculate(input);
+      setServerResult(res);
+      addToast("success", "Server calculation complete");
+    } catch { addToast("error", "Server calculation failed"); }
+    setCalculating(false);
   }
 
   function resetForm(s?: Scenario) {
     if (s) setForm({ name: s.name, budget: s.budget, impressions: s.impressions, ctr: s.ctr, conversionRate: s.conversionRate, aov: s.aov, fixedCosts: s.fixedCosts });
     else setForm({ name: "", budget: 10000, impressions: 500000, ctr: 2.0, conversionRate: 3.0, aov: 75, fixedCosts: 2000 });
+    setServerResult(null);
   }
 
   function exportCSV() {
@@ -157,7 +180,6 @@ export default function ROICalculator() {
         </div>
       </div>
 
-      {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowForm(false)}>
           <div className="w-full max-w-md bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
@@ -174,22 +196,23 @@ export default function ROICalculator() {
                 <div><label className="label">Conv. Rate (%)</label><input type="number" step="0.1" className="input" value={form.conversionRate || ""} onChange={e => setForm({ ...form, conversionRate: Number(e.target.value) || 0 })} /></div>
                 <div><label className="label">AOV ($)</label><input type="number" className="input" value={form.aov || ""} onChange={e => setForm({ ...form, aov: Number(e.target.value) || 0 })} /></div>
               </div>
+              <button type="button" onClick={calculateOnServer} disabled={calculating} className="btn-ghost text-xs flex items-center gap-1.5 w-full justify-center py-1.5">
+                <Server className={`w-3 h-3 ${calculating ? "animate-spin" : ""}`} /> {calculating ? "Calculating..." : "Calculate with N0VA1O Server"}
+              </button>
+              {serverResult && (
+                <div className="bg-n0va-900 rounded-lg p-3 border border-gray-800 text-xs">
+                  <p className="text-green-400 font-medium mb-1">Server Result</p>
+                  <p className="text-gray-300">ROAS: {serverResult.roas}x · ROI: {serverResult.roi}% · Profit: ${serverResult.netProfit.toLocaleString()}</p>
+                  <p className="text-gray-500 mt-0.5">CPA: ${serverResult.cpa} · Payback: {serverResult.paybackDays}d</p>
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button><button type="submit" className="btn-primary">{editingId ? "Save Changes" : "Create Scenario"}</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <div className="card p-12 flex items-center justify-center text-center">
-          <Calculator className="w-6 h-6 text-n0va-400 animate-spin" />
-          <span className="ml-3 text-gray-400">Loading scenarios...</span>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && scenarios.length === 0 && (
+      {scenarios.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <Calculator className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No ROI scenarios</h3>
@@ -198,7 +221,6 @@ export default function ROICalculator() {
         </div>
       )}
 
-      {/* Comparison view (selected scenarios side by side) */}
       {comparison.length >= 2 && (
         <div className="card overflow-hidden">
           <div className="p-4 border-b border-gray-800 flex items-center justify-between">
@@ -218,7 +240,6 @@ export default function ROICalculator() {
         </div>
       )}
 
-      {/* Scenario grid */}
       {allProjections.length > 0 && (
         <>
           {comparison.length >= 2 && <h3 className="text-base font-semibold text-white flex items-center gap-2"><Target className="w-4 h-4 text-n0va-400" /> All Scenarios</h3>}
@@ -238,19 +259,13 @@ export default function ROICalculator() {
                       <button onClick={() => handleDelete(id)} className="p-1 text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
-
-                  {/* Inputs */}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-3 text-xs">
                     <span className="text-gray-600">Budget</span><span className="text-gray-300 text-right font-mono">{currency(budget)}</span>
                     <span className="text-gray-600">Impressions</span><span className="text-gray-300 text-right font-mono">{fmt(impressions)}</span>
                     <span className="text-gray-600">CTR / CVR</span><span className="text-gray-300 text-right font-mono">{ctr}% / {conversionRate}%</span>
                     <span className="text-gray-600">AOV / Fixed</span><span className="text-gray-300 text-right font-mono">{currency(aov)} / {currency(fixedCosts)}</span>
                   </div>
-
-                  {/* Divider */}
                   <div className="border-t border-gray-800 my-3" />
-
-                  {/* Results */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-2 rounded-lg bg-green-500/5">
                       <p className="text-[10px] text-gray-600">Revenue</p>
@@ -277,8 +292,6 @@ export default function ROICalculator() {
                       <p className="text-sm font-bold text-purple-400">{currency(p.cpm)}</p>
                     </div>
                   </div>
-
-                  {/* Bar: revenue vs cost */}
                   <div className="mt-3 pt-3 border-t border-gray-800">
                     <div className="flex items-center justify-between text-[10px] text-gray-600 mb-1">
                       <span>Cost: {currency(budget + fixedCosts)}</span>
