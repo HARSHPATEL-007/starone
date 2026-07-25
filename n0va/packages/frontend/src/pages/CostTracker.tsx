@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
-import { DollarSign, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, TrendingUp, TrendingDown, PieChart, Download, Upload } from "lucide-react";
+import { DollarSign, Plus, X, Edit3, Trash2, Copy, Search, BarChart3, TrendingUp, TrendingDown, PieChart, Download, Upload } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type Channel = "google_ads" | "facebook" | "instagram" | "linkedin" | "twitter" | "tiktok" | "youtube" | "email" | "display" | "programmatic" | "other";
 
@@ -40,12 +40,38 @@ function fmt(n: number): string { return "$" + n.toLocaleString(); }
 
 export default function CostTracker() {
   const { addToast } = useToast();
-  const { data: entries, create, update, remove, replaceAll } = useEntityData<CostEntry>("cost_tracker");
+  const [entries, setEntries] = useState<CostEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [dailyData, setDailyData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filterYear, setFilterYear] = useState<number | "all">("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ campaignName: "", channel: "google_ads" as Channel, month: MONTHS[new Date().getMonth()], year: new Date().getFullYear(), budgeted: 0, actual: 0, notes: "" });
+
+  useEffect(() => {
+    Promise.all([
+      api.costTracker.list().catch(() => ({ entries: [] })),
+      api.costTracker.categories().catch(() => []),
+      api.costTracker.daily().catch(() => []),
+    ]).then(([d, c, dd]) => {
+      setEntries(d?.entries || d || []);
+      setCategories(c || []);
+      setDailyData(dd || []);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  async function refresh() {
+    const [d, c, dd] = await Promise.all([
+      api.costTracker.list().catch(() => ({ entries: [] })),
+      api.costTracker.categories().catch(() => []),
+      api.costTracker.daily().catch(() => []),
+    ]);
+    setEntries(d?.entries || d || []);
+    setCategories(c || []);
+    setDailyData(dd || []);
+  }
 
   function resetForm(e?: CostEntry) {
     if (e) setForm({ campaignName: e.campaignName, channel: e.channel, month: e.month, year: e.year, budgeted: e.budgeted, actual: e.actual, notes: e.notes });
@@ -60,24 +86,28 @@ export default function CostTracker() {
       campaignName: form.campaignName.trim(), channel: form.channel, month: form.month, year: form.year,
       budgeted: form.budgeted, actual: form.actual, notes: form.notes.trim(), createdAt: editingId ? entries.find(e => e.id === editingId)!.createdAt : now,
     };
-    if (editingId) { await update(editingId, entry as any); addToast("success", "Entry updated"); }
-    else { await create(entry as any); addToast("success", "Cost entry added"); }
+    if (editingId) { await api.entities.update("cost_tracker", editingId, entry as any); addToast("success", "Entry updated"); }
+    else { await api.entities.create("cost_tracker", entry as any); addToast("success", "Cost entry added"); }
     setShowForm(false);
     setEditingId(null);
+    refresh();
   }
 
   async function handleDelete(id: string) {
     const name = entries.find(e => e.id === id)?.campaignName;
-    await remove(id);
+    await api.entities.delete("cost_tracker", id);
+    setEntries(prev => prev.filter(e => e.id !== id));
     addToast("success", `Entry for "${name}" deleted`);
+    refresh();
   }
 
   async function duplicateEntry(id: string) {
     const e = entries.find(et => et.id === id);
     if (!e) return;
     const copy: CostEntry = { ...e, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), createdAt: new Date().toISOString() };
-    await create(copy as any);
+    await api.entities.create("cost_tracker", copy as any);
     addToast("success", "Entry duplicated");
+    refresh();
   }
 
   function exportCSV() {
@@ -137,7 +167,7 @@ export default function CostTracker() {
         actual: parts[5] ? parseFloat(parts[5]) : 0, notes: parts[6] || "",
         createdAt: new Date().toISOString(),
       };
-      await create(entry as any);
+      await api.entities.create("cost_tracker", entry as any);
       imported++;
     }
     addToast("success", `Imported ${imported} entries`);
@@ -170,7 +200,77 @@ export default function CostTracker() {
         <div className="card p-4"><p className="text-xs text-gray-500">Avg. per Entry</p><p className="text-xl font-bold text-white mt-1">{fmt(totalActual / (filtered.length || 1))}</p></div>
       </div>
 
-      {channelChart.length > 1 && (
+      {/* Loading */}
+      {loading && (
+        <div className="card p-12 flex items-center justify-center text-center">
+          <DollarSign className="w-6 h-6 text-n0va-400 animate-pulse" />
+          <span className="ml-3 text-gray-400">Loading cost data...</span>
+        </div>
+      )}
+
+      {/* Category breakdown from API */}
+      {!loading && categories.length > 0 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><PieChart className="w-4 h-4 text-n0va-400" /> Category Breakdown: Planned vs Actual</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-xs text-gray-500 border-b border-gray-800">
+                <th className="pb-2 font-medium">Category</th>
+                <th className="pb-2 font-medium text-right">Planned</th>
+                <th className="pb-2 font-medium text-right">Actual</th>
+                <th className="pb-2 font-medium text-right">Variance</th>
+                <th className="pb-2 font-medium">Progress</th>
+              </tr></thead>
+              <tbody>
+                {categories.map((cat: any, idx: number) => {
+                  const planned = cat.planned || cat.budgeted || 0;
+                  const actual = cat.actual || cat.spend || 0;
+                  const varAmt = actual - planned;
+                  const pct = planned > 0 ? (actual / planned) * 100 : 0;
+                  return (
+                    <tr key={idx} className="border-b border-gray-800/50">
+                      <td className="py-2.5 text-gray-300 font-medium">{cat.name || cat.category || "Unknown"}</td>
+                      <td className="py-2.5 text-right text-gray-400">{planned.toLocaleString()}</td>
+                      <td className="py-2.5 text-right text-gray-400">{actual.toLocaleString()}</td>
+                      <td className="py-2.5 text-right"><span className={varAmt > 0 ? "text-red-400" : "text-green-400"}>{varAmt > 0 ? "+" : ""}{varAmt.toLocaleString()}</span></td>
+                      <td className="py-2.5 pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${pct > 100 ? "bg-red-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-500 w-10 text-right">{pct.toFixed(0)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Daily spend trend from API */}
+      {!loading && dailyData.length > 0 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-n0va-400" /> Daily Spend Trend (Last 30 Days)</h3>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="date" stroke="#6b7280" fontSize={10} tickFormatter={v => v?.slice(5) || ""} />
+                <YAxis stroke="#6b7280" fontSize={10} tickFormatter={v => `$${(v / 1000).toFixed(0)}K`} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Line type="monotone" dataKey="planned" stroke="#10b981" strokeWidth={2} dot={false} name="Planned" />
+                <Line type="monotone" dataKey="actual" stroke="#1a6dff" strokeWidth={2} dot={false} name="Actual" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {!loading && channelChart.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="card">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Budget vs Spend by Channel</h3>
@@ -259,7 +359,7 @@ export default function CostTracker() {
       )}
 
       {/* Empty */}
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <DollarSign className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No cost entries found</h3>

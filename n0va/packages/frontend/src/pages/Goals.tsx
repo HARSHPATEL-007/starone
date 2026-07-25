@@ -59,16 +59,12 @@ export default function Goals() {
   const [filterType, setFilterType] = useState<string>("all");
 
   useEffect(() => {
-    api.entities.list("goals").then(d => setGoals(d || [])).catch(() => {}).finally(() => setLoading(false));
+    api.goals.list().then(d => setGoals(d || [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  async function persist(updated: Goal[]) {
-    setGoals(updated);
-    try {
-      const existing = await api.entities.list("goals");
-      if (existing && existing.length > 0) await api.entities.deleteAll("goals");
-      for (const g of updated) await api.entities.create("goals", g as any);
-    } catch {}
+  async function refresh() {
+    const d = await api.goals.list().catch(() => []);
+    setGoals(d || []);
   }
 
   function toggle(id: string) {
@@ -86,22 +82,26 @@ export default function Goals() {
   function openCreate() { resetForm(); setEditingGoal(null); setShowCreate(true); }
   function openEdit(g: Goal) { resetForm(g); setEditingGoal(g.id); setShowCreate(true); }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "Goal name is required"); return; }
     const validKRs = form.keyResults.filter((kr) => kr.description.trim());
     if (validKRs.length === 0) { addToast("error", "Add at least one key result"); return; }
     const goal: Goal = { id: editingGoal || Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: form.name.trim(), description: form.description.trim(), quarter: form.quarter, year: form.year, type: form.type, keyResults: validKRs.map((kr) => ({ ...kr, id: kr.id || Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })), createdAt: editingGoal ? goals.find((g) => g.id === editingGoal)!.createdAt : new Date().toISOString() };
-    let updated: Goal[];
-    if (editingGoal) { updated = goals.map((g) => g.id === editingGoal ? goal : g); addToast("success", "Goal updated"); }
-    else { updated = [goal, ...goals]; addToast("success", "Goal created"); }
-    persist(updated);
+    try {
+      if (editingGoal) { await api.goals.update(editingGoal, goal as any); addToast("success", "Goal updated"); }
+      else { await api.goals.create(goal as any); addToast("success", "Goal created"); }
+      refresh();
+    } catch { addToast("error", "Failed to save goal"); }
     setShowCreate(false);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = goals.find((g) => g.id === id)?.name;
-    persist(goals.filter((g) => g.id !== id));
-    addToast("success", `"${name}" deleted`);
+    try {
+      await api.goals.delete(id);
+      setGoals(prev => prev.filter((g) => g.id !== id));
+      addToast("success", `"${name}" deleted`);
+    } catch { addToast("error", "Failed to delete goal"); }
   }
 
   function addKR() {
@@ -346,22 +346,29 @@ export default function Goals() {
               </div>
             </div>
 
-            {/* Expandable Key Results */}
+            {/* Expandable Key Results with progress bars */}
             {isOpen && (
               <div className="border-t border-gray-800">
                 {goal.keyResults.map((kr, i) => {
                   const krPct = Math.min(Math.round((kr.current / kr.target) * 100), 100);
                   return (
-                    <div key={kr.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-800/30 transition-colors">
-                      <span className="text-xs text-gray-600 w-5">{i + 1}.</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white truncate">{kr.description}</p>
-                        <p className="text-xs text-gray-500">{kr.current.toLocaleString()} / {kr.target.toLocaleString()} {kr.unit}</p>
+                    <div key={kr.id} className="px-5 py-3 hover:bg-gray-800/30 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-gray-600 w-5 shrink-0">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white truncate">{kr.description}</p>
+                        </div>
+                        <span className="text-sm font-mono text-gray-300 font-medium">{krPct}%</span>
                       </div>
-                      <div className="w-32">
-                        <div className="h-1.5 bg-gray-800 rounded-full"><div className="h-full rounded-full transition-all" style={{ width: `${krPct}%`, background: krPct >= 100 ? "#22c55e" : "#6366f1" }} /></div>
+                      <div className="mt-2 ml-9">
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                          <span>Current: <span className="text-white font-medium">{kr.current.toLocaleString()}</span></span>
+                          <span>Target: <span className="text-white font-medium">{kr.target.toLocaleString()}</span> {kr.unit}</span>
+                        </div>
+                        <div className="h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-500 flex items-center justify-end pr-1" style={{ width: `${krPct}%`, background: krPct >= 100 ? "#22c55e" : "#6366f1" }} />
+                        </div>
                       </div>
-                      <span className="text-sm font-mono text-gray-300 w-16 text-right">{krPct}%</span>
                     </div>
                   );
                 })}

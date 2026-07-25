@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Plus, X, Edit3, Trash2, Copy, Search, Download, Users, Eye, BarChart3, Globe, DollarSign, Smartphone, Monitor, Target, Share2 } from "lucide-react";
+import { BookOpen, Plus, X, Edit3, Trash2, Copy, Search, Download, Users, Eye, BarChart3, Globe, DollarSign, Smartphone, Monitor, Target, Share2, Tag, Newspaper, TrendingUp } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 const MEDIA_COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#ec4899"];
@@ -23,6 +23,10 @@ interface MediaKit {
   audience: string;
   reach: number;
   categories: string[];
+  tags: string[];
+  publications: number;
+  impressions: number;
+  estimatedValue: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,20 +39,25 @@ function fmt(n: number): string {
 
 export default function MediaKit() {
   const { addToast } = useToast();
-  const { data: kits, loading, create, update, remove, replaceAll } = useEntityData<MediaKit>("media_kits");
+  const [kits, setKits] = useState<MediaKit[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
-  const [form, setForm] = useState<{ brandName: string; tagline: string; description: string; website: string; logoUrl: string; sections: MediaKitSection[]; audience: string; reach: number; categories: string }>({
-    brandName: "", tagline: "", description: "", website: "", logoUrl: "", sections: [], audience: "", reach: 0, categories: "",
+  const [form, setForm] = useState<{ brandName: string; tagline: string; description: string; website: string; logoUrl: string; sections: MediaKitSection[]; audience: string; reach: number; categories: string; tags: string; publications: number; impressions: number; estimatedValue: number }>({
+    brandName: "", tagline: "", description: "", website: "", logoUrl: "", sections: [], audience: "", reach: 0, categories: "", tags: "", publications: 0, impressions: 0, estimatedValue: 0,
   });
+
+  useEffect(() => {
+    api.mediaKit.list().then(d => setKits(d || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
 
 
 
   function resetForm(k?: MediaKit) {
-    if (k) setForm({ brandName: k.brandName, tagline: k.tagline, description: k.description, website: k.website, logoUrl: k.logoUrl, sections: k.sections.map(s => ({ ...s })), audience: k.audience, reach: k.reach, categories: k.categories.join(", ") });
-    else setForm({ brandName: "", tagline: "", description: "", website: "", logoUrl: "", sections: [], audience: "", reach: 0, categories: "" });
+    if (k) setForm({ brandName: k.brandName, tagline: k.tagline, description: k.description, website: k.website, logoUrl: k.logoUrl, sections: k.sections.map(s => ({ ...s })), audience: k.audience, reach: k.reach, categories: k.categories.join(", "), tags: k.tags.join(", "), publications: k.publications, impressions: k.impressions, estimatedValue: k.estimatedValue });
+    else setForm({ brandName: "", tagline: "", description: "", website: "", logoUrl: "", sections: [], audience: "", reach: 0, categories: "", tags: "", publications: 0, impressions: 0, estimatedValue: 0 });
   }
 
   function addSection() {
@@ -72,19 +81,32 @@ export default function MediaKit() {
       brandName: form.brandName.trim(), tagline: form.tagline.trim(), description: form.description.trim(),
       website: form.website.trim(), logoUrl: form.logoUrl.trim(), sections: validSections,
       audience: form.audience.trim(), reach: form.reach, categories: form.categories.split(",").map(c => c.trim()).filter(Boolean),
+      tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
+      publications: form.publications, impressions: form.impressions, estimatedValue: form.estimatedValue,
       createdAt: editingId ? kits.find(k => k.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    if (editingId) { update(editingId, kit); addToast("success", "Media kit updated"); }
-    else { create(kit); addToast("success", "Media kit created"); }
+    if (editingId) {
+      api.mediaKit.update(editingId, kit as any).then(() => {
+        setKits(prev => prev.map(k => k.id === editingId ? kit : k));
+        addToast("success", "Media kit updated");
+      }).catch(() => { setKits(prev => prev.map(k => k.id === editingId ? kit : k)); });
+    } else {
+      api.mediaKit.create(kit as any).then(created => {
+        setKits(prev => [created, ...prev]);
+        addToast("success", "Media kit created");
+      }).catch(() => { setKits(prev => [kit, ...prev]); });
+    }
     setShowForm(false);
     setEditingId(null);
   }
 
   function handleDelete(id: string) {
     const name = kits.find(k => k.id === id)?.brandName;
-    remove(id);
-    if (viewingId === id) setViewingId(null);
-    addToast("success", `"${name}" deleted`);
+    api.entities.delete("media_kits", id).then(() => {
+      setKits(prev => prev.filter(k => k.id !== id));
+      if (viewingId === id) setViewingId(null);
+      addToast("success", `"${name}" deleted`);
+    }).catch(() => addToast("error", "Delete failed"));
   }
 
   function exportKit(id: string) {
@@ -175,6 +197,12 @@ export default function MediaKit() {
                 <div><label className="label">Monthly Reach</label><input className="input" type="number" min="0" value={form.reach} onChange={e => setForm({ ...form, reach: Number(e.target.value) })} /></div>
               </div>
               <div><label className="label">Categories (comma-separated)</label><input className="input" placeholder="e.g. SaaS, AI, Marketing" value={form.categories} onChange={e => setForm({ ...form, categories: e.target.value })} /></div>
+              <div><label className="label">Tags (comma-separated)</label><input className="input" placeholder="e.g. press-kit, brand-assets, logos" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className="label">Publications</label><input className="input" type="number" min="0" value={form.publications} onChange={e => setForm({ ...form, publications: Number(e.target.value) })} /></div>
+                <div><label className="label">Impressions</label><input className="input" type="number" min="0" value={form.impressions} onChange={e => setForm({ ...form, impressions: Number(e.target.value) })} /></div>
+                <div><label className="label">Est. Value ($)</label><input className="input" type="number" min="0" value={form.estimatedValue} onChange={e => setForm({ ...form, estimatedValue: Number(e.target.value) })} /></div>
+              </div>
               <div><div className="flex items-center justify-between mb-2"><label className="label mb-0">Sections</label><button type="button" onClick={addSection} className="text-xs text-n0va-400 hover:text-n0va-300">+ Add Section</button></div>
                 {form.sections.length === 0 && <p className="text-xs text-gray-600 py-2">Add sections to your media kit (About, Features, Contact, etc.)</p>}
                 {form.sections.map(s => (
@@ -249,6 +277,16 @@ export default function MediaKit() {
               {k.categories.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">{k.categories.map(c => <span key={c} className="text-[9px] bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded">{c}</span>)}</div>
               )}
+              {k.tags && k.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {k.tags.map(t => <span key={t} className="text-[9px] bg-n0va-500/10 text-n0va-400 px-1.5 py-0.5 rounded flex items-center gap-1"><Tag className="w-2.5 h-2.5" />{t}</span>)}
+                </div>
+              )}
+              <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-500">
+                <span className="flex items-center gap-1"><Newspaper className="w-3 h-3" /> {k.publications || 0} pubs</span>
+                <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {(k.impressions || 0) >= 1000000 ? (k.impressions / 1000000).toFixed(1) + "M" : (k.impressions || 0) >= 1000 ? (k.impressions / 1000).toFixed(1) + "K" : (k.impressions || 0).toLocaleString()} imp</span>
+                <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> ${(k.estimatedValue || 0).toLocaleString()}</span>
+              </div>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
               <button onClick={() => exportKit(k.id)} className="p-1.5 text-gray-600 hover:text-gray-300" title="Export Markdown"><Download className="w-3.5 h-3.5" /></button>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Split, Plus, X, Edit3, Trash2, Copy, Users, MapPin, Globe, Calendar, ShoppingCart, MousePointerClick, Eye, Smartphone, Laptop, Target, User, Hash, DollarSign, Clock, ChevronDown, ChevronRight, Save, Download, Search } from "lucide-react";
+import { Split, Plus, X, Edit3, Trash2, Copy, Users, MapPin, Globe, Calendar, ShoppingCart, MousePointerClick, Eye, Smartphone, Laptop, Target, User, Hash, DollarSign, Clock, ChevronDown, ChevronRight, Save, Download, Search, BarChart3, Activity } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type RuleField = "age" | "gender" | "location" | "device" | "os" | "browser" | "visited_page" | "clicked" | "converted" | "purchased" | "session_count" | "days_since_last_visit" | "total_revenue" | "custom_attribute";
 type RuleOperator = "equals" | "not_equals" | "contains" | "not_contains" | "gt" | "gte" | "lt" | "lte" | "between" | "in" | "not_in";
@@ -26,6 +26,8 @@ interface Segment {
   id: string;
   name: string;
   description: string;
+  type: string;
+  status: string;
   groups: RuleGroup[];
   estimatedSize: number;
   createdAt: string;
@@ -50,9 +52,12 @@ const FIELD_META: Record<string, { label: string; icon: any; operators: RuleOper
 };
 
 const OPERATOR_LABELS: Record<string, string> = {
-  equals: "=", not_equals: "≠", contains: "contains", not_contains: "not contains",
-  gt: ">", gte: "≥", lt: "<", lte: "≤", between: "between", in: "in", not_in: "not in",
+  equals: "=", not_equals: "\u2260", contains: "contains", not_contains: "not contains",
+  gt: ">", gte: "\u2265", lt: "<", lte: "\u2264", between: "between", in: "in", not_in: "not in",
 };
+
+const SEGMENT_TYPES = ["behavioral", "demographic", "geographic", "technographic", "custom"];
+const SEGMENT_STATUSES = ["active", "inactive", "draft"];
 
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -62,20 +67,24 @@ function fmt(n: number): string {
 
 export default function Segmentation() {
   const { addToast } = useToast();
-  const { data: segments, loading, create, update, remove, replaceAll } = useEntityData<Segment>("segments");
+  const [segments, setSegments] = useState<Segment[]>([]);
   const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<{ name: string; description: string; groups: RuleGroup[] }>({ name: "", description: "", groups: [] });
+  const [form, setForm] = useState<{ name: string; description: string; type: string; status: string; groups: RuleGroup[] }>({ name: "", description: "", type: "behavioral", status: "active", groups: [] });
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
-
+  useEffect(() => { api.segmentation.list().then(setSegments); }, []);
 
   function toggle(id: string) { setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
   function resetForm(s?: Segment) {
-    if (s) setForm({ name: s.name, description: s.description, groups: s.groups.map(g => ({ ...g, rules: g.rules.map(r => ({ ...r })) })) });
-    else setForm({ name: "", description: "", groups: [] });
+    if (s) setForm({ name: s.name, description: s.description, type: s.type, status: s.status, groups: s.groups.map(g => ({ ...g, rules: g.rules.map(r => ({ ...r })) })) });
+    else setForm({ name: "", description: "", type: "behavioral", status: "active", groups: [] });
   }
 
   function addGroup() {
@@ -106,45 +115,62 @@ export default function Segmentation() {
     setForm(f => ({ ...f, groups: f.groups.map(g => g.id === groupId ? { ...g, rules: g.rules.filter(r => r.id !== ruleId) } : g) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "Segment name is required"); return; }
     const validGroups = form.groups.filter(g => g.rules.some(r => r.value.trim()));
     if (validGroups.length === 0) { addToast("error", "Add at least one rule with a value"); return; }
     const now = new Date().toISOString();
-    const segment: Segment = {
-      id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    const segment = {
       name: form.name.trim(), description: form.description.trim(),
+      type: form.type, status: form.status,
       groups: validGroups.map(g => ({ ...g, rules: g.rules.filter(r => r.value.trim()).map(r => ({ ...r })) })),
       estimatedSize: Math.floor(Math.random() * 95000) + 5000,
       createdAt: editingId ? segments.find(s => s.id === editingId)!.createdAt : now,
       updatedAt: now,
     };
-    if (editingId) { update(editingId, segment); addToast("success", "Segment updated"); }
-    else { create(segment); addToast("success", "Segment created"); }
+    if (editingId) { await api.segmentation.update(editingId, segment); addToast("success", "Segment updated"); }
+    else { await api.segmentation.create(segment); addToast("success", "Segment created"); }
+    setSegments(await api.segmentation.list());
     setShowForm(false);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = segments.find(s => s.id === id)?.name;
-    remove(id);
+    await api.segmentation.delete(id);
+    setSegments(prev => prev.filter(s => s.id !== id));
     addToast("success", `"${name}" deleted`);
   }
 
-  function duplicateSegment(id: string) {
+  async function duplicateSegment(id: string) {
     const s = segments.find(seg => seg.id === id);
     if (!s) return;
-    const copy: Segment = { ...s, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${s.name} (Copy)`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    replaceAll([copy, ...segments]);
+    await api.segmentation.create({ ...s, name: `${s.name} (Copy)`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    setSegments(await api.segmentation.list());
     addToast("success", "Segment duplicated");
   }
 
-  const filtered = segments.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()));
+  async function handleAnalysis(id: string) {
+    setAnalysisLoading(true);
+    try {
+      const data = await api.segmentation.analysis(id);
+      setAnalysisData(data);
+    } catch {
+      addToast("error", "Failed to load segment analysis");
+    }
+    setAnalysisLoading(false);
+  }
+
+  const filtered = segments.filter(s => {
+    if (filterType !== "all" && s.type !== filterType) return false;
+    if (filterStatus !== "all" && s.status !== filterStatus) return false;
+    return !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase());
+  });
 
   const sizeChart = [...segments].sort((a, b) => b.estimatedSize - a.estimatedSize).slice(0, 10).map(s => ({ name: s.name.length > 16 ? s.name.substring(0, 16) + "..." : s.name, size: s.estimatedSize }));
 
   function exportSegmentsCSV() {
-    const header = "Name,Description,Groups,Rules,Estimated Size,Created,Updated";
-    const rows = segments.map(s => `"${s.name}","${s.description}",${s.groups.length},${s.groups.reduce((t, g) => t + g.rules.length, 0)},${s.estimatedSize},"${new Date(s.createdAt).toLocaleDateString()}","${new Date(s.updatedAt).toLocaleDateString()}"`).join("\n");
+    const header = "Name,Description,Type,Status,Groups,Rules,Estimated Size,Created,Updated";
+    const rows = segments.map(s => `"${s.name}","${s.description}",${s.type},${s.status},${s.groups.length},${s.groups.reduce((t, g) => t + g.rules.length, 0)},${s.estimatedSize},"${new Date(s.createdAt).toLocaleDateString()}","${new Date(s.updatedAt).toLocaleDateString()}"`).join("\n");
     const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
     const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "segments.csv"; el.click();
     addToast("success", "Segments exported");
@@ -163,12 +189,20 @@ export default function Segmentation() {
         <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Segment</button>
       </div>
 
-      {/* Search + export */}
-      <div className="flex items-center gap-3">
+      {/* Search + filters + export */}
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
           <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search segments..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <select className="input py-2 text-sm w-auto" value={filterType} onChange={e => setFilterType(e.target.value)}>
+          <option value="all">All Types</option>
+          {SEGMENT_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+        </select>
+        <select className="input py-2 text-sm w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="all">All Statuses</option>
+          {SEGMENT_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+        </select>
         <button onClick={exportSegmentsCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Export CSV</button>
       </div>
 
@@ -197,6 +231,18 @@ export default function Segmentation() {
             <form onSubmit={e => { e.preventDefault(); handleSave(); }} className="space-y-4">
               <div><label className="label">Segment Name</label><input className="input" placeholder="e.g. High-Value Customers" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus /></div>
               <div><label className="label">Description</label><textarea className="input" rows={2} placeholder="What does this segment target?" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="label">Type</label>
+                  <select className="input" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                    {SEGMENT_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                  </select>
+                </div>
+                <div><label className="label">Status</label>
+                  <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                    {SEGMENT_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                  </select>
+                </div>
+              </div>
               <div><div className="flex items-center justify-between mb-2"><label className="label mb-0">Rules</label><button type="button" onClick={addGroup} className="text-xs text-n0va-400 hover:text-n0va-300">+ Add Group</button></div>
                 {form.groups.length === 0 && <p className="text-xs text-gray-600 py-2">No rule groups yet. Groups are combined with AND logic; rules within a group use the group's logic.</p>}
                 {form.groups.map((group, gi) => (
@@ -243,6 +289,56 @@ export default function Segmentation() {
         </div>
       )}
 
+      {/* Analysis modal */}
+      {analysisData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { setAnalysisData(null); }}>
+          <div className="w-full max-w-md bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-n0va-400" />
+                Segment Analysis
+              </h3>
+              <button onClick={() => setAnalysisData(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">Estimated Count</p>
+                  <p className="text-xl font-bold text-white">{fmt(analysisData.count ?? analysisData.estimatedSize ?? 0)}</p>
+                </div>
+                <div className="bg-gray-800/50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">Tags</p>
+                  <p className="text-xl font-bold text-white">{(analysisData.tags ?? []).length}</p>
+                </div>
+              </div>
+              {analysisData.tags && analysisData.tags.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Tags</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {analysisData.tags.map((t: string, i: number) => (
+                      <span key={i} className="text-xs bg-n0va-500/10 text-n0va-400 px-2 py-0.5 rounded border border-n0va-500/20">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {analysisData.criteriaSummary && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Criteria Summary</p>
+                  <p className="text-sm text-gray-300 bg-gray-800/30 rounded-lg p-3">{analysisData.criteriaSummary}</p>
+                </div>
+              )}
+              {analysisData.groups && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Rule Groups</p>
+                  <p className="text-sm text-gray-300">{analysisData.groups} group{analysisData.groups !== 1 ? "s" : ""}</p>
+                </div>
+              )}
+              <button onClick={() => setAnalysisData(null)} className="btn-primary text-sm w-full">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Empty */}
       {filtered.length === 0 && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
@@ -266,6 +362,12 @@ export default function Segmentation() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <h3 className="text-base font-semibold text-white">{seg.name}</h3>
                     <span className="text-xs text-gray-600 flex items-center gap-1"><Users className="w-3 h-3" /> {fmt(seg.estimatedSize)}</span>
+                    {seg.type && <span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">{seg.type}</span>}
+                    {seg.status && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded border ${seg.status === "active" ? "bg-green-500/10 text-green-400 border-green-500/30" : seg.status === "inactive" ? "bg-red-500/10 text-red-400 border-red-500/30" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"}`}>
+                        {seg.status}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">{seg.description}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-gray-600">
@@ -275,6 +377,9 @@ export default function Segmentation() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => handleAnalysis(seg.id)} disabled={analysisLoading} className="p-1.5 text-gray-600 hover:text-n0va-400" title="Analyze segment">
+                    <BarChart3 className="w-4 h-4" />
+                  </button>
                   <button onClick={() => duplicateSegment(seg.id)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-4 h-4" /></button>
                   <button onClick={() => { resetForm(seg); setEditingId(seg.id); setShowForm(true); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Edit3 className="w-4 h-4" /></button>
                   <button onClick={() => handleDelete(seg.id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>

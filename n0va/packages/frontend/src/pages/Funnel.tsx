@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { TrendingDown, Plus, X, Edit3, Trash2, Users, Eye, MousePointerClick, ShoppingCart, DollarSign, Target, ChevronDown, ChevronRight, BarChart3, RefreshCw, Download, GitCompare } from "lucide-react";
+import { useState, useEffect } from "react";
+import { TrendingDown, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, Download, GitCompare, BarChart3, Layers } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 interface FunnelStage {
   id: string;
@@ -19,6 +19,12 @@ interface Funnel {
   updatedAt: string;
 }
 
+interface SummaryStage {
+  name: string;
+  count: number;
+  dropOff: number;
+}
+
 const STAGE_COLORS = [
   "bg-blue-500", "bg-cyan-500", "bg-teal-500", "bg-green-500",
   "bg-yellow-500", "bg-orange-500", "bg-red-500", "bg-purple-500",
@@ -33,12 +39,33 @@ function fmt(n: number): string {
 
 export default function Funnel() {
   const { addToast } = useToast();
-  const { data: funnels, create, update, remove, replaceAll } = useEntityData<Funnel>("funnels");
+  const [funnels, setFunnels] = useState<Funnel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<SummaryStage[]>([]);
+  const [showSummaryTab, setShowSummaryTab] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{ name: string; stages: FunnelStage[] }>({ name: "", stages: [] });
-  const [editStageIdx, setEditStageIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      api.funnel.list().catch(() => [] as Funnel[]),
+      api.funnel.summary().catch(() => [] as SummaryStage[]),
+    ]).then(([f, s]) => {
+      setFunnels(f || []);
+      setSummary(s || []);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  async function refresh() {
+    const [f, s] = await Promise.all([
+      api.funnel.list().catch(() => [] as Funnel[]),
+      api.funnel.summary().catch(() => [] as SummaryStage[]),
+    ]);
+    setFunnels(f || []);
+    setSummary(s || []);
+  }
 
   function resetForm(f?: Funnel) {
     if (f) setForm({ name: f.name, stages: f.stages.map(s => ({ ...s })) });
@@ -75,17 +102,20 @@ export default function Funnel() {
       stages: validStages,
       createdAt: editingId ? funnels.find(f => f.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    if (editingId) { await update(editingId, funnel as any); addToast("success", "Funnel updated"); }
-    else { await create(funnel as any); addToast("success", "Funnel created"); }
+    if (editingId) { await api.entities.update("funnels", editingId, funnel as any); addToast("success", "Funnel updated"); }
+    else { await api.entities.create("funnels", funnel as any); addToast("success", "Funnel created"); }
     setShowForm(false);
     setEditingId(null);
+    refresh();
   }
 
   async function handleDelete(id: string) {
     const name = funnels.find(f => f.id === id)?.name;
-    await remove(id);
+    await api.entities.delete("funnels", id);
+    setFunnels(prev => prev.filter(f => f.id !== id));
     addToast("success", `"${name}" deleted`);
     if (expandedId === id) setExpandedId(null);
+    refresh();
   }
 
   const [compareId, setCompareId] = useState<string | null>(null);
@@ -160,8 +190,62 @@ export default function Funnel() {
         </div>
       )}
 
+      {/* Tab bar */}
+      <div className="flex items-center gap-4 border-b border-gray-800 pb-3">
+        <button onClick={() => setShowSummaryTab(false)} className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${!showSummaryTab ? "bg-n0va-400/10 text-n0va-400" : "text-gray-500 hover:text-gray-300"}`}><BarChart3 className="w-4 h-4 inline mr-1.5" />Funnels</button>
+        <button onClick={() => setShowSummaryTab(true)} className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${showSummaryTab ? "bg-n0va-400/10 text-n0va-400" : "text-gray-500 hover:text-gray-300"}`}><Layers className="w-4 h-4 inline mr-1.5" />Summary</button>
+      </div>
+
+      {/* Summary tab */}
+      {showSummaryTab && (
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2"><Layers className="w-4 h-4 text-n0va-400" /> Aggregated Funnel Drop-off</h3>
+          {summary.length === 0 ? (
+            <p className="text-sm text-gray-500">No summary data available.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="text-left text-xs text-gray-500 border-b border-gray-800">
+                  <th className="pb-2 font-medium">Stage</th>
+                  <th className="pb-2 font-medium text-right">Count</th>
+                  <th className="pb-2 font-medium text-right">% of Top</th>
+                  <th className="pb-2 font-medium text-right">Drop-off</th>
+                </tr></thead>
+                <tbody>
+                  {summary.map((s, idx) => {
+                    const pctOfTop = summary.length > 0 ? (s.count / summary[0].count * 100) : 0;
+                    return (
+                      <tr key={idx} className="border-b border-gray-800/50">
+                        <td className="py-2.5 text-gray-300 font-medium">{s.name}</td>
+                        <td className="py-2.5 text-right text-gray-400">{fmt(s.count)}</td>
+                        <td className="py-2.5 text-right text-gray-400">{pctOfTop.toFixed(1)}%</td>
+                        <td className="py-2.5 text-right">
+                          {idx === 0 ? <span className="text-gray-600">—</span> : (
+                            <span className="text-red-400 flex items-center justify-end gap-1">
+                              <TrendingDown className="w-3 h-3" />{s.dropOff.toFixed(1)}%
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="card p-12 flex items-center justify-center text-center">
+          <TrendingDown className="w-6 h-6 text-n0va-400 animate-pulse" />
+          <span className="ml-3 text-gray-400">Loading funnels...</span>
+        </div>
+      )}
+
       {/* Funnels */}
-      {funnels.length === 0 && (
+      {!showSummaryTab && funnels.length === 0 && !loading && (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <TrendingDown className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No funnels yet</h3>
@@ -170,7 +254,7 @@ export default function Funnel() {
         </div>
       )}
 
-      {funnels.map(funnel => {
+      {!showSummaryTab && funnels.map(funnel => {
         const isOpen = expandedId === funnel.id;
         const maxCount = Math.max(...funnel.stages.map(s => s.count));
         return (
@@ -288,7 +372,7 @@ export default function Funnel() {
         );
       })}
 
-      {compareFunnel && (
+      {!showSummaryTab && compareFunnel && (
         <div className="card">
           <div className="p-4 border-b border-gray-800 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2"><GitCompare className="w-4 h-4 text-n0va-400" /> Comparison: {compareFunnel.name}</h3>

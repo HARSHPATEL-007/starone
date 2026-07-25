@@ -236,4 +236,117 @@ export class DataStore {
   static deleteRecipe(id: string, tenantId: string): boolean {
     return DataStore.mem().delete("recipes", (r: any) => r._id === id && r.tenantId === tenantId);
   }
+
+  // Generic collection CRUD for new entity types
+  private static colFind(collection: string, filter: Record<string, any>) {
+    return DataStore.mem().find(collection, (d: any) => {
+      for (const [k, v] of Object.entries(filter)) if (d[k] !== v) return false;
+      return true;
+    }).reverse();
+  }
+
+  private static colFindOne(collection: string, id: string, tenantId: string) {
+    return DataStore.mem().findOne(collection, (d: any) => d._id === id && d.tenantId === tenantId) || null;
+  }
+
+  private static colCreate(collection: string, data: any) {
+    return DataStore.mem().insert(collection, data);
+  }
+
+  private static colUpdate(collection: string, id: string, tenantId: string, update: any) {
+    return DataStore.mem().update(collection, (d: any) => d._id === id && d.tenantId === tenantId, update);
+  }
+
+  private static colDelete(collection: string, id: string, tenantId: string): boolean {
+    return DataStore.mem().delete(collection, (d: any) => d._id === id && d.tenantId === tenantId);
+  }
+
+  // Costs
+  static async findCosts(filter: Record<string, any>) { return DataStore.colFind("costs", filter); }
+  static async createCost(data: any) { return DataStore.colCreate("costs", data); }
+
+  // Funnel
+  static async findFunnelData(filter: Record<string, any>) { return DataStore.colFind("funnel_data", filter); }
+  static async createFunnelData(data: any) { return DataStore.colCreate("funnel_data", data); }
+
+  // Goals
+  static async findGoals(filter: Record<string, any>) { return DataStore.colFind("goals", filter); }
+  static async findGoalById(id: string, tenantId: string) { return DataStore.colFindOne("goals", id, tenantId); }
+  static async createGoal(data: any) { return DataStore.colCreate("goals", data); }
+  static async updateGoal(id: string, tenantId: string, update: any) { return DataStore.colUpdate("goals", id, tenantId, update); }
+  static async deleteGoal(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("goals", id, tenantId); }
+
+  // Keywords
+  static async findKeywords(filter: Record<string, any>) { return DataStore.colFind("keywords", filter); }
+  static async createKeyword(data: any) { return DataStore.colCreate("keywords", data); }
+  static async updateKeyword(id: string, tenantId: string, update: any) { return DataStore.colUpdate("keywords", id, tenantId, update); }
+  static async deleteKeyword(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("keywords", id, tenantId); }
+
+  // Landing Pages
+  static async findLandingPages(filter: Record<string, any>) { return DataStore.colFind("landing_pages", filter); }
+  static async findLandingPageById(id: string, tenantId: string) { return DataStore.colFindOne("landing_pages", id, tenantId); }
+  static async createLandingPage(data: any) { return DataStore.colCreate("landing_pages", data); }
+  static async updateLandingPage(id: string, tenantId: string, update: any) { return DataStore.colUpdate("landing_pages", id, tenantId, update); }
+  static async deleteLandingPage(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("landing_pages", id, tenantId); }
+
+  // Segmentation
+  static async findSegments(filter: Record<string, any>) { return DataStore.colFind("segments", filter); }
+  static async createSegment(data: any) { return DataStore.colCreate("segments", data); }
+  static async updateSegment(id: string, tenantId: string, update: any) { return DataStore.colUpdate("segments", id, tenantId, update); }
+  static async deleteSegment(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("segments", id, tenantId); }
+
+  // UTM Links
+  static async findUtmLinks(filter: Record<string, any>) { return DataStore.colFind("utm_links", filter); }
+  static async createUtmLink(data: any) { return DataStore.colCreate("utm_links", data); }
+
+  // Media Kits
+  static async findMediaKits(filter: Record<string, any>) { return DataStore.colFind("media_kits", filter); }
+  static async createMediaKit(data: any) { return DataStore.colCreate("media_kits", data); }
+  static async updateMediaKit(id: string, tenantId: string, update: any) { return DataStore.colUpdate("media_kits", id, tenantId, update); }
+
+  // Competitive Intel
+  static async findCompetitiveIntel(filter: Record<string, any>) { return DataStore.colFind("competitive_intel", filter); }
+  static async createCompetitiveIntel(data: any) { return DataStore.colCreate("competitive_intel", data); }
+
+  // Content Library
+  static async findContentAssets(filter: Record<string, any>) { return DataStore.colFind("content_assets", filter); }
+  static async findContentAssetById(id: string, tenantId: string) { return DataStore.colFindOne("content_assets", id, tenantId); }
+  static async createContentAsset(data: any) { return DataStore.colCreate("content_assets", data); }
+  static async updateContentAsset(id: string, tenantId: string, update: any) { return DataStore.colUpdate("content_assets", id, tenantId, update); }
+  static async deleteContentAsset(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("content_assets", id, tenantId); }
+
+  // Marketing Forms
+  static async findMarketingForms(filter: Record<string, any>) { return DataStore.colFind("marketing_forms", filter); }
+  static async findMarketingFormById(id: string, tenantId: string) { return DataStore.colFindOne("marketing_forms", id, tenantId); }
+  static async createMarketingForm(data: any) { return DataStore.colCreate("marketing_forms", data); }
+  static async updateMarketingForm(id: string, tenantId: string, update: any) { return DataStore.colUpdate("marketing_forms", id, tenantId, update); }
+  static async deleteMarketingForm(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("marketing_forms", id, tenantId); }
+
+  // Form Submissions
+  static async findFormSubmissions(filter: Record<string, any>) { return DataStore.colFind("form_submissions", filter); }
+  static async createFormSubmission(data: any) { return DataStore.colCreate("form_submissions", data); }
+
+  // Customer Journey Stages
+  static async findCustomerJourneys(filter: Record<any, any>) { return DataStore.colFind("customer_journeys", filter); }
+  static async createCustomerJourney(data: any) { return DataStore.colCreate("customer_journeys", data); }
+  static async updateCustomerJourney(id: string, tenantId: string, update: any) { return DataStore.colUpdate("customer_journeys", id, tenantId, update); }
+  static async deleteCustomerJourney(id: string, tenantId: string): Promise<boolean> { return DataStore.colDelete("customer_journeys", id, tenantId); }
+
+  // Search
+  static async globalSearch(tenantId: string, q: string) {
+    const results: any[] = [];
+    const collections = ["campaigns", "creatives", "audiences", "agents", "recipes", "landing_pages", "content_assets", "keywords", "goals"];
+    const query = q.toLowerCase();
+    for (const col of collections) {
+      const items = DataStore.mem().find(col, () => true);
+      for (const item of items) {
+        if (!item.tenantId || item.tenantId !== tenantId) continue;
+        const matchable = `${item.name || item.title || ""} ${item.description || ""} ${item.headline || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
+        if (matchable.includes(query)) {
+          results.push({ _id: item._id, type: col.slice(0, -1), name: item.name || item.title, match: col });
+        }
+      }
+    }
+    return results.slice(0, 20);
+  }
 }

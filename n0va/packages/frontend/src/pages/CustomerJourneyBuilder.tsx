@@ -57,17 +57,8 @@ export default function CustomerJourneyBuilder() {
   const [form, setForm] = useState<{ name: string; description: string; campaignName: string; nodes: JourneyNode[]; edges: JourneyEdge[] }>({ name: "", description: "", campaignName: "", nodes: [], edges: [] });
 
   useEffect(() => {
-    api.entities.list("customer_journeys").then(d => setJourneys(d || [])).catch(() => {}).finally(() => setLoading(false));
+    api.customerJourney.list().then(d => setJourneys(d || [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
-
-  async function persist(updated: CustomerJourney[]) {
-    setJourneys(updated);
-    try {
-      const existing = await api.entities.list("customer_journeys");
-      if (existing && existing.length > 0) await api.entities.deleteAll("customer_journeys");
-      for (const j of updated) await api.entities.create("customer_journeys", j as any);
-    } catch {}
-  }
 
   function resetForm(j?: CustomerJourney) {
     if (j) setForm({ name: j.name, description: j.description, campaignName: j.campaignName, nodes: j.nodes.map(n => ({ ...n })), edges: j.edges.map(e => ({ ...e })) });
@@ -122,7 +113,7 @@ export default function CustomerJourneyBuilder() {
     setForm(f => ({ ...f, edges: f.edges.map(e => e.id === id ? { ...e, [field]: value } : e) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "Journey name is required"); return; }
     if (form.nodes.length < 2) { addToast("error", "A journey needs at least 2 stages"); return; }
     const validNodes = form.nodes.filter(n => n.label.trim()).map(n => ({ ...n, label: n.label.trim() }));
@@ -133,18 +124,17 @@ export default function CustomerJourneyBuilder() {
       nodes: validNodes, edges: form.edges,
       createdAt: editingId ? journeys.find(j => j.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    let updated: CustomerJourney[];
-    if (editingId) { updated = journeys.map(j => j.id === editingId ? journey : j); addToast("success", "Journey updated"); }
-    else { updated = [journey, ...journeys]; addToast("success", "Journey created"); }
-    persist(updated);
+    if (editingId) { await api.customerJourney.update(editingId, journey as any); setJourneys(prev => prev.map(j => j.id === editingId ? journey : j)); addToast("success", "Journey updated"); }
+    else { await api.customerJourney.create(journey as any); setJourneys(prev => [journey, ...prev]); addToast("success", "Journey created"); }
     setShowForm(false);
     setEditingId(null);
     setViewMode("list");
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = journeys.find(j => j.id === id)?.name;
-    persist(journeys.filter(j => j.id !== id));
+    await api.customerJourney.delete(id);
+    setJourneys(prev => prev.filter(j => j.id !== id));
     if (expandedId === id) setExpandedId(null);
     addToast("success", `"${name}" deleted`);
   }

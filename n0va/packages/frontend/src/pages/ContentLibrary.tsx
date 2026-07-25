@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw, BarChart3, PieChart as PieIcon, CheckSquare } from "lucide-react";
+import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw, BarChart3, PieChart as PieIcon, CheckSquare, Download, Share2, Users } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 interface Asset {
   _id?: string;
@@ -10,9 +10,14 @@ interface Asset {
   name: string;
   url: string;
   type: "image" | "video" | "document" | "other";
+  contentType: string;
+  status: "published" | "draft";
   tags: string[];
   addedAt: string;
   viewCount: number;
+  downloads: number;
+  shares: number;
+  leads: number;
 }
 
 
@@ -22,35 +27,49 @@ const typeColors: Record<string, string> = { image: "bg-blue-500/10 text-blue-40
 
 export default function ContentLibrary() {
   const { addToast } = useToast();
-  const { data: assets, create, update, remove, replaceAll, setData: setAssets } = useEntityData<Asset>("content_library");
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterContentType, setFilterContentType] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", url: "", type: "image" as Asset["type"], tags: "" });
+  const [addForm, setAddForm] = useState({ name: "", url: "", type: "image" as Asset["type"], contentType: "blog_post", status: "published" as Asset["status"], tags: "" });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    api.contentLibrary.list().then(d => setAssets(d || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
   async function handleAdd() {
     if (!addForm.name.trim() || !addForm.url.trim()) { addToast("error", "Name and URL are required"); return; }
-    const asset: Asset = {
+    const asset = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       name: addForm.name.trim(),
       url: addForm.url.trim(),
       type: addForm.type,
+      contentType: addForm.contentType,
+      status: addForm.status,
       tags: addForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
       addedAt: new Date().toISOString(),
       viewCount: 0,
+      downloads: 0,
+      shares: 0,
+      leads: 0,
     };
-    await create(asset as any);
-    setAddForm({ name: "", url: "", type: "image", tags: "" });
+    const created = await api.contentLibrary.create(asset as any);
+    setAssets(prev => [created, ...prev]);
+    setAddForm({ name: "", url: "", type: "image", contentType: "blog_post", status: "published", tags: "" });
     setShowAdd(false);
     addToast("success", `"${asset.name}" added to library`);
   }
 
   async function handleDelete(id: string) {
-    await remove(id);
+    await api.contentLibrary.delete(id);
+    setAssets(prev => prev.filter(a => a.id !== id));
     addToast("success", "Asset removed from library");
   }
 
@@ -62,9 +81,13 @@ export default function ContentLibrary() {
   }
 
   async function resetToDefaults() {
-    await replaceAll([]);
+    for (const a of assets) await api.contentLibrary.delete(a.id);
+    setAssets([]);
     addToast("success", "Assets cleared");
   }
+
+  const contentTypes = ["blog_post", "whitepaper", "case_study", "infographic", "ebook", "webinar", "template"];
+  const statuses = ["published", "draft"];
 
   const filtered = assets.filter((a) => {
     if (search) {
@@ -72,6 +95,8 @@ export default function ContentLibrary() {
       if (!a.name.toLowerCase().includes(q) && !a.tags.some((t) => t.toLowerCase().includes(q))) return false;
     }
     if (filterType !== "all" && a.type !== filterType) return false;
+    if (filterContentType !== "all" && a.contentType !== filterContentType) return false;
+    if (filterStatus !== "all" && a.status !== filterStatus) return false;
     return true;
   });
 
@@ -86,7 +111,7 @@ export default function ContentLibrary() {
   }
 
   async function bulkDelete() {
-    for (const id of selectedIds) await remove(id);
+    for (const id of selectedIds) await api.contentLibrary.delete(id);
     addToast("success", `Deleted ${selectedIds.size} assets`);
     setSelectedIds(new Set());
     setBulkMode(false);
@@ -118,11 +143,19 @@ export default function ContentLibrary() {
           <input className="input pl-10 pr-4 py-2 text-sm" placeholder="Search assets..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select className="input text-sm w-auto" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-          <option value="all">All Types</option>
+          <option value="all">All Media Types</option>
           {types.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        {(search || filterType !== "all") && (
-          <button onClick={() => { setSearch(""); setFilterType("all"); }} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>
+        <select className="input text-sm w-auto" value={filterContentType} onChange={(e) => setFilterContentType(e.target.value)}>
+          <option value="all">All Content Types</option>
+          {contentTypes.map((t) => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
+        </select>
+        <select className="input text-sm w-auto" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <option value="all">All Status</option>
+          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {(search || filterType !== "all" || filterContentType !== "all" || filterStatus !== "all") && (
+          <button onClick={() => { setSearch(""); setFilterType("all"); setFilterContentType("all"); setFilterStatus("all"); }} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>
         )}
         <button onClick={resetToDefaults} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Reset</button>
       </div>
@@ -176,12 +209,25 @@ export default function ContentLibrary() {
                 <input className="input" placeholder="https://example.com/image.jpg" value={addForm.url} onChange={(e) => setAddForm({ ...addForm, url: e.target.value })} />
               </div>
               <div>
-                <label className="label">Type</label>
+                <label className="label">Media Type</label>
                 <select className="input" value={addForm.type} onChange={(e) => setAddForm({ ...addForm, type: e.target.value as Asset["type"] })}>
                   <option value="image">Image</option>
                   <option value="video">Video</option>
                   <option value="document">Document</option>
                   <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Content Type</label>
+                <select className="input" value={addForm.contentType} onChange={(e) => setAddForm({ ...addForm, contentType: e.target.value })}>
+                  {contentTypes.map(t => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Status</label>
+                <select className="input" value={addForm.status} onChange={(e) => setAddForm({ ...addForm, status: e.target.value as Asset["status"] })}>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
                 </select>
               </div>
               <div>
@@ -227,11 +273,17 @@ export default function ContentLibrary() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-white truncate">{asset.name}</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${colorClass}`}>{asset.type}</span>
-                    <span className="text-[10px] text-gray-600">{asset.viewCount} views</span>
-                  </div>
+                    <p className="text-sm font-medium text-white truncate">{asset.name}</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${colorClass}`}>{asset.type}</span>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${asset.status === "published" ? "bg-green-500/10 text-green-400" : "bg-gray-800 text-gray-500"}`}>{asset.status}</span>
+                      <span className="text-[10px] text-gray-600">{asset.viewCount} views</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                      <span className="flex items-center gap-0.5"><Download className="w-3 h-3" />{asset.downloads}</span>
+                      <span className="flex items-center gap-0.5"><Share2 className="w-3 h-3" />{asset.shares}</span>
+                      <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{asset.leads}</span>
+                    </div>
                   {asset.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {asset.tags.slice(0, 3).map((t) => <span key={t} className="text-[10px] text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded">{t}</span>)}
@@ -266,8 +318,14 @@ export default function ContentLibrary() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{asset.name}</p>
                   <p className="text-xs text-gray-500 truncate">{asset.url}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600">
+                    <span className="flex items-center gap-0.5"><Download className="w-3 h-3" />{asset.downloads}</span>
+                    <span className="flex items-center gap-0.5"><Share2 className="w-3 h-3" />{asset.shares}</span>
+                    <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{asset.leads}</span>
+                  </div>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${colorClass}`}>{asset.type}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${asset.status === "published" ? "bg-green-500/10 text-green-400" : "bg-gray-800 text-gray-500"}`}>{asset.status}</span>
                 <span className="text-xs text-gray-600">{asset.viewCount} views</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <a href={asset.url} target="_blank" rel="noopener noreferrer" className="p-1.5 text-gray-500 hover:text-gray-300"><ExternalLink className="w-3.5 h-3.5" /></a>

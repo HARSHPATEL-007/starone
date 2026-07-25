@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, Plus, X, Edit3, Trash2, TrendingUp, TrendingDown, Minus, Filter, Hash, Upload, Download, CheckSquare, Square, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Cell } from "recharts";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 interface Keyword {
   _id?: string;
@@ -13,12 +13,20 @@ interface Keyword {
   position: number;
   previousPosition: number;
   cpc: number;
+  bid: number;
   traffic: number;
   group: string;
+  status: string;
+  matchType: string;
+  impressions: number;
+  clicks: number;
+  conversions: number;
   lastUpdated: string;
 }
 
 const GROUPS = ["Brand", "Product", "Competitor", "Informational", "Long-tail", "Seasonal"];
+const STATUSES = ["active", "paused", "archived"];
+const MATCH_TYPES = ["exact", "phrase", "broad"];
 const PAGE_SIZE = 20;
 
 function fmt(n: number): string {
@@ -29,45 +37,54 @@ function fmt(n: number): string {
 
 export default function KeywordManager() {
   const { addToast } = useToast();
-  const { data: keywords, create, update, remove, replaceAll } = useEntityData<Keyword>("keywords");
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterMatchType, setFilterMatchType] = useState<string>("all");
+  const [editBidId, setEditBidId] = useState<string | null>(null);
+  const [editBidVal, setEditBidVal] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [sortBy, setSortBy] = useState<keyof Keyword | null>(null);
   const [sortDesc, setSortDesc] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [form, setForm] = useState<{ term: string; volume: number; difficulty: number; position: number; previousPosition: number; cpc: number; group: string }>({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, group: "Product" });
+  const [form, setForm] = useState<{ term: string; volume: number; difficulty: number; position: number; previousPosition: number; cpc: number; bid: number; group: string; status: string; matchType: string }>({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, bid: 0, group: "Product", status: "active", matchType: "exact" });
+
+  useEffect(() => { api.keywords.list().then(setKeywords); }, []);
 
   const avgPos = keywords.length > 0 ? (keywords.reduce((s, k) => s + k.position, 0) / keywords.length) : 0;
   const totalVolume = keywords.reduce((s, k) => s + k.volume, 0);
   const top10 = keywords.filter(k => k.position <= 10).length;
 
   function resetForm(k?: Keyword) {
-    if (k) setForm({ term: k.term, volume: k.volume, difficulty: k.difficulty, position: k.position, previousPosition: k.previousPosition, cpc: k.cpc, group: k.group });
-    else setForm({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, group: "Product" });
+    if (k) setForm({ term: k.term, volume: k.volume, difficulty: k.difficulty, position: k.position, previousPosition: k.previousPosition, cpc: k.cpc, bid: k.bid, group: k.group, status: k.status, matchType: k.matchType });
+    else setForm({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, bid: 0, group: "Product", status: "active", matchType: "exact" });
   }
 
   async function handleSave() {
     if (!form.term.trim()) { addToast("error", "Keyword term is required"); return; }
     const now = new Date().toISOString();
-    const kw: Keyword = { ...form, term: form.term.trim(), id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6), traffic: Math.floor(form.volume * (11 - Math.min(form.position, 10)) / 20), lastUpdated: now };
-    if (editingId) { await update(editingId, kw as any); addToast("success", "Keyword updated"); }
-    else { await create(kw as any); addToast("success", "Keyword added"); }
+    const kw = { ...form, term: form.term.trim(), traffic: Math.floor(form.volume * (11 - Math.min(form.position, 10)) / 20), lastUpdated: now };
+    if (editingId) { await api.keywords.update(editingId, kw); addToast("success", "Keyword updated"); }
+    else { await api.keywords.create(kw); addToast("success", "Keyword added"); }
+    setKeywords(await api.keywords.list());
     setShowForm(false);
     setEditingId(null);
   }
 
   async function handleDelete(id: string) {
     const name = keywords.find(k => k.id === id)?.term;
-    await remove(id);
+    await api.keywords.delete(id);
+    setKeywords(prev => prev.filter(k => k.id !== id));
     addToast("success", `"${name}" removed`);
   }
 
   async function handleBulkDelete() {
     const count = selected.size;
-    for (const id of selected) await remove(id);
+    for (const id of selected) await api.keywords.delete(id);
+    setKeywords(await api.keywords.list());
     addToast("success", `Deleted ${count} keywords`);
     setSelected(new Set());
   }
@@ -76,8 +93,9 @@ export default function KeywordManager() {
     const count = selected.size;
     for (const id of selected) {
       const kw = keywords.find(k => k.id === id);
-      if (kw) await update(id, { ...kw, group } as any);
+      if (kw) await api.keywords.update(id, { ...kw, group });
     }
+    setKeywords(await api.keywords.list());
     addToast("success", `Moved ${count} keywords to ${group}`);
     setSelected(new Set());
   }
@@ -85,6 +103,8 @@ export default function KeywordManager() {
   const filtered = useMemo(() => {
     let result = keywords.filter(k => {
       if (filterGroup !== "all" && k.group !== filterGroup) return false;
+      if (filterStatus !== "all" && k.status !== filterStatus) return false;
+      if (filterMatchType !== "all" && k.matchType !== filterMatchType) return false;
       if (search && !k.term.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
@@ -96,7 +116,7 @@ export default function KeywordManager() {
       });
     }
     return result;
-  }, [keywords, filterGroup, search, sortBy, sortDesc]);
+  }, [keywords, filterGroup, filterStatus, filterMatchType, search, sortBy, sortDesc]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -139,10 +159,17 @@ export default function KeywordManager() {
           entry.position = Number(entry.position) || 0;
           entry.previousPosition = Number(entry.previousPosition) || 0;
           entry.cpc = Number(entry.cpc) || 0;
+          entry.bid = Number(entry.bid) || 0;
+          entry.impressions = Number(entry.impressions) || 0;
+          entry.clicks = Number(entry.clicks) || 0;
+          entry.conversions = Number(entry.conversions) || 0;
+          entry.status = entry.status || "active";
+          entry.matchType = entry.matchType || "exact";
           entry.traffic = Math.floor(entry.volume * (11 - Math.min(entry.position, 10)) / 20);
           if (entry.term) imported.push(entry as Keyword);
         }
-        for (const kw of imported) await create(kw as any);
+        for (const kw of imported) await api.keywords.create(kw as any);
+        setKeywords(await api.keywords.list());
         addToast("success", `Imported ${imported.length} keywords`);
       } catch { addToast("error", "Failed to parse CSV"); }
     };
@@ -152,8 +179,8 @@ export default function KeywordManager() {
 
   function handleExport() {
     const csv = [
-      ["term", "volume", "difficulty", "position", "previousPosition", "cpc", "traffic", "group"],
-      ...filtered.map((k) => [k.term, k.volume, k.difficulty, k.position, k.previousPosition, k.cpc, k.traffic, k.group]),
+      ["term", "volume", "difficulty", "position", "previousPosition", "cpc", "bid", "traffic", "group", "status", "matchType", "impressions", "clicks", "conversions"],
+      ...filtered.map((k) => [k.term, k.volume, k.difficulty, k.position, k.previousPosition, k.cpc, k.bid, k.traffic, k.group, k.status, k.matchType, k.impressions, k.clicks, k.conversions]),
     ].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -193,6 +220,14 @@ export default function KeywordManager() {
         <select className="input py-2 text-sm w-auto" value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setPage(0); }}>
           <option value="all">All Groups</option>
           {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+        </select>
+        <select className="input py-2 text-sm w-auto" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0); }}>
+          <option value="all">All Statuses</option>
+          {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+        </select>
+        <select className="input py-2 text-sm w-auto" value={filterMatchType} onChange={e => { setFilterMatchType(e.target.value); setPage(0); }}>
+          <option value="all">All Match Types</option>
+          {MATCH_TYPES.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
         </select>
       </div>
 
@@ -238,12 +273,25 @@ export default function KeywordManager() {
                 <div><label className="label">CPC ($)</label><input className="input" type="number" min="0" step="0.01" value={form.cpc} onChange={e => setForm({ ...form, cpc: Number(e.target.value) })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
+                <div><label className="label">Bid ($)</label><input className="input" type="number" min="0" step="0.01" value={form.bid} onChange={e => setForm({ ...form, bid: Number(e.target.value) })} /></div>
+                <div><label className="label">Match Type</label>
+                  <select className="input" value={form.matchType} onChange={e => setForm({ ...form, matchType: e.target.value })}>
+                    {MATCH_TYPES.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Current Position</label><input className="input" type="number" min="0" value={form.position} onChange={e => setForm({ ...form, position: Number(e.target.value) })} /></div>
                 <div><label className="label">Previous Position</label><input className="input" type="number" min="0" value={form.previousPosition} onChange={e => setForm({ ...form, previousPosition: Number(e.target.value) })} /></div>
               </div>
               <div><label className="label">Group</label>
                 <div className="flex flex-wrap gap-1.5">
                   {GROUPS.map(g => <button type="button" key={g} onClick={() => setForm({ ...form, group: g })} className={`text-xs px-2.5 py-1 rounded border ${form.group === g ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-700 bg-gray-800 text-gray-400"}`}>{g}</button>)}
+                </div>
+              </div>
+              <div><label className="label">Status</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {STATUSES.map(s => <button type="button" key={s} onClick={() => setForm({ ...form, status: s })} className={`text-xs px-2.5 py-1 rounded border ${form.status === s ? "border-n0va-500 bg-n0va-500/10 text-n0va-400" : "border-gray-700 bg-gray-800 text-gray-400"}`}>{s.charAt(0).toUpperCase() + s.slice(1)}</button>)}
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button><button type="submit" className="btn-primary">{editingId ? "Save Changes" : "Add Keyword"}</button></div>
@@ -288,11 +336,17 @@ export default function KeywordManager() {
                 </th>
                 <th className="p-3 font-medium cursor-pointer hover:text-white" onClick={() => toggleSort("term")}>Keyword<SortIcon col="term" /></th>
                 <th className="p-3 font-medium">Group</th>
+                <th className="p-3 font-medium">Status</th>
+                <th className="p-3 font-medium">Match</th>
                 <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("volume")}>Volume<SortIcon col="volume" /></th>
                 <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("difficulty")}>Difficulty<SortIcon col="difficulty" /></th>
                 <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("position")}>Position<SortIcon col="position" /></th>
                 <th className="p-3 font-medium text-right">Change</th>
                 <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("cpc")}>CPC<SortIcon col="cpc" /></th>
+                <th className="p-3 font-medium text-right">Bid</th>
+                <th className="p-3 font-medium text-right">Impr.</th>
+                <th className="p-3 font-medium text-right">Clicks</th>
+                <th className="p-3 font-medium text-right">Conv.</th>
                 <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("traffic")}>Est. Traffic<SortIcon col="traffic" /></th>
                 <th className="p-3 w-20" />
               </tr></thead>
@@ -309,6 +363,8 @@ export default function KeywordManager() {
                       </td>
                       <td className="p-3 text-white font-medium">{kw.term}</td>
                       <td className="p-3"><span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">{kw.group}</span></td>
+                      <td className="p-3"><span className={`text-[10px] px-2 py-0.5 rounded border ${kw.status === "active" ? "bg-green-500/10 text-green-400 border-green-500/30" : kw.status === "paused" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/30" : "bg-gray-800 text-gray-500 border-gray-700"}`}>{kw.status}</span></td>
+                      <td className="p-3"><span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">{kw.matchType}</span></td>
                       <td className="p-3 text-right text-gray-300">{fmt(kw.volume)}</td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
@@ -334,6 +390,23 @@ export default function KeywordManager() {
                         ) : <span className="text-xs text-gray-600">—</span>}
                       </td>
                       <td className="p-3 text-right text-gray-300">${kw.cpc.toFixed(2)}</td>
+                      <td className="p-3 text-right">
+                        {editBidId === kw.id ? (
+                          <input className="input text-xs py-0.5 w-20 text-right" type="number" min="0" step="0.01"
+                            value={editBidVal} autoFocus
+                            onChange={e => setEditBidVal(Number(e.target.value))}
+                            onBlur={async () => { await api.keywords.updateBid(kw.id, editBidVal); setEditBidId(null); }}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditBidId(null); }}
+                          />
+                        ) : (
+                          <button className="text-gray-300 hover:text-n0va-400" onClick={() => { setEditBidId(kw.id); setEditBidVal(kw.bid || 0); }}>
+                            ${(kw.bid || 0).toFixed(2)}
+                          </button>
+                        )}
+                      </td>
+                      <td className="p-3 text-right text-gray-300">{fmt(kw.impressions || 0)}</td>
+                      <td className="p-3 text-right text-gray-300">{fmt(kw.clicks || 0)}</td>
+                      <td className="p-3 text-right text-gray-300">{fmt(kw.conversions || 0)}</td>
                       <td className="p-3 text-right text-gray-300">{fmt(kw.traffic)}</td>
                       <td className="p-3">
                         <div className="flex items-center gap-0.5">

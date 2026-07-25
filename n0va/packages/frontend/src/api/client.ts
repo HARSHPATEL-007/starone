@@ -331,4 +331,97 @@ export const api = {
       }),
     verify: () => request<{ valid: boolean; userId: string; tenantId: string; role: string }>("/auth/verify"),
   },
+  costTracker: {
+    list: (params?: string) => request<any>(`/cost-tracker${params ? `?${params}` : ""}`),
+    categories: () => request<any>("/cost-tracker/categories"),
+    daily: () => request<any>("/cost-tracker/daily"),
+  },
+  funnel: {
+    list: (params?: string) => request<any[]>(`/funnel${params ? `?${params}` : ""}`),
+    summary: () => request<any>("/funnel/summary"),
+  },
+  goals: {
+    list: (params?: string) => request<any[]>(`/goals${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/goals/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/goals", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/goals/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/goals/${id}`, { method: "DELETE" }),
+  },
+  keywords: {
+    list: (params?: string) => request<any[]>(`/keywords${params ? `?${params}` : ""}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/keywords", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/keywords/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/keywords/${id}`, { method: "DELETE" }),
+    updateBid: (id: string, bid: number) =>
+      request<any>(`/keywords/${id}/bid`, { method: "PATCH", body: JSON.stringify({ bid }) }),
+  },
+  landingPages: {
+    list: (params?: string) => request<any[]>(`/landing-pages${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/landing-pages/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/landing-pages", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/landing-pages/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/landing-pages/${id}`, { method: "DELETE" }),
+  },
+  segmentation: {
+    list: (params?: string) => request<any[]>(`/segmentation${params ? `?${params}` : ""}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/segmentation", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/segmentation/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/segmentation/${id}`, { method: "DELETE" }),
+    analysis: (id: string) => request<any>(`/segmentation/${id}/analysis`),
+  },
+  utmBuilder: {
+    list: (params?: string) => request<any[]>(`/utm-builder${params ? `?${params}` : ""}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/utm-builder", { method: "POST", body: JSON.stringify(data) }),
+    performance: () => request<any>("/utm-builder/performance"),
+  },
+  mediaKit: {
+    list: () => request<any[]>("/media-kit"),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/media-kit", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/media-kit/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  },
+  competitiveIntel: {
+    list: (params?: string) => request<any[]>(`/competitive-intel${params ? `?${params}` : ""}`),
+    summary: () => request<any>("/competitive-intel/summary"),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/competitive-intel", { method: "POST", body: JSON.stringify(data) }),
+  },
+  contentLibrary: {
+    list: (params?: string) => request<any[]>(`/content-library${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/content-library/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/content-library", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/content-library/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/content-library/${id}`, { method: "DELETE" }),
+  },
+  marketingForms: {
+    list: (params?: string) => request<any[]>(`/marketing-forms${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/marketing-forms/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/marketing-forms", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/marketing-forms/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/marketing-forms/${id}`, { method: "DELETE" }),
+    submissions: (id: string) => request<any[]>(`/marketing-forms/${id}/submissions`),
+  },
+  customerJourney: {
+    list: (params?: string) => request<any[]>(`/customer-journey${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/customer-journey/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/customer-journey", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/customer-journey/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/customer-journey/${id}`, { method: "DELETE" }),
+  },
 };

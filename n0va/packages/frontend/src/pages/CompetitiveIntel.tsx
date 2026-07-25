@@ -53,16 +53,22 @@ export default function CompetitiveIntel() {
   const [form, setForm] = useState({ name: "", website: "", logoUrl: "", description: "", strength: "", weakness: "", position: "challenger" as Competitor["position"], trend: "stable" as Competitor["trend"] });
   const [adForm, setAdForm] = useState({ name: "", description: "", url: "", platform: "Google Ads" });
 
+  const [summaryData, setSummaryData] = useState<any[]>([]);
+  const [filterCompetitor, setFilterCompetitor] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   useEffect(() => {
-    api.entities.list("competitive_intel").then(d => setCompetitors(d || [])).catch(() => {}).finally(() => setLoading(false));
+    api.competitiveIntel.list().then(d => setCompetitors(d || [])).catch(() => {}).finally(() => setLoading(false));
+    api.competitiveIntel.summary().then(setSummaryData).catch(() => {});
   }, []);
 
   async function persist(updated: Competitor[]) {
     setCompetitors(updated);
     try {
-      const existing = await api.entities.list("competitive_intel");
+      const existing = await api.competitiveIntel.list();
       if (existing && existing.length > 0) await api.entities.deleteAll("competitive_intel");
-      for (const c of updated) await api.entities.create("competitive_intel", c as any);
+      for (const c of updated) await api.competitiveIntel.create(c as any);
     } catch {}
   }
 
@@ -119,7 +125,14 @@ export default function CompetitiveIntel() {
 
   const filtered = competitors.filter(c => {
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !c.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterCompetitor !== "all" && c.name !== filterCompetitor) return false;
     if (filterPos !== "all" && c.position !== filterPos) return false;
+    if (dateFrom && new Date(c.createdAt) < new Date(dateFrom)) return false;
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      if (new Date(c.createdAt) > end) return false;
+    }
     return true;
   });
 
@@ -145,6 +158,35 @@ export default function CompetitiveIntel() {
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Market Leaders</p><p className="text-2xl font-bold text-green-400">{competitors.filter(c => c.position === "leader").length}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Rising</p><p className="text-2xl font-bold text-blue-400">{competitors.filter(c => c.trend === "up").length}</p></div>
       </div>
+
+      {/* Summary */}
+      {summaryData.length > 0 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Competitor Summary</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="text-left py-2 px-3 text-gray-400 font-medium">Competitor</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Total Spend</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Avg Share of Voice</th>
+                  <th className="text-right py-2 px-3 text-gray-400 font-medium">Est. Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryData.map((s: any, i: number) => (
+                  <tr key={s.competitor || i} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <td className="py-2.5 px-3 text-white font-medium">{s.competitor || s.name}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-300">${(s.totalSpend || 0).toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-300">{s.avgShareOfVoice || s.shareOfVoice || 0}%</td>
+                    <td className="py-2.5 px-3 text-right text-gray-300">${(s.estimatedRevenue || 0).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {competitors.length > 1 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -212,11 +254,17 @@ export default function CompetitiveIntel() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
           <input className="input pl-10 pr-4 py-2 text-sm" placeholder="Search competitors..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <select className="input text-sm w-auto" value={filterCompetitor} onChange={e => setFilterCompetitor(e.target.value)}>
+          <option value="all">All Competitors</option>
+          {competitors.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+        </select>
         <select className="input text-sm w-auto" value={filterPos} onChange={e => setFilterPos(e.target.value)}>
           <option value="all">All Positions</option>
           {POSITIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select>
-        {(search || filterPos !== "all") && <button onClick={() => { setSearch(""); setFilterPos("all"); }} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>}
+        <input className="input text-sm w-[140px]" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} placeholder="From" />
+        <input className="input text-sm w-[140px]" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} placeholder="To" />
+        {(search || filterPos !== "all" || filterCompetitor !== "all" || dateFrom || dateTo) && <button onClick={() => { setSearch(""); setFilterPos("all"); setFilterCompetitor("all"); setDateFrom(""); setDateTo(""); }} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>}
       </div>
 
       {/* Competitor form modal */}

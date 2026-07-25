@@ -254,5 +254,102 @@ export class MemoryStore {
       { tenantId: "tenant_001", title: "Budget Review with Stakeholders", type: "meeting", startDate: new Date(now + day * 7).toISOString(), endDate: new Date(now + day * 7 + 3600000).toISOString(), source: "external", createdBy: "user_002" },
     ];
     for (const e of calendarEntries) this.insert("calendar_events", e);
+
+    const costCategories = ["meta_ads", "google_ads", "linkedin_ads", "tiktok_ads", "content_creation", "tools", "agencies"];
+    for (let d = 30; d >= 0; d--) {
+      const date = new Date(now - d * day).toISOString().split("T")[0];
+      for (const cat of costCategories) {
+        const planned = Math.floor(Math.random() * 5000) + 500;
+        const actual = Math.floor(planned * (0.7 + Math.random() * 0.6));
+        this.insert("costs", { tenantId: "tenant_001", date, category: cat, planned, actual, variance: actual - planned, notes: "" });
+      }
+    }
+
+    const funnelStages = ["awareness", "interest", "consideration", "intent", "conversion", "retention"];
+    for (let d = 30; d >= 0; d--) {
+      const date = new Date(now - d * day).toISOString().split("T")[0];
+      let count = 50000;
+      for (const stage of funnelStages) {
+        count = Math.floor(count * (0.1 + Math.random() * 0.5));
+        this.insert("funnel_data", { tenantId: "tenant_001", date, stage, count: Math.max(count, 10), value: count * (stage === "conversion" ? 50 : 1) });
+      }
+    }
+
+    this.insert("goals", { tenantId: "tenant_001", name: "Q3 Revenue Target", type: "revenue", target: 500000, current: 325000, progress: 65, deadline: new Date(now + 60 * day).toISOString(), status: "on_track", owner: "Jane Doe", tags: ["q3", "revenue"], createdBy: "user_001" });
+    this.insert("goals", { tenantId: "tenant_001", name: "Lead Generation - Q3", type: "leads", target: 5000, current: 2100, progress: 42, deadline: new Date(now + 60 * day).toISOString(), status: "behind", owner: "John Smith", tags: ["q3", "leads"], createdBy: "user_001" });
+    this.insert("goals", { tenantId: "tenant_001", name: "Brand Awareness Reach", type: "reach", target: 2000000, current: 1450000, progress: 72.5, deadline: new Date(now + 45 * day).toISOString(), status: "on_track", owner: "Alice Wang", tags: ["brand"], createdBy: "user_001" });
+    this.insert("goals", { tenantId: "tenant_001", name: "Customer Acquisition Cost", type: "cac", target: 250, current: 312, progress: 0, deadline: new Date(now + 90 * day).toISOString(), status: "at_risk", owner: "Jane Doe", tags: ["efficiency"], createdBy: "user_001" });
+
+    const keywordData = [
+      { keyword: "enterprise AI platform", matchType: "broad", volume: 5400, difficulty: 72, cpc: 8.5, bid: 6.2, status: "active", campaignId: null },
+      { keyword: "AI marketing tools", matchType: "phrase", volume: 8200, difficulty: 65, cpc: 6.8, bid: 5.5, status: "active", campaignId: null },
+      { keyword: "marketing automation", matchType: "exact", volume: 12000, difficulty: 78, cpc: 9.2, bid: 8.0, status: "active", campaignId: null },
+      { keyword: "SaaS growth platform", matchType: "broad", volume: 3200, difficulty: 55, cpc: 7.1, bid: 5.0, status: "paused", campaignId: null },
+      { keyword: "AI advertising solution", matchType: "phrase", volume: 2800, difficulty: 48, cpc: 5.9, bid: 4.8, status: "active", campaignId: null },
+      { keyword: "conversion rate optimization", matchType: "exact", volume: 6800, difficulty: 70, cpc: 7.8, bid: 6.5, status: "active", campaignId: null },
+      { keyword: "retargeting software", matchType: "broad", volume: 1600, difficulty: 42, cpc: 4.5, bid: 3.8, status: "draft", campaignId: null },
+    ];
+    for (const k of keywordData) this.insert("keywords", { tenantId: "tenant_001", ...k, performance: { impressions: Math.floor(Math.random() * 50000), clicks: Math.floor(Math.random() * 3000), conversions: Math.floor(Math.random() * 80), spend: Math.floor(Math.random() * 8000), revenue: Math.floor(Math.random() * 20000) }, createdBy: "user_001" });
+
+    const landingPages = [
+      { tenantId: "tenant_001", title: "Enterprise AI Demo", slug: "enterprise-ai-demo", url: "https://n0va.ai/demo", status: "active", campaignId: "camp_001", template: "demo-request", conversionRate: 8.2, visits: 34000, conversions: 2788, lastOptimized: new Date(now - 14 * day).toISOString(), seo: { score: 82, keywords: ["enterprise AI demo", "AI platform demo"] }, createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Summer Sale Landing", slug: "summer-sale", url: "https://n0va.ai/summer", status: "active", campaignId: "camp_002", template: "sale", conversionRate: 5.7, visits: 56000, conversions: 3192, lastOptimized: new Date(now - 7 * day).toISOString(), seo: { score: 76, keywords: ["summer sale", "limited offer"] }, createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Webinar Registration", slug: "webinar-registration", url: "https://n0va.ai/webinar", status: "active", campaignId: "camp_007", template: "registration", conversionRate: 12.1, visits: 8900, conversions: 1077, seo: { score: 68, keywords: ["AI webinar", "marketing webinar"] }, createdBy: "user_001" },
+      { tenantId: "tenant_001", title: "Product Launch Page", slug: "product-launch", url: "https://n0va.ai/launch", status: "draft", template: "launch", conversionRate: 0, visits: 0, conversions: 0, seo: { score: 55, keywords: [] }, createdBy: "user_001" },
+    ];
+    for (const lp of landingPages) this.insert("landing_pages", lp);
+
+    const segments = [
+      { tenantId: "tenant_001", name: "High-Value Enterprise", description: "Enterprise accounts with LTV > $50K", type: "behavioral", criteria: { ltv: { $gt: 50000 }, accountType: "enterprise" }, count: 340, status: "active", tags: ["enterprise", "high-value"], createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "Engaged Trial Users", description: "Users in trial who have used 3+ features", type: "behavioral", criteria: { status: "trial", featuresUsed: { $gte: 3 } }, count: 1200, status: "active", tags: ["trial", "engaged"], createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "At-Risk Churn", description: "Users with declining engagement over 14 days", type: "predictive", criteria: { loginFrequency: { $lt: 2 }, lastAction: { $gte: 14 } }, count: 580, status: "active", tags: ["churn", "at-risk"], createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "High-Intent Buyers", description: "Visited pricing page 3+ times this week", type: "behavioral", criteria: { pagesVisited: { $contains: "/pricing" }, visitsThisWeek: { $gte: 3 } }, count: 890, status: "active", tags: ["intent", "buyers"], createdBy: "user_001" },
+    ];
+    for (const s of segments) this.insert("segments", s);
+
+    for (let i = 0; i < 8; i++) {
+      this.insert("utm_links", { tenantId: "tenant_001", url: `https://n0va.ai/landing?utm_source=${["meta", "google", "linkedin", "tiktok"][i % 4]}&utm_medium=cpc&utm_campaign=camp_00${(i % 3) + 1}&utm_content=ad_${i + 1}&utm_term=keyword_${i + 1}`, source: ["meta", "google", "linkedin", "tiktok"][i % 4], medium: "cpc", campaign: `camp_00${(i % 3) + 1}`, content: `ad_${i + 1}`, term: `keyword_${i + 1}`, clicks: Math.floor(Math.random() * 500) + 50, conversions: Math.floor(Math.random() * 20) + 1, createdAt: new Date(now - i * day).toISOString(), createdBy: "user_001" });
+    }
+
+    this.insert("media_kits", { tenantId: "tenant_001", name: "N0VA Press Kit", description: "Official media resources for N0VA.ai", version: "2.1", assets: ["logo.svg", "brand-guidelines.pdf", "screenshots.zip", "team-photos.zip"], reach: { publications: 45, impressions: 2800000, estimatedValue: 185000 }, contacts: [{ name: "Press Team", email: "press@n0va.ai", role: "PR" }], tags: ["brand", "press"], createdBy: "user_001" });
+    this.insert("media_kits", { tenantId: "tenant_001", name: "Product Launch Kit", description: "Media kit for the Q4 product launch", version: "1.0", assets: ["product-shots.zip", "press-release.pdf", "fact-sheet.pdf", "executive-bios.zip"], reach: { publications: 12, impressions: 450000, estimatedValue: 32000 }, contacts: [{ name: "Marketing Team", email: "marketing@n0va.ai", role: "Marketing" }], tags: ["launch", "product"], createdBy: "user_001" });
+
+    const competitors = ["AdVance AI", "MarketPro 360", "CampaignIQ", "AdOptimizer"];
+    for (const comp of competitors) {
+      for (let d = 30; d >= 0; d--) {
+        const date = new Date(now - d * day).toISOString().split("T")[0];
+        this.insert("competitive_intel", { tenantId: "tenant_001", competitor: comp, date, spend: Math.floor(Math.random() * 15000) + 3000, impressions: Math.floor(Math.random() * 200000) + 30000, shareOfVoice: parseFloat((Math.random() * 30 + 5).toFixed(1)), topOfFunnel: Math.floor(Math.random() * 1000) + 100, estimatedRevenue: Math.floor(Math.random() * 50000) + 5000, source: ["ad_intelligence", "scraper", "panel"][Math.floor(Math.random() * 3)], });
+      }
+    }
+
+    const contentAssetTypes = ["blog_post", "whitepaper", "case_study", "infographic", "ebook", "video_script"];
+    for (let i = 0; i < 12; i++) {
+      const typ = contentAssetTypes[i % contentAssetTypes.length];
+      this.insert("content_assets", { tenantId: "tenant_001", title: `${typ.replace("_", " ")} #${i + 1}`, type: typ, description: `A ${typ.replace("_", " ")} about AI marketing`, status: i < 8 ? "published" : "draft", tags: ["ai", "marketing", typ], performance: { views: Math.floor(Math.random() * 10000) + 100, downloads: Math.floor(Math.random() * 500) + 10, shares: Math.floor(Math.random() * 200) + 5, leads: Math.floor(Math.random() * 100) + 2 }, author: ["Jane Doe", "John Smith", "Alice Wang"][i % 3], publishedAt: i < 8 ? new Date(now - i * day).toISOString() : undefined, createdBy: "user_001" });
+    }
+
+    const formTypes = ["lead_gen", "contact", "newsletter", "survey", "event_registration"];
+    for (let i = 0; i < 6; i++) {
+      const typ = formTypes[i % formTypes.length];
+      const f = this.insert("marketing_forms", { tenantId: "tenant_001", name: `${typ.replace("_", " ")} Form ${i + 1}`, type: typ, fields: [{ name: "email", type: "email", required: true }, { name: "name", type: "text", required: true }, { name: "company", type: "text", required: false }], status: i < 4 ? "active" : "draft", submissions: Math.floor(Math.random() * 500) + 10, conversionRate: parseFloat((Math.random() * 15 + 2).toFixed(1)), embeddedUrl: `https://n0va.ai/forms/${typ}_${i + 1}`, tags: [typ], createdBy: "user_001" });
+      for (let j = 0; j < Math.min(f.submissions, 20); j++) {
+        this.insert("form_submissions", { tenantId: "tenant_001", formId: f._id, formName: f.name, data: { email: `lead${j + 1}@example.com`, name: `Lead ${j + 1}`, company: `Company ${j + 1}` }, submittedAt: new Date(now - j * day).toISOString(), converted: Math.random() > 0.5 });
+      }
+    }
+
+    this.insert("customer_journeys", { tenantId: "tenant_001", name: "SaaS Buyer Journey", stages: [
+      { name: "Awareness", order: 1, count: 50000, dropOff: 0, color: "#1a6dff" },
+      { name: "Research", order: 2, count: 18000, dropOff: 64, color: "#8b5cf6" },
+      { name: "Trial", order: 3, count: 5000, dropOff: 72.2, color: "#10b981" },
+      { name: "Negotiation", order: 4, count: 1200, dropOff: 76, color: "#f59e0b" },
+      { name: "Closed Won", order: 5, count: 340, dropOff: 71.7, color: "#ef4444" },
+    ], createdBy: "user_001" });
+    this.insert("customer_journeys", { tenantId: "tenant_001", name: "E-commerce Buyer Journey", stages: [
+      { name: "Landing", order: 1, count: 100000, dropOff: 0, color: "#1a6dff" },
+      { name: "Product View", order: 2, count: 35000, dropOff: 65, color: "#8b5cf6" },
+      { name: "Add to Cart", order: 3, count: 8000, dropOff: 77.1, color: "#10b981" },
+      { name: "Checkout", order: 4, count: 2500, dropOff: 68.8, color: "#f59e0b" },
+      { name: "Purchase", order: 5, count: 1200, dropOff: 52, color: "#ef4444" },
+    ], createdBy: "user_001" });
   }
 }

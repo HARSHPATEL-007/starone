@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { FileInput, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, GripVertical, AlignLeft, Hash, CheckSquare, Circle, ListOrdered, Mail, Phone, Calendar, Globe, Upload, Download } from "lucide-react";
+import { FileInput, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, GripVertical, AlignLeft, Hash, CheckSquare, Circle, ListOrdered, Mail, Phone, Calendar, Globe, Upload, Download, ChevronDown, ChevronRight, Table } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 type FieldType = "text" | "email" | "phone" | "textarea" | "select" | "checkbox" | "radio" | "number" | "date" | "file";
@@ -47,12 +47,20 @@ const FIELD_ICONS: Record<string, any> = {
 
 export default function MarketingForms() {
   const { addToast } = useToast();
-  const { data: forms, loading, create, update, remove, replaceAll } = useEntityData<MarketingForm>("marketing_forms");
+  const [forms, setForms] = useState<MarketingForm[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [expandedSubmissions, setExpandedSubmissions] = useState<string | null>(null);
+  const [submissions, setSubmissions] = useState<Record<string, any[]>>({});
+  const [submissionsLoading, setSubmissionsLoading] = useState<string | null>(null);
   const [form, setForm] = useState<{ name: string; description: string; fields: FormField[]; isActive: boolean }>({ name: "", description: "", fields: [], isActive: true });
+
+  useEffect(() => {
+    api.marketingForms.list().then(d => setForms(d || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
 
 
 
@@ -90,7 +98,7 @@ export default function MarketingForms() {
     setForm(f => ({ ...f, fields: f.fields.map(fld => fld.id === fieldId ? { ...fld, options: fld.options.filter((_, i) => i !== optIdx) } : fld) }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "Form name is required"); return; }
     if (form.fields.filter(f => f.label.trim()).length === 0) { addToast("error", "Add at least one field with a label"); return; }
     const validFields = form.fields.filter(f => f.label.trim()).map(f => ({ ...f, label: f.label.trim(), options: f.options.filter(o => o.trim()).map(o => o.trim()) }));
@@ -102,15 +110,16 @@ export default function MarketingForms() {
       isActive: form.isActive,
       createdAt: editingId ? forms.find(fm => fm.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    if (editingId) { update(editingId, mf); addToast("success", "Form updated"); }
-    else { create(mf); addToast("success", "Form created"); }
+    if (editingId) { await api.marketingForms.update(editingId, mf as any); setForms(prev => prev.map(f => f.id === editingId ? mf : f)); addToast("success", "Form updated"); }
+    else { const created = await api.marketingForms.create(mf as any); setForms(prev => [created, ...prev]); addToast("success", "Form created"); }
     setShowForm(false);
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const name = forms.find(f => f.id === id)?.name;
-    remove(id);
+    await api.marketingForms.delete(id);
+    setForms(prev => prev.filter(f => f.id !== id));
     addToast("success", `"${name}" deleted`);
   }
 
@@ -118,14 +127,17 @@ export default function MarketingForms() {
     const f = forms.find(fm => fm.id === id);
     if (!f) return;
     const copy: MarketingForm = { ...f, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${f.name} (Copy)`, submissionCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), fields: f.fields.map(fld => ({ ...fld, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 4) })) };
-    replaceAll([copy, ...forms]);
+    api.marketingForms.create(copy as any).then(created => setForms(prev => [created, ...prev]));
     addToast("success", "Form duplicated");
   }
 
   function toggleActive(id: string) {
-    replaceAll(forms.map(f => f.id === id ? { ...f, isActive: !f.isActive } : f));
-    const f = forms.find(fm => fm.id === id);
-    addToast("success", `"${f?.name}" ${f?.isActive ? "deactivated" : "activated"}`);
+    const target = forms.find(fm => fm.id === id);
+    if (!target) return;
+    const updated = forms.map(f => f.id === id ? { ...f, isActive: !f.isActive } : f);
+    setForms(updated);
+    api.marketingForms.update(id, { isActive: !target.isActive });
+    addToast("success", `"${target.name}" ${target.isActive ? "deactivated" : "activated"}`);
   }
 
   const filtered = forms.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()) || f.description.toLowerCase().includes(search.toLowerCase()));
@@ -306,6 +318,7 @@ export default function MarketingForms() {
               <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-600">
                 <span>{fm.fields.length} field{fm.fields.length !== 1 ? "s" : ""}</span>
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {fm.submissionCount.toLocaleString()} submissions</span>
+                <span className="flex items-center gap-1 text-green-400">{(fm as any).conversionRate || 0}% conv.</span>
                 {fm.fields.filter(f => f.required).length > 0 && <span>{fm.fields.filter(f => f.required).length} required</span>}
                 <span>Updated {new Date(fm.updatedAt).toLocaleDateString()}</span>
               </div>
@@ -317,6 +330,14 @@ export default function MarketingForms() {
               </div>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
+              <button onClick={() => {
+                if (expandedSubmissions === fm.id) { setExpandedSubmissions(null); return; }
+                setExpandedSubmissions(fm.id);
+                setSubmissionsLoading(fm.id);
+                api.marketingForms.submissions(fm.id).then(d => setSubmissions(prev => ({ ...prev, [fm.id]: d || [] }))).catch(() => {}).finally(() => setSubmissionsLoading(null));
+              }} className={`p-1.5 ${expandedSubmissions === fm.id ? "text-n0va-400" : "text-gray-600 hover:text-gray-300"}`} title="Submissions">
+                {expandedSubmissions === fm.id ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
               <button onClick={() => setPreviewId(fm.id)} className="p-1.5 text-gray-600 hover:text-gray-300" title="Preview"><Eye className="w-3.5 h-3.5" /></button>
               <button onClick={() => toggleActive(fm.id)} className="p-1.5 text-gray-600 hover:text-yellow-400"><CheckSquare className="w-3.5 h-3.5" /></button>
               <button onClick={() => duplicateForm(fm.id)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-3.5 h-3.5" /></button>
@@ -324,6 +345,42 @@ export default function MarketingForms() {
               <button onClick={() => handleDelete(fm.id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           </div>
+          {expandedSubmissions === fm.id && (
+            <div className="border-t border-gray-800 mt-4 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-white flex items-center gap-1.5"><Table className="w-4 h-4 text-n0va-400" /> Recent Submissions</h4>
+                <span className="text-xs text-gray-500">{submissions[fm.id]?.length || 0} total</span>
+              </div>
+              {submissionsLoading === fm.id ? (
+                <p className="text-xs text-gray-600 py-2">Loading submissions...</p>
+              ) : submissions[fm.id]?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-gray-500 text-left border-b border-gray-800">
+                        {Object.keys(submissions[fm.id][0]).filter(k => k !== "_id" && k !== "id").slice(0, 5).map(k => (
+                          <th key={k} className="pb-2 pr-3 font-medium capitalize">{k}</th>
+                        ))}
+                        <th className="pb-2 font-medium">Submitted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submissions[fm.id].slice(0, 10).map((sub: any, i: number) => (
+                        <tr key={sub._id || i} className="border-b border-gray-800/40">
+                          {Object.keys(submissions[fm.id][0]).filter(k => k !== "_id" && k !== "id").slice(0, 5).map(k => (
+                            <td key={k} className="py-2 pr-3 text-gray-300 truncate max-w-[120px]">{String(sub[k] || "")}</td>
+                          ))}
+                          <td className="py-2 text-gray-500">{sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-600 py-2">No submissions yet</p>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>

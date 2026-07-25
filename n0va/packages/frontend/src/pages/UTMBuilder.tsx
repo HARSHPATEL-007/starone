@@ -65,20 +65,22 @@ export default function UTMBuilder() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", url: "", source: "", medium: "", campaign: "", term: "", content: "" });
+  const [form, setForm] = useState({ name: "", baseUrl: "", source: "", medium: "", campaign: "", term: "", content: "" });
   const [qrLinkId, setQrLinkId] = useState<string | null>(null);
   const [showBulk, setShowBulk] = useState(false);
   const [bulkForm, setBulkForm] = useState({ baseUrl: "", source: "", medium: "", campaign: "", names: "" });
+  const [activeTab, setActiveTab] = useState<"links" | "performance">("links");
+  const [perfData, setPerfData] = useState<any[]>([]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); api.utmBuilder.performance().then(setPerfData).catch(() => {}); }, []);
 
   async function load() {
     setLoading(true);
     try {
-      let data = await api.entities.list("utm_links");
+      let data = await api.utmBuilder.list();
       if (!data || data.length === 0) {
-        for (const l of SEED_LINKS) { l.fullUrl = buildUrl(l.url, l.source, l.medium, l.campaign, l.term, l.content); await api.entities.create("utm_links", l as any); }
-        data = await api.entities.list("utm_links");
+        for (const l of SEED_LINKS) { await api.utmBuilder.create({ name: l.name, baseUrl: l.url, source: l.source, medium: l.medium, campaign: l.campaign, term: l.term, content: l.content } as any); }
+        data = await api.utmBuilder.list();
       }
       setLinks(data || []);
     } catch { setLinks(SEED_LINKS.map(l => ({ ...l, fullUrl: buildUrl(l.url, l.source, l.medium, l.campaign, l.term, l.content) }))); }
@@ -86,8 +88,8 @@ export default function UTMBuilder() {
   }
 
   function resetForm(l?: UTMLink) {
-    if (l) setForm({ name: l.name, url: l.url, source: l.source, medium: l.medium, campaign: l.campaign, term: l.term, content: l.content });
-    else setForm({ name: "", url: "", source: "", medium: "", campaign: "", term: "", content: "" });
+    if (l) setForm({ name: l.name, baseUrl: l.url, source: l.source, medium: l.medium, campaign: l.campaign, term: l.term, content: l.content });
+    else setForm({ name: "", baseUrl: "", source: "", medium: "", campaign: "", term: "", content: "" });
   }
 
   function applyPreset(preset: typeof PRESETS[0]) {
@@ -95,12 +97,12 @@ export default function UTMBuilder() {
   }
 
   async function handleSave() {
-    if (!form.name.trim() || !form.url.trim()) { addToast("error", "Name and URL are required"); return; }
-    const fullUrl = buildUrl(form.url, form.source, form.medium, form.campaign, form.term, form.content);
+    if (!form.name.trim() || !form.baseUrl.trim()) { addToast("error", "Name and base URL are required"); return; }
+    const fullUrl = buildUrl(form.baseUrl, form.source, form.medium, form.campaign, form.term, form.content);
     const now = new Date().toISOString();
     const link: UTMLink = {
       id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 4),
-      name: form.name.trim(), url: form.url.trim(),
+      name: form.name.trim(), url: form.baseUrl.trim(),
       source: form.source, medium: form.medium, campaign: form.campaign, term: form.term, content: form.content,
       fullUrl, createdAt: editingId ? links.find(l => l.id === editingId)!.createdAt : now, clicks: editingId ? links.find(l => l.id === editingId)!.clicks : 0,
     };
@@ -110,7 +112,7 @@ export default function UTMBuilder() {
         setLinks(prev => prev.map(l => l.id === editingId ? link : l));
         addToast("success", "UTM link updated");
       } else {
-        const created = await api.entities.create("utm_links", link as any);
+        const created = await api.utmBuilder.create({ name: form.name.trim(), baseUrl: form.baseUrl.trim(), source: form.source, medium: form.medium, campaign: form.campaign, term: form.term, content: form.content } as any);
         setLinks(prev => [created, ...prev]);
         addToast("success", "UTM link created");
       }
@@ -155,7 +157,7 @@ export default function UTMBuilder() {
         createdAt: new Date().toISOString(), clicks: 0,
       };
       try {
-        const created_link = await api.entities.create("utm_links", link as any);
+        const created_link = await api.utmBuilder.create({ name: link.name, baseUrl: link.url, source: link.source, medium: link.medium, campaign: link.campaign, term: link.term, content: link.content } as any);
         setLinks(prev => [created_link, ...prev]);
       } catch { setLinks(prev => [link, ...prev]); }
       created++;
@@ -165,7 +167,7 @@ export default function UTMBuilder() {
     setBulkForm({ baseUrl: "", source: "", medium: "", campaign: "", names: "" });
   }
 
-  const previewUrl = form.url ? buildUrl(form.url, form.source, form.medium, form.campaign, form.term, form.content) : "";
+  const previewUrl = form.baseUrl ? buildUrl(form.baseUrl, form.source, form.medium, form.campaign, form.term, form.content) : "";
   const filtered = links.filter(l => !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.campaign.toLowerCase().includes(search.toLowerCase()) || l.source.toLowerCase().includes(search.toLowerCase()));
   const clickChartData = links.filter(l => l.clicks > 0).map(l => ({ name: l.name.length > 14 ? l.name.substring(0, 14) + "..." : l.name, clicks: l.clicks }));
 
@@ -205,7 +207,39 @@ export default function UTMBuilder() {
         </div>
       )}
 
-      {clickChartData.length > 1 && (
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-800 pb-1">
+        <button onClick={() => setActiveTab("links")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === "links" ? "text-n0va-400 bg-n0va-900 border border-gray-800 border-b-transparent" : "text-gray-500 hover:text-gray-300"}`}>Links</button>
+        <button onClick={() => setActiveTab("performance")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === "performance" ? "text-n0va-400 bg-n0va-900 border border-gray-800 border-b-transparent" : "text-gray-500 hover:text-gray-300"}`}>Performance</button>
+      </div>
+
+      {activeTab === "performance" && perfData.length > 0 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Performance by Source & Campaign</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={perfData.map((d: any) => ({ name: `${d.source} / ${d.campaign}`.length > 16 ? `${d.source} / ${d.campaign}`.substring(0, 16) + "..." : `${d.source} / ${d.campaign}`, clicks: d.clicks || 0, conversions: d.conversions || 0 }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" stroke="#6b7280" fontSize={10} />
+                <YAxis stroke="#6b7280" fontSize={10} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="clicks" fill="#1a6dff" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="conversions" fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "performance" && perfData.length === 0 && (
+        <div className="card p-12 flex flex-col items-center justify-center text-center">
+          <BarChart3 className="w-12 h-12 text-gray-700 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-300 mb-2">No performance data yet</h3>
+          <p className="text-sm text-gray-500">Performance metrics will appear once links receive clicks.</p>
+        </div>
+      )}
+
+      {activeTab === "links" && clickChartData.length > 1 && (
         <div className="card">
           <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Click Activity</h3>
           <div className="h-48">
@@ -222,11 +256,13 @@ export default function UTMBuilder() {
         </div>
       )}
 
+      {activeTab === "links" && (
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
         <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search UTM links..." value={search} onChange={e => setSearch(e.target.value)} />
-      </div>
+      </div>)}
 
+      {activeTab === "links" && (<>
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowForm(false)}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
@@ -237,7 +273,7 @@ export default function UTMBuilder() {
             <form onSubmit={e => { e.preventDefault(); handleSave(); }} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Link Name</label><input className="input" placeholder="e.g. Spring Sale - Google" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus /></div>
-                <div><label className="label">Base URL</label><input className="input" placeholder="https://example.com/page" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} /></div>
+                <div><label className="label">Base URL</label><input className="input" placeholder="https://example.com/page" value={form.baseUrl} onChange={e => setForm({ ...form, baseUrl: e.target.value })} /></div>
               </div>
               <div><label className="label mb-2">Quick Presets</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -332,6 +368,7 @@ export default function UTMBuilder() {
           )}
         </div>
       ))}
+    </>)}
     </div>
   );
 }

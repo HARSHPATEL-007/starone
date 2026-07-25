@@ -1,17 +1,20 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ExternalLink, Plus, X, Edit3, Trash2, Copy, Search, Globe, Eye, Calendar, BarChart3, Smartphone, Monitor, Link2, MousePointerClick, TrendingUp, TrendingDown, Zap, Activity, Target, Download, Award } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 interface LandingPage {
   _id?: string;
   id: string;
   name: string;
+  slug: string;
   url: string;
   campaignName: string;
   description: string;
   tags: string[];
+  status: string;
+  seoScore: number;
   views: number;
   conversions: number;
   createdAt: string;
@@ -40,41 +43,47 @@ const PAGE_SIZE = 12;
 
 export default function LandingPages() {
   const { addToast } = useToast();
-  const { data: pages, create, update, remove } = useEntityData<LandingPage>("landing_pages");
+  const [pages, setPages] = useState<LandingPage[]>([]);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [filterTag, setFilterTag] = useState("all");
-  const [form, setForm] = useState({ name: "", url: "", campaignName: "", description: "", tags: "", views: 0, conversions: 0 });
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [form, setForm] = useState({ name: "", slug: "", url: "", campaignName: "", description: "", tags: "", status: "active", seoScore: 0, views: 0, conversions: 0 });
+
+  useEffect(() => { api.landingPages.list().then(setPages); }, []);
 
   const allTags = useMemo(() => [...new Set(pages.flatMap(p => p.tags))], [pages]);
 
   function resetForm(lp?: LandingPage) {
-    if (lp) setForm({ name: lp.name, url: lp.url, campaignName: lp.campaignName, description: lp.description, tags: lp.tags.join(", "), views: lp.views, conversions: lp.conversions });
-    else setForm({ name: "", url: "", campaignName: "", description: "", tags: "", views: 0, conversions: 0 });
+    if (lp) setForm({ name: lp.name, slug: lp.slug, url: lp.url, campaignName: lp.campaignName, description: lp.description, tags: lp.tags.join(", "), status: lp.status, seoScore: lp.seoScore, views: lp.views, conversions: lp.conversions });
+    else setForm({ name: "", slug: "", url: "", campaignName: "", description: "", tags: "", status: "active", seoScore: 0, views: 0, conversions: 0 });
   }
 
   async function handleSave() {
     if (!form.name.trim() || !form.url.trim()) { addToast("error", "Name and URL are required"); return; }
     const now = new Date().toISOString();
-    const lp: LandingPage = {
-      id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      name: form.name.trim(), url: form.url.trim(), campaignName: form.campaignName.trim(),
+    const lp = {
+      name: form.name.trim(), slug: form.slug.trim() || form.name.trim().toLowerCase().replace(/\s+/g, "-"),
+      url: form.url.trim(), campaignName: form.campaignName.trim(),
       description: form.description.trim(), tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
+      status: form.status, seoScore: form.seoScore,
       views: editingId ? pages.find(p => p.id === editingId)!.views : 0,
       conversions: editingId ? pages.find(p => p.id === editingId)!.conversions : 0,
       createdAt: editingId ? pages.find(p => p.id === editingId)!.createdAt : now, updatedAt: now,
     };
-    if (editingId) { await update(editingId, lp as any); addToast("success", "Landing page updated"); }
-    else { await create(lp as any); addToast("success", "Landing page added"); }
+    if (editingId) { await api.landingPages.update(editingId, lp); addToast("success", "Landing page updated"); }
+    else { await api.landingPages.create(lp); addToast("success", "Landing page added"); }
+    setPages(await api.landingPages.list());
     setShowForm(false);
     setEditingId(null);
   }
 
   async function handleDelete(id: string) {
-    await remove(id);
+    await api.landingPages.delete(id);
+    setPages(prev => prev.filter(p => p.id !== id));
     addToast("success", "Landing page deleted");
     if (selectedPage === id) setSelectedPage(null);
   }
@@ -82,13 +91,13 @@ export default function LandingPages() {
   async function duplicatePage(id: string) {
     const p = pages.find(pp => pp.id === id);
     if (!p) return;
-    const copy: LandingPage = { ...p, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${p.name} (Copy)`, views: 0, conversions: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    await create(copy as any);
+    await api.landingPages.create({ ...p, name: `${p.name} (Copy)`, views: 0, conversions: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    setPages(await api.landingPages.list());
     addToast("success", "Landing page duplicated");
   }
 
   function calcScore(lp: LandingPage): number {
-    if (lp.views === 0) return 0;
+    if (lp.views === 0) return lp.seoScore || 0;
     const cvr = (lp.conversions / lp.views) * 100;
     const viewScore = Math.min(40, (lp.views / 10000) * 40);
     const convScore = Math.min(60, cvr * 10);
@@ -96,10 +105,10 @@ export default function LandingPages() {
   }
 
   function exportCSV() {
-    const header = "Name,URL,Campaign,Views,Conversions,CVR%,Score,Tags";
+    const header = "Name,Slug,URL,Campaign,Status,SEO Score,Views,Conversions,CVR%,Score,Tags";
     const rows = pages.map(lp => {
       const cvr = lp.views > 0 ? ((lp.conversions / lp.views) * 100).toFixed(1) : "0.0";
-      return `"${lp.name}","${lp.url}","${lp.campaignName}",${lp.views},${lp.conversions},${cvr},${calcScore(lp)},"${lp.tags.join(", ")}"`;
+      return `"${lp.name}","${lp.slug}","${lp.url}","${lp.campaignName}",${lp.status},${lp.seoScore},${lp.views},${lp.conversions},${cvr},${calcScore(lp)},"${lp.tags.join(", ")}"`;
     }).join("\n");
     const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
     const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "landing_pages.csv"; el.click();
@@ -108,7 +117,8 @@ export default function LandingPages() {
 
   const filtered = pages.filter(p => {
     if (filterTag !== "all" && !p.tags.includes(filterTag)) return false;
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.url.toLowerCase().includes(search.toLowerCase()) && !p.campaignName.toLowerCase().includes(search.toLowerCase()) && !p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))) return false;
+    if (filterStatus !== "all" && p.status !== filterStatus) return false;
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.slug.toLowerCase().includes(search.toLowerCase()) && !p.url.toLowerCase().includes(search.toLowerCase()) && !p.campaignName.toLowerCase().includes(search.toLowerCase()) && !p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))) return false;
     return true;
   });
 
@@ -127,7 +137,6 @@ export default function LandingPages() {
           </h1>
           <p className="text-gray-400 mt-1">
             {pages.length} pages · {fmt(pages.reduce((s, p) => s + p.views, 0))} total views · {fmt(pages.reduce((s, p) => s + p.conversions, 0))} conversions
-            · Avg CVR: {pages.reduce((s, p) => s + (p.views > 0 ? (p.conversions / p.views) * 100 : 0), 0) / Math.max(1, pages.filter(p => p.views > 0).length) > 0 ? pages.reduce((s, p) => s + (p.views > 0 ? (p.conversions / p.views) * 100 : 0), 0) / Math.max(1, pages.filter(p => p.views > 0).length) : 0}%
           </p>
         </div>
         <button onClick={exportCSV} className="btn-ghost text-sm"><Download className="w-4 h-4 mr-1" /> CSV</button>
@@ -161,10 +170,15 @@ export default function LandingPages() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
-          <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search landing pages..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search by name, slug, URL..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <select className="input py-2 text-sm w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="draft">Draft</option>
+        </select>
         <div className="flex flex-wrap gap-1">
-          <button className={`text-xs px-2 py-1 rounded border ${filterTag === "all" ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500"}`} onClick={() => setFilterTag("all")}>All</button>
+          <button className={`text-xs px-2 py-1 rounded border ${filterTag === "all" ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500"}`} onClick={() => setFilterTag("all")}>All Tags</button>
           {allTags.map(t => (
             <button key={t} className={`text-xs px-2 py-1 rounded border ${filterTag === t ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500"}`} onClick={() => setFilterTag(t)}>{t}</button>
           ))}
@@ -178,11 +192,21 @@ export default function LandingPages() {
             <form onSubmit={e => { e.preventDefault(); handleSave(); }} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Page Name</label><input className="input" placeholder="e.g. Q3 Launch Signup" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus /></div>
+                <div><label className="label">Slug</label><input className="input" placeholder="e.g. q3-launch-signup" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div><label className="label">Campaign</label><input className="input" placeholder="Related campaign" value={form.campaignName} onChange={e => setForm({ ...form, campaignName: e.target.value })} /></div>
+                <div><label className="label">Status</label>
+                  <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                    <option value="active">Active</option>
+                    <option value="draft">Draft</option>
+                  </select>
+                </div>
               </div>
               <div><label className="label">Page URL</label><input className="input" placeholder="https://example.com/landing" value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} /></div>
               <div><label className="label">Description</label><textarea className="input" rows={2} placeholder="What's this page for?" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
               <div><label className="label">Tags (comma-separated)</label><input className="input" placeholder="e.g. signup, product, launch" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} /></div>
+              <div><label className="label">SEO Score (0-100)</label><input className="input" type="number" min="0" max="100" value={form.seoScore} onChange={e => setForm({ ...form, seoScore: Number(e.target.value) })} /></div>
               <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button><button type="submit" className="btn-primary">{editingId ? "Save Changes" : "Add Page"}</button></div>
             </form>
           </div>
@@ -204,6 +228,7 @@ export default function LandingPages() {
                 {displayed.map(lp => {
                   const convRate = lp.views > 0 ? ((lp.conversions / lp.views) * 100).toFixed(1) : "0.0";
                   const isSelected = selectedPage === lp.id;
+                  const score = calcScore(lp);
                   return (
                     <div key={lp.id} className={`card p-4 cursor-pointer transition-all ${isSelected ? "border-n0va-500 ring-1 ring-n0va-500/30" : "hover:border-gray-700"}`} onClick={() => setSelectedPage(lp.id)}>
                       <div className="flex items-start gap-3">
@@ -213,14 +238,20 @@ export default function LandingPages() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <h3 className="text-sm font-semibold text-white truncate">{lp.name}</h3>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${scoreBg(calcScore(lp))} ${scoreColor(calcScore(lp))}`}>{calcScore(lp)}</span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${scoreBg(score)} ${scoreColor(score)}`}>{score}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${lp.status === "active" ? "bg-green-500/10 text-green-400 border-green-500/30" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/30"}`}>{lp.status}</span>
+                            {lp.seoScore > 0 && (
+                              <span className="text-[10px] flex items-center gap-0.5 font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                                <Award className="w-2.5 h-2.5" /> {lp.seoScore}
+                              </span>
+                            )}
                             <a href={lp.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-n0va-400 shrink-0" onClick={e => e.stopPropagation()}><ExternalLink className="w-3 h-3" /></a>
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5 truncate">{lp.url}</p>
                           <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-600">
-                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {fmt(lp.views)} views</span>
+                            <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {fmt(lp.views)} visits</span>
                             <span className="flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> {fmt(lp.conversions)} conv</span>
-                            <span className={`${Number(convRate) > 5 ? "text-green-400" : Number(convRate) > 2 ? "text-yellow-400" : "text-gray-500"}`}>{convRate}%</span>
+                            <span className={`${Number(convRate) > 5 ? "text-green-400" : Number(convRate) > 2 ? "text-yellow-400" : "text-gray-500"}`}>{convRate}% CVR</span>
                           </div>
                           {lp.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
@@ -257,7 +288,7 @@ export default function LandingPages() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-gray-800/50 rounded-lg p-3 text-center">
-                        <p className="text-xs text-gray-500">Views</p>
+                        <p className="text-xs text-gray-500">Visits</p>
                         <p className="text-lg font-bold text-white">{fmt(selectedPageData.views)}</p>
                       </div>
                       <div className="bg-gray-800/50 rounded-lg p-3 text-center">
@@ -274,6 +305,12 @@ export default function LandingPages() {
                         <p className="text-xs text-gray-500">Campaign</p>
                         <p className="text-xs text-white font-medium truncate mt-1">{selectedPageData.campaignName || "—"}</p>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-800/30">
+                      <Award className="w-4 h-4 text-blue-400" />
+                      <span className="text-xs text-gray-400">SEO Score:</span>
+                      <span className={`text-sm font-bold ${scoreColor(selectedPageData.seoScore)}`}>{selectedPageData.seoScore}/100</span>
                     </div>
 
                     <div>
