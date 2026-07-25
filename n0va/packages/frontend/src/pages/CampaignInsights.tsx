@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Lightbulb, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Target, Clock, Users, BarChart3, RefreshCw, Calendar } from "lucide-react";
+import { ArrowLeft, Lightbulb, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Target, Clock, Users, BarChart3, RefreshCw, Calendar, Download, X, ChevronDown, ChevronRight } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 
@@ -23,6 +23,8 @@ export default function CampaignInsights() {
   const [loading, setLoading] = useState(true);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [drillDown, setDrillDown] = useState<Insight | null>(null);
 
   function generateInsights(camps: any[], fraud: any): Insight[] {
     const result: Insight[] = [];
@@ -201,7 +203,16 @@ export default function CampaignInsights() {
     });
   }
 
-  const filteredInsights = filter === "all" ? insights : insights.filter((i) => i.type === filter);
+  function exportCSV() {
+    const header = "Type,Impact,Title,Description,Campaign,Metric,Value";
+    const rows = visibleInsights.map(i => `"${i.type}","${i.impact}","${i.title}","${i.description.replace(/"/g, '""')}","${i.campaignName || ""}","${i.metric || ""}","${i.value || ""}"`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "campaign_insights.csv"; el.click();
+    addToast("success", "CSV exported");
+  }
+
+  const visibleInsights = insights.filter(i => !dismissedIds.has(i.id));
+  const filteredInsights = filter === "all" ? visibleInsights : visibleInsights.filter((i) => i.type === filter);
 
   const counts = {
     all: insights.length,
@@ -243,6 +254,7 @@ export default function CampaignInsights() {
             <p className="text-sm text-gray-500">Automated analysis and recommendations for your campaigns</p>
           </div>
         </div>
+        <button onClick={exportCSV} className="btn-ghost text-sm flex items-center gap-1.5"><Download className="w-4 h-4" /> CSV</button>
         <button onClick={refreshInsights} className="btn-secondary text-sm flex items-center gap-1.5" disabled={loading}>
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
@@ -298,6 +310,10 @@ export default function CampaignInsights() {
                           <p className="text-sm font-bold text-white">{insight.value}</p>
                         </div>
                       )}
+                      <div className="flex items-center gap-1 ml-2">
+                        <button onClick={() => setDrillDown(insight)} className="p-1 text-gray-600 hover:text-n0va-400"><ChevronDown className="w-4 h-4" /></button>
+                        <button onClick={() => setDismissedIds(prev => new Set([...prev, insight.id]))} className="p-1 text-gray-600 hover:text-red-400"><X className="w-4 h-4" /></button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -305,6 +321,31 @@ export default function CampaignInsights() {
             </div>
           )}
         </>
+      )}
+      {drillDown && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDrillDown(null)}>
+          <div className="w-full max-w-md bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4"><h3 className="text-lg font-semibold text-white">{drillDown.title}</h3><button onClick={() => setDrillDown(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button></div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${typeColors[drillDown.type]}`}>
+                  {drillDown.type === "positive" ? <CheckCircle className="w-4 h-4" /> : drillDown.type === "warning" ? <AlertTriangle className="w-4 h-4" /> : drillDown.type === "action" ? <TrendingUp className="w-4 h-4" /> : <Lightbulb className="w-4 h-4" />}
+                </div>
+                <div><p className="text-sm text-white font-medium">{drillDown.type.charAt(0).toUpperCase() + drillDown.type.slice(1)}</p><p className="text-xs text-gray-500">{drillDown.impact} impact</p></div>
+              </div>
+              <p className="text-sm text-gray-300">{drillDown.description}</p>
+              {drillDown.metric && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-800/30 rounded-lg">
+                  <div><p className="text-xs text-gray-500">Metric</p><p className="text-sm text-white font-medium">{drillDown.metric}</p></div>
+                  <div><p className="text-xs text-gray-500">Value</p><p className="text-sm text-white font-medium">{drillDown.value}</p></div>
+                </div>
+              )}
+              {drillDown.campaignId && (
+                <button onClick={() => { navigate(`/campaigns/${drillDown.campaignId}`); setDrillDown(null); }} className="btn-primary text-sm w-full">View Campaign</button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

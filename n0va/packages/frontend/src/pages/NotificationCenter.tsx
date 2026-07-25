@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, RefreshCw, Filter, ChevronDown, ChevronRight, Settings, BellOff, CheckSquare, Square, Trash2, Loader } from "lucide-react";
+import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, RefreshCw, Filter, ChevronDown, ChevronRight, Settings, BellOff, CheckSquare, Square, Trash2, Loader, Clock, Shield, TrendingDown, ExternalLink } from "lucide-react";
 import { api } from "../api/client";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
 import { useToast } from "../components/Toast";
@@ -44,6 +44,10 @@ export default function NotificationCenter() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dismissedTypes, setDismissedTypes] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [prefTypes, setPrefTypes] = useState<Record<string, boolean>>({ fraud_alert: true, budget_alert: true, campaign_update: true, agent_status: true, system: true });
+  const [snoozedIds, setSnoozedIds] = useState<Set<string>>(new Set());
+  const [snoozeTimer, setSnoozeTimer] = useState<Record<string, NodeJS.Timeout>>({});
 
   const fraudAlerts = useFraudAlerts();
   const budgetAlerts = useBudgetAlerts();
@@ -72,14 +76,30 @@ export default function NotificationCenter() {
     })),
   ];
 
+  function snoozeNotification(id: string, ms: number) {
+    setSnoozedIds(prev => new Set([...prev, id]));
+    const timer = setTimeout(() => {
+      setSnoozedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    }, ms);
+    setSnoozeTimer(prev => ({ ...prev, [id]: timer }));
+    addToast("success", `Snoozed for ${ms === 3600000 ? "1 hour" : "24 hours"}`);
+  }
+
+  function getAction(n: any): { label: string; link: string } | null {
+    if (n.type === "fraud_alert") return { label: "Review Fraud", link: "/fraud-evaluation" };
+    if (n.type === "budget_alert") return { label: "Adjust Budget", link: "/budget-strategy" };
+    if (n.type === "campaign_update") return { label: "View Campaign", link: "/campaigns" };
+    return null;
+  }
+
   const allItems = useMemo(() => {
     const items = showLiveOnly ? liveAlerts : [...liveAlerts, ...notifications];
-    return items.filter(n => !dismissedTypes.has(n.type)).filter(n => {
+    return items.filter(n => !dismissedTypes.has(n.type)).filter(n => prefTypes[n.type] !== false).filter(n => !snoozedIds.has(n._id || n.id)).filter(n => {
       if (filter === "unread") return !n.read;
       if (filter !== "all") return n.type === filter;
       return true;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [notifications, liveAlerts, showLiveOnly, filter, dismissedTypes]);
+  }, [notifications, liveAlerts, showLiveOnly, filter, dismissedTypes, prefTypes, snoozedIds]);
 
   const grouped = useMemo(() => {
     if (groupBy === "none") return { "All": allItems };
@@ -157,6 +177,7 @@ export default function NotificationCenter() {
           ) : (
             <>
               <button onClick={() => setSelectMode(true)} className="btn-ghost text-xs">Select</button>
+              <button onClick={() => setShowPrefs(!showPrefs)} className={`btn-ghost text-xs ${showPrefs ? "text-n0va-400" : ""}`}><Settings className="w-3.5 h-3.5 mr-1" /> Prefs</button>
               <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={markAllRead}>
                 <CheckCheck className="w-3.5 h-3.5" /> Mark All Read
               </button>
@@ -185,6 +206,20 @@ export default function NotificationCenter() {
           <option value="none">No Grouping</option>
         </select>
       </div>
+
+      {showPrefs && (
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-white mb-3">Notification Preferences</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {Object.entries(prefTypes).map(([type, enabled]) => (
+              <label key={type} className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                <input type="checkbox" checked={enabled} onChange={() => setPrefTypes(prev => ({ ...prev, [type]: !prev[type] }))} className="rounded border-gray-700 bg-gray-800 accent-n0va-500" />
+                {type === "fraud_alert" ? "Fraud Alerts" : type === "budget_alert" ? "Budget Alerts" : type === "campaign_update" ? "Campaign Updates" : type === "agent_status" ? "Agent Status" : "System"}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {loading ? (
@@ -236,9 +271,15 @@ export default function NotificationCenter() {
                       </div>
                       {!selectMode && (
                         <div className="flex items-center gap-1 shrink-0">
-                          {!n.read && n._id && <button onClick={() => markRead(n._id as string)} className="text-gray-600 hover:text-n0va-400"><CheckCheck className="w-3.5 h-3.5" /></button>}
-                          {n._id && <button onClick={() => dismissNotification(n._id as string)} className="text-gray-600 hover:text-gray-400"><X className="w-3.5 h-3.5" /></button>}
-                          <button onClick={() => dismissType(n.type)} className="text-gray-600 hover:text-red-400" title="Hide this type"><BellOff className="w-3.5 h-3.5" /></button>
+                          {getAction(n) && (
+                            <Link to={getAction(n)!.link} className="p-1.5 text-gray-600 hover:text-n0va-400" title={getAction(n)!.label}>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
+                          {n._id && <button onClick={() => snoozeNotification(n._id, 3600000)} className="p-1.5 text-gray-600 hover:text-amber-400" title="Snooze 1h"><Clock className="w-3.5 h-3.5" /></button>}
+                          {!n.read && n._id && <button onClick={() => markRead(n._id as string)} className="p-1.5 text-gray-600 hover:text-n0va-400"><CheckCheck className="w-3.5 h-3.5" /></button>}
+                          {n._id && <button onClick={() => dismissNotification(n._id as string)} className="p-1.5 text-gray-600 hover:text-gray-400"><X className="w-3.5 h-3.5" /></button>}
+                          <button onClick={() => dismissType(n.type)} className="p-1.5 text-gray-600 hover:text-red-400" title="Hide this type"><BellOff className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
                     </div>

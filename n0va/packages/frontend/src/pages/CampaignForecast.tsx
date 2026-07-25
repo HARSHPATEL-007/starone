@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend, BarChart, Bar, Cell } from "recharts";
 import { api } from "../api/client";
-import { TrendingUp, RefreshCw, DollarSign, Target, BarChart3, Sliders, ChevronDown, ChevronRight, Calculator } from "lucide-react";
+import { TrendingUp, RefreshCw, DollarSign, Target, BarChart3, Sliders, ChevronDown, ChevronRight, Calculator, Download } from "lucide-react";
 import { SkeletonChart } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 
@@ -150,6 +150,15 @@ export default function CampaignForecast() {
 
   const roasData = forecast ? forecast.predictions.map(p => ({ date: p.date, ROAS: p.predictedRoas, Confidence: p.confidence * 100 })) : [];
 
+  function exportForecastCSV() {
+    if (!forecast) return;
+    const header = "Day,Predicted Revenue,Predicted Spend,Predicted ROAS,Lower Bound,Upper Bound,Confidence";
+    const rows = forecast.predictions.map(p => `${p.date},${p.predictedRevenue},${p.predictedSpend},${p.predictedRoas},${p.lowerBound},${p.upperBound},${(p.confidence * 100).toFixed(0)}%`).join("\n");
+    const blob = new Blob(["\ufeff" + header + "\n" + rows], { type: "text/csv;charset=utf-8" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "forecast.csv"; el.click();
+    addToast("success", "Forecast exported");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -160,6 +169,7 @@ export default function CampaignForecast() {
           </h1>
           <p className="text-gray-500 mt-1">14-day revenue prediction with scenario modeling and campaign breakdowns</p>
         </div>
+        <button onClick={exportForecastCSV} className="btn-ghost text-sm flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> CSV</button>
         <button onClick={loadData} className="btn-ghost text-sm flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
       </div>
 
@@ -222,7 +232,12 @@ export default function CampaignForecast() {
           <div className="card"><h3 className="text-lg font-semibold text-white mb-4">What-If Scenario Modeling</h3>
             <p className="text-sm text-gray-500 mb-4">Adjust baseline parameters to compare Conservative, Balanced, and Aggressive budget scenarios.</p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div><label className="label">Budget ($)</label><input type="number" className="input" value={scenarioBase.budget} onChange={e => setScenarioBase({ ...scenarioBase, budget: Number(e.target.value) || 0 })} /></div>
+              <div><label className="label">Budget ($)</label>
+                <div className="flex items-center gap-2">
+                  <input type="range" min={5000} max={500000} step={5000} value={scenarioBase.budget} onChange={e => setScenarioBase({ ...scenarioBase, budget: Number(e.target.value) })} className="flex-1 accent-n0va-500" />
+                  <span className="text-sm text-white font-mono w-16 text-right">{scenarioBase.budget.toLocaleString()}</span>
+                </div>
+              </div>
               <div><label className="label">Revenue ($)</label><input type="number" className="input" value={scenarioBase.revenue} onChange={e => setScenarioBase({ ...scenarioBase, revenue: Number(e.target.value) || 0 })} /></div>
               <div><label className="label">Leads</label><input type="number" className="input" value={scenarioBase.leads} onChange={e => setScenarioBase({ ...scenarioBase, leads: Number(e.target.value) || 0 })} /></div>
               <div><label className="label">CVR %</label><input type="number" className="input" step="0.1" value={scenarioBase.cvr} onChange={e => setScenarioBase({ ...scenarioBase, cvr: Number(e.target.value) || 0 })} /></div>

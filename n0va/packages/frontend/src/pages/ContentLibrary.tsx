@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Image, Video, File, Link, Plus, X, Search, Copy, Check, Trash2, ExternalLink, FolderOpen, LayoutGrid, List, RefreshCw, BarChart3, PieChart as PieIcon, CheckSquare } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -28,6 +29,8 @@ export default function ContentLibrary() {
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ name: "", url: "", type: "image" as Asset["type"], tags: "" });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   async function handleAdd() {
     if (!addForm.name.trim() || !addForm.url.trim()) { addToast("error", "Name and URL are required"); return; }
@@ -74,6 +77,21 @@ export default function ContentLibrary() {
 
   const types = [...new Set(assets.map((a) => a.type))];
 
+  const usageChart = [...assets].sort((a, b) => b.viewCount - a.viewCount).slice(0, 10).map(a => ({ name: a.name.length > 14 ? a.name.substring(0, 14) + "..." : a.name, views: a.viewCount }));
+  const typeDist = types.map(t => ({ name: t, count: assets.filter(a => a.type === t).length }));
+  const PIE_COLORS = ["#1a6dff", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444"];
+
+  function toggleBulkSelect(id: string) {
+    setSelectedIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  async function bulkDelete() {
+    for (const id of selectedIds) await remove(id);
+    addToast("success", `Deleted ${selectedIds.size} assets`);
+    setSelectedIds(new Set());
+    setBulkMode(false);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -87,6 +105,8 @@ export default function ContentLibrary() {
         <div className="flex items-center gap-2">
           <button onClick={() => setViewMode("grid")} className={`p-2 rounded-lg ${viewMode === "grid" ? "bg-n0va-500/10 text-n0va-400" : "text-gray-500 hover:text-gray-300"}`}><LayoutGrid className="w-4 h-4" /></button>
           <button onClick={() => setViewMode("list")} className={`p-2 rounded-lg ${viewMode === "list" ? "bg-n0va-500/10 text-n0va-400" : "text-gray-500 hover:text-gray-300"}`}><List className="w-4 h-4" /></button>
+          <button onClick={() => { setBulkMode(!bulkMode); setSelectedIds(new Set()); }} className={`btn-ghost text-xs ${bulkMode ? "text-n0va-400" : ""}`}><CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk</button>
+          {bulkMode && selectedIds.size > 0 && <button onClick={bulkDelete} className="btn-secondary text-xs text-red-400">Delete {selectedIds.size}</button>}
           <button onClick={() => setShowAdd(true)} className="btn-primary text-sm flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Add Asset</button>
         </div>
       </div>
@@ -105,6 +125,37 @@ export default function ContentLibrary() {
           <button onClick={() => { setSearch(""); setFilterType("all"); }} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>
         )}
         <button onClick={resetToDefaults} className="btn-ghost text-xs flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Reset</button>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5 text-n0va-400" /> Top Used Assets</h3>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={usageChart} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis type="number" stroke="#6b7280" fontSize={9} />
+                <YAxis type="category" dataKey="name" stroke="#6b7280" fontSize={9} width={100} />
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                <Bar dataKey="views" fill="#1a6dff" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="card">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5"><PieIcon className="w-3.5 h-3.5 text-n0va-400" /> Assets by Type</h3>
+          <div className="h-44 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={typeDist} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ name, count }) => `${name}: ${count}`}>
+                  {typeDist.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Add modal */}
@@ -164,6 +215,7 @@ export default function ContentLibrary() {
             const colorClass = typeColors[asset.type];
             return (
               <div key={asset.id} className="card group relative overflow-hidden">
+                {bulkMode && <input type="checkbox" checked={selectedIds.has(asset.id)} onChange={() => toggleBulkSelect(asset.id)} className="absolute top-2 left-2 z-10 w-4 h-4 accent-n0va-500" />}
                 <div className="aspect-[4/3] bg-gray-800/50 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                   {asset.type === "image" ? (
                     <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = ""; (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.classList.add("fallback"); }} />
@@ -205,6 +257,7 @@ export default function ContentLibrary() {
             const colorClass = typeColors[asset.type];
             return (
               <div key={asset.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-800/50 transition-colors group">
+                {bulkMode && <input type="checkbox" checked={selectedIds.has(asset.id)} onChange={() => toggleBulkSelect(asset.id)} className="w-4 h-4 accent-n0va-500 shrink-0" />}
                 <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center shrink-0 overflow-hidden">
                   {asset.type === "image" ? (
                     <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.classList.add("fallback"); }} />

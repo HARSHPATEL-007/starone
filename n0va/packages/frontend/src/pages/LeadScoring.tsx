@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Edit3, Trash2, Search, TrendingUp, Users, Target, Mail, Eye, MousePointerClick, ShoppingCart, Globe, Smartphone, Award, Clock } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Plus, X, Edit3, Trash2, Search, TrendingUp, Users, Target, Mail, Eye, MousePointerClick, ShoppingCart, Globe, Smartphone, Award, Clock, Download, Upload, GitCompare, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -61,6 +62,7 @@ export default function LeadScoring() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showLeads, setShowLeads] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<{ name: string; description: string; rules: ScoringRule[]; minThreshold: number; isActive: boolean }>({ name: "", description: "", rules: [], minThreshold: 50, isActive: true });
 
@@ -90,6 +92,34 @@ export default function LeadScoring() {
       }
     } catch {}
   }
+
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(models, null, 2)], { type: "application/json" });
+    const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "lead_scoring_models.json"; el.click();
+    addToast("success", "Models exported as JSON");
+  }
+
+  async function importJSON() {
+    const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
+    input.onchange = async () => {
+      const file = input.files?.[0]; if (!file) return;
+      try {
+        const text = await file.text(); const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) { addToast("error", "Invalid format: expected array"); return; }
+        for (const m of parsed) await api.entities.create("lead_scoring_models", m);
+        addToast("success", `Imported ${parsed.length} models`);
+        const data = await api.entities.list("lead_scoring_models");
+        setModels(data || []);
+      } catch { addToast("error", "Failed to import JSON"); }
+    };
+    input.click();
+  }
+
+  const distBrackets = modelLeads.length > 0 ? Array.from({ length: 10 }, (_, i) => {
+    const min = i * 10, max = (i + 1) * 10;
+    const count = modelLeads.filter(l => l.score >= min && l.score < max).length;
+    return { bracket: `${min}-${max < 100 ? max : "100"}`, count };
+  }) : [];
 
   const activeModel = models.find(m => m.id === activeModelId) || models[0];
   const modelLeads = leads.filter(l => l.modelId === (activeModel?.id || ""));
@@ -160,6 +190,9 @@ export default function LeadScoring() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowLeads(!showLeads)} className="btn-secondary text-sm"><Users className="w-3.5 h-3.5 mr-1.5" /> Lead View</button>
+          <button onClick={exportJSON} className="btn-ghost text-sm"><Download className="w-4 h-4 mr-1" /> Export</button>
+          <button onClick={importJSON} className="btn-ghost text-sm"><Upload className="w-4 h-4 mr-1" /> Import</button>
+          <button onClick={() => setShowComparison(!showComparison)} className={`btn-ghost text-sm ${showComparison ? "text-n0va-400" : ""}`}><GitCompare className="w-4 h-4 mr-1" /> Compare</button>
           <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> New Model</button>
         </div>
       </div>
@@ -183,6 +216,42 @@ export default function LeadScoring() {
             <div className="card p-4"><p className="text-xs text-gray-500">Hot Leads</p><p className="text-xl font-bold text-green-400 mt-1">{hotLeads.length}</p></div>
             <div className="card p-4"><p className="text-xs text-gray-500">Cold Leads</p><p className="text-xl font-bold text-gray-400 mt-1">{coldLeads.length}</p></div>
           </div>
+
+          {distBrackets.length > 0 && (
+            <div className="card">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Score Distribution</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={distBrackets}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="bracket" stroke="#6b7280" fontSize={9} />
+                    <YAxis stroke="#6b7280" fontSize={9} />
+                    <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                    <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {showComparison && models.length > 1 && (
+            <div className="card">
+              <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-white flex items-center gap-2"><GitCompare className="w-4 h-4 text-n0va-400" /> Model Comparison</h3><button onClick={() => setShowComparison(false)} className="text-xs text-gray-500 hover:text-gray-300">Close</button></div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-gray-800 text-xs text-gray-500">
+                    <th className="text-left p-2 font-medium">Metric</th>
+                    {models.map(m => <th key={m.id} className="text-right p-2 font-medium">{m.name}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {[["Rules", (m: LeadScoreModel) => m.rules.length], ["Max Score", (m: LeadScoreModel) => m.maxScore], ["Threshold", (m: LeadScoreModel) => m.minThreshold], ["Hot Leads", (m: LeadScoreModel) => leads.filter(l => l.modelId === m.id && l.score >= m.minThreshold).length], ["Status", (m: LeadScoreModel) => m.isActive ? "Active" : "Inactive"]].map(([label, fn]) => (
+                      <tr key={label as string} className="border-b border-gray-800/50"><td className="p-2 text-gray-400">{label as string}</td>{models.map(m => <td key={m.id} className="p-2 text-right text-white font-mono">{(fn as any)(m)}</td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Model detail card */}
           <div className="card p-5">

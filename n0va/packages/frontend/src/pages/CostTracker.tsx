@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { DollarSign, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, TrendingUp, TrendingDown, PieChart, Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { DollarSign, Plus, X, Edit3, Trash2, Copy, Search, Calendar, BarChart3, TrendingUp, TrendingDown, PieChart, Download, Upload } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -90,6 +91,48 @@ export default function CostTracker() {
     addToast("success", "CSV exported");
   }
 
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  const channelChart = Object.entries(
+    filtered.reduce((acc, e) => {
+      const key = CHANNEL_META[e.channel]?.label || e.channel;
+      acc[key] = acc[key] || { budgeted: 0, actual: 0 };
+      acc[key].budgeted += e.budgeted;
+      acc[key].actual += e.actual;
+      return acc;
+    }, {} as Record<string, { budgeted: number; actual: number }>)
+  ).map(([name, v]) => ({ name, Budget: v.budgeted, Spend: v.actual }));
+
+  const monthlyTrend = months.map(m => {
+    const monthEntries = filtered.filter(e => e.month === m);
+    return {
+      month: m.slice(0, 3),
+      budgeted: monthEntries.reduce((s, e) => s + e.budgeted, 0),
+      actual: monthEntries.reduce((s, e) => s + e.actual, 0),
+    };
+  }).filter(m => m.budgeted > 0 || m.actual > 0);
+
+  async function handleImportCSV() {
+    const text = prompt("Paste CSV data (Campaign,Channel,Month,Year,Budgeted,Actual,Notes):\nExample: Q3 Launch,google_ads,June,2025,5000,4800,Good performance");
+    if (!text) return;
+    const lines = text.split("\n").filter(l => l.trim());
+    let imported = 0;
+    for (const line of lines) {
+      const parts = line.split(",").map(s => s.trim());
+      if (parts.length < 5) continue;
+      const entry: CostEntry = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        campaignName: parts[0], channel: parts[1] as Channel, month: parts[2] || months[new Date().getMonth()],
+        year: parseInt(parts[3]) || new Date().getFullYear(), budgeted: parseFloat(parts[4]) || 0,
+        actual: parts[5] ? parseFloat(parts[5]) : 0, notes: parts[6] || "",
+        createdAt: new Date().toISOString(),
+      };
+      await create(entry as any);
+      imported++;
+    }
+    addToast("success", `Imported ${imported} entries`);
+  }
+
   const years = [...new Set(entries.map(e => e.year))].sort((a, b) => b - a);
   const filtered = entries.filter(e => {
     if (filterYear !== "all" && e.year !== filterYear) return false;
@@ -125,6 +168,43 @@ export default function CostTracker() {
         <div className="card p-4"><p className="text-xs text-gray-500">Avg. per Entry</p><p className="text-xl font-bold text-white mt-1">{fmt(totalActual / (filtered.length || 1))}</p></div>
       </div>
 
+      {channelChart.length > 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Budget vs Spend by Channel</h3>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={channelChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={10} />
+                  <YAxis stroke="#6b7280" fontSize={10} tickFormatter={v => `$${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                  <Legend wrapperStyle={{ fontSize: "10px" }} />
+                  <Bar dataKey="Budget" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Spend" fill="#1a6dff" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="card">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-n0va-400" /> Monthly Spend Trend</h3>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={10} />
+                  <YAxis stroke="#6b7280" fontSize={10} tickFormatter={v => `$${(v / 1000).toFixed(0)}K`} />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                  <Legend wrapperStyle={{ fontSize: "10px" }} />
+                  <Line type="monotone" dataKey="budgeted" stroke="#10b981" strokeWidth={2} dot={false} name="Budgeted" />
+                  <Line type="monotone" dataKey="actual" stroke="#1a6dff" strokeWidth={2} dot={false} name="Actual Spend" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
@@ -134,6 +214,7 @@ export default function CostTracker() {
           <option value="all">All Years</option>
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
+        <button onClick={handleImportCSV} className="btn-ghost text-xs"><Upload className="w-3.5 h-3.5 mr-1" /> Import CSV</button>
       </div>
 
       {/* Form modal */}

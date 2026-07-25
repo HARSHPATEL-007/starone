@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Crosshair, Plus, X, Edit3, Trash2, ExternalLink, Globe, TrendingUp, TrendingDown, Minus, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Crosshair, Plus, X, Edit3, Trash2, ExternalLink, Globe, TrendingUp, TrendingDown, Minus, Search, ChevronDown, ChevronRight, BarChart3, PieChart as PieIcon, Eye } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 
@@ -48,6 +49,7 @@ export default function CompetitiveIntel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdForm, setShowAdForm] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showGallery, setShowGallery] = useState(false);
   const [form, setForm] = useState({ name: "", website: "", logoUrl: "", description: "", strength: "", weakness: "", position: "challenger" as Competitor["position"], trend: "stable" as Competitor["trend"] });
   const [adForm, setAdForm] = useState({ name: "", description: "", url: "", platform: "Google Ads" });
 
@@ -143,6 +145,66 @@ export default function CompetitiveIntel() {
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Market Leaders</p><p className="text-2xl font-bold text-green-400">{competitors.filter(c => c.position === "leader").length}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Rising</p><p className="text-2xl font-bold text-blue-400">{competitors.filter(c => c.trend === "up").length}</p></div>
       </div>
+
+      {competitors.length > 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Share of Voice by Platform</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={(() => {
+                  const platMap: Record<string, number> = {};
+                  competitors.forEach(c => c.ads.forEach(a => { platMap[a.platform] = (platMap[a.platform] || 0) + 1; }));
+                  return Object.entries(platMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, count]) => ({ name, ads: count }));
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="name" stroke="#6b7280" fontSize={9} />
+                  <YAxis stroke="#6b7280" fontSize={9} />
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                  <Bar dataKey="ads" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="card">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><PieIcon className="w-4 h-4 text-n0va-400" /> Position Breakdown</h3>
+            <div className="h-48 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={POSITIONS.map(p => ({ name: p.label, value: competitors.filter(c => c.position === p.value).length })).filter(d => d.value > 0)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ name, value }) => `${name}: ${value}`}>
+                    {POSITIONS.map((p, i) => <Cell key={p.value} fill={["#10b981", "#1a6dff", "#8b5cf6", "#f59e0b"][i] || "#6b7280"} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button onClick={() => setShowGallery(!showGallery)} className={`btn-ghost text-sm ${showGallery ? "text-n0va-400" : ""}`}><Eye className="w-4 h-4 mr-1" /> {showGallery ? "Hide" : "View All Ads"} ({allAds})</button>
+
+      {showGallery && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-3">All Tracked Ads</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {competitors.flatMap(c => c.ads.map(a => ({ ...a, competitor: c.name }))).sort((a, b) => new Date(b.observedAt).getTime() - new Date(a.observedAt).getTime()).map(ad => (
+              <div key={ad.id} className="p-3 bg-gray-800/50 rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold text-white">{ad.name}</span>
+                  <span className="text-[10px] text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded">{ad.platform}</span>
+                </div>
+                <p className="text-xs text-gray-500">{ad.description}</p>
+                <div className="flex items-center justify-between mt-2 text-[10px]">
+                  <span className="text-gray-600">{ad.competitor}</span>
+                  <span className="text-gray-600">{new Date(ad.observedAt).toLocaleDateString()}</span>
+                </div>
+                {ad.url && <a href={ad.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-n0va-400 hover:text-n0va-300 mt-1 inline-flex items-center gap-1"><ExternalLink className="w-3 h-3" /> View</a>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
