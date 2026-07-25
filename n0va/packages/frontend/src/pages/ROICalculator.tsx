@@ -159,7 +159,7 @@ export default function ROICalculator() {
 
   async function importFromCampaigns() {
     try {
-      const campaigns = await api.campaigns.list({ status: "active" });
+      const campaigns = await api.campaigns.list("status=active");
       if (!campaigns || campaigns.length === 0) { addToast("error", "No active campaigns found"); return; }
       let imported = 0;
       for (const c of (campaigns.slice(0, 5) as any[])) {
@@ -182,6 +182,8 @@ export default function ROICalculator() {
     } catch { addToast("error", "Import failed"); }
   }
 
+  const allProjections = scenarios.map(s => ({ ...s, projection: calc(s.budget, s.impressions, s.ctr, s.conversionRate, s.aov, s.fixedCosts) }));
+
   const chartData = allProjections.map(s => ({
     name: s.name.length > 12 ? s.name.substring(0, 12) + "..." : s.name,
     Revenue: s.projection.revenue,
@@ -194,7 +196,7 @@ export default function ROICalculator() {
     { name: "Budget", value: allProjections.reduce((s, p) => s + p.budget, 0), fill: "#ef4444" },
     { name: "Fixed", value: allProjections.reduce((s, p) => s + p.fixedCosts, 0), fill: "#f97316" },
     { name: "Revenue", value: allProjections.reduce((s, p) => s + p.projection.revenue, 0), fill: "#10b981" },
-    { name: "Profit", value: allProjections.reduce((s, p) => s + p.projection.profit, 0), fill: p => p >= 0 ? "#8b5cf6" : "#ef4444" },
+    { name: "Profit", value: allProjections.reduce((s, p) => s + p.projection.profit, 0), fill: (p: number) => p >= 0 ? "#8b5cf6" : "#ef4444" },
   ] : [];
 
   const comparison = [...selectedIds].map(id => {
@@ -202,8 +204,6 @@ export default function ROICalculator() {
     if (!s) return null;
     return { ...s, projection: calc(s.budget, s.impressions, s.ctr, s.conversionRate, s.aov, s.fixedCosts) };
   }).filter(Boolean) as (Scenario & { projection: Projection })[];
-
-  const allProjections = scenarios.map(s => ({ ...s, projection: calc(s.budget, s.impressions, s.ctr, s.conversionRate, s.aov, s.fixedCosts) }));
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Webhook, Plus, Trash2, Play, CheckCircle, XCircle, Clock, ToggleLeft, ToggleRight, ExternalLink, Search, BarChart3, Key, Eye, EyeOff, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { Webhook, Plus, Trash2, Play, CheckCircle, XCircle, Clock, ToggleLeft, ToggleRight, ExternalLink, Search, BarChart3, Key, Eye, EyeOff, ChevronDown, ChevronUp, Download, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";

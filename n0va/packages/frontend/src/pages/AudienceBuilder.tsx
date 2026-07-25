@@ -29,6 +29,26 @@ const INTEREST_OPTIONS = [
 
 const GENDER_OPTIONS = ["all", "male", "female", "non-binary"];
 
+export default function AudienceBuilder() {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  const [step, setStep] = useState(0);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    type: "custom",
+    ageMin: 18,
+    ageMax: 65,
+    gender: "all",
+    locations: "",
+    interests: [] as string[],
+    customInterests: "",
+    platform: "meta",
+    tags: "",
+    size: 125000,
+  });
+
   const STEPS = ["Basics", "Demographics", "Interests", "Platform", "Review"];
 
   const PLATFORM_SIZES = [
@@ -57,26 +77,6 @@ const GENDER_OPTIONS = ["all", "male", "female", "non-binary"];
     const el = document.createElement("a"); el.href = URL.createObjectURL(blob); el.download = "audience_criteria.csv"; el.click();
     addToast("success", "Audience criteria exported");
   }
-
-export default function AudienceBuilder() {
-  const navigate = useNavigate();
-  const { addToast } = useToast();
-  const [step, setStep] = useState(0);
-  const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    type: "custom",
-    ageMin: 18,
-    ageMax: 65,
-    gender: "all",
-    locations: "",
-    interests: [] as string[],
-    customInterests: "",
-    platform: "meta",
-    tags: "",
-    size: 125000,
-  });
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));

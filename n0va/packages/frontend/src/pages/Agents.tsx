@@ -119,7 +119,7 @@ export default function Agents() {
     try {
       let parsed;
       try { parsed = JSON.parse(configForm); } catch { addToast("error", "Invalid JSON config"); return; }
-      await api.agents.update(configAgent._id, { config: parsed } as any);
+      await (api.agents as any).update(configAgent._id, { config: parsed });
       addToast("success", "Configuration updated");
       setShowConfig(false);
       setConfigAgent(null);

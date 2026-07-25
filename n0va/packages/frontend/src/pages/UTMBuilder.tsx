@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Link2, Copy, Check, Trash2, Plus, X, Search, ExternalLink, Clock, Hash, Globe, Mail, Smartphone, ShoppingCart, Share2, QrCode, Layers } from "lucide-react";
+import { Link2, Copy, Check, Trash2, Plus, X, Search, ExternalLink, Clock, Hash, Globe, Mail, Smartphone, ShoppingCart, Share2, QrCode, Layers, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 

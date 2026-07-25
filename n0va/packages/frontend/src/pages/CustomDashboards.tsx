@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, GripVertical, Save, Eye, EyeOff, Copy, BarChart3, TrendingUp, DollarSign, Target, Users, Megaphone, CheckCircle, Activity, Bot, Palette, Calendar, Bell, Zap, Crosshair, Star, Clock, Loader } from "lucide-react";
+import { LayoutDashboard, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, GripVertical, Save, Eye, EyeOff, Copy, BarChart3, TrendingUp, DollarSign, Target, Users, Megaphone, CheckCircle, Activity, Bot, Palette, Calendar, Bell, Zap, Crosshair, Star, Clock, Loader, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 import { useCsvExport } from "../hooks/useCsvExport";
@@ -391,6 +391,7 @@ function WidgetRenderer({ type, label }: { type: string; label: string }) {
 
 export default function CustomDashboards() {
   const { addToast } = useToast();
+  const { exportToCsv } = useCsvExport();
   const [dashboards, setDashboards] = useState<CustomDashboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);

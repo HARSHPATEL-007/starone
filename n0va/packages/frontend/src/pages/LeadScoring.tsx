@@ -115,14 +115,14 @@ export default function LeadScoring() {
     input.click();
   }
 
+  const activeModel = models.find(m => m.id === activeModelId) || models[0];
+  const modelLeads = leads.filter(l => l.modelId === (activeModel?.id || ""));
+
   const distBrackets = modelLeads.length > 0 ? Array.from({ length: 10 }, (_, i) => {
     const min = i * 10, max = (i + 1) * 10;
     const count = modelLeads.filter(l => l.score >= min && l.score < max).length;
     return { bracket: `${min}-${max < 100 ? max : "100"}`, count };
   }) : [];
-
-  const activeModel = models.find(m => m.id === activeModelId) || models[0];
-  const modelLeads = leads.filter(l => l.modelId === (activeModel?.id || ""));
   const hotLeads = modelLeads.filter(l => l.score >= (activeModel?.minThreshold || 50));
   const coldLeads = modelLeads.filter(l => l.score < (activeModel?.minThreshold || 50));
 

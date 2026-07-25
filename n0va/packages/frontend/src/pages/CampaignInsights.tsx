@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Lightbulb, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Target, Clock, Users, BarChart3, RefreshCw, Calendar, Download, X, ChevronDown, ChevronRight } from "lucide-react";
 import { api } from "../api/client";
+import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
 
 interface Insight {
@@ -17,6 +18,7 @@ interface Insight {
 }
 
 export default function CampaignInsights() {
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [fraudHealth, setFraudHealth] = useState<any>(null);

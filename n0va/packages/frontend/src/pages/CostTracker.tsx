@@ -93,6 +93,16 @@ export default function CostTracker() {
 
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+  const years = [...new Set(entries.map(e => e.year))].sort((a, b) => b - a);
+  const filtered = entries.filter(e => {
+    if (filterYear !== "all" && e.year !== filterYear) return false;
+    if (search && !e.campaignName.toLowerCase().includes(search.toLowerCase()) && !e.notes.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const totalBudgeted = filtered.reduce((s, e) => s + e.budgeted, 0);
+  const totalActual = filtered.reduce((s, e) => s + e.actual, 0);
+
   const channelChart = Object.entries(
     filtered.reduce((acc, e) => {
       const key = CHANNEL_META[e.channel]?.label || e.channel;
@@ -133,15 +143,7 @@ export default function CostTracker() {
     addToast("success", `Imported ${imported} entries`);
   }
 
-  const years = [...new Set(entries.map(e => e.year))].sort((a, b) => b - a);
-  const filtered = entries.filter(e => {
-    if (filterYear !== "all" && e.year !== filterYear) return false;
-    if (search && !e.campaignName.toLowerCase().includes(search.toLowerCase()) && !e.notes.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
 
-  const totalBudgeted = filtered.reduce((s, e) => s + e.budgeted, 0);
-  const totalActual = filtered.reduce((s, e) => s + e.actual, 0);
   const totalVariance = totalActual - totalBudgeted;
 
   return (
