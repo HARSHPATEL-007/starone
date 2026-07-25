@@ -15,6 +15,8 @@ interface Variant {
   ctr: number;
   cvr: number;
   roas: number;
+  pValue?: number;
+  uplift?: number;
 }
 
 interface ABTest {
@@ -24,6 +26,8 @@ interface ABTest {
   testType: "creative" | "audience" | "landing_page" | "offer";
   status: "running" | "paused" | "completed";
   confidence: number;
+  bayesianProbability?: number;
+  pValue?: number;
   winner?: string;
   variants: Variant[];
   recommendation?: string;
@@ -60,7 +64,7 @@ export default function ABTesting() {
   async function loadTests() {
     setLoading(true);
     try {
-      const data = await api.optimizer.listABTests();
+      const data = await api.abTesting.list();
       setTests(data || []);
     } catch (e: any) {
       addToast("error", e.message || "Failed to load tests");
@@ -75,7 +79,7 @@ export default function ABTesting() {
   async function handleCreate() {
     if (!form.testName.trim()) { addToast("error", "Test name is required"); return; }
     try {
-      await api.optimizer.createABTest({
+      await api.abTesting.create({
         testName: form.testName.trim(),
         testType: form.testType,
         variants: [
@@ -95,24 +99,8 @@ export default function ABTesting() {
 
   async function handleEndTest(test: ABTest) {
     try {
-      const best = [...test.variants].sort((a, b) => b.cvr - a.cvr)[0];
-      await api.optimizer.updateABTest(test._id, {
-        status: "completed",
-        winner: best?.id || "control",
-        confidence: 0.95 + Math.random() * 0.049,
-        completedAt: new Date().toISOString(),
-        variants: test.variants.map(v => ({
-          ...v,
-          impressions: v.impressions + Math.floor(Math.random() * 2000),
-          clicks: v.clicks + Math.floor(Math.random() * 100),
-          conversions: v.conversions + Math.floor(Math.random() * 20),
-          spend: v.spend + Math.floor(Math.random() * 500),
-          revenue: v.revenue + Math.floor(Math.random() * 3000),
-          ctr: 0,
-          cvr: 0,
-          roas: 0,
-        })),
-      });
+      const result = await api.abTesting.end(test._id);
+      setTests(prev => prev.map(t => t._id === test._id ? { ...t, ...result } : t));
       addToast("success", "Test completed");
       loadTests();
     } catch (e: any) {
@@ -122,7 +110,7 @@ export default function ABTesting() {
 
   async function handleDuplicate(test: ABTest) {
     try {
-      await api.optimizer.createABTest({
+      await api.abTesting.create({
         testName: `${test.testName} (Copy)`,
         testType: test.testType,
         variants: test.variants.map(v => ({ id: v.id, name: v.name })),
@@ -137,7 +125,7 @@ export default function ABTesting() {
   async function handleTogglePause(test: ABTest) {
     const newStatus = test.status === "running" ? "paused" : "running";
     try {
-      await api.optimizer.updateABTest(test._id, { status: newStatus });
+      await api.abTesting.update(test._id, { status: newStatus });
       addToast("success", `Test ${newStatus}`);
       loadTests();
     } catch (e: any) {
@@ -147,7 +135,7 @@ export default function ABTesting() {
 
   async function handleDelete(id: string) {
     try {
-      await api.entities.delete("ab_tests", id);
+      await api.abTesting.delete(id);
       addToast("success", "Test deleted");
       loadTests();
     } catch (e: any) {
@@ -256,6 +244,9 @@ export default function ABTesting() {
                       {test.status === "completed" && test.confidence && (
                         <span className="text-xs text-amber-400">{(test.confidence * 100).toFixed(1)}% confidence</span>
                       )}
+                      {test.status === "completed" && test.bayesianProbability && (
+                        <span className="text-xs text-purple-400">{(test.bayesianProbability * 100).toFixed(1)}% Bayesian prob.</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 mt-3">
                       <span className="text-xs text-gray-500"><Users className="w-3 h-3 inline mr-1" />{test.variants.length} variants</span>
@@ -287,6 +278,8 @@ export default function ABTesting() {
                     <div className="px-5 py-3 bg-gray-800/30 border-b border-gray-800">
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>Confidence: {(test.confidence * 100).toFixed(1)}%</span>
+                        {test.bayesianProbability != null && <span>Bayesian Prob.: {(test.bayesianProbability * 100).toFixed(1)}%</span>}
+                        {test.pValue != null && <span>p-value: {test.pValue.toFixed(4)}</span>}
                         <span>Status: {test.status}</span>
                         {test.completedAt && <span>Completed: {new Date(test.completedAt).toLocaleDateString()}</span>}
                       </div>
@@ -328,6 +321,8 @@ export default function ABTesting() {
                           <th className="text-right p-3">Spend</th>
                           <th className="text-right p-3">Revenue</th>
                           <th className="text-right p-3">ROAS</th>
+                          <th className="text-right p-3">p-value</th>
+                          <th className="text-right p-3">Uplift</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -346,6 +341,8 @@ export default function ABTesting() {
                               <td className="p-3 text-right text-gray-300 font-mono">${v.spend.toLocaleString()}</td>
                               <td className="p-3 text-right text-gray-300 font-mono">${v.revenue.toLocaleString()}</td>
                               <td className="p-3 text-right font-mono"><span className={v.roas >= 1 ? "text-green-400" : "text-red-400"}>{v.roas.toFixed(2)}x</span></td>
+                              <td className="p-3 text-right font-mono text-gray-400">{v.pValue != null ? v.pValue.toFixed(4) : "—"}</td>
+                              <td className="p-3 text-right font-mono">{v.uplift != null ? <span className={v.uplift >= 0 ? "text-green-400" : "text-red-400"}>{(v.uplift * 100).toFixed(2)}%</span> : "—"}</td>
                             </tr>
                           );
                         })}

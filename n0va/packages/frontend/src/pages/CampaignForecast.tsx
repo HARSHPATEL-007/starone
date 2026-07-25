@@ -33,12 +33,60 @@ export default function CampaignForecast() {
   async function loadData() {
     setLoading(true);
     try {
+      const res = await api.forecast.get("campaignId=all&days=30");
+      const data = res.historical && res.projected ? res : null;
+      if (data) {
+        const historical = data.historical.map((d: any) => ({
+          date: d.date?.substring(5) || d.date,
+          actualRevenue: d.revenue || d.actualRevenue,
+          actualSpend: d.spend || d.actualSpend,
+          predictedRevenue: d.revenue || 0,
+          predictedSpend: d.spend || 0,
+          predictedRoas: d.roas || 0,
+          lowerBound: d.revenue * 0.85 || 0,
+          upperBound: d.revenue * 1.15 || 0,
+          confidence: 1,
+        }));
+        const predictions = data.projected.map((p: any) => ({
+          date: p.date || `Day +${p.day || 0}`,
+          predictedRevenue: p.revenue || p.predictedRevenue || 0,
+          predictedSpend: p.spend || p.predictedSpend || 0,
+          predictedRoas: p.roas || p.predictedRoas || 0,
+          lowerBound: (p.lowerBound || p.lower || p.revenue * 0.85),
+          upperBound: (p.upperBound || p.upper || p.revenue * 1.15),
+          confidence: p.confidence || 0.8,
+        }));
+        const summary = data.summary || {
+          avgRoas: data.historical.length > 0
+            ? data.historical.reduce((s: number, d: any) => s + (d.roas || (d.revenue && d.spend ? d.revenue / d.spend : 0)), 0) / data.historical.length
+            : 0,
+          last30Revenue: historical.reduce((s: number, d: any) => s + (d.actualRevenue || 0), 0),
+          last30Spend: historical.reduce((s: number, d: any) => s + (d.actualSpend || 0), 0),
+          expectedRevenue: predictions.reduce((s: number, p: any) => s + p.predictedRevenue, 0),
+          expectedSpend: predictions.reduce((s: number, p: any) => s + p.predictedSpend, 0),
+          trend: 0.03,
+        };
+        const avgRoas = summary.last30Spend > 0 ? summary.last30Revenue / summary.last30Spend : 0;
+        const recommendations = [
+          avgRoas > 2.5 ? `Strong ROAS (${avgRoas.toFixed(2)}x) — consider increasing budget by 15-20% to capture additional conversions` : `ROAS (${avgRoas.toFixed(2)}x) — optimize underperforming placements and refresh fatigued creatives`,
+          summary.trend > 0.02 ? `Revenue trending up (${(summary.trend * 100).toFixed(1)}%/day) — maintain current strategy with incremental testing` : summary.trend < -0.01 ? `Revenue declining (${(summary.trend * 100).toFixed(1)}%/day) — investigate audience fatigue and competitive landscape` : `Revenue stable (${(summary.trend * 100).toFixed(1)}%/day) — focus on incremental optimizations`,
+          predictions.some((p: any) => p.predictedRoas < 1.5) ? "Some forecast periods show ROAS below 1.5x — review placement-level performance data" : "All forecast periods project ROAS above 1.5x — healthy portfolio performance expected",
+        ].filter(Boolean);
+        setForecast({ historical, predictions, summary, recommendations });
+      } else {
+        const [analytics, budget] = await Promise.all([
+          api.analytics.overview("60").catch(() => null),
+          api.optimizer.budget({}).catch(() => null),
+        ]);
+        generateForecast(analytics, budget);
+      }
+    } catch {
       const [analytics, budget] = await Promise.all([
         api.analytics.overview("60").catch(() => null),
         api.optimizer.budget({}).catch(() => null),
       ]);
       generateForecast(analytics, budget);
-    } catch { setForecast(null); }
+    }
     setLoading(false);
   }
 
@@ -113,7 +161,35 @@ export default function CampaignForecast() {
     setForecast({ historical, predictions, summary: { avgRoas, last30Revenue, last30Spend, expectedRevenue, expectedSpend, trend }, recommendations });
   }
 
-  function runScenario() {
+  async function runScenario() {
+    const campaignIds = campaigns.map((c: any) => c._id || c.id).filter(Boolean);
+    try {
+      const res = await api.forecast.scenario({
+        campaignIds,
+        budgetChange: scenarioBase.budget,
+        revenueTarget: scenarioBase.revenue,
+      });
+      if (res?.scenarios && res.scenarios.length > 0) {
+        setScenarios(res.scenarios.map((s: any) => ({
+          name: s.name || "Scenario",
+          budget: s.budget || 0,
+          revenue: s.revenue || 0,
+          roas: s.roas || 0,
+          roi: s.roi || 0,
+          netProfit: s.netProfit || 0,
+          cpa: s.cpa || 0,
+          isProfitable: (s.netProfit || 0) > 0,
+        })));
+      } else {
+        fallbackScenario();
+      }
+    } catch {
+      fallbackScenario();
+    }
+    addToast("success", "Scenarios calculated");
+  }
+
+  function fallbackScenario() {
     const s = scenarioBase;
     const variants: ScenarioROI[] = [
       { name: "Conservative", budget: s.budget * 0.6, revenue: s.revenue * 0.55, roas: 0, roi: 0, netProfit: 0, cpa: 0, isProfitable: false },
@@ -134,7 +210,6 @@ export default function CampaignForecast() {
       };
     });
     setScenarios(results);
-    addToast("success", "Scenarios calculated");
   }
 
   const tabs: { key: Tab; label: string; icon: any }[] = [

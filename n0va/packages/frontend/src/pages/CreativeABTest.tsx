@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../api/client";
-import { RefreshCw, CheckCircle, XCircle, MinusCircle, Download } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, MinusCircle, Download, Plus, X, Save } from "lucide-react";
 import { SkeletonCard } from "../components/Skeleton";
 
 interface ABTestVariant {
@@ -32,6 +32,9 @@ export default function CreativeABTest() {
   const [loading, setLoading] = useState(true);
   const [selectedTest, setSelectedTest] = useState<ABTestResult | null>(null);
   const [testType, setTestType] = useState<"creative" | "audience">("creative");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({ testName: "", testType: "creative", variantNames: "" });
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -40,13 +43,31 @@ export default function CreativeABTest() {
   async function loadData() {
     setLoading(true);
     try {
-      const data = await api.optimizer.abTest(testType);
+      const data = await api.abTesting.list(`type=${testType}`);
       setTests(Array.isArray(data) ? data : [data]);
       if (Array.isArray(data) && data.length > 0) {
         setSelectedTest(data[0]);
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCreate() {
+    if (!createForm.testName || !createForm.variantNames) return;
+    setCreating(true);
+    try {
+      const variants = createForm.variantNames.split(",").map((n) => ({ name: n.trim() }));
+      await api.abTesting.create({
+        testName: createForm.testName,
+        testType: createForm.testType,
+        variants,
+      });
+      setShowCreateForm(false);
+      setCreateForm({ testName: "", testType: "creative", variantNames: "" });
+      loadData();
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -121,6 +142,9 @@ export default function CreativeABTest() {
             <option value="creative">Creative Tests</option>
             <option value="audience">Audience Tests</option>
           </select>
+          <button className="btn-secondary flex items-center gap-2" onClick={() => setShowCreateForm(true)}>
+            <Plus className="w-4 h-4" /> Create Test
+          </button>
           <button className="btn-secondary flex items-center gap-2" onClick={loadData}>
             <RefreshCw className="w-4 h-4" /> New Sample
           </button>
@@ -298,6 +322,37 @@ export default function CreativeABTest() {
           </div>
         </div>
       </div>
+
+      {showCreateForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Create A/B Test</h3>
+              <button onClick={() => setShowCreateForm(false)} className="text-gray-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div>
+              <label className="label">Test Name</label>
+              <input className="input" value={createForm.testName} onChange={(e) => setCreateForm({ ...createForm, testName: e.target.value })} placeholder="e.g. Holiday Banner Test" />
+            </div>
+            <div>
+              <label className="label">Test Type</label>
+              <select className="input" value={createForm.testType} onChange={(e) => setCreateForm({ ...createForm, testType: e.target.value })}>
+                <option value="creative">Creative</option>
+                <option value="audience">Audience</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Variant Names (comma-separated)</label>
+              <input className="input" value={createForm.variantNames} onChange={(e) => setCreateForm({ ...createForm, variantNames: e.target.value })} placeholder="Control, Variant A, Variant B" />
+            </div>
+            <button className="btn-primary w-full flex items-center justify-center gap-2" onClick={handleCreate} disabled={creating}>
+              <Save className="w-4 h-4" /> {creating ? "Creating..." : "Create Test"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

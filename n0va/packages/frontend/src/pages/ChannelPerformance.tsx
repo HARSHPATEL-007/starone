@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, Target, Users, Smartphone, Monitor, Globe, Mail, Download, RefreshCw, X, Calendar, Eye } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart3, TrendingUp, TrendingDown, DollarSign, Users, Smartphone, Monitor, Globe, Mail, Download, RefreshCw, X, Calendar, Eye } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 import { SkeletonChart } from "../components/Skeleton";
@@ -23,6 +23,37 @@ interface ChannelMetrics {
   frequency: number;
 }
 
+interface ChannelPerformanceTotals {
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  spend: number;
+  revenue: number;
+  ctr: number;
+  cpc: number;
+  cvr: number;
+  roas: number;
+  campaignCount: number;
+}
+
+interface ChannelPerformanceResponse {
+  channels: {
+    platform: string;
+    impressions: number;
+    clicks: number;
+    conversions: number;
+    spend: number;
+    revenue: number;
+    ctr: number;
+    cpc: number;
+    cvr: number;
+    roas: number;
+    campaignCount: number;
+  }[];
+  totals: ChannelPerformanceTotals;
+  dailyTrend: Record<string, any>[];
+}
+
 const CHANNEL_META: Record<string, { label: string; short: string; color: string; icon: any }> = {
   google_ads: { label: "Google Ads", short: "Google", color: "bg-blue-500", icon: Globe },
   facebook: { label: "Facebook", short: "Facebook", color: "bg-indigo-500", icon: Users },
@@ -40,15 +71,6 @@ const DATE_OPTIONS = [
   { label: "All Time", value: 0 },
   { label: "30d", value: 30 },
   { label: "90d", value: 90 },
-];
-
-const DEFAULT_DATA: ChannelMetrics[] = [
-  { id: "ch-1", channel: "google_ads", impressions: 485000, clicks: 14550, conversions: 890, spend: 58700, revenue: 285000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 320000, frequency: 1.52 },
-  { id: "ch-2", channel: "facebook", impressions: 320000, clicks: 9600, conversions: 620, spend: 42000, revenue: 186000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 240000, frequency: 1.33 },
-  { id: "ch-3", channel: "instagram", impressions: 280000, clicks: 11200, conversions: 540, spend: 35000, revenue: 162000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 195000, frequency: 1.44 },
-  { id: "ch-4", channel: "linkedin", impressions: 95000, clicks: 2850, conversions: 180, spend: 28000, revenue: 98000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 72000, frequency: 1.32 },
-  { id: "ch-5", channel: "tiktok", impressions: 450000, clicks: 18000, conversions: 320, spend: 22000, revenue: 96000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 380000, frequency: 1.18 },
-  { id: "ch-6", channel: "email", impressions: 210000, clicks: 10500, conversions: 780, spend: 8000, revenue: 142000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 195000, frequency: 1.08 },
 ];
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -71,16 +93,6 @@ function fmt(n: number, decimals = 1): string {
 function fmtCurrency(n: number): string { return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 function fmtRate(n: number, decimals = 2): string { return n.toFixed(decimals); }
 
-function generateTrendData(baseImpressions: number): { month: string; impressions: number; clicks: number; spend: number; conversions: number }[] {
-  return MONTHS.map((m, i) => ({
-    month: m,
-    impressions: Math.round(baseImpressions * (0.7 + Math.random() * 0.6) * (1 + i * 0.02)),
-    clicks: Math.round(baseImpressions * 0.03 * (0.7 + Math.random() * 0.6)),
-    spend: Math.round(baseImpressions * 0.12 * (0.7 + Math.random() * 0.6)),
-    conversions: Math.round(baseImpressions * 0.002 * (0.7 + Math.random() * 0.6)),
-  }));
-}
-
 export default function ChannelPerformance() {
   const { addToast } = useToast();
   const [data, setData] = useState<ChannelMetrics[]>([]);
@@ -91,35 +103,82 @@ export default function ChannelPerformance() {
   const [drillChannel, setDrillChannel] = useState<ChannelMetrics | null>(null);
   const [trendMetric, setTrendMetric] = useState<"impressions" | "clicks" | "spend" | "conversions">("impressions");
 
+  const [dailyTrend, setDailyTrend] = useState<Record<string, any>[]>([]);
+  const [totals, setTotals] = useState<ChannelPerformanceTotals>({ impressions: 0, clicks: 0, conversions: 0, spend: 0, revenue: 0, ctr: 0, cpc: 0, cvr: 0, roas: 0, campaignCount: 0 });
+
+  function mapChannelItem(item: any, index: number): ChannelMetrics {
+    const channel = item.platform || item.channel;
+    return {
+      id: item.id || `ch-${index}`,
+      channel: channel as Channel,
+      impressions: item.impressions || 0,
+      clicks: item.clicks || 0,
+      conversions: item.conversions || 0,
+      spend: item.spend || 0,
+      revenue: item.revenue || 0,
+      ctr: item.ctr || 0,
+      cpc: item.cpc || 0,
+      cvr: item.cvr || 0,
+      roas: item.roas || 0,
+      reach: item.reach || item.impressions || 0,
+      frequency: item.frequency || 1,
+    };
+  }
+
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
     try {
-      let raw = await api.entities.list("channel_performance");
-      if (!raw || raw.length === 0) {
-        for (const d of compute(DEFAULT_DATA)) await api.entities.create("channel_performance", d as any);
-        raw = await api.entities.list("channel_performance");
-      }
-      setData(compute(raw || []));
-    } catch { setData(compute(DEFAULT_DATA)); }
+      const resp: ChannelPerformanceResponse = await api.channelPerformance.list();
+      setData((resp.channels || []).map((c, i) => mapChannelItem(c, i)));
+      setTotals(resp.totals || { impressions: 0, clicks: 0, conversions: 0, spend: 0, revenue: 0, ctr: 0, cpc: 0, cvr: 0, roas: 0, campaignCount: 0 });
+      setDailyTrend(resp.dailyTrend || []);
+    } catch {
+      try {
+        const raw = await api.entities.list("channel_performance");
+        if (raw && raw.length > 0) {
+          setData(compute(raw.map((c: any, i: number) => mapChannelItem(c, i))));
+        }
+      } catch {}
+    }
     setLoading(false);
   }
 
   const maxImpressions = data.length > 0 ? Math.max(...data.map(d => d.impressions)) : 1;
   const sorted = useMemo(() => [...data].sort((a, b) => { const aV = a[sortBy] as number; const bV = b[sortBy] as number; return sortDesc ? bV - aV : aV - bV; }), [data, sortBy, sortDesc]);
-  const totals = useMemo(() => ({
-    impressions: data.reduce((s, d) => s + d.impressions, 0),
-    clicks: data.reduce((s, d) => s + d.clicks, 0),
-    conversions: data.reduce((s, d) => s + d.conversions, 0),
-    spend: data.reduce((s, d) => s + d.spend, 0),
-    revenue: data.reduce((s, d) => s + d.revenue, 0),
-  }), [data]);
+  const computedTotals = useMemo(() => ({
+    impressions: totals.impressions || data.reduce((s, d) => s + d.impressions, 0),
+    clicks: totals.clicks || data.reduce((s, d) => s + d.clicks, 0),
+    conversions: totals.conversions || data.reduce((s, d) => s + d.conversions, 0),
+    spend: totals.spend || data.reduce((s, d) => s + d.spend, 0),
+    revenue: totals.revenue || data.reduce((s, d) => s + d.revenue, 0),
+  }), [data, totals]);
 
   const trendData = useMemo(() => {
-    const seed = data.length > 0 ? data[0].impressions : 485000;
-    return generateTrendData(seed);
-  }, [data]);
+    if (dailyTrend.length > 0) {
+      return dailyTrend.map((d: Record<string, any>) => {
+        const row: Record<string, any> = { month: d.date ? d.date.slice(5, 10) : "" };
+        let impressions = 0, clicks = 0, spend = 0, conversions = 0;
+        for (const key of Object.keys(d)) {
+          if (key === "date") continue;
+          const v = d[key];
+          if (v && typeof v === "object") {
+            impressions += v.impressions || 0;
+            clicks += v.clicks || 0;
+            spend += v.spend || 0;
+            conversions += v.conversions || 0;
+          }
+        }
+        row.impressions = impressions;
+        row.clicks = clicks;
+        row.spend = spend;
+        row.conversions = conversions;
+        return row;
+      });
+    }
+    return MONTHS.map((m) => ({ month: m, impressions: 0, clicks: 0, spend: 0, conversions: 0 }));
+  }, [dailyTrend]);
 
   function toggleSort(key: keyof ChannelMetrics) {
     if (sortBy === key) setSortDesc(!sortDesc);
@@ -173,11 +232,11 @@ export default function ChannelPerformance() {
       </div>
 
       <div className="grid grid-cols-5 gap-4">
-        <div className="card p-4"><p className="text-xs text-gray-500">Total Impressions</p><p className="text-lg font-bold text-white mt-1">{fmt(totals.impressions)}</p></div>
-        <div className="card p-4"><p className="text-xs text-gray-500">Total Clicks</p><p className="text-lg font-bold text-white mt-1">{fmt(totals.clicks)}</p></div>
-        <div className="card p-4"><p className="text-xs text-gray-500">Total Conversions</p><p className="text-lg font-bold text-white mt-1">{fmt(totals.conversions)}</p></div>
-        <div className="card p-4"><p className="text-xs text-gray-500">Total Spend</p><p className="text-lg font-bold text-white mt-1">{fmtCurrency(totals.spend)}</p></div>
-        <div className="card p-4"><p className="text-xs text-gray-500">Total Revenue</p><p className="text-lg font-bold text-white mt-1">{fmtCurrency(totals.revenue)}</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Total Impressions</p><p className="text-lg font-bold text-white mt-1">{fmt(computedTotals.impressions)}</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Total Clicks</p><p className="text-lg font-bold text-white mt-1">{fmt(computedTotals.clicks)}</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Total Conversions</p><p className="text-lg font-bold text-white mt-1">{fmt(computedTotals.conversions)}</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Total Spend</p><p className="text-lg font-bold text-white mt-1">{fmtCurrency(computedTotals.spend)}</p></div>
+        <div className="card p-4"><p className="text-xs text-gray-500">Total Revenue</p><p className="text-lg font-bold text-white mt-1">{fmtCurrency(computedTotals.revenue)}</p></div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -323,7 +382,7 @@ export default function ChannelPerformance() {
             <div className="mt-4">
               <h4 className="text-xs font-semibold text-gray-400 mb-2">12-Month Trend</h4>
               <ResponsiveContainer width="100%" height={140}>
-                <LineChart data={generateTrendData(drillChannel.impressions)}>
+                <LineChart data={trendData.length > 0 ? trendData : MONTHS.map((m) => ({ month: m, impressions: 0 }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9ca3af" }} />
                   <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "11px" }} />

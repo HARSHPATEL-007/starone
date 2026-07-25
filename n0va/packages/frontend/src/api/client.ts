@@ -424,4 +424,32 @@ export const api = {
       request<any>(`/customer-journey/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/customer-journey/${id}`, { method: "DELETE" }),
   },
+  abTesting: {
+    list: (params?: string) => request<any[]>(`/ab-testing${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/ab-testing/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/ab-testing", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/ab-testing/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/ab-testing/${id}`, { method: "DELETE" }),
+    end: (id: string) => request<any>(`/ab-testing/${id}/end`, { method: "POST" }),
+    significance: (params: string) => request<any>(`/ab-testing/significance?${params}`),
+  },
+  comparison: {
+    list: (ids: string[]) => request<any>(`/comparison?ids=${ids.join(",")}`),
+    dimensions: () => request<any>("/comparison/dimensions"),
+  },
+  forecast: {
+    get: (params?: string) => request<any>(`/forecast${params ? `?${params}` : ""}`),
+    scenario: (data: Record<string, unknown>) =>
+      request<any>("/forecast/scenario", { method: "POST", body: JSON.stringify(data) }),
+  },
+  health: {
+    list: () => request<any[]>("/health"),
+    get: (id: string) => request<any>(`/health/${id}`),
+    trends: () => request<any>("/health/trends"),
+  },
+  channelPerformance: {
+    list: () => request<any>("/channel-performance"),
+  },
 };

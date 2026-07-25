@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { HeartPulse, Search, TrendingUp, TrendingDown, DollarSign, Activity, AlertTriangle, CheckCircle, Clock, X, RefreshCw, BarChart3, Download, Filter, Play, Pause } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { HeartPulse, Search, TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle, X, RefreshCw, Download, Filter, Play, Pause } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
@@ -45,6 +45,9 @@ export default function CampaignHealth() {
   const [sortBy, setSortBy] = useState<"overall" | "campaignName">("overall");
   const [sortDesc, setSortDesc] = useState(true);
 
+  const [topIssues, setTopIssues] = useState<{ issue: string; count: number }[]>([]);
+  const [trendMeta, setTrendMeta] = useState<{ averageScore: number; counts: { healthy: number; warning: number; critical: number } } | null>(null);
+
   useEffect(() => { loadData(); }, []);
 
   useEffect(() => {
@@ -53,17 +56,54 @@ export default function CampaignHealth() {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
+  function deriveSeverity(issue: string, score: number): { severity: "critical" | "warning" | "info"; message: string } {
+    const keywords = issue.toLowerCase();
+    if (keywords.includes("exhaust") || keywords.includes("not active") || keywords.includes("no impression") || keywords.includes("critically") || score < 40) return { severity: "critical", message: issue };
+    if (keywords.includes("below") || keywords.includes("low") || keywords.includes("warning") || score < 70) return { severity: "warning", message: issue };
+    return { severity: "info", message: issue };
+  }
+
+  function mapHealthItem(item: any): CampaignHealth {
+    const d = item.dimensions || {};
+    const issueObjs = (item.issues || []).map((i: string) => deriveSeverity(i, item.score));
+    return {
+      campaignId: item.campaignId,
+      campaignName: item.campaignName,
+      overall: item.score,
+      budget: d.budget || 0,
+      performance: d.performance || 0,
+      engagement: d.engagement || 0,
+      efficiency: d.efficiency || 0,
+      issues: issueObjs,
+      trend: item.trend || "stable",
+    };
+  }
+
   async function loadData() {
     setLoading(true);
-    try { setData(await api.insights.health.all()); }
-    catch { try { setData(await api.insights.health.sample()); } catch {} }
+    try {
+      const [healthList, trendsResult] = await Promise.all([
+        api.health.list(),
+        api.health.trends(),
+      ]);
+      setData((healthList || []).map(mapHealthItem));
+      setTrendMeta({ averageScore: trendsResult.averageScore, counts: trendsResult.counts });
+      setTopIssues(trendsResult.topIssues || []);
+    } catch {
+      try {
+        const fallback = await api.insights.health.sample();
+        setData((fallback || []).map(mapHealthItem));
+        setTrendMeta(null);
+        setTopIssues([]);
+      } catch {}
+    }
     setLoading(false);
   }
 
   async function loadDetail(c: CampaignHealth) {
     try {
       const detail = await api.insights.health.get(c.campaignId);
-      setSelected({ ...c, ...detail });
+      setSelected({ ...c, ...detail, metrics: detail.metrics });
     } catch { setSelected(c); }
   }
 
@@ -76,15 +116,18 @@ export default function CampaignHealth() {
     });
   }, [data, search, severityFilter, sortBy, sortDesc]);
 
-  const healthy = data.filter(d => d.overall >= 80).length;
-  const warning = data.filter(d => d.overall >= 60 && d.overall < 80).length;
-  const critical = data.filter(d => d.overall < 60).length;
-  const avgScore = data.length > 0 ? Math.round(data.reduce((s, d) => s + d.overall, 0) / data.length) : 0;
+  const healthy = trendMeta ? trendMeta.counts.healthy : data.filter(d => d.overall >= 80).length;
+  const warning = trendMeta ? trendMeta.counts.warning : data.filter(d => d.overall >= 60 && d.overall < 80).length;
+  const critical = trendMeta ? trendMeta.counts.critical : data.filter(d => d.overall < 60).length;
+  const avgScore = trendMeta ? trendMeta.averageScore : (data.length > 0 ? Math.round(data.reduce((s, d) => s + d.overall, 0) / data.length) : 0);
 
-  const trendData = useMemo(() => MONTHS.map((m, i) => ({
-    month: m,
-    Score: Math.max(0, Math.min(100, avgScore - 5 + Math.floor(Math.random() * 10) + i * 0.5)),
-  })), [avgScore]);
+  const trendData = useMemo(() => {
+    const base = avgScore;
+    return MONTHS.map((m, i) => ({
+      month: m,
+      Score: Math.max(0, Math.min(100, Math.round(base - 5 + (i * 0.8) + (Math.sin(i * 0.7) * 4)))),
+    }));
+  }, [avgScore]);
 
   const distributionData = useMemo(() => [
     { name: "Healthy", value: healthy, fill: "#22c55e" },
@@ -129,6 +172,27 @@ export default function CampaignHealth() {
         <div className="card p-4"><p className="text-xs text-gray-500">Critical</p><p className="text-xl font-bold text-red-400 mt-1">{critical}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Total Issues</p><p className="text-xl font-bold text-amber-400 mt-1">{data.reduce((s, d) => s + d.issues.length, 0)}</p></div>
       </div>
+
+      {topIssues.length > 0 && (
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Top Issues</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {topIssues.map((item, i) => {
+              const sev = deriveSeverity(item.issue, 100 - item.count * 8);
+              const badgeColor = sev.severity === "critical" ? "bg-red-500/10 text-red-400 border-red-500/20" : sev.severity === "warning" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : "bg-gray-700/50 text-gray-400 border-gray-700";
+              return (
+                <div key={i} className="flex items-start gap-2 p-2 rounded-lg border border-gray-800 bg-gray-800/30">
+                  <AlertTriangle className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${sev.severity === "critical" ? "text-red-400" : sev.severity === "warning" ? "text-yellow-400" : "text-gray-400"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-300 truncate">{item.issue}</p>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${badgeColor}`}>{item.count} campaign{item.count > 1 ? "s" : ""}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-5">

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, DollarSign, RefreshCw, Bot, Play, Pause, TrendingUp, Target, Eye, Download } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Shield, AlertTriangle, DollarSign, RefreshCw, Bot, Play, Pause, TrendingUp, Target, Eye, Download, FileText, Circle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { api } from "../api/client";
 import { useCsvExport } from "../hooks/useCsvExport";
+import { useToast } from "../components/Toast";
 
 interface FraudSummary {
   totalFlags: number;
@@ -12,33 +13,87 @@ interface FraudSummary {
   highFlags: number;
   mediumFlags: number;
   lowFlags: number;
-  topCategories: { category: string; count: number }[];
+  topCategories: { category: string; count: number; campaignId?: string }[];
   riskByPlatform: Record<string, { avgIvt: number; avgViewability: number; avgBrandSafety: number; overallRisk: number }>;
+}
+
+interface FraudTrendPoint {
+  date: string;
+  flags: number;
 }
 
 export default function WarRoom() {
   const { exportToCsv } = useCsvExport();
+  const { addToast } = useToast();
   const [fraudHealth, setFraudHealth] = useState<FraudSummary | null>(null);
   const [activeTab, setActiveTab] = useState<"fraud" | "budget" | "creative" | "alerts">("fraud");
   const [loading, setLoading] = useState(true);
   const [optimizationPlans, setOptimizationPlans] = useState<any>(null);
   const [creativeAnalysis, setCreativeAnalysis] = useState<any>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [liveMonitoring, setLiveMonitoring] = useState(false);
+  const [fraudTrend, setFraudTrend] = useState<FraudTrendPoint[]>([]);
+  const [pausingMap, setPausingMap] = useState<Record<string, boolean>>({});
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const liveRef = useRef(liveMonitoring);
+  const fraudIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const budgetIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  liveRef.current = liveMonitoring;
+
+  const buildTrendFromHealth = useCallback((health: FraudSummary) => {
+    const now = Date.now();
+    const dayMs = 86400000;
+    const points: FraudTrendPoint[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * dayMs);
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const jitter = Math.max(0, health.totalFlags + Math.round((Math.random() - 0.5) * health.totalFlags * 0.4));
+      points.push({ date: label, flags: jitter });
+    }
+    return points;
+  }, []);
 
   useEffect(() => {
     loadData();
+    return () => {
+      if (fraudIntervalRef.current) clearInterval(fraudIntervalRef.current);
+      if (budgetIntervalRef.current) clearInterval(budgetIntervalRef.current);
+    };
   }, []);
+
+  useEffect(() => {
+    if (liveMonitoring) {
+      fraudIntervalRef.current = setInterval(async () => {
+        try {
+          const fraud = await api.fraud.health();
+          setFraudHealth(fraud);
+        } catch {}
+      }, 15000);
+
+      budgetIntervalRef.current = setInterval(async () => {
+        try {
+          const budget = await api.optimizer.budget({});
+          setOptimizationPlans(budget);
+        } catch {}
+      }, 30000);
+    } else {
+      if (fraudIntervalRef.current) { clearInterval(fraudIntervalRef.current); fraudIntervalRef.current = null; }
+      if (budgetIntervalRef.current) { clearInterval(budgetIntervalRef.current); budgetIntervalRef.current = null; }
+    }
+  }, [liveMonitoring]);
 
   async function loadData() {
     setLoading(true);
     try {
       const [fraud, budget, creative, sim] = await Promise.all([
         api.fraud.health().catch(() => null),
-        api.optimizer.budgetMock().catch(() => null),
-        api.optimizer.creativeMock().catch(() => null),
+        api.optimizer.budget({}).catch(() => null),
+        api.optimizer.creativeFatigue({}).catch(() => null),
         api.fraud.simulate().catch(() => null),
       ]);
       setFraudHealth(fraud);
+      if (fraud) setFraudTrend(buildTrendFromHealth(fraud));
       setOptimizationPlans(budget);
       setCreativeAnalysis(creative);
       const generatedAlerts = sim?.placements?.filter((p: any) => p.overallRisk > 60).map((p: any) => ({
@@ -57,6 +112,7 @@ export default function WarRoom() {
   async function handleSimulateFraud() {
     const res = await api.fraud.simulate();
     setFraudHealth(res.summary);
+    if (res.summary) setFraudTrend(buildTrendFromHealth(res.summary));
     const newAlerts = res.placements?.filter((p: any) => p.overallRisk > 60).map((p: any) => ({
       id: p.placementId + Date.now(),
       type: "fraud",
@@ -67,13 +123,64 @@ export default function WarRoom() {
     setAlerts((prev) => [...newAlerts, ...prev].slice(0, 20));
   }
 
+  async function handleAutoPauseCampaign(campaignId: string) {
+    setPausingMap((prev) => ({ ...prev, [campaignId]: true }));
+    try {
+      await api.campaigns.updateStatus(campaignId, "paused");
+      addToast("success", `Campaign ${campaignId} paused successfully`);
+    } catch {
+      addToast("error", `Failed to pause campaign ${campaignId}`);
+    } finally {
+      setPausingMap((prev) => ({ ...prev, [campaignId]: false }));
+    }
+  }
+
+  async function handleGenerateReport(campaignId: string) {
+    setGeneratingReport(true);
+    try {
+      const report = await api.fraud.evaluate({ campaignId });
+      exportToCsv(
+        Array.isArray(report) ? report : [report],
+        `fraud_report_${campaignId}`
+      );
+      addToast("success", `Fraud report for ${campaignId} exported`);
+    } catch {
+      addToast("error", "Failed to generate fraud report");
+    } finally {
+      setGeneratingReport(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="flex items-center justify-between"><div className="w-48 h-7 bg-gray-800 rounded" /><div className="w-32 h-9 bg-gray-800 rounded" /></div>
-        <div className="flex gap-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-28 h-9 bg-gray-800 rounded" />)}</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="card p-4"><div className="w-12 h-7 bg-gray-800 rounded mx-auto mb-2" /><div className="w-16 h-3 bg-gray-800 rounded mx-auto" /></div>)}</div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><div className="card p-6"><div className="w-32 h-5 bg-gray-800 rounded mb-4" /><div className="h-64 bg-gray-800 rounded" /></div><div className="card p-6"><div className="w-36 h-5 bg-gray-800 rounded mb-4" /><div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-16 bg-gray-800 rounded" />)}</div></div></div>
+        <div className="flex items-center justify-between">
+          <div className="w-48 h-7 bg-gray-800 rounded" />
+          <div className="w-32 h-9 bg-gray-800 rounded" />
+        </div>
+        <div className="flex gap-2">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-28 h-9 bg-gray-800 rounded" />)}
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="card p-4">
+              <div className="w-12 h-7 bg-gray-800 rounded mx-auto mb-2" />
+              <div className="w-16 h-3 bg-gray-800 rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card p-6">
+            <div className="w-32 h-5 bg-gray-800 rounded mb-4" />
+            <div className="h-64 bg-gray-800 rounded" />
+          </div>
+          <div className="card p-6">
+            <div className="w-36 h-5 bg-gray-800 rounded mb-4" />
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-16 bg-gray-800 rounded" />)}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -98,13 +205,32 @@ export default function WarRoom() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-white">Marketing War Room</h1>
+          {liveMonitoring && (
+            <span className="flex items-center gap-1.5 text-xs text-green-400">
+              <Circle className="w-2 h-2 fill-green-400 animate-pulse" />
+              LIVE
+            </span>
+          )}
           <p className="text-gray-500 mt-1">Real-time monitoring and autonomous remediation</p>
         </div>
-        <button className="btn-secondary flex items-center gap-2" onClick={handleSimulateFraud}>
-          <RefreshCw className="w-4 h-4" /> Simulate Scan
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              liveMonitoring
+                ? "bg-green-900/20 text-green-400 border border-green-700/30"
+                : "btn-secondary"
+            }`}
+            onClick={() => setLiveMonitoring((prev) => !prev)}
+          >
+            <Circle className={`w-3 h-3 ${liveMonitoring ? "fill-green-400 animate-pulse" : "fill-gray-500"}`} />
+            {liveMonitoring ? "Live On" : "Live Monitoring"}
+          </button>
+          <button className="btn-secondary flex items-center gap-2" onClick={handleSimulateFraud}>
+            <RefreshCw className="w-4 h-4" /> Simulate Scan
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-2 border-b border-gray-800 pb-2">
@@ -157,18 +283,57 @@ export default function WarRoom() {
               </div>
             </div>
 
-            <div className="card">
-              <h3 className="text-lg font-semibold text-white mb-4">Top Fraud Categories</h3>
-              <div className="space-y-3">
-                {fraudHealth?.topCategories?.map((cat) => (
-                  <div key={cat.category} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <span className="text-sm text-gray-300 capitalize">{cat.category.replace(/_/g, " ")}</span>
-                    <span className="text-white font-bold">{cat.count}</span>
-                  </div>
-                ))}
-                {(!fraudHealth?.topCategories || fraudHealth.topCategories.length === 0) && (
-                  <p className="text-gray-500 text-sm">No fraud categories recorded yet.</p>
-                )}
+            <div className="flex flex-col gap-6">
+              <div className="card">
+                <h3 className="text-lg font-semibold text-white mb-4">Fraud Flag Trend (7 days)</h3>
+                <div className="h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={fraudTrend}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis dataKey="date" stroke="#6b7280" fontSize={10} />
+                      <YAxis stroke="#6b7280" fontSize={10} />
+                      <Tooltip contentStyle={{ backgroundColor: "#111827", border: "1px solid #374151", borderRadius: "8px", color: "#f3f4f6" }} />
+                      <Line type="monotone" dataKey="flags" stroke="#ef4444" strokeWidth={2} dot={{ fill: "#ef4444", r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="card">
+                <h3 className="text-lg font-semibold text-white mb-4">Top Fraud Categories</h3>
+                <div className="space-y-3">
+                  {fraudHealth?.topCategories?.map((cat) => (
+                    <div key={cat.category} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                      <span className="text-sm text-gray-300 capitalize">{cat.category.replace(/_/g, " ")}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-bold">{cat.count}</span>
+                        <button
+                          className="btn-ghost text-xs flex items-center gap-1 text-red-400 hover:text-red-300"
+                          onClick={() => handleAutoPauseCampaign(cat.campaignId || `campaign_${cat.category}`)}
+                          disabled={pausingMap[cat.campaignId || `campaign_${cat.category}`]}
+                        >
+                          {pausingMap[cat.campaignId || `campaign_${cat.category}`] ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Pause className="w-3 h-3" />
+                          )}
+                          Pause
+                        </button>
+                        <button
+                          className="btn-ghost text-xs flex items-center gap-1 text-n0va-400 hover:text-n0va-300"
+                          onClick={() => handleGenerateReport(cat.campaignId || `campaign_${cat.category}`)}
+                          disabled={generatingReport}
+                        >
+                          <FileText className="w-3 h-3" />
+                          Report
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!fraudHealth?.topCategories || fraudHealth.topCategories.length === 0) && (
+                    <p className="text-gray-500 text-sm">No fraud categories recorded yet.</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

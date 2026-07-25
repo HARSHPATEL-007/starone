@@ -35,6 +35,10 @@ export default function Dashboard() {
   const [attribution, setAttribution] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activities, setActivities] = useState<any[]>([]);
+  const [days, setDays] = useState("30");
+  const [crossPlatformData, setCrossPlatformData] = useState<any>(null);
+  const [prevPeriodData, setPrevPeriodData] = useState<any>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
   const liveActivities = useTenantActivity("tenant_001");
 
   const liveFraudAlerts = useFraudAlerts();
@@ -45,16 +49,22 @@ export default function Dashboard() {
     setLoading(true);
     Promise.all([
       api.campaigns.dashboard(),
-      api.analytics.overview("30").catch(() => ({ dailyMetrics: [] })),
+      api.analytics.overview(days).catch(() => ({ dailyMetrics: [] })),
       api.fraud.health().catch(() => null),
       api.agents.list().catch(() => []),
       api.attribution.models().catch(() => null),
+      api.analytics.crossPlatform(days).catch(() => ({ platforms: [] })),
+      api.analytics.overview("60").catch(() => ({ dailyMetrics: [] })),
+      api.campaigns.list().catch(() => []),
     ])
-      .then(([d, analytics, fraud, agentList, attr]) => {
+      .then(([d, analytics, fraud, agentList, attr, crossPlatform, prevAnalytics, campaignList]) => {
         setData(d); setDailyData(analytics.dailyMetrics || []); setFraudHealth(fraud); setAgents(agentList); setAttribution(attr);
+        setCrossPlatformData(crossPlatform);
+        setPrevPeriodData(prevAnalytics);
+        setCampaigns(Array.isArray(campaignList) ? campaignList : campaignList?.campaigns || []);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [days]);
 
   useEffect(() => { loadData(); api.activity.list().then((r) => setActivities(r || [])).catch(() => {}); }, [loadData]);
 
@@ -75,23 +85,56 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [autoRefresh, loadData]);
 
+  const prevMetrics = prevPeriodData?.dailyMetrics?.length
+    ? (() => {
+        const dm = prevPeriodData.dailyMetrics;
+        const half = Math.floor(dm.length / 2);
+        const prev = dm.slice(0, half);
+        const curr = dm.slice(half);
+        const sum = (arr: any[], key: string) => arr.reduce((s: number, d: any) => s + (d[key] || 0), 0);
+        const prevSpend = sum(prev, "spend");
+        const currSpend = sum(curr, "spend");
+        const prevRev = sum(prev, "revenue");
+        const currRev = sum(curr, "revenue");
+        const pct = (c: number, p: number) => p > 0 ? ((c - p) / p) * 100 : 0;
+        return {
+          spend: pct(currSpend, prevSpend),
+          impressions: pct(sum(curr, "impressions"), sum(prev, "impressions")),
+          clicks: pct(sum(curr, "clicks"), sum(prev, "clicks")),
+          conversions: pct(sum(curr, "conversions"), sum(prev, "conversions")),
+          roas: pct(currSpend > 0 ? currRev / currSpend : 0, prevSpend > 0 ? prevRev / prevSpend : 0),
+        };
+      })()
+    : null;
+
+  const topCampaigns = [...campaigns]
+    .sort((a: any, b: any) => (b.spend || b.budget || 0) - (a.spend || a.budget || 0))
+    .slice(0, 5);
+
   const stats = [
     { label: "Active Campaigns", value: data?.activeCampaigns ?? 0, icon: Megaphone, color: "text-n0va-400" },
     { label: "Total Budget", value: `$${((data?.totalBudget ?? 0) / 1000).toFixed(1)}K`, icon: DollarSign, color: "text-green-400" },
-    { label: "Total Spend", value: `$${((data?.totalSpent ?? 0) / 1000).toFixed(1)}K`, icon: BarChart3, color: "text-yellow-400" },
-    { label: "Impressions", value: ((data?.metrics?.totalImpressions ?? 0) / 1000).toFixed(0) + "K", icon: Users, color: "text-purple-400" },
-    { label: "Clicks", value: ((data?.metrics?.totalClicks ?? 0) / 1000).toFixed(0) + "K", icon: MousePointerClick, color: "text-blue-400" },
-    { label: "ROAS", value: data?.metrics?.avgRoas?.toFixed(2) ?? "0.00", icon: TrendingUp, color: "text-emerald-400" },
+    { label: "Total Spend", value: `$${((data?.totalSpent ?? 0) / 1000).toFixed(1)}K`, icon: BarChart3, color: "text-yellow-400", change: prevMetrics?.spend },
+    { label: "Impressions", value: ((data?.metrics?.totalImpressions ?? 0) / 1000).toFixed(0) + "K", icon: Users, color: "text-purple-400", change: prevMetrics?.impressions },
+    { label: "Clicks", value: ((data?.metrics?.totalClicks ?? 0) / 1000).toFixed(0) + "K", icon: MousePointerClick, color: "text-blue-400", change: prevMetrics?.clicks },
+    { label: "ROAS", value: data?.metrics?.avgRoas?.toFixed(2) ?? "0.00", icon: TrendingUp, color: "text-emerald-400", change: prevMetrics?.roas },
   ];
 
   const chartData = dailyData.slice(-14).map((d: any) => ({ ...d, date: d.date?.substring(5) || d.date }));
 
-  const platformData = [
-    { platform: "Meta", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.45 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.52 : 0, roas: 2.8 },
-    { platform: "Google", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.30 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.28 : 0, roas: 2.3 },
-    { platform: "LinkedIn", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.15 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.14 : 0, roas: 2.1 },
-    { platform: "TikTok", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.10 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.06 : 0, roas: 1.5 },
-  ];
+  const platformData = crossPlatformData?.platforms?.length
+    ? crossPlatformData.platforms.map((p: any) => ({
+        platform: p.platform.charAt(0).toUpperCase() + p.platform.slice(1),
+        spend: p.spend || 0,
+        revenue: p.revenue || 0,
+        roas: p.roas || 0,
+      }))
+    : [
+        { platform: "Meta", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.45 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.52 : 0, roas: 2.8 },
+        { platform: "Google", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.30 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.28 : 0, roas: 2.3 },
+        { platform: "LinkedIn", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.15 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.14 : 0, roas: 2.1 },
+        { platform: "TikTok", spend: data?.metrics?.totalSpend ? data.metrics.totalSpend * 0.10 : 0, revenue: data?.metrics?.totalRevenue ? data.metrics.totalRevenue * 0.06 : 0, roas: 1.5 },
+      ];
 
   const budgetUtilization = data?.totalBudget ? ((data.totalSpent / data.totalBudget) * 100).toFixed(1) : "0";
   const runningAgents = agents.filter((a: any) => a.status === "running").length;
@@ -125,6 +168,15 @@ export default function Dashboard() {
           <p className="text-gray-500 mt-1">Real-time overview of your advertising performance</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex bg-gray-800 rounded-lg p-0.5">
+            {["7", "30", "90"].map((d) => (
+              <button
+                key={d}
+                onClick={() => setDays(d)}
+                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${days === d ? "bg-n0va-600 text-white" : "text-gray-400 hover:text-white"}`}
+              >{d}d</button>
+            ))}
+          </div>
           <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
             <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} className="w-3.5 h-3.5 text-n0va-600 bg-gray-700 border-gray-600 rounded" />
             Auto (30s)
@@ -151,6 +203,11 @@ export default function Dashboard() {
               <stat.icon className={`w-4 h-4 ${stat.color}`} />
             </div>
             <p className="text-2xl font-bold text-white">{stat.value}</p>
+            {(stat as any).change !== undefined && (
+              <p className={`text-xs mt-1 ${(stat as any).change >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {(stat as any).change >= 0 ? "+" : ""}{(stat as any).change.toFixed(1)}%
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -189,6 +246,28 @@ export default function Dashboard() {
           <p className="text-xs text-gray-500">{attribution?.totalPaths || 50} conversion paths</p>
         </div>
       </div>
+
+      {topCampaigns.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Top Campaigns by Spend</h3>
+            <Link to="/campaigns" className="text-xs text-n0va-400 hover:text-n0va-300">View All</Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {topCampaigns.map((c: any) => (
+              <Link
+                key={c._id}
+                to={`/campaigns/${c._id}`}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-n0va-500 shrink-0" />
+                {c.name || c._id}
+                <span className="text-gray-500">${((c.spend || c.budget || 0) / 1000).toFixed(1)}K</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {liveAlertCount > 0 && (
         <div className="card border-yellow-500/30 bg-yellow-500/5">
@@ -232,7 +311,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">ROAS by Platform</h3>
-            <span className="text-xs text-gray-500">Last 30 days</span>
+            <span className="text-xs text-gray-500">Last {days} days</span>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">

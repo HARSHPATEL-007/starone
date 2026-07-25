@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
-import { ArrowLeft, BarChart3, DollarSign, TrendingUp, Search, CheckSquare, Square, ExternalLink, Download, Calendar } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LineChart, Line } from "recharts";
+import { ArrowLeft, BarChart3, DollarSign, TrendingUp, Search, CheckSquare, Square, ExternalLink, Download, Calendar, GitCompare, Activity } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
@@ -20,6 +20,9 @@ export default function CampaignComparison() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState(0);
+  const [compareData, setCompareData] = useState<{ campaigns: any[]; dailySeries: any[]; totals: any } | null>(null);
+  const [compLoading, setCompLoading] = useState(false);
+  const [showTimeSeries, setShowTimeSeries] = useState(false);
 
   useEffect(() => {
     api.campaigns.list().then((r) => {
@@ -35,6 +38,19 @@ export default function CampaignComparison() {
       if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     });
+  }
+
+  async function handleCompare() {
+    const ids = Array.from(selected);
+    if (ids.length < 2) return;
+    setCompLoading(true);
+    try {
+      const res = await api.comparison.list(ids);
+      setCompareData(res);
+    } catch {
+      setCompareData(null);
+    }
+    setCompLoading(false);
   }
 
   const filtered = useMemo(() => {
@@ -55,16 +71,17 @@ export default function CampaignComparison() {
   }, [campaigns, search, dateRange]);
 
   const compared = useMemo(() => {
-    return campaigns.filter((c) => selected.has(c._id || c.id));
-  }, [campaigns, selected]);
+    const src = compareData?.campaigns || campaigns;
+    return compareData ? src : campaigns.filter((c) => selected.has(c._id || c.id));
+  }, [campaigns, selected, compareData]);
 
   const chartData = useMemo(() => compared.map((c) => ({
     name: c.name?.substring(0, 18) || "Unknown",
-    Spend: c.budget?.spent || 0,
-    Budget: c.budget?.lifetime || 0,
-    Clicks: (c.performance?.clicks || c.metrics?.totalClicks || 0),
-    ROAS: parseFloat((c.performance?.roas || c.metrics?.avgRoas || 0).toFixed(2)),
-    Impressions: (c.performance?.impressions || c.metrics?.totalImpressions || 0),
+    Spend: c.budget?.spent || c.spent || 0,
+    Budget: c.budget?.lifetime || c.budget || 0,
+    Clicks: (c.performance?.clicks || c.metrics?.totalClicks || c.clicks || 0),
+    ROAS: parseFloat((c.performance?.roas || c.metrics?.avgRoas || c.roas || 0).toFixed(2)),
+    Impressions: (c.performance?.impressions || c.metrics?.totalImpressions || c.impressions || 0),
   })), [compared]);
 
   const radarData = useMemo(() => {
@@ -73,11 +90,11 @@ export default function CampaignComparison() {
     return metrics.map((metric) => {
       const entry: any = { metric };
       const vals = compared.map((c) => {
-        if (metric === "Budget") return c.budget?.lifetime || 0;
-        if (metric === "Spend") return c.budget?.spent || 0;
-        if (metric === "Clicks") return c.performance?.clicks || c.metrics?.totalClicks || 0;
-        if (metric === "Impressions") return c.performance?.impressions || c.metrics?.totalImpressions || 0;
-        if (metric === "ROAS") return c.performance?.roas || c.metrics?.avgRoas || 0;
+        if (metric === "Budget") return c.budget?.lifetime || c.budget || 0;
+        if (metric === "Spend") return c.budget?.spent || c.spent || 0;
+        if (metric === "Clicks") return c.performance?.clicks || c.metrics?.totalClicks || c.clicks || 0;
+        if (metric === "Impressions") return c.performance?.impressions || c.metrics?.totalImpressions || c.impressions || 0;
+        if (metric === "ROAS") return c.performance?.roas || c.metrics?.avgRoas || c.roas || 0;
         return 0;
       });
       const max = Math.max(...vals, 1);
@@ -177,8 +194,18 @@ export default function CampaignComparison() {
               </button>
             ))}
             <span className="text-xs text-gray-500">{selected.size} selected</span>
+            {selected.size >= 2 && (
+              <button onClick={handleCompare} className="btn-primary text-xs flex items-center gap-1.5" disabled={compLoading}>
+                <GitCompare className="w-3.5 h-3.5" /> {compLoading ? "Comparing..." : "Compare"}
+              </button>
+            )}
+            {compareData && (
+              <button onClick={() => setShowTimeSeries(!showTimeSeries)} className={`text-xs px-2.5 py-1 rounded-lg font-medium border ${showTimeSeries ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500 hover:border-gray-600"}`}>
+                <Activity className="w-3.5 h-3.5 inline mr-1" /> Time Series
+              </button>
+            )}
             {selected.size > 0 && (
-              <button onClick={() => setSelected(new Set())} className="btn-ghost text-xs">
+              <button onClick={() => { setSelected(new Set()); setCompareData(null); setShowTimeSeries(false); }} className="btn-ghost text-xs">
                 Clear All
               </button>
             )}
@@ -259,6 +286,27 @@ export default function CampaignComparison() {
                       ))}
                       <Legend wrapperStyle={{ fontSize: "11px" }} />
                     </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {showTimeSeries && compareData?.dailySeries && (
+                <div className="card">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Activity className="w-4 h-4 text-n0va-400" />
+                    <h3 className="text-sm font-semibold text-white">Daily Time Series</h3>
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={compareData.dailySeries}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                      <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "12px" }} />
+                      <Legend wrapperStyle={{ fontSize: "11px" }} />
+                      {compared.map((c, i) => (
+                        <Line key={c._id || c.id} type="monotone" dataKey={c.name || `Campaign ${i + 1}`} stroke={RADAR_COLORS[i % RADAR_COLORS.length]} strokeWidth={2} dot={false} name={c.name || `Campaign ${i + 1}`} />
+                      ))}
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               )}

@@ -45,6 +45,11 @@ import competitiveIntelRoutes from "./routes/competitive-intel";
 import contentLibraryRoutes from "./routes/content-library";
 import marketingFormRoutes from "./routes/marketing-forms";
 import customerJourneyRoutes from "./routes/customer-journey";
+import abTestingRoutes from "./routes/ab-testing";
+import comparisonRoutes from "./routes/comparison";
+import forecastRoutes from "./routes/forecast";
+import healthRoutes from "./routes/health";
+import channelPerformanceRoutes from "./routes/channel-performance";
 
 const app = express();
 const httpServer = createServer(app);
@@ -102,6 +107,11 @@ app.use("/api/v1/competitive-intel", authMiddleware, tenantMiddleware, competiti
 app.use("/api/v1/content-library", authMiddleware, tenantMiddleware, contentLibraryRoutes);
 app.use("/api/v1/marketing-forms", authMiddleware, tenantMiddleware, marketingFormRoutes);
 app.use("/api/v1/customer-journey", authMiddleware, tenantMiddleware, customerJourneyRoutes);
+app.use("/api/v1/ab-testing", authMiddleware, tenantMiddleware, abTestingRoutes);
+app.use("/api/v1/comparison", authMiddleware, tenantMiddleware, comparisonRoutes);
+app.use("/api/v1/forecast", authMiddleware, tenantMiddleware, forecastRoutes);
+app.use("/api/v1/health", authMiddleware, tenantMiddleware, healthRoutes);
+app.use("/api/v1/channel-performance", authMiddleware, tenantMiddleware, channelPerformanceRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);
