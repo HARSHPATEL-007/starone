@@ -1,34 +1,40 @@
 # N0VA Ads & Marketing — Anchored Summary
 
-## Project State (git: `0182e82`)
+## Project State
 
 | Metric | Value |
 |---|---|
-| Build modules | 2520 |
-| Backend services | 39 |
-| Backend routes | 71 |
-| Frontend pages | 109 |
+| Build modules | **2523** |
+| Backend services | 42 |
+| Backend routes | 74 |
+| Frontend pages | 112 |
 
-## Session 2 — "Deeper Enhance" (current)
+## Session 3 — "Deeper LOGIC" (current)
 
-### What got built
+### 3 new logic services (algorithmic/computational)
 
-**4 backend services + routes + pages:**
-
-| Service | Route | Page | Description |
+| Service | Route | Page | Key Algorithms |
 |---|---|---|---|
-| CDPService | `cdp.ts` | CustomerDataPlatform.tsx | Profiles, events, segments, traits |
-| WorkflowBuilderService | `workflow-builder.ts` | WorkflowBuilder.tsx | Visual flow builder with node editor |
-| CampaignScorecardService | `campaign-scorecard.ts` | CampaignScorecard.tsx | 5-dimension scoring with gauges |
-| AdminService | `admin.ts` | AdminDashboard.tsx | Multi-tenant admin + audit log |
+| **PredictiveForecastingService** | `predictive-forecasting.ts` | PredictiveForecasting.tsx | Holt-Winters triple exp smoothing, autocorrelation seasonality detection, linear regression R² |
+| **StatisticalABTestService** | `ab-test-statistics.ts` | ABTestStatistics.tsx | Chi-squared significance, p-value via regularized gamma, min sample size, power analysis |
+| **AnomalyDetectionService** | `anomaly-detection.ts` | AnomalyDetection.tsx | Z-score deviation from moving avg, seasonal baseline, multi-metric campaign scan |
 
-### All services added across both sessions (19 total)
-CampaignOptimizer, ReportBuilder, AudienceInsights, DeveloperPortal, PlaybookExecution, LandingPageBuilder, Influencer, CampaignIssue, CompetitiveBenchmarking, **CDP**, **WorkflowBuilder**, **CampaignScorecard**, **Admin**, ABTestService, BudgetPacing, CampaignHealth, CampaignSnapshot, LeadScoring, FraudDetection, CreativeVersion, ROICalculator, Attribution, Scheduler, + base services
+### 3 existing services enhanced with real logic
+
+| Service | What was added |
+|---|---|
+| **CDPService** | Identity resolution (deterministic + probabilistic), lookalike cosine similarity on feature vectors, predictive LTV (RFM factors + retention math) |
+| **CreativeAIService** | Flesch-Kincaid readability, sentiment analysis (positive/negative word dictionary), performance prediction (CTR/CVR from 12+ text features), variant optimization |
+| **CampaignScorecardService** | Trend direction detection (period comparison), configurable dimension weights, percentile ranking |
+
+## Session 2 — "Deeper Enhance" (completed)
+
+4 services + routes + pages: CDP, WorkflowBuilder, CampaignScorecard, AdminDashboard. Build 2520 → 2523.
 
 ## Session 1 — "Missing Features" (completed)
 
-Full build verified at 2516 modules. 10 backend routes + 11 frontend pages shipped. OAuth2, AI Optimizer, Report Builder, Audience Insights, Developer Portal, Playbook Execution, Landing Page Builder, Influencer Management, Campaign Issues, Competitive Benchmarking.
+10 backend routes + 11 frontend pages: OAuth2, AI Optimizer, Report Builder, Audience Insights, Developer Portal, Playbook Execution, Landing Page Builder, Influencer Management, Campaign Issues, Competitive Benchmarking.
 
 ## Coverage
 
-See `packages/frontend/src/App.tsx:233` for route matrix. API client at `packages/frontend/src/api/client.ts`. Sidebar at `components/Sidebar.tsx`.
+Routes: `packages/backend/src/index.ts:184-188`. Pages: `packages/frontend/src/App.tsx:246-249`. API client: `packages/frontend/src/api/client.ts`. Sidebar: `components/Sidebar.tsx:110-112`.

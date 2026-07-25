@@ -111,6 +111,9 @@ import CustomerDataPlatform from "./pages/CustomerDataPlatform";
 import WorkflowBuilder from "./pages/WorkflowBuilder";
 import CampaignScorecard from "./pages/CampaignScorecard";
 import AdminDashboard from "./pages/AdminDashboard";
+import PredictiveForecasting from "./pages/PredictiveForecasting";
+import ABTestStatistics from "./pages/ABTestStatistics";
+import AnomalyDetection from "./pages/AnomalyDetection";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -238,6 +241,9 @@ export default function App() {
                 <Route path="/workflow-builder" element={<WorkflowBuilder />} />
                 <Route path="/campaign-scorecard" element={<CampaignScorecard />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/predictive-forecasting" element={<PredictiveForecasting />} />
+                <Route path="/ab-test-statistics" element={<ABTestStatistics />} />
+                <Route path="/anomaly-detection" element={<AnomalyDetection />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

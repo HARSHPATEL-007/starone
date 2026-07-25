@@ -70,6 +70,7 @@ import {
   Play,
   AlertTriangle,
   Database,
+  Sigma,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -105,6 +106,9 @@ const navItems = [
   { to: "/campaign-scorecard", icon: Award, label: "Scorecard" },
   { to: "/workflow-builder", icon: GitBranch, label: "Workflow Builder" },
   { to: "/admin", icon: Shield, label: "Admin Panel" },
+  { to: "/predictive-forecasting", icon: TrendingUp, label: "Forecasting" },
+  { to: "/ab-test-statistics", icon: Sigma, label: "A/B Stats" },
+  { to: "/anomaly-detection", icon: AlertTriangle, label: "Anomaly Detection" },
   { to: "/cost-tracker", icon: DollarSign, label: "Cost Tracker" },
   { to: "/forms", icon: FileInput, label: "Marketing Forms" },
   { to: "/channel-performance", icon: BarChart3, label: "Channel Perf." },

@@ -19,4 +19,28 @@ router.get("/segments", asyncHandler(async (req, res) => res.json(cdpService.get
 router.patch("/segments/:id", asyncHandler(async (req, res) => { const s = cdpService.updateSegment(req.user!.tenantId, req.params.id, req.body); if (!s) throw new AppError(404, "Segment not found"); res.json(s); }));
 router.delete("/segments/:id", asyncHandler(async (req, res) => { cdpService.deleteSegment(req.user!.tenantId, req.params.id); res.status(204).send(); }));
 
+// Identity resolution
+router.get("/identity/resolve", asyncHandler(async (req, res) => res.json(cdpService.resolveIdentities(req.user!.tenantId))));
+router.post("/identity/merge", asyncHandler(async (req, res) => {
+  const { targetId, sourceId } = req.body;
+  if (!targetId || !sourceId) throw new AppError(400, "targetId and sourceId required");
+  const merged = cdpService.mergeProfiles(req.user!.tenantId, targetId, sourceId);
+  if (!merged) throw new AppError(404, "One or both profiles not found");
+  res.json(merged);
+}));
+
+// Lookalike
+router.post("/lookalike", asyncHandler(async (req, res) => {
+  const { seedProfileIds, options } = req.body;
+  if (!seedProfileIds?.length) throw new AppError(400, "seedProfileIds required");
+  res.json(cdpService.generateLookalike(req.user!.tenantId, seedProfileIds, options));
+}));
+
+// Predictive LTV
+router.get("/ltv/:id", asyncHandler(async (req, res) => {
+  try { res.json(cdpService.predictLTV(req.user!.tenantId, req.params.id)); }
+  catch (e: any) { throw new AppError(404, e.message); }
+}));
+router.get("/ltv-batch", asyncHandler(async (req, res) => res.json(cdpService.batchPredictLTV(req.user!.tenantId))));
+
 export default router;

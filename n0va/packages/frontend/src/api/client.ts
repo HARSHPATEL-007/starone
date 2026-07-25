@@ -791,6 +791,28 @@ export const api = {
     platforms: () => request<any[]>("/optimizer-v2/platforms"),
     portfolio: () => request<any>("/optimizer-v2/portfolio", { method: "POST" }),
   },
+  predictiveForecasting: {
+    forecast: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/forecast", { method: "POST", body: JSON.stringify(data) }),
+    budget: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/budget", { method: "POST", body: JSON.stringify(data) }),
+    conversions: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/conversions", { method: "POST", body: JSON.stringify(data) }),
+  },
+  abTestStatistics: {
+    test: (data: Record<string, unknown>) =>
+      request<any>("/ab-test-statistics/test", { method: "POST", body: JSON.stringify(data) }),
+    sampleSize: (data: Record<string, unknown>) =>
+      request<any>("/ab-test-statistics/sample-size", { method: "POST", body: JSON.stringify(data) }),
+    estimateDuration: (data: Record<string, unknown>) =>
+      request<any>("/ab-test-statistics/estimate-duration", { method: "POST", body: JSON.stringify(data) }),
+  },
+  anomalyDetection: {
+    detect: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/detect", { method: "POST", body: JSON.stringify(data) }),
+    scanCampaign: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/scan-campaign", { method: "POST", body: JSON.stringify(data) }),
+  },
   oauth: {
     configs: () => request<any[]>("/oauth/configs"),
     authorize: (platform: string, redirectUri: string) =>

@@ -354,6 +354,264 @@ export class CreativeAIService {
 
     return modifierMap[platform]?.[tone] ?? 0;
   }
+
+  // ─── Text Analysis ─────────────────────────────────────────────────
+
+  analyzeText(text: string): {
+    wordCount: number;
+    sentenceCount: number;
+    syllableCount: number;
+    avgWordsPerSentence: number;
+    avgSyllablesPerWord: number;
+    fleschKincaidGrade: number;
+    fleschReadingEase: number;
+    sentiment: "positive" | "negative" | "neutral";
+    sentimentScore: number;
+    emotionalTone: string;
+    characterCount: number;
+    readingTime: number;
+  } {
+    const words = text.split(/\s+/).filter((w) => w.length > 0);
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
+    const wordCount = words.length;
+    const sentenceCount = Math.max(1, sentences.length);
+    const avgWordsPerSentence = wordCount / sentenceCount;
+
+    const syllables = words.map((w) => this.countSyllables(w));
+    const totalSyllables = syllables.reduce((a, b) => a + b, 0);
+    const avgSyllablesPerWord = wordCount > 0 ? totalSyllables / wordCount : 0;
+
+    const grade = 0.39 * avgWordsPerSentence + 11.8 * avgSyllablesPerWord - 15.59;
+    const readingEase = 206.835 - 1.015 * avgWordsPerSentence - 84.6 * avgSyllablesPerWord;
+
+    const sentimentScore = this.computeSentiment(text);
+    const sentiment = sentimentScore > 0.15 ? "positive" : sentimentScore < -0.15 ? "negative" : "neutral";
+
+    const emotionalTone = this.detectEmotionalTone(text);
+
+    return {
+      wordCount,
+      sentenceCount,
+      syllableCount: totalSyllables,
+      avgWordsPerSentence: Math.round(avgWordsPerSentence * 10) / 10,
+      avgSyllablesPerWord: Math.round(avgSyllablesPerWord * 100) / 100,
+      fleschKincaidGrade: Math.max(0, Math.round(grade * 10) / 10),
+      fleschReadingEase: Math.max(0, Math.min(100, Math.round(readingEase * 10) / 10)),
+      sentiment,
+      sentimentScore: Math.round(sentimentScore * 100) / 100,
+      emotionalTone,
+      characterCount: text.length,
+      readingTime: Math.ceil(wordCount / 200),
+    };
+  }
+
+  private countSyllables(word: string): number {
+    const w = word.toLowerCase().replace(/[^a-z]/g, "");
+    if (w.length <= 3) return 1;
+    const vowels = w.match(/[aeiouy]+/gi);
+    if (!vowels) return 1;
+    let count = vowels.length;
+    if (w.endsWith("e")) count--;
+    if (w.endsWith("le") && w.length > 2) count++;
+    if (w.endsWith("es") || w.endsWith("ed")) count = Math.max(1, count - 1);
+    return Math.max(1, count);
+  }
+
+  private computeSentiment(text: string): number {
+    const positive = [
+      "amazing", "excellent", "great", "love", "perfect", "best", "awesome", "fantastic",
+      "happy", "wonderful", "brilliant", "outstanding", "superb", "delighted", "thrilled",
+      "impressive", "remarkable", "exceptional", "magnificent", "splendid", "marvelous",
+      "terrific", "glorious", "joyful", "wonderful", "phenomenal", "incredible", "beautiful",
+      "success", "profit", "growth", "benefit", "advantage", "improve", "boost", "win",
+    ];
+    const negative = [
+      "terrible", "awful", "horrible", "bad", "worst", "hate", "poor", "ugly",
+      "disgusting", "dreadful", "atrocious", "horrendous", "abysmal", "painful",
+      "frustrating", "annoying", "disappointing", "mediocre", "inferior", "lousy",
+      "appalling", "shameful", "miserable", "rotten", "nasty", "gross", "dismal",
+      "failure", "loss", "decline", "problem", "risk", "danger", "threat", "crisis",
+      "expensive", "costly", "waste", "broken", "damage",
+    ];
+
+    const words = text.toLowerCase().split(/\W+/);
+    let score = 0;
+    words.forEach((w) => {
+      if (positive.includes(w)) score += 0.15;
+      if (negative.includes(w)) score -= 0.2;
+    });
+    const intensifiers = ["very", "extremely", "incredibly", "absolutely", "totally", "really", "highly"];
+    words.forEach((w, i) => {
+      if (intensifiers.includes(w) && i + 1 < words.length) {
+        if (positive.includes(words[i + 1])) score += 0.1;
+        if (negative.includes(words[i + 1])) score -= 0.1;
+      }
+    });
+    return Math.max(-1, Math.min(1, score));
+  }
+
+  private detectEmotionalTone(text: string): string {
+    const lower = text.toLowerCase();
+    const tones: [string, RegExp][] = [
+      ["urgent", /\b(now|hurry|limited|last chance|act|immediate|urgent|deadline|expires)\b/],
+      ["trustworthy", /\b(trust|guarantee|secure|proven|certified|reliable|safe|protected)\b/],
+      ["excited", /\b(exciting|thrilling|amazing|incredible|phenomenal|fantastic)\b/],
+      ["fearful", /\b(afraid|worried|concerned|risk|danger|threat|lose|miss out)\b/],
+      ["curious", /\b(discover|learn|explore|find out|reveal|uncover|see how)\b/],
+      ["confident", /\b(confident|sure|certain|guaranteed|definitely|absolutely)\b/],
+      ["empathetic", /\b(understand|care|support|help|together|compassion|we know)\b/],
+      ["authoritative", /\b(industry leader|expert|authority|trusted by|leading|#1|top rated)\b/],
+    ];
+    for (const [tone, pattern] of tones) {
+      if (pattern.test(lower)) return tone;
+    }
+    return "neutral";
+  }
+
+  // ─── Performance Prediction ─────────────────────────────────────────
+
+  predictPerformance(input: {
+    headline: string;
+    body?: string;
+    cta?: string;
+    platform: Platform;
+    tone: Tone;
+  }): {
+    estimatedCtr: number;
+    estimatedCvr: number;
+    qualityScore: number;
+    engagementPotential: number;
+    platformAlignment: number;
+    readabilityScore: number;
+    persuasionScore: number;
+    suggestions: string[];
+  } {
+    const { headline, body, cta, platform, tone } = input;
+    const fullText = [headline, body, cta].filter(Boolean).join(" ");
+    const analysis = this.analyzeText(fullText);
+
+    // Readability score: Flesch Reading Ease mapped 0-100
+    const readabilityScore = analysis.fleschReadingEase;
+
+    // Platform alignment: 0-100
+    const constraints = platformConstraints[platform];
+    let alignmentScore = 50;
+    if (constraints) {
+      if (headline.length <= constraints.maxHeadline) alignmentScore += 15;
+      else alignmentScore -= 10;
+      if (body && body.length <= constraints.maxBody) alignmentScore += 10;
+      else if (body) alignmentScore -= 5;
+      if (cta && cta.length <= constraints.maxCta) alignmentScore += 10;
+      if (constraints.preferredTones.includes(tone)) alignmentScore += 15;
+    }
+    alignmentScore = Math.max(0, Math.min(100, alignmentScore));
+
+    // Persuasion: emotion + urgency + CTA strength
+    let persuasionScore = 40;
+    const lower = fullText.toLowerCase();
+    if (/\b(you|your)\b/.test(lower)) persuasionScore += 15;
+    if (/\b(now|today|limited|exclusive)\b/.test(lower)) persuasionScore += 10;
+    if (/\b(free|save|guaranteed|results)\b/.test(lower)) persuasionScore += 10;
+    if (/\b(click|start|get|try|shop|sign)\b/.test(lower)) persuasionScore += 10;
+    if (analysis.sentiment === "positive") persuasionScore += 8;
+    if (analysis.avgWordsPerSentence < 12) persuasionScore += 7;
+    persuasionScore = Math.min(100, persuasionScore);
+
+    // Engagement potential
+    const engagementPotential = Math.round((alignmentScore * 0.3 + persuasionScore * 0.3 + readabilityScore * 0.2 + (analysis.sentimentScore > 0 ? 50 : 20) * 0.2));
+
+    // CTR estimation: based on features instead of random
+    let baseCtr = 2.0;
+    if (readabilityScore > 60) baseCtr += 0.5;
+    if (readabilityScore > 80) baseCtr += 0.3;
+    if (alignmentScore > 70) baseCtr += 0.8;
+    if (persuasionScore > 70) baseCtr += 0.6;
+    if (analysis.sentiment === "positive") baseCtr += 0.4;
+    if (headline.length < 20) baseCtr += 0.3;
+    if (analysis.avgWordsPerSentence < 10) baseCtr += 0.2;
+    if (tone === "urgent") baseCtr += 0.5;
+    if (tone === "casual" && (platform === "meta" || platform === "tiktok")) baseCtr += 0.4;
+
+    const estimatedCtr = Math.round(baseCtr * 100) / 100;
+
+    // CVR estimation
+    let baseCvr = 1.5;
+    if (persuasionScore > 70) baseCvr += 0.8;
+    if (analysis.sentiment === "positive") baseCvr += 0.5;
+    if (cta && cta.length >= 10 && cta.length <= 25) baseCvr += 0.5;
+    if (body && body.length > 50) baseCvr += 0.3;
+    if (platform === "google" && tone === "professional") baseCvr += 0.4;
+    if (analysis.fleschKincaidGrade >= 6 && analysis.fleschKincaidGrade <= 10) baseCvr += 0.3;
+
+    const estimatedCvr = Math.round(baseCvr * 100) / 100;
+
+    // Quality score: composite 0-100
+    const qualityScore = Math.round(alignmentScore * 0.25 + readabilityScore * 0.2 + persuasionScore * 0.25 + (estimatedCtr / 5 * 100) * 0.15 + (estimatedCvr / 4 * 100) * 0.15);
+
+    // Suggestions
+    const suggestions: string[] = [];
+    if (headline.length > 40) suggestions.push("Headline may be too long for most platforms. Consider shortening to under 40 characters.");
+    if (body && body.length > 150) suggestions.push("Body copy exceeds 150 characters. Some platforms may truncate.");
+    if (analysis.fleschKincaidGrade > 12) suggestions.push("Reading level is advanced (grade ${analysis.fleschKincaidGrade}). Consider simplifying language for wider appeal.");
+    if (analysis.fleschReadingEase < 40) suggestions.push("Text is difficult to read. Use shorter sentences and simpler words.");
+    if (analysis.sentiment === "negative") suggestions.push("Sentiment is negative. Consider more positive framing to improve engagement.");
+    if (!/\b(you|your)\b/.test(lower)) suggestions.push("Add personal pronouns ('you'/'your') to increase relatability.");
+    if (!cta || cta.length < 5) suggestions.push("CTA is too short. Use actionable language (e.g., 'Get Started', 'Learn More').");
+    if (analysis.avgWordsPerSentence > 20) suggestions.push("Sentences are very long (${analysis.avgWordsPerSentence} words avg). Break into shorter sentences.");
+    if (!/\b(now|today)\b/.test(lower) && persuasionScore < 50) suggestions.push("Add urgency words ('now', 'today') to increase conversion rates.");
+    if (alignmentScore < 40) suggestions.push("Text doesn't align well with platform constraints. Consider a different tone or shorter copy for ${platform}.");
+
+    return {
+      estimatedCtr,
+      estimatedCvr,
+      qualityScore,
+      engagementPotential,
+      platformAlignment: alignmentScore,
+      readabilityScore: Math.round(readabilityScore),
+      persuasionScore,
+      suggestions,
+    };
+  }
+
+  /**
+   * Predict performance for multiple variant combinations and return the best.
+   */
+  optimizeVariant(input: {
+    productDescription: string;
+    targetAudience: string;
+    platform: Platform;
+    tone?: Tone;
+  }): {
+    bestVariant: GeneratedVariant;
+    performance: ReturnType<CreativeAIService["predictPerformance"]>;
+    alternatives: { variant: GeneratedVariant; score: number }[];
+  } {
+    const tonesToTry = input.tone ? [input.tone] : ALL_TONES;
+    const alternatives: { variant: GeneratedVariant; score: number }[] = [];
+
+    for (const t of tonesToTry) {
+      const variants = this.generateVariants({ productDescription: input.productDescription, targetAudience: input.targetAudience, tone: t, platform: input.platform, count: 1 });
+      for (const v of variants) {
+        const perf = this.predictPerformance({ headline: v.headline, body: v.body, cta: v.cta, platform: input.platform, tone: t });
+        const score = perf.qualityScore * 0.5 + perf.estimatedCtr * 10 + perf.estimatedCvr * 10 + perf.platformAlignment * 0.2;
+        alternatives.push({ variant: v, score: Math.round(score) });
+      }
+    }
+
+    alternatives.sort((a, b) => b.score - a.score);
+    const best = alternatives[0];
+    return {
+      bestVariant: best.variant,
+      performance: this.predictPerformance({
+        headline: best.variant.headline,
+        body: best.variant.body,
+        cta: best.variant.cta,
+        platform: input.platform,
+        tone: best.variant.tone as Tone,
+      }),
+      alternatives: alternatives.slice(0, 5),
+    };
+  }
 }
 
 export const creativeAI = new CreativeAIService();

@@ -63,4 +63,33 @@ router.post(
   })
 );
 
+// ─── Text Analysis ────────────────────────────────────────────────
+router.post(
+  "/analyze-text",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: "text is required" });
+    res.json(creativeAI.analyzeText(text));
+  })
+);
+
+// ─── Performance Prediction ───────────────────────────────────────
+router.post(
+  "/predict-performance",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { headline, body, cta, platform, tone } = req.body;
+    if (!headline || !platform) return res.status(400).json({ error: "headline and platform are required" });
+    res.json(creativeAI.predictPerformance({ headline, body, cta, platform, tone: tone || "professional" }));
+  })
+);
+
+router.post(
+  "/optimize-variant",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { productDescription, targetAudience, platform, tone } = req.body;
+    if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
+    res.json(creativeAI.optimizeVariant({ productDescription, targetAudience: targetAudience || "general audience", platform: platform || "meta", tone }));
+  })
+);
+
 export default router;

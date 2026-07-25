@@ -8,5 +8,6 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
 }
 
 router.get("/", asyncHandler(async (req, res) => { const { campaignId } = req.query; res.json(campaignScorecardService.getScorecard(req.user!.tenantId, campaignId as string)); }));
+router.post("/weights", asyncHandler(async (req, res) => { campaignScorecardService.setWeights(req.body); res.json({ ok: true }); }));
 
 export default router;

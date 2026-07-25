@@ -84,6 +84,9 @@ import cdpRoutes from "./routes/cdp";
 import workflowBuilderRoutes from "./routes/workflow-builder";
 import campaignScorecardRoutes from "./routes/campaign-scorecard";
 import adminRoutes from "./routes/admin";
+import predictiveForecastingRoutes from "./routes/predictive-forecasting";
+import abTestStatisticsRoutes from "./routes/ab-test-statistics";
+import anomalyDetectionRoutes from "./routes/anomaly-detection";
 
 const app = express();
 const httpServer = createServer(app);
@@ -182,6 +185,9 @@ app.use("/api/v1/cdp", authMiddleware, tenantMiddleware, cdpRoutes);
 app.use("/api/v1/workflow-builder", authMiddleware, tenantMiddleware, workflowBuilderRoutes);
 app.use("/api/v1/campaign-scorecard", authMiddleware, tenantMiddleware, campaignScorecardRoutes);
 app.use("/api/v1/admin", authMiddleware, tenantMiddleware, adminRoutes);
+app.use("/api/v1/predictive-forecasting", authMiddleware, tenantMiddleware, predictiveForecastingRoutes);
+app.use("/api/v1/ab-test-statistics", authMiddleware, tenantMiddleware, abTestStatisticsRoutes);
+app.use("/api/v1/anomaly-detection", authMiddleware, tenantMiddleware, anomalyDetectionRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);
