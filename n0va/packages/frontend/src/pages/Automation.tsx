@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Zap, Plus, X, Power, PowerOff, Edit3, Trash2, ChevronDown, ChevronRight, Clock, Activity, AlertTriangle, Bell, Megaphone, PauseCircle, RefreshCw, Copy, CheckCircle, CheckSquare, BarChart3 } from "lucide-react";
+import { Zap, Plus, X, Power, PowerOff, Edit3, Trash2, ChevronDown, ChevronRight, Clock, Activity, AlertTriangle, Bell, Megaphone, PauseCircle, RefreshCw, Copy, CheckCircle, CheckSquare, BarChart3, History, Play } from "lucide-react";
 import { useToast } from "../components/Toast";
-import { useEntityData } from "../hooks/useEntityData";
+import { api } from "../api/client";
 
 type Trigger = "campaign_launched" | "campaign_completed" | "campaign_paused" | "budget_exceeded" | "creative_approved" | "review_submitted" | "daily_report" | "schedule_reminder";
 type Action = "send_notification" | "pause_campaign" | "update_status" | "create_alert" | "send_report" | "notify_team";
@@ -18,6 +18,17 @@ interface AutomationRule {
   lastRun: string | null;
   runCount: number;
   createdAt: string;
+}
+
+interface Execution {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  trigger: string;
+  action: string;
+  status: "success" | "failure" | "skipped";
+  timestamp: string;
+  details?: string;
 }
 
 const TRIGGERS: { value: Trigger; label: string; icon: any; desc: string }[] = [
@@ -54,7 +65,10 @@ function timeAgo(date: string | null): string {
 
 export default function Automation() {
   const { addToast } = useToast();
-  const { data: rules, loading, create, update, remove, replaceAll } = useEntityData<AutomationRule>("automation_rules");
+  const [rules, setRules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [executions, setExecutions] = useState<any[]>([]);
+  const [showExecutions, setShowExecutions] = useState(false);
   const [filterEnabled, setFilterEnabled] = useState<string>("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
@@ -63,28 +77,49 @@ export default function Automation() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkEnabled, setBulkEnabled] = useState(false);
 
+  useEffect(() => {
+    api.automationRules.list().then(rules => {
+      setRules(rules || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const loadExecutions = useCallback(() => {
+    api.automationRules.executions().then(setExecutions).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (showExecutions && executions.length === 0) loadExecutions();
+  }, [showExecutions, executions.length, loadExecutions]);
+
   function toggle(id: string) {
     setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
   function toggleEnabled(id: string) {
-    replaceAll(rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
     const rule = rules.find(r => r.id === id);
-    addToast("success", `"${rule?.name}" ${rule?.enabled ? "disabled" : "enabled"}`);
+    api.automationRules.toggle(id).then(() => {
+      setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+      addToast("success", `"${rule?.name}" ${rule?.enabled ? "disabled" : "enabled"}`);
+    }).catch(() => addToast("error", "Failed to toggle rule"));
   }
 
   function duplicate(id: string) {
     const rule = rules.find(r => r.id === id);
     if (!rule) return;
-    const copy: AutomationRule = { ...rule, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `${rule.name} (Copy)`, enabled: false, lastRun: null, runCount: 0, createdAt: new Date().toISOString() };
-    replaceAll([copy, ...rules]);
-    addToast("success", "Rule duplicated");
+    const { id: _, lastRun: _2, runCount: _3, createdAt: _4, enabled: _5, ...rest } = rule;
+    api.automationRules.create({ ...rest, name: `${rule.name} (Copy)` } as any).then(created => {
+      setRules(prev => [created, ...prev]);
+      addToast("success", "Rule duplicated");
+    }).catch(() => addToast("error", "Failed to duplicate rule"));
   }
 
   function handleDelete(id: string) {
     const name = rules.find(r => r.id === id)?.name;
-    remove(id);
-    addToast("success", `"${name}" deleted`);
+    api.automationRules.delete(id).then(() => {
+      setRules(prev => prev.filter(r => r.id !== id));
+      addToast("success", `"${name}" deleted`);
+    }).catch(() => addToast("error", "Failed to delete rule"));
   }
 
   function resetForm(r?: AutomationRule) {
@@ -94,26 +129,34 @@ export default function Automation() {
 
   function handleSave() {
     if (!form.name.trim()) { addToast("error", "Rule name is required"); return; }
-    const rule: AutomationRule = {
-      id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      name: form.name.trim(),
-      description: form.description.trim(),
-      trigger: form.trigger,
-      action: form.action,
-      config: form.config,
-      enabled: editingId ? rules.find(r => r.id === editingId)?.enabled ?? true : true,
-      lastRun: editingId ? rules.find(r => r.id === editingId)?.lastRun ?? null : null,
-      runCount: editingId ? rules.find(r => r.id === editingId)?.runCount ?? 0 : 0,
-      createdAt: editingId ? rules.find(r => r.id === editingId)!.createdAt : new Date().toISOString(),
-    };
-    if (editingId) { update(editingId, rule as any); addToast("success", "Rule updated"); }
-    else { create(rule as any); addToast("success", "Rule created"); }
+    const data = { name: form.name.trim(), description: form.description.trim(), trigger: form.trigger, action: form.action, config: form.config };
+    if (editingId) {
+      api.automationRules.update(editingId, data as any).then(updated => {
+        setRules(prev => prev.map(r => r.id === editingId ? { ...r, ...updated } : r));
+        addToast("success", "Rule updated");
+      }).catch(() => addToast("error", "Failed to update rule"));
+    } else {
+      api.automationRules.create(data as any).then(created => {
+        setRules(prev => [created, ...prev]);
+        addToast("success", "Rule created");
+      }).catch(() => addToast("error", "Failed to create rule"));
+    }
     setShowForm(false);
   }
 
-  function simulateRun(id: string) {
-    replaceAll(rules.map(r => r.id === id ? { ...r, lastRun: new Date().toISOString(), runCount: r.runCount + 1 } : r));
-    addToast("success", "Rule triggered (simulated)");
+  function evaluateRule(id: string) {
+    api.automationRules.evaluate(id).then(res => {
+      setRules(prev => prev.map(r => r.id === id ? { ...r, lastRun: res.execution?.timestamp || new Date().toISOString(), runCount: r.runCount + 1 } : r));
+      if (res.triggered) addToast("success", `Rule triggered: ${res.actions?.join(", ") || "action executed"}`);
+      else addToast("info", "No trigger conditions met");
+    }).catch(() => addToast("error", "Evaluate failed"));
+  }
+
+  function evaluateAll() {
+    api.automationRules.evaluateAll().then(results => {
+      const triggered = results.filter(r => r.triggered).length;
+      addToast("success", `Evaluation complete: ${triggered} rule${triggered !== 1 ? "s" : ""} triggered`);
+    }).catch(() => addToast("error", "Evaluate all failed"));
   }
 
   function toggleSelect(id: string) {
@@ -126,8 +169,10 @@ export default function Automation() {
   }
 
   function bulkToggleEnabled(enable: boolean) {
-    replaceAll(rules.map(r => selectedIds.has(r.id) ? { ...r, enabled: enable } : r));
-    addToast("success", `${selectedIds.size} rules ${enable ? "enabled" : "disabled"}`);
+    Promise.all(rules.filter(r => selectedIds.has(r.id)).map(r => api.automationRules.toggle(r.id).then(() => r))).then(() => {
+      setRules(prev => prev.map(r => selectedIds.has(r.id) ? { ...r, enabled: enable } : r));
+      addToast("success", `${selectedIds.size} rules ${enable ? "enabled" : "disabled"}`);
+    }).catch(() => addToast("error", "Bulk toggle failed"));
   }
 
   const chartData = rules.filter(r => r.runCount > 0).map(r => ({
@@ -148,7 +193,15 @@ export default function Automation() {
           </h1>
           <p className="text-gray-400 mt-1">{rules.length} rules · {enabledCount} enabled</p>
         </div>
-        <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> New Rule</button>
+        <div className="flex items-center gap-2">
+          <button onClick={evaluateAll} className="btn-ghost text-sm flex items-center gap-1.5"><Play className="w-3.5 h-3.5" /> Evaluate All</button>
+          <button
+            onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }}
+            className="btn-primary text-sm flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> New Rule
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -157,6 +210,40 @@ export default function Automation() {
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Active</p><p className="text-2xl font-bold text-green-400">{enabledCount}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Total Runs</p><p className="text-2xl font-bold text-white">{rules.reduce((s, r) => s + r.runCount, 0).toLocaleString()}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500 mb-1">Last Run</p><p className="text-2xl font-bold text-gray-400 text-sm">{rules.filter(r => r.lastRun).sort((a, b) => new Date(b.lastRun!).getTime() - new Date(a.lastRun!).getTime())[0]?.lastRun ? timeAgo(rules.filter(r => r.lastRun).sort((a, b) => new Date(b.lastRun!).getTime() - new Date(a.lastRun!).getTime())[0].lastRun!) : "—"}</p></div>
+      </div>
+
+      {/* Execution History */}
+      <div className="card overflow-hidden">
+        <button onClick={() => setShowExecutions(!showExecutions)} className="w-full flex items-center justify-between p-4 hover:bg-gray-800/30">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-n0va-400" />
+            <span className="text-sm font-semibold text-white">Execution History</span>
+            <span className="text-xs text-gray-600">{executions.length} entries</span>
+          </div>
+          {showExecutions ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+        </button>
+        {showExecutions && (
+          <div className="border-t border-gray-800">
+            {executions.length === 0 ? (
+              <div className="p-6 text-center text-sm text-gray-500">No executions recorded yet. Run a rule to see history.</div>
+            ) : (
+              <div className="divide-y divide-gray-800/50 max-h-80 overflow-y-auto">
+                {executions.map((ex: Execution) => (
+                  <div key={ex.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${ex.status === "success" ? "bg-green-400" : ex.status === "failure" ? "bg-red-400" : "bg-gray-500"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white truncate">{ex.ruleName}</p>
+                      <p className="text-gray-600 text-xs truncate">{ex.trigger} → {ex.action}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${ex.status === "success" ? "bg-green-500/10 text-green-400" : ex.status === "failure" ? "bg-red-500/10 text-red-400" : "bg-gray-500/10 text-gray-500"}`}>{ex.status}</span>
+                    <span className="text-xs text-gray-600 shrink-0">{timeAgo(ex.timestamp)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={loadExecutions} className="w-full p-2 text-xs text-gray-600 hover:text-gray-300 border-t border-gray-800/50">Refresh</button>
+          </div>
+        )}
       </div>
 
       {chartData.length > 1 && (
@@ -261,7 +348,7 @@ export default function Automation() {
                   <button onClick={() => toggleEnabled(rule.id)} className={`p-1.5 rounded-lg ${rule.enabled ? "text-green-400 hover:bg-green-500/10" : "text-gray-600 hover:text-gray-300"}`}>
                     {rule.enabled ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
                   </button>
-                  <button onClick={() => simulateRun(rule.id)} className="p-1.5 text-gray-600 hover:text-n0va-400"><RefreshCw className="w-4 h-4" /></button>
+                  <button onClick={() => evaluateRule(rule.id)} className="p-1.5 text-gray-600 hover:text-n0va-400"><RefreshCw className="w-4 h-4" /></button>
                   <button onClick={() => duplicate(rule.id)} className="p-1.5 text-gray-600 hover:text-gray-300"><Copy className="w-4 h-4" /></button>
                   <button onClick={() => { resetForm(rule); setEditingId(rule.id); setShowForm(true); }} className="p-1.5 text-gray-600 hover:text-gray-300"><Edit3 className="w-4 h-4" /></button>
                   <button onClick={() => handleDelete(rule.id)} className="p-1.5 text-gray-600 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
@@ -289,7 +376,7 @@ export default function Automation() {
                     <p className="text-xs font-medium text-gray-400 mb-2">Configuration</p>
                     <div className="space-y-1">
                       {Object.entries(rule.config).map(([k, v]) => (
-                        <div key={k} className="flex items-center gap-2 text-xs"><span className="text-gray-600 capitalize">{k.replace(/_/g, " ")}:</span><span className="text-gray-300">{v}</span></div>
+                        <div key={k} className="flex items-center gap-2 text-xs"><span className="text-gray-600 capitalize">{k.replace(/_/g, " ")}:</span><span className="text-gray-300">{String(v)}</span></div>
                       ))}
                     </div>
                   </div>

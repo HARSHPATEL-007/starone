@@ -351,5 +351,43 @@ export class MemoryStore {
       { name: "Checkout", order: 4, count: 2500, dropOff: 68.8, color: "#f59e0b" },
       { name: "Purchase", order: 5, count: 1200, dropOff: 52, color: "#ef4444" },
     ], createdBy: "user_001" });
+
+    this.insert("automation_rules", {
+      tenantId: "tenant_001", name: "Pause underperforming campaigns", description: "Auto-pause campaigns where ROAS drops below 1.5x for 7+ days",
+      enabled: true, config: { trigger: "roas_drop", conditions: { roasThreshold: 1.5 }, action: "pause_campaign", actionParams: {}, cooldownMinutes: 1440 },
+      createdBy: "user_001"
+    });
+    this.insert("automation_rules", {
+      tenantId: "tenant_001", name: "Budget exceeded alert", description: "Send notification when campaign spends 80% of budget", enabled: true,
+      config: { trigger: "budget_exceeded", conditions: { spendPercent: 80 }, action: "send_notification", actionParams: { message: "Campaign has spent 80% of its budget" }, cooldownMinutes: 360 },
+      createdBy: "user_001"
+    });
+    this.insert("automation_rules", {
+      tenantId: "tenant_001", name: "CTR drop alert", description: "Notify when CTR drops 50% compared to previous period", enabled: false,
+      config: { trigger: "ctr_drop", conditions: { ctrThreshold: 0.5 }, action: "send_notification", actionParams: { message: "CTR has dropped significantly" }, cooldownMinutes: 720 },
+      createdBy: "user_001"
+    });
+
+    const templateConfigs = [
+      { name: "Standard Performance Campaign", description: "High-ROAS performance campaign with multiple platforms", type: "performance", dailyBudget: 5000, lifetimeBudget: 150000, platforms: ["meta", "google"], goal: "Drive conversions", tags: ["performance", "standard"] },
+      { name: "Brand Awareness Launch", description: "Multi-platform brand awareness campaign", type: "brand", dailyBudget: 3000, lifetimeBudget: 90000, platforms: ["meta", "tiktok", "snapchat"], goal: "Increase brand recall by 20%", tags: ["brand", "awareness"] },
+      { name: "Retargeting Campaign", description: "Convert warm audiences with retargeting ads", type: "retargeting", dailyBudget: 1500, lifetimeBudget: 45000, platforms: ["meta", "google"], goal: "Recover abandoned carts", tags: ["retargeting", "conversion"] },
+      { name: "Prospecting - New Markets", description: "Expand into new geographic markets", type: "prospecting", dailyBudget: 2000, lifetimeBudget: 60000, platforms: ["google", "linkedin"], goal: "Enter new markets", tags: ["prospecting", "expansion"] },
+    ];
+    for (const t of templateConfigs) this.insert("campaign_templates", { tenantId: "tenant_001", ...t, useCount: Math.floor(Math.random() * 5), createdBy: "user_001" });
+
+    const approvalHistoryItems = [
+      { entityType: "campaign", entityId: "camp_004", entityName: "Prospecting - New Markets APAC", action: "approve", comment: "Looks good, launch it", approver: "John Smith", status: "approved", createdAt: new Date(Date.now() - 7 * day).toISOString() },
+      { entityType: "creative", entityId: "cr_004", entityName: "Black Friday Offer", action: "reject", comment: "Need to update the headline", approver: "Jane Doe", status: "rejected", createdAt: new Date(Date.now() - 3 * day).toISOString() },
+      { entityType: "campaign", entityId: "camp_005", entityName: "Holiday Flash Sale", action: "approve", comment: "Approved for launch", approver: "Alice Wang", status: "approved", createdAt: new Date(Date.now() - 14 * day).toISOString() },
+    ];
+    for (const a of approvalHistoryItems) this.insert("approval_history", { tenantId: "tenant_001", ...a });
+
+    this.insert("campaigns", {
+      tenantId: "tenant_001", name: "Q4 Holiday Campaign", type: "performance", status: "pending_approval",
+      budget: { daily: 10000, lifetime: 300000, currency: "USD", spent: 0, remaining: 300000 },
+      platforms: ["meta", "google", "tiktok"], goal: "Drive Q4 holiday sales", tags: ["holiday", "q4"],
+      startDate: mkDate(14), endDate: mkDate(44), createdBy: "user_002"
+    });
   }
 }

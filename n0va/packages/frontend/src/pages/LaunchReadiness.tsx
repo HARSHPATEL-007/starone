@@ -46,7 +46,7 @@ const WEIGHT_DEFAULTS: Record<string, number> = {
 
 export default function LaunchReadiness() {
   const { addToast } = useToast();
-  const { data: checks, loading, create, update, remove } = useEntityData<ReadinessCheck>("launch_readiness");
+  const { data: checks, loading, create, update, remove, replaceAll } = useEntityData<ReadinessCheck>("launch_readiness");
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -96,7 +96,7 @@ export default function LaunchReadiness() {
     );
     if (newItems.length === 0) { addToast("info", "All categories already covered"); return; }
     const updated = checks.map(c => c.id === checkId ? { ...c, items: [...c.items, ...newItems] } : c);
-    useEntityData("launch_readiness").replaceAll(updated);  // won't work - need a different approach
+    replaceAll(updated);
     addToast("success", `Added ${newItems.length} suggested tasks`);
   }
 
@@ -113,7 +113,9 @@ export default function LaunchReadiness() {
       status: c.items.filter(i => i.id !== itemId ? i.completed : !i.completed).length === c.items.length ? "ready" as const : (c.items.some(i => i.id !== itemId && i.completed) ? "in_progress" as const : "draft" as const),
       updatedAt: now,
     }) : c);
-    checks.splice(0, checks.length, ...updated);
+    replaceAll([...updated]);
+    const check = updated.find(c => c.id === activeCheck.id);
+    if (check) update(activeCheck.id, { items: check.items, status: check.status });
     addToast("success", totalItems > 0 && (completedItems / totalItems) * 100 > 80 ? "Almost there!" : "Task toggled");
   }
 
@@ -128,14 +130,16 @@ export default function LaunchReadiness() {
       ...c, items: [...c.items, { id: Date.now().toString(36), task: label, category, completed: false, assignedTo: "", completedBy: "", completedAt: "", weight }],
       updatedAt: new Date().toISOString(),
     } : c);
-    checks.splice(0, checks.length, ...updated);
+    replaceAll([...updated]);
+    if (activeCheck) update(activeCheck.id, { items: updated.find(c => c.id === activeCheck.id)?.items });
     addToast("success", "Task added");
   }
 
   function removeItem(itemId: string) {
     if (!activeCheck) return;
     const updated = checks.map(c => c.id === activeCheck.id ? { ...c, items: c.items.filter(i => i.id !== itemId), updatedAt: new Date().toISOString() } : c);
-    checks.splice(0, checks.length, ...updated);
+    replaceAll([...updated]);
+    if (activeCheck) update(activeCheck.id, { items: updated.find(c => c.id === activeCheck.id)?.items });
     addToast("success", "Task removed");
   }
 
@@ -318,7 +322,8 @@ export default function LaunchReadiness() {
               }))
             );
             const updated = checks.map(c => c.id === activeCheck.id ? { ...c, items: [...c.items, ...newItems], updatedAt: new Date().toISOString() } : c);
-            checks.splice(0, checks.length, ...updated);
+            replaceAll([...updated]);
+            update(activeCheck.id, { items: updated.find(c => c.id === activeCheck.id)?.items });
             addToast("success", `Added ${newItems.length} suggested tasks across ${missing.length} categories`);
           } else {
             addToast("info", "All categories already covered");

@@ -18,7 +18,7 @@ export class DataStore {
     }
   }
 
-  private static mem(): MemoryStore {
+  static mem(): MemoryStore {
     return MemoryStore.getInstance();
   }
 

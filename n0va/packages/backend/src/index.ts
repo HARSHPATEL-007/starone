@@ -11,6 +11,7 @@ import { authMiddleware, tenantMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
 import { schedulerService } from "./services/SchedulerService";
+import { setRuleEngineIO } from "./services/RuleEngineService";
 
 import authRoutes from "./routes/auth";
 import campaignRoutes from "./routes/campaigns";
@@ -50,6 +51,9 @@ import comparisonRoutes from "./routes/comparison";
 import forecastRoutes from "./routes/forecast";
 import healthRoutes from "./routes/health";
 import channelPerformanceRoutes from "./routes/channel-performance";
+import automationRulesRoutes from "./routes/automation-rules";
+import templateRoutes from "./routes/templates";
+import approvalRoutes from "./routes/approvals";
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,6 +61,8 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: config.corsOrigin, methods: ["GET", "POST"] },
 });
+
+setRuleEngineIO(io);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.corsOrigin }));
@@ -112,6 +118,9 @@ app.use("/api/v1/comparison", authMiddleware, tenantMiddleware, comparisonRoutes
 app.use("/api/v1/forecast", authMiddleware, tenantMiddleware, forecastRoutes);
 app.use("/api/v1/health", authMiddleware, tenantMiddleware, healthRoutes);
 app.use("/api/v1/channel-performance", authMiddleware, tenantMiddleware, channelPerformanceRoutes);
+app.use("/api/v1/automation-rules", authMiddleware, tenantMiddleware, automationRulesRoutes);
+app.use("/api/v1/templates", authMiddleware, tenantMiddleware, templateRoutes);
+app.use("/api/v1/approvals", authMiddleware, tenantMiddleware, approvalRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

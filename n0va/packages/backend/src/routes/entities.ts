@@ -42,6 +42,9 @@ const VALID_ENTITY_TYPES = [
   "user_profile",
   "report_history",
   "billing_invoices",
+  "approval_history",
+  "campaign_templates",
+  "rule_executions",
   "billing_subscriptions",
 ];
 

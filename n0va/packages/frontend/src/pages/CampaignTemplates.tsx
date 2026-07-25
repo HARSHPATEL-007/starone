@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Plus, Trash2, Copy, Check, Search, Megaphone, X, FolderOpen, Grid, List, Download, Upload, Tag, Star, Clock, Edit3 } from "lucide-react";
-import { useTemplates, CampaignTemplate } from "../hooks/useTemplates";
+import { ArrowLeft, FileText, Plus, Trash2, Copy, Check, Search, Megaphone, X, FolderOpen, Grid, List, Download, Upload, Tag, Star, Clock, Edit3, Play } from "lucide-react";
+import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -24,10 +24,16 @@ const TEMPLATE_CATEGORIES = [
   { id: "prospecting", label: "Prospecting" },
 ];
 
+const TYPE_COLORS: Record<string, string> = {
+  performance: "bg-emerald-500", brand: "bg-blue-500", retargeting: "bg-purple-500", prospecting: "bg-amber-500",
+};
+
 export default function CampaignTemplates() {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { templates, createTemplate, deleteTemplate, useTemplate } = useTemplates();
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -36,6 +42,25 @@ export default function CampaignTemplates() {
     name: "", description: "", type: "performance", dailyBudget: 100, lifetimeBudget: 3000,
     currency: "USD", platforms: [] as string[], goal: "", tags: "", category: "performance",
   });
+  const [applyTpl, setApplyTpl] = useState<any>(null);
+  const [applyForm, setApplyForm] = useState({ campaignName: "", dailyBudget: "", lifetimeBudget: "" });
+  const [applying, setApplying] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const [tpls, st] = await Promise.all([api.templates.list(), api.templates.stats()]);
+      setTemplates(tpls);
+      setStats(st);
+    } catch {
+      addToast("error", "Failed to load templates");
+    }
+    setLoading(false);
+  }
 
   function togglePlatform(id: string) {
     setForm(prev => ({
@@ -44,29 +69,44 @@ export default function CampaignTemplates() {
     }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { addToast("error", "Name is required"); return; }
-    createTemplate({
-      name: form.name,
-      description: form.description,
-      type: form.type,
-      dailyBudget: form.dailyBudget,
-      lifetimeBudget: form.lifetimeBudget,
-      currency: form.currency,
-      platforms: form.platforms,
-      goal: form.goal,
-      tags: form.tags,
-    });
-    setShowCreate(false);
-    setForm({ name: "", description: "", type: "performance", dailyBudget: 100, lifetimeBudget: 3000, currency: "USD", platforms: [], goal: "", tags: "", category: "performance" });
-    addToast("success", "Template created");
+    try {
+      await api.templates.create({
+        name: form.name,
+        description: form.description,
+        type: form.type,
+        dailyBudget: form.dailyBudget,
+        lifetimeBudget: form.lifetimeBudget,
+        currency: form.currency,
+        platforms: form.platforms,
+        goal: form.goal,
+        tags: form.tags,
+      });
+      setShowCreate(false);
+      setForm({ name: "", description: "", type: "performance", dailyBudget: 100, lifetimeBudget: 3000, currency: "USD", platforms: [], goal: "", tags: "", category: "performance" });
+      addToast("success", "Template created");
+      loadData();
+    } catch { addToast("error", "Failed to create template"); }
   }
 
-  function handleUse(tpl: CampaignTemplate) {
-    useTemplate(tpl.id);
-    const params = new URLSearchParams();
-    params.set("template", tpl.id);
-    navigate(`/campaigns/new?${params.toString()}`);
+  async function handleUse(tpl: any) {
+    try {
+      await api.templates.apply(tpl.id, {
+        campaignName: `${tpl.name} — ${new Date().toLocaleDateString()}`,
+        budgetOverrides: {},
+      });
+      addToast("success", `Campaign "${tpl.name}" created`);
+      navigate("/campaigns");
+    } catch { addToast("error", "Failed to create campaign from template"); }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await api.templates.delete(id);
+      setTemplates(prev => prev.filter(t => t.id !== id));
+      addToast("success", "Template deleted");
+    } catch { addToast("error", "Failed to delete template"); }
   }
 
   function handleExport() {
@@ -91,12 +131,42 @@ export default function CampaignTemplates() {
         const text = await file.text();
         const imported = JSON.parse(text);
         if (Array.isArray(imported)) {
-          imported.forEach(t => createTemplate(t));
+          for (const t of imported) {
+            await api.templates.create(t);
+          }
           addToast("success", `${imported.length} templates imported`);
+          loadData();
         }
       } catch { addToast("error", "Invalid template file"); }
     };
     input.click();
+  }
+
+  function openApply(tpl: any) {
+    setApplyTpl(tpl);
+    setApplyForm({
+      campaignName: `${tpl.name} — ${new Date().toLocaleDateString()}`,
+      dailyBudget: "",
+      lifetimeBudget: "",
+    });
+  }
+
+  async function handleApply() {
+    if (!applyTpl) return;
+    setApplying(true);
+    try {
+      const budgetOverrides: Record<string, number> = {};
+      if (applyForm.dailyBudget) budgetOverrides.dailyBudget = Number(applyForm.dailyBudget);
+      if (applyForm.lifetimeBudget) budgetOverrides.lifetimeBudget = Number(applyForm.lifetimeBudget);
+      const result = await api.templates.apply(applyTpl.id, {
+        campaignName: applyForm.campaignName,
+        budgetOverrides: Object.keys(budgetOverrides).length ? budgetOverrides : undefined,
+      });
+      addToast("success", `Campaign "${result.name || applyForm.campaignName}" created`);
+      setApplyTpl(null);
+      if (result.id) navigate(`/campaigns/${result.id}`);
+    } catch { addToast("error", "Failed to apply template"); }
+    setApplying(false);
   }
 
   const filtered = useMemo(() => {
@@ -107,7 +177,15 @@ export default function CampaignTemplates() {
     });
   }, [templates, search, filterCat]);
 
-  const allTags = useMemo(() => [...new Set(templates.flatMap(t => t.tags ? t.tags.split(",").map(s => s.trim()) : []))], [templates]);
+  const allTags = useMemo(() => [...new Set(templates.flatMap((t: any) => t.tags ? (Array.isArray(t.tags) ? t.tags : t.tags.split(",").map((s: string) => s.trim())) : []))], [templates]);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto flex items-center justify-center h-64">
+        <p className="text-gray-500 text-sm">Loading templates...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -129,6 +207,53 @@ export default function CampaignTemplates() {
           <button className="btn-primary flex items-center gap-2" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> New Template</button>
         </div>
       </div>
+
+      {stats && (
+        <div className="card p-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-n0va-600/20 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-n0va-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{stats.totalTemplates ?? templates.length}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Templates</p>
+              </div>
+            </div>
+            {stats.mostUsedTemplate && (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                  <Star className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white truncate max-w-[160px]">{stats.mostUsedTemplate.name}</p>
+                  <p className="text-[10px] text-gray-500">Most Used · {stats.mostUsedTemplate.count} times</p>
+                </div>
+              </div>
+            )}
+            {stats.usageDistribution && (
+              <div className="flex-1 min-w-[200px]">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Usage by type</p>
+                <div className="flex gap-1 h-5">
+                  {(() => {
+                    const total = Object.values(stats.usageDistribution).reduce((a: number, b: any) => a + (typeof b === "number" ? b : 0), 0) || 1;
+                    return Object.entries(stats.usageDistribution).map(([type, count]) => (
+                      <div
+                        key={type}
+                        className={`${TYPE_COLORS[type] || "bg-gray-600"} rounded-sm transition-all hover:opacity-80 relative group/bar`}
+                        style={{ width: `${((count as number) / total) * 100}%` }}
+                        title={`${type}: ${count}`}
+                      >
+                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-[10px] text-white px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 whitespace-nowrap pointer-events-none">{type} ({String(count)})</div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative max-w-md flex-1">
@@ -152,8 +277,8 @@ export default function CampaignTemplates() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(tpl => {
-            const tagList = tpl.tags ? tpl.tags.split(",").map(s => s.trim()).filter(Boolean) : [];
+          {filtered.map((tpl: any) => {
+            const tagList = tpl.tags ? (Array.isArray(tpl.tags) ? tpl.tags : tpl.tags.split(",").map((s: string) => s.trim()).filter(Boolean)) : [];
             return (
               <div key={tpl.id} className="card hover:border-gray-700 transition-colors group">
                 <div className="flex items-start justify-between mb-3">
@@ -167,22 +292,23 @@ export default function CampaignTemplates() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openApply(tpl)} className="p-1.5 text-gray-500 hover:text-n0va-400" title="Apply template"><Play className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleUse(tpl)} className="p-1.5 text-gray-500 hover:text-n0va-400" title="Use template"><Copy className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => { deleteTemplate(tpl.id); addToast("success", "Template deleted"); }} className="p-1.5 text-gray-500 hover:text-red-400" title="Delete template"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDelete(tpl.id)} className="p-1.5 text-gray-500 hover:text-red-400" title="Delete template"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
 
                 {tpl.description && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{tpl.description}</p>}
 
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {tpl.platforms.map(p => (
+                  {tpl.platforms.map((p: string) => (
                     <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">{PLATFORM_LABELS[p] || p}</span>
                   ))}
                 </div>
 
                 {tagList.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-3">
-                    {tagList.slice(0, 3).map(t => <span key={t} className="text-[9px] text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Tag className="w-2 h-2" />{t}</span>)}
+                    {tagList.slice(0, 3).map((t: string) => <span key={t} className="text-[9px] text-gray-600 bg-gray-800 px-1.5 py-0.5 rounded flex items-center gap-0.5"><Tag className="w-2 h-2" />{t}</span>)}
                     {tagList.length > 3 && <span className="text-[9px] text-gray-600">+{tagList.length - 3}</span>}
                   </div>
                 )}
@@ -196,8 +322,8 @@ export default function CampaignTemplates() {
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
                   <span className="text-[10px] text-gray-600 flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Used {tpl.usedCount || 0} times</span>
-                  <button onClick={() => handleUse(tpl)} className="text-xs text-n0va-400 hover:text-n0va-300 flex items-center gap-1">
-                    <Copy className="w-3 h-3" /> Use
+                  <button onClick={() => openApply(tpl)} className="text-xs text-n0va-400 hover:text-n0va-300 flex items-center gap-1">
+                    <Play className="w-3 h-3" /> Apply
                   </button>
                 </div>
               </div>
@@ -220,7 +346,7 @@ export default function CampaignTemplates() {
                 <th className="p-3 font-medium text-right">Daily</th>
                 <th className="p-3 font-medium text-right">Lifetime</th>
                 <th className="p-3 font-medium text-right">Used</th>
-                <th className="p-3 w-20" />
+                <th className="p-3 w-28" />
               </tr>
             </thead>
             <tbody>
@@ -235,7 +361,7 @@ export default function CampaignTemplates() {
                   <td className="p-3 capitalize text-gray-400">{tpl.type}</td>
                   <td className="p-3">
                     <div className="flex gap-1">
-                      {tpl.platforms.map(p => <span key={p} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-500">{PLATFORM_LABELS[p] || p}</span>)}
+                      {tpl.platforms.map((p: string) => <span key={p} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-500">{PLATFORM_LABELS[p] || p}</span>)}
                     </div>
                   </td>
                   <td className="p-3 text-right text-gray-300">${tpl.dailyBudget}</td>
@@ -243,8 +369,9 @@ export default function CampaignTemplates() {
                   <td className="p-3 text-right text-gray-500">{tpl.usedCount || 0}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => handleUse(tpl)} className="p-1 text-gray-600 hover:text-n0va-400"><Copy className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => { deleteTemplate(tpl.id); addToast("success", "Template deleted"); }} className="p-1 text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openApply(tpl)} className="p-1 text-gray-600 hover:text-n0va-400" title="Apply"><Play className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleUse(tpl)} className="p-1 text-gray-600 hover:text-n0va-400" title="Use"><Copy className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(tpl.id)} className="p-1 text-gray-600 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -291,6 +418,45 @@ export default function CampaignTemplates() {
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-800">
               <button onClick={() => setShowCreate(false)} className="btn-ghost text-sm">Cancel</button>
               <button onClick={handleSave} disabled={!form.name.trim()} className="btn-primary text-sm">Save Template</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {applyTpl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setApplyTpl(null)}>
+          <div className="w-full max-w-md bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Apply Template</h3>
+              <button onClick={() => setApplyTpl(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Creating campaign from <span className="text-white font-medium">{applyTpl.name}</span></p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Campaign Name</label>
+                <input className="input" value={applyForm.campaignName} onChange={e => setApplyForm(f => ({ ...f, campaignName: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Daily Budget (optional)</label>
+                  <input type="number" className="input" placeholder={String(applyTpl.dailyBudget)} value={applyForm.dailyBudget} onChange={e => setApplyForm(f => ({ ...f, dailyBudget: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Lifetime Budget (optional)</label>
+                  <input type="number" className="input" placeholder={String(applyTpl.lifetimeBudget)} value={applyForm.lifetimeBudget} onChange={e => setApplyForm(f => ({ ...f, lifetimeBudget: e.target.value }))} />
+                </div>
+              </div>
+              <div className="text-[11px] text-gray-600 bg-gray-800/50 rounded-lg p-3">
+                <p>Template: <span className="text-gray-300">{applyTpl.name}</span></p>
+                <p>Type: <span className="text-gray-300 capitalize">{applyTpl.type}</span></p>
+                <p>Platforms: <span className="text-gray-300">{applyTpl.platforms?.map((p: string) => PLATFORM_LABELS[p] || p).join(", ") || "None"}</span></p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-800">
+              <button onClick={() => setApplyTpl(null)} className="btn-ghost text-sm">Cancel</button>
+              <button onClick={handleApply} disabled={!applyForm.campaignName.trim() || applying} className="btn-primary text-sm flex items-center gap-1">
+                {applying ? "Applying..." : <><Play className="w-3.5 h-3.5" /> Create Campaign</>}
+              </button>
             </div>
           </div>
         </div>

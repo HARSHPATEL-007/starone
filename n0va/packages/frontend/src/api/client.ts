@@ -452,4 +452,39 @@ export const api = {
   channelPerformance: {
     list: () => request<any>("/channel-performance"),
   },
+  automationRules: {
+    list: (params?: string) => request<any[]>(`/automation-rules${params ? `?${params}` : ""}`),
+    get: (id: string) => request<any>(`/automation-rules/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/automation-rules", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/automation-rules/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/automation-rules/${id}`, { method: "DELETE" }),
+    evaluate: (id: string) => request<any>(`/automation-rules/${id}/evaluate`, { method: "POST" }),
+    evaluateAll: () => request<any[]>("/automation-rules/evaluate-all", { method: "POST" }),
+    executions: () => request<any[]>("/automation-rules/executions"),
+    toggle: (id: string) => request<any>(`/automation-rules/${id}/toggle`, { method: "POST" }),
+  },
+  templates: {
+    list: () => request<any[]>("/templates"),
+    get: (id: string) => request<any>(`/templates/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/templates", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/templates/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/templates/${id}`, { method: "DELETE" }),
+    apply: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/templates/${id}/apply`, { method: "POST", body: JSON.stringify(data) }),
+    stats: () => request<any>("/templates/stats"),
+  },
+  approvalsNew: {
+    list: (params?: string) => request<any[]>(`/approvals${params ? `?${params}` : ""}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/approvals", { method: "POST", body: JSON.stringify(data) }),
+    get: (id: string) => request<any>(`/approvals/${id}`),
+    act: (id: string, action: string, comment?: string, approver?: string) =>
+      request<any>(`/approvals/${id}/act`, { method: "PATCH", body: JSON.stringify({ action, comment, approver }) }),
+    pendingCount: () => request<{ count: number }>("/approvals/pending-count"),
+    history: () => request<any[]>("/approvals/history"),
+  },
 };
