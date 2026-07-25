@@ -75,6 +75,26 @@ router.patch(
   })
 );
 
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const notification = store().find("notifications", (n: any) => n._id === req.params.id && n.tenantId === tenantId);
+    if (!notification || notification.length === 0) throw new AppError(404, "Notification not found");
+    res.json(notification[0]);
+  })
+);
+
+router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const updated = store().update("notifications", (n: any) => n._id === req.params.id && n.tenantId === tenantId, req.body);
+    if (!updated) throw new AppError(404, "Notification not found");
+    res.json(updated);
+  })
+);
+
 router.delete(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

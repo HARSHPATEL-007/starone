@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { User, Key, Copy, Check, Eye, EyeOff, Trash2, Plus, Shield, Calendar, Clock, AlertTriangle, Activity } from "lucide-react";
+import { User, Key, Copy, Check, Eye, EyeOff, Trash2, Plus, Shield, Calendar, Clock, AlertTriangle, Activity, Loader } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 interface ApiKey {
   id: string;
@@ -12,23 +13,14 @@ interface ApiKey {
   revoked: boolean;
 }
 
-const STORAGE_KEYS = "n0va_api_keys";
-
-function loadKeys(): ApiKey[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS) || "[]"); }
-  catch { return []; }
-}
-
-function saveKeys(keys: ApiKey[]) {
-  localStorage.setItem(STORAGE_KEYS, JSON.stringify(keys));
-}
-
 function generateKey(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let key = "n0va_";
   for (let i = 0; i < 48; i++) key += chars[Math.floor(Math.random() * chars.length)];
   return key;
 }
+
+const ENTITY_TYPE = "api_keys";
 
 export default function AccountPage() {
   const { addToast } = useToast();
@@ -37,15 +29,18 @@ export default function AccountPage() {
   // Profile state
   const [user, setUser] = useState<any>(null);
   const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // API Keys state
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [showKey, setShowKey] = useState<string | null>(null);
   const [copyId, setCopyId] = useState<string | null>(null);
   const [newLabel, setNewLabel] = useState("");
+  const [keysLoading, setKeysLoading] = useState(true);
 
   useEffect(() => {
     const raw = localStorage.getItem("n0va_user");
@@ -54,20 +49,29 @@ export default function AccountPage() {
         const u = JSON.parse(raw);
         setUser(u);
         setEditName(u.name || "");
+        setEditEmail(u.email || "");
       } catch {}
     }
-    setKeys(loadKeys());
+    api.entities.list(ENTITY_TYPE).then((r) => { setKeys(r || []); setKeysLoading(false); }).catch(() => { setKeysLoading(false); });
   }, []);
 
-  function saveProfile() {
+  async function saveProfile() {
     if (!user) return;
-    const updated = { ...user, name: editName };
-    localStorage.setItem("n0va_user", JSON.stringify(updated));
-    setUser(updated);
-    addToast("success", "Profile updated");
+    setProfileLoading(true);
+    try {
+      await api.settings.updateTenant({ name: editName });
+      const updated = { ...user, name: editName, email: editEmail };
+      localStorage.setItem("n0va_user", JSON.stringify(updated));
+      setUser(updated);
+      addToast("success", "Profile updated");
+    } catch {
+      addToast("error", "Failed to update profile");
+    } finally {
+      setProfileLoading(false);
+    }
   }
 
-  function changePassword() {
+  async function changePassword() {
     if (!currentPw) { addToast("error", "Enter current password"); return; }
     if (!newPw || newPw.length < 6) { addToast("error", "New password must be at least 6 characters"); return; }
     if (newPw !== confirmPw) { addToast("error", "Passwords do not match"); return; }
@@ -77,37 +81,46 @@ export default function AccountPage() {
     setConfirmPw("");
   }
 
-  function createKey() {
+  async function createKey() {
     if (!newLabel.trim()) { addToast("error", "Enter a label for this key"); return; }
-    const key: ApiKey = {
-      id: crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2),
-      label: newLabel.trim(),
-      key: generateKey(),
-      prefix: "n0va_",
-      createdAt: new Date().toISOString(),
-      lastUsed: null,
-      revoked: false,
-    };
-    const updated = [key, ...keys];
-    setKeys(updated);
-    saveKeys(updated);
-    setNewLabel("");
-    setShowKey(key.id);
-    addToast("success", "API key created — copy it now, it won't be shown again");
+    try {
+      const key: ApiKey = {
+        id: crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2),
+        label: newLabel.trim(),
+        key: generateKey(),
+        prefix: "n0va_",
+        createdAt: new Date().toISOString(),
+        lastUsed: null,
+        revoked: false,
+      };
+      const created = await api.entities.create(ENTITY_TYPE, key as any);
+      setKeys([created, ...keys]);
+      setNewLabel("");
+      setShowKey(created.id || key.id);
+      addToast("success", "API key created — copy it now, it won't be shown again");
+    } catch {
+      addToast("error", "Failed to create API key");
+    }
   }
 
-  function revokeKey(id: string) {
-    const updated = keys.map((k) => k.id === id ? { ...k, revoked: true } : k);
-    setKeys(updated);
-    saveKeys(updated);
-    addToast("success", "API key revoked");
+  async function revokeKey(id: string) {
+    try {
+      await api.entities.update(ENTITY_TYPE, id, { revoked: true });
+      setKeys(keys.map((k) => k.id === id ? { ...k, revoked: true } : k));
+      addToast("success", "API key revoked");
+    } catch {
+      addToast("error", "Failed to revoke key");
+    }
   }
 
-  function deleteKey(id: string) {
-    const updated = keys.filter((k) => k.id !== id);
-    setKeys(updated);
-    saveKeys(updated);
-    addToast("success", "API key removed");
+  async function deleteKey(id: string) {
+    try {
+      await api.entities.delete(ENTITY_TYPE, id);
+      setKeys(keys.filter((k) => k.id !== id));
+      addToast("success", "API key removed");
+    } catch {
+      addToast("error", "Failed to delete key");
+    }
   }
 
   function copyKey(id: string, key: string) {
@@ -181,7 +194,7 @@ export default function AccountPage() {
                 </div>
                 <div>
                   <label className="label">Email</label>
-                  <input className="input" value={user.email} disabled />
+                  <input className="input" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -194,7 +207,7 @@ export default function AccountPage() {
                   <input className="input text-xs text-gray-500" value={user.tenantId} disabled />
                 </div>
               </div>
-              <button onClick={saveProfile} className="btn-primary">Save Changes</button>
+              <button onClick={saveProfile} disabled={profileLoading} className="btn-primary">{profileLoading ? <><Loader className="w-4 h-4 animate-spin inline" /> Saving...</> : "Save Changes"}</button>
             </div>
 
             <div className="card p-6 space-y-4">

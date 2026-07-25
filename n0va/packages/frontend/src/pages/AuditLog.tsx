@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { ScrollText, Search, Filter, Download, ChevronDown, ChevronRight, Clock, User, Megaphone, Palette, Users, Bot, FileJson, Share2, Webhook, Shield, CheckCircle, XCircle, Edit3, Trash2, Plus, Eye, LogIn, LogOut, RefreshCw, Copy, FileText, LayoutDashboard } from "lucide-react";
+import { ScrollText, Search, Filter, Download, ChevronDown, ChevronRight, Clock, User, Megaphone, Palette, Users, Bot, FileJson, Share2, Webhook, Shield, CheckCircle, XCircle, Edit3, Trash2, Plus, Eye, LogIn, LogOut, RefreshCw, Copy, FileText, LayoutDashboard, Loader } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { api } from "../api/client";
 
 interface AuditEntry {
   id: string;
@@ -14,7 +15,6 @@ interface AuditEntry {
   ip: string;
 }
 
-const STORAGE_KEY = "n0va_audit_log";
 const PAGE_SIZE = 25;
 
 const ACTION_META: Record<string, { label: string; icon: any; color: string }> = {
@@ -45,65 +45,18 @@ const ENTITY_COLORS: Record<string, string> = {
   webhook: "text-rose-400", user: "text-gray-400", setting: "text-amber-400",
 };
 
-function generateSeedAudit(): AuditEntry[] {
-  const now = Date.now();
-  const actors = ["You", "Sarah Chen", "Alex Rivera", "Mia Johnson", "System"];
-  const ips = ["192.168.1.42", "10.0.0.15", "172.16.0.8", "203.0.113.45", "198.51.100.22"];
-  const entries: AuditEntry[] = [];
-
-  const templates: Omit<AuditEntry, "id" | "timestamp" | "ip">[] = [
-    { actor: "You", action: "create", entityType: "campaign", entityId: "c1", entityName: "Summer Sale 2026", details: "Created new campaign with $25,000 budget" },
-    { actor: "You", action: "update", entityType: "campaign", entityId: "c1", entityName: "Summer Sale 2026", details: "Updated budget from $20,000 to $25,000" },
-    { actor: "Sarah Chen", action: "create", entityType: "creative", entityId: "cr1", entityName: "Hero Banner v2", details: "Uploaded new creative asset" },
-    { actor: "Sarah Chen", action: "approve", entityType: "creative", entityId: "cr1", entityName: "Hero Banner v2", details: "Approved creative for campaign use" },
-    { actor: "Alex Rivera", action: "create", entityType: "audience", entityId: "a1", entityName: "High-Value Customers", details: "Built audience segment with 45K users" },
-    { actor: "Alex Rivera", action: "update", entityType: "audience", entityId: "a1", entityName: "High-Value Customers", details: "Added behavioral targeting rules" },
-    { actor: "You", action: "create", entityType: "agent", entityId: "ag1", entityName: "Budget Optimizer", details: "Created AI agent for budget optimization" },
-    { actor: "Mia Johnson", action: "view", entityType: "report", entityId: "r1", entityName: "Q3 Performance Report", details: "Viewed quarterly performance report" },
-    { actor: "System", action: "login", entityType: "user", entityId: "u1", entityName: "You", details: "Successful login from Chrome on Windows" },
-    { actor: "Sarah Chen", action: "login", entityType: "user", entityId: "u2", entityName: "Sarah Chen", details: "Successful login from Safari on macOS" },
-    { actor: "You", action: "export", entityType: "campaign", entityId: "c1", entityName: "Summer Sale 2026", details: "Exported campaign data as CSV" },
-    { actor: "Alex Rivera", action: "reject", entityType: "creative", entityId: "cr2", entityName: "Banner Ad Set B", details: "Rejected creative — brand color mismatch" },
-    { actor: "You", action: "duplicate", entityType: "campaign", entityId: "c2", entityName: "Summer Sale 2026 (Copy)", details: "Duplicated campaign for A/B testing" },
-    { actor: "System", action: "delete", entityType: "creative", entityId: "cr3", entityName: "Old Logo Variant", details: "Auto-cleaned unused creative (30 days inactive)" },
-    { actor: "Mia Johnson", action: "logout", entityType: "user", entityId: "u4", entityName: "Mia Johnson", details: "User logged out" },
-    { actor: "You", action: "create", entityType: "webhook", entityId: "w1", entityName: "Slack Notifications", details: "Created webhook for campaign alerts" },
-    { actor: "You", action: "update", entityType: "setting", entityId: "s1", entityName: "Default Budget Alert", details: "Changed budget alert threshold to 80%" },
-    { actor: "Sarah Chen", action: "create", entityType: "recipe", entityId: "r1", entityName: "Social Media Playbook", details: "Created new recipe template" },
-    { actor: "Alex Rivera", action: "archive", entityType: "campaign", entityId: "c3", entityName: "Q2 Promotions", details: "Archived completed campaign" },
-    { actor: "You", action: "restore", entityType: "campaign", entityId: "c3", entityName: "Q2 Promotions", details: "Restored archived campaign for reference" },
-    { actor: "System", action: "login", entityType: "user", entityId: "u5", entityName: "James Park", details: "First login — new user onboarding" },
-    { actor: "Sarah Chen", action: "update", entityType: "campaign", entityId: "c4", entityName: "Brand Awareness Q3", details: "Extended campaign end date by 7 days" },
-    { actor: "You", action: "approve", entityType: "campaign", entityId: "c5", entityName: "Product Launch", details: "Approved campaign for activation" },
-    { actor: "Alex Rivera", action: "create", entityType: "platform", entityId: "p1", entityName: "LinkedIn Ads", details: "Connected LinkedIn Ads platform" },
-    { actor: "System", action: "update", entityType: "setting", entityId: "s2", entityName: "System Config", details: "Auto-updated integration credentials" },
-    { actor: "You", action: "export", entityType: "audience", entityId: "a2", entityName: "Retargeting Pool", details: "Exported audience list for external use" },
-    { actor: "Mia Johnson", action: "view", entityType: "dashboard", entityId: "d1", entityName: "Executive Dashboard", details: "Viewed executive summary dashboard" },
-    { actor: "Sarah Chen", action: "duplicate", entityType: "creative", entityId: "cr4", entityName: "Social Post v3", details: "Duplicated creative for variant testing" },
-    { actor: "System", action: "create", entityType: "agent", entityId: "ag2", entityName: "Performance Monitor", details: "Auto-deployed monitoring agent" },
-    { actor: "Alex Rivera", action: "update", entityType: "audience", entityId: "a3", entityName: "Lookalike Audience", details: "Updated seed audience for lookalike model" },
-  ];
-
-  templates.forEach((t, i) => {
-    entries.push({
-      ...t,
-      id: `audit-${i}`,
-      timestamp: new Date(now - 3600000 * i * 2 - 60000 * Math.floor(Math.random() * 60)).toISOString(),
-      ip: ips[i % ips.length],
-    });
-  });
-
-  return entries;
-}
-
-function load(): AuditEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    const seed = generateSeedAudit();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-    return seed;
-  } catch { return []; }
+function mapEntry(e: any): AuditEntry {
+  return {
+    id: e._id || e.id,
+    timestamp: e.timestamp || new Date().toISOString(),
+    actor: e.actor || e.userName || "System",
+    action: e.action || "view",
+    entityType: e.entityType || "setting",
+    entityId: e.entityId || e._id || "",
+    entityName: e.entityName || e.label || "",
+    details: e.details || e.description || "",
+    ip: e.ip || "",
+  };
 }
 
 function timeAgo(date: string): string {
@@ -121,6 +74,7 @@ function timeAgo(date: string): string {
 export default function AuditLog() {
   const { addToast } = useToast();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterAction, setFilterAction] = useState<string>("all");
   const [filterEntity, setFilterEntity] = useState<string>("all");
@@ -128,7 +82,10 @@ export default function AuditLog() {
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  useEffect(() => { setEntries(load()); }, []);
+  useEffect(() => {
+    setLoading(true);
+    api.activity.list().then((r) => { setEntries((r || []).map(mapEntry)); setLoading(false); }).catch(() => { setLoading(false); });
+  }, []);
 
   const actions = [...new Set(entries.map(e => e.action))];
   const entityTypes = [...new Set(entries.map(e => e.entityType))];
@@ -189,17 +146,16 @@ export default function AuditLog() {
         )}
       </div>
 
-      {/* Empty */}
-      {filtered.length === 0 && (
+      {/* Loading */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16"><Loader className="w-6 h-6 text-n0va-400 animate-spin" /></div>
+      ) : filtered.length === 0 ? (
         <div className="card p-12 flex flex-col items-center justify-center text-center">
           <ScrollText className="w-12 h-12 text-gray-700 mb-4" />
           <h3 className="text-lg font-semibold text-gray-300 mb-2">No audit events found</h3>
           <p className="text-sm text-gray-500">{search ? "Try different search terms or filters" : "Audit events will appear here as actions are performed."}</p>
         </div>
-      )}
-
-      {/* Timeline */}
-      {displayed.length > 0 && (
+      ) : (
         <div className="space-y-2">
           {displayed.map(entry => {
             const am = ACTION_META[entry.action] || { label: entry.action, icon: Eye, color: "text-gray-400 bg-gray-500/10" };

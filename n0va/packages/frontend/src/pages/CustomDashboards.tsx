@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutDashboard, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, GripVertical, Save, Eye, EyeOff, Copy, BarChart3, TrendingUp, DollarSign, Target, Users, Megaphone, CheckCircle, Activity, Bot, Palette, Calendar, Bell, Zap, Crosshair, Star, Clock } from "lucide-react";
+import { LayoutDashboard, Plus, X, Edit3, Trash2, ChevronDown, ChevronRight, GripVertical, Save, Eye, EyeOff, Copy, BarChart3, TrendingUp, DollarSign, Target, Users, Megaphone, CheckCircle, Activity, Bot, Palette, Calendar, Bell, Zap, Crosshair, Star, Clock, Loader } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 import { api } from "../api/client";
@@ -20,7 +20,7 @@ interface CustomDashboard {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "n0va_custom_dashboards";
+const DASHBOARD_ENTITY = "dashboards";
 
 const WIDGET_TEMPLATES: { type: string; label: string; icon: any; defaultWidth: "full" | "half" | "third"; desc: string }[] = [
   { type: "kpi_revenue", label: "Revenue KPI", icon: DollarSign, defaultWidth: "third", desc: "Total revenue, ROAS, and CPA metrics" },
@@ -40,58 +40,7 @@ const WIDGET_TEMPLATES: { type: string; label: string; icon: any; defaultWidth: 
   { type: "recent_comments", label: "Recent Comments", icon: Star, defaultWidth: "half", desc: "Latest team discussions" },
 ];
 
-const DASHBOARD_DEMOS: CustomDashboard[] = [
-  {
-    id: "db-1", name: "Executive Overview",
-    widgets: [
-      { id: "w1", type: "kpi_revenue", label: "Revenue KPI", visible: true, width: "third" },
-      { id: "w2", type: "kpi_campaigns", label: "Campaign KPIs", visible: true, width: "third" },
-      { id: "w3", type: "kpi_audience", label: "Audience KPIs", visible: true, width: "third" },
-      { id: "w4", type: "chart_performance", label: "Performance Chart", visible: true, width: "full" },
-      { id: "w5", type: "recent_campaigns", label: "Recent Campaigns", visible: true, width: "half" },
-      { id: "w6", type: "pending_approvals", label: "Pending Approvals", visible: true, width: "half" },
-      { id: "w7", type: "goals_progress", label: "Goals Progress", visible: true, width: "half" },
-      { id: "w8", type: "activity_feed", label: "Recent Activity", visible: true, width: "half" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    id: "db-2", name: "Campaign Performance",
-    widgets: [
-      { id: "w9", type: "chart_performance", label: "Performance Chart", visible: true, width: "full" },
-      { id: "w10", type: "recent_campaigns", label: "Recent Campaigns", visible: true, width: "half" },
-      { id: "w11", type: "budget_status", label: "Budget Status", visible: true, width: "half" },
-      { id: "w12", type: "ab_testing", label: "A/B Test Status", visible: true, width: "third" },
-      { id: "w13", type: "competitive_snapshot", label: "Competitive Snapshot", visible: true, width: "third" },
-      { id: "w14", type: "approval_queue", label: "Approval Queue", visible: true, width: "third" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "db-3", name: "Team Overview",
-    widgets: [
-      { id: "w15", type: "agent_status", label: "AI Agent Status", visible: true, width: "third" },
-      { id: "w16", type: "activity_feed", label: "Recent Activity", visible: true, width: "half" },
-      { id: "w17", type: "recent_comments", label: "Recent Comments", visible: true, width: "half" },
-      { id: "w18", type: "calendar_preview", label: "Upcoming Schedule", visible: true, width: "full" },
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-];
-
 const COLORS = ["#1a6dff", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
-
-function load(): CustomDashboard[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DASHBOARD_DEMOS));
-    return DASHBOARD_DEMOS;
-  } catch { return []; }
-}
 
 function timeAgo(date: string): string {
   const diff = Date.now() - new Date(date).getTime();
@@ -304,12 +253,7 @@ function AgentStatusWidget() {
 
 function GoalsProgressWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("n0va_goals");
-      if (raw) setData(JSON.parse(raw));
-    } catch {}
-  }, []);
+  useEffect(() => { api.entities.list("goals").then((r) => setData(r || [])).catch(() => {}); }, []);
   const goals = Array.isArray(data) ? data.slice(0, 4) : [];
   return (
     <div className="card p-4">
@@ -328,12 +272,7 @@ function GoalsProgressWidget() {
 
 function ABTestStatusWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("n0va_ab_tests");
-      if (raw) setData(JSON.parse(raw));
-    } catch {}
-  }, []);
+  useEffect(() => { api.entities.list("ab_tests").then((r) => setData(r || [])).catch(() => {}); }, []);
   const tests = Array.isArray(data) ? data : [];
   const running = tests.filter((t: any) => t.status === "running").length;
   const completed = tests.filter((t: any) => t.status === "completed").length;
@@ -384,15 +323,7 @@ function ApprovalQueueWidget() {
 
 function CompetitiveSnapshotWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("n0va_competitive_intel");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setData(Array.isArray(parsed) ? parsed : []);
-      }
-    } catch {}
-  }, []);
+  useEffect(() => { api.entities.list("competitive_intel").then((r) => setData(r || [])).catch(() => {}); }, []);
   const competitors = Array.isArray(data) ? data : [];
   return (
     <div className="card p-4">
@@ -407,15 +338,7 @@ function CompetitiveSnapshotWidget() {
 
 function RecentCommentsWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("n0va_comments");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setData(Array.isArray(parsed) ? parsed.slice(0, 4) : []);
-      }
-    } catch {}
-  }, []);
+  useEffect(() => { api.comments.list("dashboard", "recent").then((r) => setData((r || []).slice(0, 4))).catch(() => {}); }, []);
   const comments = data || [];
   return (
     <div className="card p-4">
@@ -468,6 +391,7 @@ function WidgetRenderer({ type, label }: { type: string; label: string }) {
 export default function CustomDashboards() {
   const { addToast } = useToast();
   const [dashboards, setDashboards] = useState<CustomDashboard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editName, setEditName] = useState("");
@@ -475,19 +399,32 @@ export default function CustomDashboards() {
   const [showWidgetPicker, setShowWidgetPicker] = useState(false);
 
   useEffect(() => {
-    const loaded = load();
-    setDashboards(loaded);
-    if (loaded.length > 0 && !activeId) setActiveId(loaded[0].id);
+    setLoading(true);
+    api.entities.list(DASHBOARD_ENTITY).then((r) => {
+      const loaded = (r || []) as CustomDashboard[];
+      setDashboards(loaded);
+      if (loaded.length > 0 && !activeId) setActiveId(loaded[0].id);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   const active = dashboards.find(d => d.id === activeId);
 
-  function persist(updated: CustomDashboard[]) {
+  async function persist(updated: CustomDashboard[]) {
     setDashboards(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      for (const db of updated) {
+        const exists = dashboards.some(d => d.id === db.id);
+        if (exists) await api.entities.update(DASHBOARD_ENTITY, db.id, db as any).catch(() => {});
+        else await api.entities.create(DASHBOARD_ENTITY, db as any).catch(() => {});
+      }
+      for (const db of dashboards) {
+        if (!updated.some(d => d.id === db.id)) await api.entities.delete(DASHBOARD_ENTITY, db.id).catch(() => {});
+      }
+    } catch {}
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!editName.trim()) { addToast("error", "Dashboard name is required"); return; }
     const now = new Date().toISOString();
     const db: CustomDashboard = {
@@ -499,21 +436,27 @@ export default function CustomDashboards() {
       ],
       createdAt: now, updatedAt: now,
     };
-    persist([db, ...dashboards]);
-    setActiveId(db.id);
-    setShowCreate(false);
-    setEditName("");
-    addToast("success", "Dashboard created");
+    try {
+      await api.entities.create(DASHBOARD_ENTITY, db as any);
+      setDashboards([db, ...dashboards]);
+      setActiveId(db.id);
+      setShowCreate(false);
+      setEditName("");
+      addToast("success", "Dashboard created");
+    } catch { addToast("error", "Failed to create dashboard"); }
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     const db = dashboards.find(d => d.id === id);
-    persist(dashboards.filter(d => d.id !== id));
-    if (activeId === id) setActiveId(dashboards.filter(d => d.id !== id)[0]?.id || null);
-    addToast("success", `"${db?.name}" deleted`);
+    try {
+      await api.entities.delete(DASHBOARD_ENTITY, id);
+      setDashboards(dashboards.filter(d => d.id !== id));
+      if (activeId === id) setActiveId(dashboards.filter(d => d.id !== id)[0]?.id || null);
+      addToast("success", `"${db?.name}" deleted`);
+    } catch { addToast("error", "Failed to delete dashboard"); }
   }
 
-  function duplicateDashboard(id: string) {
+  async function duplicateDashboard(id: string) {
     const db = dashboards.find(d => d.id === id);
     if (!db) return;
     const copy: CustomDashboard = {
@@ -522,27 +465,34 @@ export default function CustomDashboards() {
       widgets: db.widgets.map(w => ({ ...w, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) })),
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
-    persist([copy, ...dashboards]);
-    addToast("success", "Dashboard duplicated");
+    try {
+      await api.entities.create(DASHBOARD_ENTITY, copy as any);
+      setDashboards([copy, ...dashboards]);
+      addToast("success", "Dashboard duplicated");
+    } catch { addToast("error", "Failed to duplicate dashboard"); }
   }
 
-  function toggleWidgetVisibility(widgetId: string) {
+  async function toggleWidgetVisibility(widgetId: string) {
     if (!active) return;
-    persist(dashboards.map(d => d.id === active.id ? {
+    const updated = dashboards.map(d => d.id === active.id ? {
       ...d, widgets: d.widgets.map(w => w.id === widgetId ? { ...w, visible: !w.visible } : w),
       updatedAt: new Date().toISOString(),
-    } : d));
+    } : d);
+    setDashboards(updated);
+    await api.entities.update(DASHBOARD_ENTITY, active.id, { widgets: updated.find(d => d.id === active.id)!.widgets, updatedAt: new Date().toISOString() }).catch(() => {});
   }
 
-  function removeWidget(widgetId: string) {
+  async function removeWidget(widgetId: string) {
     if (!active) return;
-    persist(dashboards.map(d => d.id === active.id ? {
+    const updated = dashboards.map(d => d.id === active.id ? {
       ...d, widgets: d.widgets.filter(w => w.id !== widgetId),
       updatedAt: new Date().toISOString(),
-    } : d));
+    } : d);
+    setDashboards(updated);
+    await api.entities.update(DASHBOARD_ENTITY, active.id, { widgets: updated.find(d => d.id === active.id)!.widgets, updatedAt: new Date().toISOString() }).catch(() => {});
   }
 
-  function addWidget(type: string) {
+  async function addWidget(type: string) {
     if (!active) return;
     const tmpl = WIDGET_TEMPLATES.find(t => t.type === type);
     if (!tmpl) return;
@@ -551,19 +501,28 @@ export default function CustomDashboards() {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type, label: tmpl.label, visible: true, width: tmpl.defaultWidth,
     };
-    persist(dashboards.map(d => d.id === active.id ? {
+    const updated = dashboards.map(d => d.id === active.id ? {
       ...d, widgets: [...d.widgets, widget],
       updatedAt: new Date().toISOString(),
-    } : d));
+    } : d);
+    setDashboards(updated);
+    await api.entities.update(DASHBOARD_ENTITY, active.id, { widgets: updated.find(d => d.id === active.id)!.widgets, updatedAt: new Date().toISOString() }).catch(() => {});
     setShowWidgetPicker(false);
     addToast("success", `"${tmpl.label}" added`);
   }
 
-  function renameDashboard() {
+  async function renameDashboard() {
     if (!active || !editName.trim()) return;
-    persist(dashboards.map(d => d.id === active.id ? { ...d, name: editName.trim(), updatedAt: new Date().toISOString() } : d));
-    setEditingId(null);
-    addToast("success", "Dashboard renamed");
+    try {
+      await api.entities.update(DASHBOARD_ENTITY, active.id, { name: editName.trim(), updatedAt: new Date().toISOString() });
+      setDashboards(dashboards.map(d => d.id === active.id ? { ...d, name: editName.trim(), updatedAt: new Date().toISOString() } : d));
+      setEditingId(null);
+      addToast("success", "Dashboard renamed");
+    } catch { addToast("error", "Failed to rename"); }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-[300px]"><Loader className="w-6 h-6 animate-spin text-n0va-400" /></div>;
   }
 
   if (dashboards.length === 0) {

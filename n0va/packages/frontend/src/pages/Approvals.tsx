@@ -23,16 +23,7 @@ interface ApprovalAction {
   itemName: string;
 }
 
-const STORAGE_HISTORY = "n0va_approval_history";
-
-function loadHistory(): ApprovalAction[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY) || "[]"); }
-  catch { return []; }
-}
-
-function saveHistory(h: ApprovalAction[]) {
-  localStorage.setItem(STORAGE_HISTORY, JSON.stringify(h.slice(0, 100)));
-}
+const HISTORY_ENTITY = "approval_history";
 
 export default function Approvals() {
   const navigate = useNavigate();
@@ -45,8 +36,12 @@ export default function Approvals() {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "history">("pending");
   const [history, setHistory] = useState<ApprovalAction[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
-  useEffect(() => { loadData(); setHistory(loadHistory()); }, []);
+  useEffect(() => {
+    loadData();
+    api.entities.list(HISTORY_ENTITY).then((r) => { setHistory(r || []); setHistoryLoading(false); }).catch(() => { setHistoryLoading(false); });
+  }, []);
 
   async function loadData() {
     setLoading(true);
@@ -88,9 +83,8 @@ export default function Approvals() {
         itemId: item.id, itemType: item.type, action, comment: comment.trim(),
         timestamp: new Date().toISOString(), actor, itemName: item.name,
       };
-      const updated = [entry, ...history];
-      setHistory(updated);
-      saveHistory(updated);
+      const created = await api.entities.create(HISTORY_ENTITY, entry as any).catch(() => entry);
+      setHistory([created, ...history]);
       addToast("success", `${item.name} ${action}`);
       setComment("");
       setActiveItem(null);

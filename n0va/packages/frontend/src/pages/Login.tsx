@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { api } from "../api/client";
 
 interface LoginCredentials {
   email: string;
@@ -22,23 +23,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const endpoint = mode === "login" ? "/api/v1/auth/login" : "/api/v1/auth/register";
-      const body = mode === "login"
-        ? { email: credentials.email, password: credentials.password }
-        : { email: credentials.email, password: credentials.password, name: credentials.name };
+      const data = mode === "login"
+        ? await api.auth.login(credentials.email, credentials.password)
+        : await api.auth.register(credentials.email, credentials.password, credentials.name || "");
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: mode === "login" ? "Login failed" : "Registration failed" }));
-        throw new Error(err.error || (mode === "login" ? "Login failed" : "Registration failed"));
-      }
-
-      const data = await res.json();
       localStorage.setItem("n0va_token", data.token);
       localStorage.setItem("n0va_user", JSON.stringify(data.user));
       navigate("/");

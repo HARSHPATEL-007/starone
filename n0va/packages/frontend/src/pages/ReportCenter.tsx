@@ -60,16 +60,13 @@ export default function ReportCenter() {
   }, []);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("n0va_report_history");
-      if (saved) setHistory(JSON.parse(saved));
-    } catch {}
+    api.entities.list("report_history").then((r) => setHistory((r || []).map((e: any) => ({ id: e.id || e._id || "", name: e.name, time: e.time || e.createdAt, rows: e.rows || 0 })))).catch(() => {});
   }, []);
 
-  function saveHistory(entry: { id: string; name: string; time: string; rows: number }) {
+  async function saveHistory(entry: { id: string; name: string; time: string; rows: number }) {
     const updated = [entry, ...history].slice(0, 20);
     setHistory(updated);
-    localStorage.setItem("n0va_report_history", JSON.stringify(updated));
+    await api.entities.create("report_history", entry).catch(() => {});
   }
 
   async function generateCampaignPerformance() {
@@ -272,7 +269,7 @@ export default function ReportCenter() {
             ))}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-800">
-            <button className="btn-secondary text-xs" onClick={() => { setHistory([]); localStorage.removeItem("n0va_report_history"); }}>
+            <button className="btn-secondary text-xs" onClick={() => { setHistory([]); api.entities.deleteAll("report_history").catch(() => {}); }}>
               Clear History
             </button>
           </div>

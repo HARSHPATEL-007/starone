@@ -100,6 +100,25 @@ router.get(
   })
 );
 
+router.patch(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { id } = req.params;
+    if (DataStore.usingMemory()) {
+      const updated = DataStore["mem"]().update("connected_accounts", (a: any) => a._id === id && a.tenantId === tenantId, req.body);
+      if (!updated) throw new AppError(404, "Connected account not found");
+      return res.json(updated);
+    }
+    const { ConnectedAccountModel } = require("../models/ConnectedAccount");
+    const updated = await ConnectedAccountModel.findOneAndUpdate(
+      { _id: id, tenantId }, { $set: req.body }, { new: true }
+    );
+    if (!updated) throw new AppError(404, "Connected account not found");
+    res.json(updated);
+  })
+);
+
 router.get(
   "/health",
   asyncHandler(async (_req: Request, res: Response) => {
