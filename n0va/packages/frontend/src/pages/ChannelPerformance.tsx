@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, Target, Users, Smartphone, Monitor, Globe, Mail } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { BarChart3, TrendingUp, TrendingDown, DollarSign, Target, Users, Smartphone, Monitor, Globe, Mail, Download, RefreshCw, X, Calendar, Eye } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
+import { SkeletonChart } from "../components/Skeleton";
 
 type Channel = "google_ads" | "facebook" | "instagram" | "linkedin" | "twitter" | "tiktok" | "youtube" | "email" | "display" | "programmatic";
 
@@ -34,6 +36,12 @@ const CHANNEL_META: Record<string, { label: string; short: string; color: string
   programmatic: { label: "Programmatic", short: "Prog.", color: "bg-purple-500", icon: Globe },
 };
 
+const DATE_OPTIONS = [
+  { label: "All Time", value: 0 },
+  { label: "30d", value: 30 },
+  { label: "90d", value: 90 },
+];
+
 const DEFAULT_DATA: ChannelMetrics[] = [
   { id: "ch-1", channel: "google_ads", impressions: 485000, clicks: 14550, conversions: 890, spend: 58700, revenue: 285000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 320000, frequency: 1.52 },
   { id: "ch-2", channel: "facebook", impressions: 320000, clicks: 9600, conversions: 620, spend: 42000, revenue: 186000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 240000, frequency: 1.33 },
@@ -42,6 +50,8 @@ const DEFAULT_DATA: ChannelMetrics[] = [
   { id: "ch-5", channel: "tiktok", impressions: 450000, clicks: 18000, conversions: 320, spend: 22000, revenue: 96000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 380000, frequency: 1.18 },
   { id: "ch-6", channel: "email", impressions: 210000, clicks: 10500, conversions: 780, spend: 8000, revenue: 142000, ctr: 0, cpc: 0, cvr: 0, roas: 0, reach: 195000, frequency: 1.08 },
 ];
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function compute(metrics: ChannelMetrics[]): ChannelMetrics[] {
   return metrics.map(m => ({
@@ -61,12 +71,25 @@ function fmt(n: number, decimals = 1): string {
 function fmtCurrency(n: number): string { return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 function fmtRate(n: number, decimals = 2): string { return n.toFixed(decimals); }
 
+function generateTrendData(baseImpressions: number): { month: string; impressions: number; clicks: number; spend: number; conversions: number }[] {
+  return MONTHS.map((m, i) => ({
+    month: m,
+    impressions: Math.round(baseImpressions * (0.7 + Math.random() * 0.6) * (1 + i * 0.02)),
+    clicks: Math.round(baseImpressions * 0.03 * (0.7 + Math.random() * 0.6)),
+    spend: Math.round(baseImpressions * 0.12 * (0.7 + Math.random() * 0.6)),
+    conversions: Math.round(baseImpressions * 0.002 * (0.7 + Math.random() * 0.6)),
+  }));
+}
+
 export default function ChannelPerformance() {
   const { addToast } = useToast();
   const [data, setData] = useState<ChannelMetrics[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<keyof ChannelMetrics>("spend");
   const [sortDesc, setSortDesc] = useState(true);
+  const [dateFilter, setDateFilter] = useState(0);
+  const [drillChannel, setDrillChannel] = useState<ChannelMetrics | null>(null);
+  const [trendMetric, setTrendMetric] = useState<"impressions" | "clicks" | "spend" | "conversions">("impressions");
 
   useEffect(() => { loadData(); }, []);
 
@@ -83,9 +106,20 @@ export default function ChannelPerformance() {
     setLoading(false);
   }
 
-  const maxImpressions = Math.max(...data.map(d => d.impressions));
-  const sorted = [...data].sort((a, b) => { const aV = a[sortBy] as number; const bV = b[sortBy] as number; return sortDesc ? bV - aV : aV - bV; });
-  const totals = { impressions: data.reduce((s, d) => s + d.impressions, 0), clicks: data.reduce((s, d) => s + d.clicks, 0), conversions: data.reduce((s, d) => s + d.conversions, 0), spend: data.reduce((s, d) => s + d.spend, 0), revenue: data.reduce((s, d) => s + d.revenue, 0) };
+  const maxImpressions = data.length > 0 ? Math.max(...data.map(d => d.impressions)) : 1;
+  const sorted = useMemo(() => [...data].sort((a, b) => { const aV = a[sortBy] as number; const bV = b[sortBy] as number; return sortDesc ? bV - aV : aV - bV; }), [data, sortBy, sortDesc]);
+  const totals = useMemo(() => ({
+    impressions: data.reduce((s, d) => s + d.impressions, 0),
+    clicks: data.reduce((s, d) => s + d.clicks, 0),
+    conversions: data.reduce((s, d) => s + d.conversions, 0),
+    spend: data.reduce((s, d) => s + d.spend, 0),
+    revenue: data.reduce((s, d) => s + d.revenue, 0),
+  }), [data]);
+
+  const trendData = useMemo(() => {
+    const seed = data.length > 0 ? data[0].impressions : 485000;
+    return generateTrendData(seed);
+  }, [data]);
 
   function toggleSort(key: keyof ChannelMetrics) {
     if (sortBy === key) setSortDesc(!sortDesc);
@@ -97,8 +131,23 @@ export default function ChannelPerformance() {
     return sortDesc ? <TrendingDown className="w-3 h-3 inline ml-0.5" /> : <TrendingUp className="w-3 h-3 inline ml-0.5" />;
   }
 
+  function handleExport() {
+    const headers = ["Channel", "Impressions", "Clicks", "CTR", "CPC", "Conversions", "CVR", "Spend", "Revenue", "ROAS", "Reach", "Frequency"];
+    const rows = data.map(d => {
+      const cm = CHANNEL_META[d.channel];
+      return [cm.label, d.impressions, d.clicks, fmtRate(d.ctr, 2) + "%", "$" + fmtRate(d.cpc, 2), d.conversions, fmtRate(d.cvr, 1) + "%", d.spend, d.revenue, fmtRate(d.roas, 1) + "x", d.reach, d.frequency];
+    });
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "channel-performance.csv"; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", "Exported channel data");
+  }
+
   if (loading) {
-    return <div className="card p-12 flex items-center justify-center text-gray-400"><BarChart3 className="w-5 h-5 animate-spin mr-2" /> Loading channel data...</div>;
+    return <div className="space-y-6"><SkeletonChart /><SkeletonChart /></div>;
   }
 
   return (
@@ -111,6 +160,16 @@ export default function ChannelPerformance() {
           </h1>
           <p className="text-gray-400 mt-1">{data.length} channels tracked</p>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <Calendar className="w-3 h-3" /> Range:
+          </div>
+          {DATE_OPTIONS.map((d) => (
+            <button key={d.value} className={`text-xs px-2 py-1 rounded border ${dateFilter === d.value ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500 hover:border-gray-600"}`} onClick={() => setDateFilter(d.value)}>{d.label}</button>
+          ))}
+          <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={handleExport}><Download className="w-3.5 h-3.5" /> Export</button>
+          <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={loadData}><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-5 gap-4">
@@ -121,24 +180,49 @@ export default function ChannelPerformance() {
         <div className="card p-4"><p className="text-xs text-gray-500">Total Revenue</p><p className="text-lg font-bold text-white mt-1">{fmtCurrency(totals.revenue)}</p></div>
       </div>
 
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-white mb-4">Impressions by Channel</h3>
-        <div className="space-y-2.5">
-          {sorted.map(d => {
-            const cm = CHANNEL_META[d.channel];
-            const pct = (d.impressions / maxImpressions) * 100;
-            return (
-              <div key={d.id}>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-400">{cm.label}</span>
-                  <span className="text-gray-500">{fmt(d.impressions)}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white">Impressions by Channel</h3>
+          </div>
+          <div className="space-y-2.5">
+            {sorted.map(d => {
+              const cm = CHANNEL_META[d.channel];
+              const pct = (d.impressions / maxImpressions) * 100;
+              return (
+                <div key={d.id} className="cursor-pointer hover:bg-gray-800/20 rounded px-1 py-0.5" onClick={() => setDrillChannel(d)}>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-gray-400 flex items-center gap-1.5"><div className={`w-2 h-2 rounded-full ${cm.color}`} />{cm.label}</span>
+                    <span className="text-gray-500">{fmt(d.impressions)}</span>
+                  </div>
+                  <div className="h-6 bg-gray-800 rounded-sm overflow-hidden flex">
+                    <div className={`${cm.color} h-full transition-all`} style={{ width: `${pct}%` }} />
+                  </div>
                 </div>
-                <div className="h-6 bg-gray-800 rounded-sm overflow-hidden flex">
-                  <div className={`${cm.color} h-full transition-all`} style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white">Performance Trend</h3>
+            <select className="input py-1 text-xs w-auto" value={trendMetric} onChange={e => setTrendMetric(e.target.value as any)}>
+              <option value="impressions">Impressions</option>
+              <option value="clicks">Clicks</option>
+              <option value="spend">Spend</option>
+              <option value="conversions">Conversions</option>
+            </select>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#9ca3af" }} />
+              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} />
+              <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "12px" }} />
+              <Line type="monotone" dataKey={trendMetric} stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -158,6 +242,7 @@ export default function ChannelPerformance() {
                 <th className="p-3 text-right font-medium cursor-pointer hover:text-white" onClick={() => toggleSort("revenue")}>Revenue<SortIcon col="revenue" /></th>
                 <th className="p-3 text-right font-medium cursor-pointer hover:text-white" onClick={() => toggleSort("roas")}>ROAS<SortIcon col="roas" /></th>
                 <th className="p-3 text-right font-medium cursor-pointer hover:text-white" onClick={() => toggleSort("reach")}>Reach<SortIcon col="reach" /></th>
+                <th className="p-3 w-10" />
               </tr>
             </thead>
             <tbody>
@@ -176,6 +261,9 @@ export default function ChannelPerformance() {
                     <td className="p-3 text-right text-green-400">{fmtCurrency(d.revenue)}</td>
                     <td className="p-3 text-right"><span className={`${d.roas >= 3 ? "text-green-400" : d.roas >= 1.5 ? "text-yellow-400" : "text-red-400"}`}>{fmtRate(d.roas, 1)}x</span></td>
                     <td className="p-3 text-right text-gray-300">{fmt(d.reach)}</td>
+                    <td className="p-3">
+                      <button onClick={() => setDrillChannel(d)} className="text-gray-600 hover:text-n0va-400"><Eye className="w-3.5 h-3.5" /></button>
+                    </td>
                   </tr>
                 );
               })}
@@ -206,6 +294,46 @@ export default function ChannelPerformance() {
           })}
         </div>
       </div>
+
+      {/* Drill-down modal */}
+      {drillChannel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDrillChannel(null)}>
+          <div className="w-full max-w-lg bg-n0va-800 rounded-xl border border-gray-800 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${CHANNEL_META[drillChannel.channel]?.color || "bg-gray-500"}`} />
+                {CHANNEL_META[drillChannel.channel]?.label || drillChannel.channel}
+              </h3>
+              <button onClick={() => setDrillChannel(null)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Impressions</p><p className="text-lg font-bold text-white">{fmt(drillChannel.impressions)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Clicks</p><p className="text-lg font-bold text-white">{fmt(drillChannel.clicks)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">CTR</p><p className="text-lg font-bold text-white">{fmtRate(drillChannel.ctr, 2)}%</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">CPC</p><p className="text-lg font-bold text-white">${fmtRate(drillChannel.cpc, 2)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Conversions</p><p className="text-lg font-bold text-white">{fmt(drillChannel.conversions)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">CVR</p><p className="text-lg font-bold text-white">{fmtRate(drillChannel.cvr, 1)}%</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Spend</p><p className="text-lg font-bold text-white">{fmtCurrency(drillChannel.spend)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Revenue</p><p className="text-lg font-bold text-green-400">{fmtCurrency(drillChannel.revenue)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">ROAS</p><p className="text-lg font-bold text-white">{fmtRate(drillChannel.roas, 1)}x</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Reach</p><p className="text-lg font-bold text-white">{fmt(drillChannel.reach)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Frequency</p><p className="text-lg font-bold text-white">{fmtRate(drillChannel.frequency, 1)}</p></div>
+              <div className="card p-3"><p className="text-[10px] text-gray-500">Revenue/Spend</p><p className="text-lg font-bold text-white">{fmtRate(drillChannel.revenue / (drillChannel.spend || 1), 1)}x</p></div>
+            </div>
+            <div className="mt-4">
+              <h4 className="text-xs font-semibold text-gray-400 mb-2">12-Month Trend</h4>
+              <ResponsiveContainer width="100%" height={140}>
+                <LineChart data={generateTrendData(drillChannel.impressions)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#9ca3af" }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "11px" }} />
+                  <Line type="monotone" dataKey="impressions" stroke="#6366f1" strokeWidth={1.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

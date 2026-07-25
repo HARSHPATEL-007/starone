@@ -1,23 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { ArrowLeft, BarChart3, DollarSign, TrendingUp, Users, MousePointerClick, Target, Search, CheckSquare, Square, ExternalLink } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
+import { ArrowLeft, BarChart3, DollarSign, TrendingUp, Search, CheckSquare, Square, ExternalLink, Download, Calendar } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonCard } from "../components/Skeleton";
+import { useToast } from "../components/Toast";
+
+const DATE_RANGES = [
+  { label: "All Time", value: 0 },
+  { label: "Last 30d", value: 30 },
+  { label: "Last 90d", value: 90 },
+];
 
 export default function CampaignComparison() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [dateRange, setDateRange] = useState(0);
 
   useEffect(() => {
     api.campaigns.list().then((r) => {
       const list = Array.isArray(r) ? r : r.campaigns || [];
       setCampaigns(list);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { setLoading(false); });
   }, []);
 
   function toggleSelect(id: string) {
@@ -28,21 +37,92 @@ export default function CampaignComparison() {
     });
   }
 
-  const filtered = campaigns.filter((c) => {
-    if (search) return c.name?.toLowerCase().includes(search.toLowerCase());
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return campaigns.filter((c) => {
+      if (search) {
+        const q = search.toLowerCase();
+        const name = (c.name || "").toLowerCase();
+        const type = (c.type || "").toLowerCase();
+        if (!name.includes(q) && !type.includes(q)) return false;
+      }
+      if (dateRange > 0) {
+        const cutoff = Date.now() - dateRange * 86400000;
+        const created = c.createdAt ? new Date(c.createdAt).getTime() : 0;
+        if (created < cutoff) return false;
+      }
+      return true;
+    });
+  }, [campaigns, search, dateRange]);
 
-  const compared = campaigns.filter((c) => selected.has(c._id || c.id));
+  const compared = useMemo(() => {
+    return campaigns.filter((c) => selected.has(c._id || c.id));
+  }, [campaigns, selected]);
 
-  const chartData = compared.map((c) => ({
+  const chartData = useMemo(() => compared.map((c) => ({
     name: c.name?.substring(0, 18) || "Unknown",
     Spend: c.budget?.spent || 0,
     Budget: c.budget?.lifetime || 0,
-    Impressions: ((c.performance?.impressions || c.metrics?.totalImpressions || 0) / 1000).toFixed(0),
     Clicks: (c.performance?.clicks || c.metrics?.totalClicks || 0),
     ROAS: parseFloat((c.performance?.roas || c.metrics?.avgRoas || 0).toFixed(2)),
-  }));
+    Impressions: (c.performance?.impressions || c.metrics?.totalImpressions || 0),
+  })), [compared]);
+
+  const radarData = useMemo(() => {
+    if (compared.length < 2) return [];
+    const metrics = ["Budget", "Spend", "Clicks", "Impressions", "ROAS"];
+    return metrics.map((metric) => {
+      const entry: any = { metric };
+      const vals = compared.map((c) => {
+        if (metric === "Budget") return c.budget?.lifetime || 0;
+        if (metric === "Spend") return c.budget?.spent || 0;
+        if (metric === "Clicks") return c.performance?.clicks || c.metrics?.totalClicks || 0;
+        if (metric === "Impressions") return c.performance?.impressions || c.metrics?.totalImpressions || 0;
+        if (metric === "ROAS") return c.performance?.roas || c.metrics?.avgRoas || 0;
+        return 0;
+      });
+      const max = Math.max(...vals, 1);
+      compared.forEach((c, i) => {
+        entry[c.name || `Campaign ${i + 1}`] = vals[i] / max * 100;
+      });
+      return entry;
+    });
+  }, [compared]);
+
+  function getWinner(metric: string): string | null {
+    if (compared.length < 2) return null;
+    const vals = compared.map((c) => {
+      if (metric === "Total Budget") return c.budget?.lifetime || 0;
+      if (metric === "Spent") return c.budget?.spent || 0;
+      if (metric === "Impressions") return c.performance?.impressions || 0;
+      if (metric === "Clicks") return c.performance?.clicks || 0;
+      if (metric === "CTR") { const imp = c.performance?.impressions || 0; return imp > 0 ? ((c.performance?.clicks || 0) / imp * 100) : 0; }
+      if (metric === "Conversions") return c.performance?.conversions || 0;
+      if (metric === "ROAS") return c.performance?.roas || 0;
+      return 0;
+    });
+    const max = Math.max(...vals);
+    if (max <= 0) return null;
+    return compared[vals.indexOf(max)].name || null;
+  }
+
+  function handleExport() {
+    const headers = ["Campaign", "Status", "Budget", "Spent", "Remaining", "Utilization", "Impressions", "Clicks", "CTR", "Conversions", "ROAS", "Type"];
+    const rows = compared.map((c) => {
+      const imp = c.performance?.impressions || 0;
+      const clk = c.performance?.clicks || 0;
+      const rem = (c.budget?.lifetime || 0) - (c.budget?.spent || 0);
+      const util = c.budget?.lifetime ? ((c.budget?.spent || 0) / c.budget.lifetime * 100).toFixed(1) : "0";
+      const ctr = imp > 0 ? ((clk / imp) * 100).toFixed(2) : "0";
+      return [c.name || "Unknown", c.status || "", c.budget?.lifetime || 0, c.budget?.spent || 0, rem, util + "%", imp, clk, ctr + "%", c.performance?.conversions || 0, (c.performance?.roas || 0).toFixed(2), c.type || ""];
+    });
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "campaign-comparison.csv"; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${compared.length} campaigns`);
+  }
 
   const METRIC_COLUMNS = [
     { key: "status", label: "Status", render: (c: any) => <span className={`badge ${c.status === "active" ? "badge-active" : c.status === "paused" ? "badge-paused" : c.status === "draft" ? "badge-draft" : "badge-archived"}`}>{c.status}</span> },
@@ -58,16 +138,23 @@ export default function CampaignComparison() {
     { key: "type", label: "Type", render: (c: any) => <span className="capitalize">{c.type || "—"}</span> },
   ];
 
+  const RADAR_COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#a78bfa", "#ec4899"];
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-white transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-white">Campaign Comparison</h1>
           <p className="text-sm text-gray-500">Select campaigns to compare performance side by side</p>
         </div>
+        {compared.length >= 2 && (
+          <button className="btn-secondary text-xs flex items-center gap-1.5" onClick={handleExport}>
+            <Download className="w-3.5 h-3.5" /> Export CSV
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -76,11 +163,19 @@ export default function CampaignComparison() {
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input className="input pl-10" placeholder="Search campaigns..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Calendar className="w-3.5 h-3.5" /> Range:
+            </div>
+            {DATE_RANGES.map((r) => (
+              <button key={r.value} className={`text-xs px-2.5 py-1 rounded-lg font-medium border ${dateRange === r.value ? "border-n0va-600/40 bg-n0va-600/20 text-n0va-400" : "border-gray-700 text-gray-500 hover:border-gray-600"}`} onClick={() => setDateRange(r.value)}>
+                {r.label}
+              </button>
+            ))}
             <span className="text-xs text-gray-500">{selected.size} selected</span>
             {selected.size > 0 && (
               <button onClick={() => setSelected(new Set())} className="btn-ghost text-xs">
@@ -126,16 +221,18 @@ export default function CampaignComparison() {
                       {compared.map((c) => (
                         <tr key={c._id || c.id} className="border-b border-gray-800/50 hover:bg-gray-800/20">
                           <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              <Target className="w-3.5 h-3.5 text-n0va-400 shrink-0" />
-                              <span className="text-white font-medium text-xs truncate max-w-[140px]">{c.name}</span>
-                            </div>
+                            <span className="text-white font-medium text-xs">{c.name}</span>
                           </td>
-                          {METRIC_COLUMNS.map((col) => (
-                            <td key={col.key} className="text-right py-2.5 px-3 text-xs text-gray-300 whitespace-nowrap">
-                              {col.render(c)}
-                            </td>
-                          ))}
+                          {METRIC_COLUMNS.map((col) => {
+                            const val = col.render(c);
+                            const winner = getWinner(col.label);
+                            const isWinner = winner === c.name;
+                            return (
+                              <td key={col.key} className={`text-right py-2.5 px-3 text-xs whitespace-nowrap ${isWinner ? "text-green-400 font-semibold" : "text-gray-300"}`}>
+                                {val}{isWinner && <span className="ml-1 text-[10px] text-green-500">&#9733;</span>}
+                              </td>
+                            );
+                          })}
                           <td className="py-2.5 px-2">
                             <button onClick={() => navigate(`/campaigns/${c._id || c.id}`)} className="text-gray-600 hover:text-n0va-400">
                               <ExternalLink className="w-3.5 h-3.5" />
@@ -147,6 +244,24 @@ export default function CampaignComparison() {
                   </table>
                 </div>
               </div>
+
+              {compared.length >= 3 && (
+                <div className="card">
+                  <h3 className="text-sm font-semibold text-white mb-4">Multi-Dimensional Radar</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="#374151" />
+                      <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                      <PolarRadiusAxis tick={false} axisLine={false} />
+                      <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "12px" }} />
+                      {compared.map((c, i) => (
+                        <Radar key={i} name={c.name || `Campaign ${i + 1}`} dataKey={c.name || `Campaign ${i + 1}`} stroke={RADAR_COLORS[i % RADAR_COLORS.length]} fill={RADAR_COLORS[i % RADAR_COLORS.length]} fillOpacity={0.1} />
+                      ))}
+                      <Legend wrapperStyle={{ fontSize: "11px" }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card">
@@ -176,11 +291,12 @@ export default function CampaignComparison() {
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                       <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#9ca3af" }} />
-                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#9ca3af" }} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#9ca3af" }} />
                       <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "12px" }} />
                       <Legend wrapperStyle={{ fontSize: "11px" }} />
-                      <Bar dataKey="Clicks" fill="#a78bfa" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="ROAS" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="Clicks" fill="#a78bfa" radius={[3, 3, 0, 0]} />
+                      <Bar yAxisId="right" dataKey="ROAS" fill="#f59e0b" radius={[3, 3, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Search, Plus, X, Edit3, Trash2, Copy, TrendingUp, TrendingDown, Minus, Filter, Globe, Hash, Target } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, Plus, X, Edit3, Trash2, TrendingUp, TrendingDown, Minus, Filter, Hash, Upload, Download, CheckSquare, Square, ChevronLeft, ChevronRight, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Cell } from "recharts";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -18,6 +19,7 @@ interface Keyword {
 }
 
 const GROUPS = ["Brand", "Product", "Competitor", "Informational", "Long-tail", "Seasonal"];
+const PAGE_SIZE = 20;
 
 function fmt(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -32,6 +34,10 @@ export default function KeywordManager() {
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [sortBy, setSortBy] = useState<keyof Keyword | null>(null);
+  const [sortDesc, setSortDesc] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [form, setForm] = useState<{ term: string; volume: number; difficulty: number; position: number; previousPosition: number; cpc: number; group: string }>({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, group: "Product" });
 
   const avgPos = keywords.length > 0 ? (keywords.reduce((s, k) => s + k.position, 0) / keywords.length) : 0;
@@ -59,11 +65,105 @@ export default function KeywordManager() {
     addToast("success", `"${name}" removed`);
   }
 
-  const filtered = keywords.filter(k => {
-    if (filterGroup !== "all" && k.group !== filterGroup) return false;
-    if (search && !k.term.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  async function handleBulkDelete() {
+    const count = selected.size;
+    for (const id of selected) await remove(id);
+    addToast("success", `Deleted ${count} keywords`);
+    setSelected(new Set());
+  }
+
+  async function handleBulkGroup(group: string) {
+    const count = selected.size;
+    for (const id of selected) {
+      const kw = keywords.find(k => k.id === id);
+      if (kw) await update(id, { ...kw, group } as any);
+    }
+    addToast("success", `Moved ${count} keywords to ${group}`);
+    setSelected(new Set());
+  }
+
+  const filtered = useMemo(() => {
+    let result = keywords.filter(k => {
+      if (filterGroup !== "all" && k.group !== filterGroup) return false;
+      if (search && !k.term.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+    if (sortBy) {
+      result = [...result].sort((a, b) => {
+        const aV = a[sortBy] as number;
+        const bV = b[sortBy] as number;
+        return sortDesc ? bV - aV : aV - bV;
+      });
+    }
+    return result;
+  }, [keywords, filterGroup, search, sortBy, sortDesc]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  function toggleSort(col: keyof Keyword) {
+    if (sortBy === col) setSortDesc(!sortDesc);
+    else { setSortBy(col); setSortDesc(false); }
+  }
+
+  function SortIcon({ col }: { col: keyof Keyword }) {
+    if (sortBy !== col) return null;
+    return sortDesc ? <TrendingDown className="w-3 h-3 inline ml-0.5" /> : <TrendingUp className="w-3 h-3 inline ml-0.5" />;
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === paged.length) setSelected(new Set());
+    else setSelected(new Set(paged.map(k => k.id)));
+  }
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const text = ev.target?.result as string;
+        const lines = text.split("\n").filter(l => l.trim());
+        const headers = lines[0].split(",");
+        const imported: Keyword[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const vals = lines[i].split(",");
+          const entry: any = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), lastUpdated: new Date().toISOString() };
+          headers.forEach((h, idx) => { entry[h.trim()] = vals[idx]?.trim(); });
+          entry.volume = Number(entry.volume) || 0;
+          entry.difficulty = Number(entry.difficulty) || 0;
+          entry.position = Number(entry.position) || 0;
+          entry.previousPosition = Number(entry.previousPosition) || 0;
+          entry.cpc = Number(entry.cpc) || 0;
+          entry.traffic = Math.floor(entry.volume * (11 - Math.min(entry.position, 10)) / 20);
+          if (entry.term) imported.push(entry as Keyword);
+        }
+        for (const kw of imported) await create(kw as any);
+        addToast("success", `Imported ${imported.length} keywords`);
+      } catch { addToast("error", "Failed to parse CSV"); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  function handleExport() {
+    const csv = [
+      ["term", "volume", "difficulty", "position", "previousPosition", "cpc", "traffic", "group"],
+      ...filtered.map((k) => [k.term, k.volume, k.difficulty, k.position, k.previousPosition, k.cpc, k.traffic, k.group]),
+    ].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "keywords-export.csv"; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${filtered.length} keywords`);
+  }
+
+  const scatterData = keywords.map(k => ({ name: k.term, volume: k.volume, difficulty: k.difficulty, cpc: k.cpc, group: k.group }));
 
   return (
     <div className="space-y-6">
@@ -75,27 +175,55 @@ export default function KeywordManager() {
           </h1>
           <p className="text-gray-400 mt-1">{keywords.length} keywords · {fmt(totalVolume)} total search volume · Avg position {avgPos.toFixed(1)} · {top10} in top 10</p>
         </div>
-        <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> Add Keyword</button>
+        <div className="flex items-center gap-2">
+          <label className="btn-ghost text-xs flex items-center gap-1.5 cursor-pointer">
+            <Upload className="w-3.5 h-3.5" /> Import CSV
+            <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
+          </label>
+          <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={handleExport}><Download className="w-3.5 h-3.5" /> Export</button>
+          <button onClick={() => { resetForm(); setEditingId(null); setShowForm(true); }} className="btn-primary text-sm"><Plus className="w-3.5 h-3.5 mr-1.5" /> Add Keyword</button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
           <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search keywords..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="input py-2 text-sm w-auto" value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
+        <select className="input py-2 text-sm w-auto" value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setPage(0); }}>
           <option value="all">All Groups</option>
           {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <div className="card p-4"><p className="text-xs text-gray-500">Avg. Position</p><p className="text-xl font-bold text-white mt-1">{avgPos.toFixed(1)}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Top 10 Keywords</p><p className="text-xl font-bold text-white mt-1">{top10}/{keywords.length}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Total Traffic Est.</p><p className="text-xl font-bold text-white mt-1">{fmt(keywords.reduce((s, k) => s + k.traffic, 0))}</p></div>
         <div className="card p-4"><p className="text-xs text-gray-500">Avg. CPC</p><p className="text-xl font-bold text-white mt-1">${(keywords.reduce((s, k) => s + k.cpc, 0) / keywords.length).toFixed(2)}</p></div>
       </div>
+
+      {scatterData.length > 1 && (
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="w-4 h-4 text-n0va-400" />
+            <h3 className="text-sm font-semibold text-white">Volume vs Difficulty</h3>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
+            <ScatterChart>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="volume" tick={{ fontSize: 10, fill: "#9ca3af" }} name="Volume" />
+              <YAxis dataKey="difficulty" tick={{ fontSize: 10, fill: "#9ca3af" }} name="Difficulty" domain={[0, 100]} />
+              <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: "8px", fontSize: "12px" }} />
+              <Scatter data={scatterData} fill="#6366f1">
+                {scatterData.map((entry, idx) => (
+                  <Cell key={idx} fill={entry.difficulty < 30 ? "#22c55e" : entry.difficulty < 60 ? "#eab308" : "#ef4444"} />
+                ))}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Form modal */}
       {showForm && (
@@ -134,27 +262,51 @@ export default function KeywordManager() {
         </div>
       )}
 
+      {/* Bulk actions bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-n0va-600/10 border border-n0va-600/30 rounded-lg">
+          <span className="text-xs text-n0va-400">{selected.size} selected</span>
+          <div className="w-px h-4 bg-gray-700" />
+          <button className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1" onClick={handleBulkDelete}><Trash2 className="w-3 h-3" /> Delete</button>
+          {GROUPS.map(g => (
+            <button key={g} className="text-xs text-gray-400 hover:text-white" onClick={() => handleBulkGroup(g)}>Move to {g}</button>
+          ))}
+          <button className="text-xs text-gray-500 ml-auto hover:text-gray-300" onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
+
       {/* Table */}
       {filtered.length > 0 && (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-gray-800 text-left text-xs text-gray-500">
-                <th className="p-3 font-medium">Keyword</th>
+                <th className="p-3 w-8">
+                  <button onClick={toggleSelectAll} className="text-gray-600 hover:text-gray-400">
+                    {selected.size === paged.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                  </button>
+                </th>
+                <th className="p-3 font-medium cursor-pointer hover:text-white" onClick={() => toggleSort("term")}>Keyword<SortIcon col="term" /></th>
                 <th className="p-3 font-medium">Group</th>
-                <th className="p-3 font-medium text-right">Volume</th>
-                <th className="p-3 font-medium text-right">Difficulty</th>
-                <th className="p-3 font-medium text-right">Position</th>
+                <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("volume")}>Volume<SortIcon col="volume" /></th>
+                <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("difficulty")}>Difficulty<SortIcon col="difficulty" /></th>
+                <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("position")}>Position<SortIcon col="position" /></th>
                 <th className="p-3 font-medium text-right">Change</th>
-                <th className="p-3 font-medium text-right">CPC</th>
-                <th className="p-3 font-medium text-right">Est. Traffic</th>
+                <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("cpc")}>CPC<SortIcon col="cpc" /></th>
+                <th className="p-3 font-medium text-right cursor-pointer hover:text-white" onClick={() => toggleSort("traffic")}>Est. Traffic<SortIcon col="traffic" /></th>
                 <th className="p-3 w-20" />
               </tr></thead>
               <tbody>
-                {filtered.map(kw => {
+                {paged.map(kw => {
                   const posChange = kw.previousPosition - kw.position;
+                  const isSel = selected.has(kw.id);
                   return (
-                    <tr key={kw.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <tr key={kw.id} className={`border-b border-gray-800/50 hover:bg-gray-800/30 ${isSel ? "bg-n0va-600/5" : ""}`}>
+                      <td className="p-3">
+                        <button onClick={() => toggleSelect(kw.id)} className="text-gray-600 hover:text-gray-400">
+                          {isSel ? <CheckSquare className="w-3.5 h-3.5 text-n0va-400" /> : <Square className="w-3.5 h-3.5" />}
+                        </button>
+                      </td>
                       <td className="p-3 text-white font-medium">{kw.term}</td>
                       <td className="p-3"><span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">{kw.group}</span></td>
                       <td className="p-3 text-right text-gray-300">{fmt(kw.volume)}</td>
@@ -195,6 +347,24 @@ export default function KeywordManager() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-3 py-2 border-t border-gray-800">
+              <span className="text-xs text-gray-500">Page {page + 1} of {totalPages} ({filtered.length} total)</span>
+              <div className="flex items-center gap-1">
+                <button className="p-1 text-gray-600 hover:text-white disabled:opacity-30" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="w-4 h-4" /></button>
+                {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                  const pNum = Math.max(0, Math.min(page - 2, totalPages - 5)) + i;
+                  if (pNum >= totalPages) return null;
+                  return (
+                    <button key={pNum} className={`w-7 h-7 rounded text-xs ${pNum === page ? "bg-n0va-600/20 text-n0va-400 border border-n0va-600/40" : "text-gray-500 hover:text-gray-300"}`} onClick={() => setPage(pNum)}>
+                      {pNum + 1}
+                    </button>
+                  );
+                })}
+                <button className="p-1 text-gray-600 hover:text-white disabled:opacity-30" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="w-4 h-4" /></button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
