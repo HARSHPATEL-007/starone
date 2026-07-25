@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, ChevronRight, Image, Video, Layout, AlignLeft, Palette, FileText, Eye } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Image, Video, Layout, AlignLeft, Palette, FileText, Eye, Download, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const CREATIVE_TYPES = [
   { id: "image", label: "Image", desc: "Single image ad with headline and CTA", icon: Image },
@@ -18,6 +19,29 @@ export default function CreativeBuilder() {
   const { addToast } = useToast();
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [creatives, setCreatives] = useState<any[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    api.creatives.list().then(res => { setCreatives(res || []); }).catch(() => {}).finally(() => setLoadingStats(false));
+  }, []);
+
+  const typeColors: Record<string, string> = { image: "#6366f1", video: "#ec4899", carousel: "#10b981", text: "#f59e0b" };
+  const typeData = CREATIVE_TYPES.map(t => ({ name: t.label, value: creatives.filter(c => c.type === t.id).length, color: typeColors[t.id] })).filter(d => d.value > 0);
+  const totalCreatives = creatives.length;
+  const recentCreatives = creatives.slice(0, 5);
+
+  function exportCreativeCSV() {
+    const rows = [["Name", "Type", "Headline", "CTA", "Tags", "Created"]];
+    creatives.forEach((c: any) => rows.push([c.name || "", c.type || "", c.headline || "", c.cta || "", (c.tags || []).join("; "), c.createdAt || ""]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `creatives-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${creatives.length} creatives`);
+  }
+
   const [form, setForm] = useState({
     name: "",
     type: "image",
@@ -232,6 +256,50 @@ export default function CreativeBuilder() {
           )}
         </div>
       </div>
+
+      {/* Creative insights */}
+      {!loadingStats && totalCreatives > 0 && (
+        <div className="card p-4 mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Creative Insights ({totalCreatives} total)</h3>
+            <button onClick={exportCreativeCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="h-40 flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={typeData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {typeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-1.5 shrink-0">
+              {typeData.map(d => (
+                <div key={d.name} className="flex items-center gap-2 text-xs">
+                  <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: d.color }} />
+                  <span className="text-gray-400 w-16">{d.name}</span>
+                  <span className="text-white font-medium">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {recentCreatives.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-800">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1.5">Recent Creatives</p>
+              <div className="flex flex-wrap gap-1.5">
+                {recentCreatives.map((c: any) => (
+                  <span key={c._id || c.id} className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{c.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { BookTemplate, Plus, X, Search, Edit3, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Star, Eye, Clock, Filter, Copy, CheckCircle, ListChecks, GripVertical } from "lucide-react";
+import { BookTemplate, Plus, X, Search, Edit3, Trash2, ChevronDown, ChevronRight, BookOpen, FileText, Star, Eye, Clock, Filter, Copy, CheckCircle, ListChecks, GripVertical, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface PlaybookSection {
   id: string;
@@ -131,6 +132,20 @@ export default function Playbooks() {
 
   const categories = [...new Set(playbooks.map(p => p.category))];
 
+  const statusColors: Record<string, string> = { published: "#10b981", draft: "#f59e0b", archived: "#6b7280" };
+  const statusData = ["published", "draft", "archived"].map(s => ({ name: s.charAt(0).toUpperCase() + s.slice(1), value: playbooks.filter(p => p.status === s).length, color: statusColors[s] })).filter(d => d.value > 0);
+
+  function exportCSV() {
+    const rows = [["Title", "Description", "Category", "Status", "Tags", "Sections", "Favorite", "Updated"]];
+    playbooks.forEach(p => rows.push([p.title, p.description, p.category, p.status, p.tags.join("; "), String(p.sections.length), String(p.favorite), p.updatedAt]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `playbooks-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${playbooks.length} playbooks`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -167,6 +182,39 @@ export default function Playbooks() {
           <button onClick={() => { setSearch(""); setFilterStatus("all"); setFilterCat("all"); setShowFavorites(false); }} className="text-xs text-gray-500 hover:text-gray-300">Clear</button>
         )}
       </div>
+
+      {/* Status chart & export */}
+      {playbooks.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><PieChart className="w-4 h-4 text-n0va-400" /> Status Overview</h3>
+            <button onClick={exportCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="w-48 h-48 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-2">
+              {statusData.map(s => (
+                <div key={s.name} className="flex items-center gap-3 text-sm">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: s.color }} />
+                  <span className="text-gray-400 w-20">{s.name}</span>
+                  <span className="text-white font-medium">{s.value}</span>
+                  <span className="text-gray-600">({((s.value / playbooks.length) * 100).toFixed(1)}%)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form modal */}
       {showForm && (

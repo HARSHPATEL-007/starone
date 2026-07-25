@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { FileInput, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, GripVertical, AlignLeft, Hash, CheckSquare, Circle, ListOrdered, Mail, Phone, Calendar, Globe, Upload } from "lucide-react";
+import { FileInput, Plus, X, Edit3, Trash2, Copy, Search, Users, Eye, MousePointerClick, GripVertical, AlignLeft, Hash, CheckSquare, Circle, ListOrdered, Mail, Phone, Calendar, Globe, Upload, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 type FieldType = "text" | "email" | "phone" | "textarea" | "select" | "checkbox" | "radio" | "number" | "date" | "file";
 
@@ -129,6 +130,19 @@ export default function MarketingForms() {
 
   const filtered = forms.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()) || f.description.toLowerCase().includes(search.toLowerCase()));
 
+  const submissionData = forms.map(f => ({ name: f.name.length > 18 ? f.name.slice(0, 16) + "…" : f.name, submissions: f.submissionCount })).sort((a, b) => b.submissions - a.submissions);
+
+  function exportFormsCSV() {
+    const rows = [["Name", "Description", "Fields", "Submissions", "Active", "Updated"]];
+    forms.forEach(f => rows.push([f.name, f.description, String(f.fields.length), String(f.submissionCount), String(f.isActive), f.updatedAt]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `marketing-forms-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${forms.length} forms`);
+  }
+
   const previewForm = previewId ? forms.find(f => f.id === previewId) : null;
 
   return (
@@ -148,6 +162,27 @@ export default function MarketingForms() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
         <input className="input pl-10 pr-4 py-2 text-sm w-full" placeholder="Search forms..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
+
+      {/* Submission chart & export */}
+      {forms.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><BarChart className="w-4 h-4 text-n0va-400" /> Submissions by Form</h3>
+            <button onClick={exportFormsCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={submissionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                <Bar dataKey="submissions" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Builder modal */}
       {showForm && (

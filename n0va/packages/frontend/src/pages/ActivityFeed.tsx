@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw, Filter, Clock, User, FileText, Megaphone, Palette, Users, Bot, AlertTriangle, Shield, ExternalLink, Play, Pause, Search, Download, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
+import { RefreshCw, Filter, Clock, User, FileText, Megaphone, Palette, Users, Bot, AlertTriangle, Shield, ExternalLink, Play, Pause, Search, Download, ChevronDown, ChevronUp, Eye, EyeOff, BarChart3 } from "lucide-react";
 import { api } from "../api/client";
 import { SkeletonRow } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const entityIcons: Record<string, any> = {
   campaign: Megaphone, creative: Palette, audience: Users,
@@ -127,6 +128,26 @@ export default function ActivityFeed() {
     return groups;
   }, [filtered, displayCount]);
 
+  const activityVolume = useMemo(() => {
+    const groups: Record<string, number> = {};
+    const now = Date.now();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * 86400000);
+      const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      groups[key] = 0;
+    }
+    activities.forEach((a: any) => {
+      const diff = now - new Date(a.timestamp).getTime();
+      const days = Math.floor(diff / 86400000);
+      if (days >= 0 && days <= 6) {
+        const d = new Date(now - days * 86400000);
+        const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        groups[key] = (groups[key] || 0) + 1;
+      }
+    });
+    return Object.entries(groups).map(([day, count]) => ({ day, count }));
+  }, [activities]);
+
   const displayed = filtered.slice(0, displayCount);
   const hasMore = displayCount < filtered.length;
 
@@ -183,6 +204,27 @@ export default function ActivityFeed() {
           </button>
         </div>
       </div>
+
+      {/* Activity volume chart */}
+      {activityVolume.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-4 h-4 text-n0va-400" />
+            <h3 className="text-sm font-semibold text-white">7-Day Activity Volume</h3>
+          </div>
+          <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={activityVolume} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="day" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 max-w-xs">

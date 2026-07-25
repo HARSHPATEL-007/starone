@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import { ArrowLeft, Check, ChevronRight, DollarSign, Target, Users, FileText } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useTemplates } from "../hooks/useTemplates";
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const PLATFORM_OPTIONS = [
   { id: "meta", label: "Meta Ads", icon: "M" },
@@ -40,6 +41,7 @@ export default function CampaignWizard() {
   const [templateLabel, setTemplateLabel] = useState("");
   const today = new Date().toISOString().split("T")[0];
   const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
+
   const [form, setForm] = useState({
     name: "",
     type: "performance",
@@ -56,6 +58,22 @@ export default function CampaignWizard() {
     startDate: today,
     endDate: nextMonth,
   });
+
+  const budgetProjection = (() => {
+    if (!form.startDate || !form.endDate) return [];
+    const start = new Date(form.startDate);
+    const end = new Date(form.endDate);
+    const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+    const daily = form.dailyBudget;
+    const total = form.lifetimeBudget;
+    const evenDaily = total / days;
+    const spend = Math.min(daily, evenDaily);
+    let cumulative = 0;
+    return Array.from({ length: Math.min(days, 30) }, (_, i) => {
+      cumulative += spend;
+      return { day: `D${i + 1}`, spend: Math.round(spend), cumulative: Math.round(cumulative) };
+    });
+  })();
 
   useEffect(() => {
     api.audiences.list().then(setAudiences).catch(() => {});
@@ -215,6 +233,27 @@ export default function CampaignWizard() {
                 <option value="AUD">AUD — Australian Dollar</option>
               </select>
             </div>
+            {budgetProjection.length > 0 && (
+              <div className="pt-2">
+                <p className="text-xs text-gray-500 mb-2">Daily spend projection ({Math.round((new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) / 86400000) + 1} days, ${form.lifetimeBudget.toLocaleString()} total)</p>
+                <div className="h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={budgetProjection} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                      <XAxis dataKey="day" tick={{ fill: "#9ca3af", fontSize: 10 }} interval={Math.max(1, Math.floor(budgetProjection.length / 8))} />
+                      <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                      <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                      <Line type="monotone" dataKey="cumulative" stroke="#10b981" strokeWidth={2} dot={false} name="Cumulative" />
+                      <Line type="monotone" dataKey="spend" stroke="#6366f1" strokeWidth={2} dot={false} name="Daily" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex items-center gap-4 mt-1 text-[10px] text-gray-500">
+                  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-n0va-500 inline-block" /> Daily spend</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-green-500 inline-block" /> Cumulative</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

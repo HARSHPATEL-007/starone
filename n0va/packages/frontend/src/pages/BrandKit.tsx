@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Palette, Type, MessageSquare, Image, Save, Undo2, Check, RefreshCw, Plus, X } from "lucide-react";
+import { Palette, Type, MessageSquare, Image, Save, Undo2, Check, RefreshCw, Plus, X, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
 
@@ -29,7 +29,7 @@ const DEFAULT: BrandKitData = {
   updatedAt: new Date().toISOString(),
 };
 
-const fontOptions = ["Inter", "Roboto", "Poppins", "Playfair Display", "Merriweather", "Montserrat", "Open Sans", "Lato", "Source Sans Pro", "Nunito", "Raleway", "DM Sans"];
+  const fontOptions = ["Inter", "Roboto", "Poppins", "Playfair Display", "Merriweather", "Montserrat", "Open Sans", "Lato", "Source Sans Pro", "Nunito", "Raleway", "DM Sans"];
 
 const toneOptions = [
   "Professional & approachable",
@@ -70,6 +70,15 @@ export default function BrandKit() {
     setData(updated);
     replaceAll([updated]);
     addToast("success", "Brand Kit saved");
+  }
+
+  function exportJSON() {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `brand-kit-${Date.now()}.json`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", "Brand Kit exported as JSON");
   }
 
   function reset() {
@@ -135,6 +144,7 @@ export default function BrandKit() {
           <p className="text-gray-400 mt-1">Your brand identity, colors, typography, and voice — centralized</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={exportJSON} className="btn-ghost text-sm flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> Export JSON</button>
           <button onClick={reset} className="btn-ghost text-sm flex items-center gap-1.5"><Undo2 className="w-3.5 h-3.5" /> Reset</button>
           <button onClick={save} className="btn-primary text-sm flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Save Brand Kit</button>
         </div>
@@ -257,6 +267,29 @@ export default function BrandKit() {
           </div>
         </div>
       </div>
+      {/* Live brand preview */}
+      {data.colors.length > 0 && (
+        <div className="card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-white flex items-center gap-2"><Image className="w-4 h-4 text-n0va-400" /> Live Brand Preview</h2>
+          <div className="rounded-xl overflow-hidden border border-gray-800" style={{ fontFamily: data.fonts.heading }}>
+            <div className="p-8 text-center" style={{ backgroundColor: data.colors[0]?.value || "#6366f1", color: "#fff" }}>
+              <p className="text-3xl font-bold">{data.name || "Your Brand"}</p>
+              <p className="text-sm mt-2 opacity-80">{data.description || "Brand description goes here…"}</p>
+              <div className="mt-4 inline-flex px-6 py-2 rounded-lg text-sm font-semibold" style={{ backgroundColor: "#fff", color: data.colors[0]?.value || "#6366f1" }}>
+                Get Started
+              </div>
+            </div>
+            <div className="p-6" style={{ backgroundColor: "#0f172a" }}>
+              <p className="text-sm text-gray-400" style={{ fontFamily: data.fonts.body }}>This is how your brand will appear across campaigns — from ad creatives to landing pages. The preview above uses your primary color as the hero background with white overlays.</p>
+              <div className="flex gap-2 mt-3">
+                {data.colors.slice(0, 5).map((c, i) => (
+                  <div key={i} className="flex-1 h-2 rounded-full" style={{ backgroundColor: c.value }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
