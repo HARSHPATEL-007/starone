@@ -75,6 +75,11 @@ import optimizerV2Routes from "./routes/optimizer-v2";
 import reportBuilderRoutes from "./routes/report-builder";
 import audienceInsightsRoutes from "./routes/audience-insights";
 import developerPortalRoutes from "./routes/developer-portal";
+import playbookExecutionRoutes from "./routes/playbook-execution";
+import landingPageBuilderRoutes from "./routes/landing-page-builder";
+import influencerRoutes from "./routes/influencer";
+import campaignIssueRoutes from "./routes/campaign-issues";
+import competitiveBenchmarkingRoutes from "./routes/competitive-benchmarking";
 
 const app = express();
 const httpServer = createServer(app);
@@ -164,6 +169,11 @@ app.use("/api/v1/optimizer-v2", authMiddleware, tenantMiddleware, optimizerV2Rou
 app.use("/api/v1/report-builder", authMiddleware, tenantMiddleware, reportBuilderRoutes);
 app.use("/api/v1/audience-insights", authMiddleware, tenantMiddleware, audienceInsightsRoutes);
 app.use("/api/v1/developer-portal", authMiddleware, tenantMiddleware, developerPortalRoutes);
+app.use("/api/v1/playbook-execution", authMiddleware, tenantMiddleware, playbookExecutionRoutes);
+app.use("/api/v1/landing-page-builder", authMiddleware, tenantMiddleware, landingPageBuilderRoutes);
+app.use("/api/v1/influencers", authMiddleware, tenantMiddleware, influencerRoutes);
+app.use("/api/v1/campaign-issues", authMiddleware, tenantMiddleware, campaignIssueRoutes);
+app.use("/api/v1/competitive-benchmarking", authMiddleware, tenantMiddleware, competitiveBenchmarkingRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

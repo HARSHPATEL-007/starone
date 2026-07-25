@@ -67,6 +67,8 @@ import {
   Code2,
   Mail,
   AtSign,
+  Play,
+  AlertTriangle,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -88,11 +90,16 @@ const navItems = [
   { to: "/social-publisher", icon: Send, label: "Social Publisher" },
   { to: "/campaign-alerts", icon: Bell, label: "Campaign Alerts" },
   { to: "/playbooks", icon: BookTemplate, label: "Playbooks" },
+  { to: "/playbook-execution", icon: Play, label: "Playbook Exec" },
   { to: "/launch-checklist", icon: CheckSquare, label: "Launch Checklist" },
   { to: "/campaigns/new", icon: Megaphone, label: "New Campaign" },
   { to: "/brief-generator", icon: Sparkles, label: "Brief Generator" },
   { to: "/briefs", icon: FileText, label: "Campaign Briefs" },
   { to: "/landing-pages", icon: ExternalLink, label: "Landing Pages" },
+  { to: "/landing-page-builder", icon: ExternalLink, label: "Landing Page Builder" },
+  { to: "/influencer-management", icon: Users, label: "Influencers" },
+  { to: "/campaign-issues", icon: AlertTriangle, label: "Campaign Issues" },
+  { to: "/competitive-benchmarking", icon: BarChart3, label: "Benchmarking" },
   { to: "/cost-tracker", icon: DollarSign, label: "Cost Tracker" },
   { to: "/forms", icon: FileInput, label: "Marketing Forms" },
   { to: "/channel-performance", icon: BarChart3, label: "Channel Perf." },

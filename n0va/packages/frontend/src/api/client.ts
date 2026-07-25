@@ -651,6 +651,57 @@ export const api = {
     markRead: (id: string) => request<any>(`/mentions/${id}/read`, { method: "PATCH" }),
     markAllRead: () => request<any>("/mentions/read-all", { method: "POST" }),
   },
+  playbookExecution: {
+    list: () => request<any[]>("/playbook-execution"),
+    get: (id: string) => request<any>(`/playbook-execution/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/playbook-execution", { method: "POST", body: JSON.stringify(data) }),
+    start: (id: string) => request<any>(`/playbook-execution/${id}/start`, { method: "POST" }),
+    completeStep: (execId: string, stepId: string, result?: any) =>
+      request<any>(`/playbook-execution/${execId}/steps/${stepId}/complete`, { method: "POST", body: JSON.stringify({ result }) }),
+    failStep: (execId: string, stepId: string, error: string) =>
+      request<any>(`/playbook-execution/${execId}/steps/${stepId}/fail`, { method: "POST", body: JSON.stringify({ error }) }),
+    pause: (id: string) => request<any>(`/playbook-execution/${id}/pause`, { method: "POST" }),
+    resume: (id: string) => request<any>(`/playbook-execution/${id}/resume`, { method: "POST" }),
+    delete: (id: string) => request<void>(`/playbook-execution/${id}`, { method: "DELETE" }),
+    templates: () => request<any[]>("/playbook-execution/templates"),
+  },
+  landingPageBuilder: {
+    templates: () => request<any[]>("/landing-page-builder/templates"),
+    list: () => request<any[]>("/landing-page-builder"),
+    get: (id: string) => request<any>(`/landing-page-builder/${id}`),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/landing-page-builder", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/landing-page-builder/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    publish: (id: string) => request<any>(`/landing-page-builder/${id}/publish`, { method: "POST" }),
+    delete: (id: string) => request<void>(`/landing-page-builder/${id}`, { method: "DELETE" }),
+  },
+  influencers: {
+    platforms: () => request<any[]>("/influencers/platforms"),
+    search: (params?: string) => request<any[]>(`/influencers/search${params ? `?${params}` : ""}`),
+    listCampaign: (campaignId?: string) =>
+      request<any[]>(campaignId ? `/influencers/campaign/${campaignId}` : "/influencers/campaign-list"),
+    addToCampaign: (data: Record<string, unknown>) =>
+      request<any>("/influencers/campaign", { method: "POST", body: JSON.stringify(data) }),
+    updateStatus: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/influencers/campaign/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  },
+  campaignIssues: {
+    list: (campaignId?: string) =>
+      request<any[]>(`/campaign-issues${campaignId ? `?campaignId=${campaignId}` : ""}`),
+    stats: () => request<any>("/campaign-issues/stats"),
+    create: (data: Record<string, unknown>) =>
+      request<any>("/campaign-issues", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<any>(`/campaign-issues/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/campaign-issues/${id}`, { method: "DELETE" }),
+  },
+  competitiveBenchmarking: {
+    get: (industry?: string) =>
+      request<any>(`/competitive-benchmarking${industry ? `?industry=${industry}` : ""}`),
+    industries: () => request<any[]>("/competitive-benchmarking/industries"),
+  },
   developerPortal: {
     keys: () => request<any[]>("/developer-portal/keys"),
     createKey: (data: Record<string, unknown>) =>

@@ -102,6 +102,11 @@ import CampaignOptimizer from "./pages/CampaignOptimizer";
 import ReportBuilder from "./pages/ReportBuilder";
 import AudienceInsights from "./pages/AudienceInsights";
 import DeveloperPortal from "./pages/DeveloperPortal";
+import PlaybookExecution from "./pages/PlaybookExecution";
+import LandingPageBuilder from "./pages/LandingPageBuilder";
+import InfluencerManagement from "./pages/InfluencerManagement";
+import CampaignIssues from "./pages/CampaignIssues";
+import CompetitiveBenchmarking from "./pages/CompetitiveBenchmarking";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -220,6 +225,11 @@ export default function App() {
                 <Route path="/report-builder" element={<ReportBuilder />} />
                 <Route path="/audience-insights" element={<AudienceInsights />} />
                 <Route path="/developer-portal" element={<DeveloperPortal />} />
+                <Route path="/playbook-execution" element={<PlaybookExecution />} />
+                <Route path="/landing-page-builder" element={<LandingPageBuilder />} />
+                <Route path="/influencer-management" element={<InfluencerManagement />} />
+                <Route path="/campaign-issues" element={<CampaignIssues />} />
+                <Route path="/competitive-benchmarking" element={<CompetitiveBenchmarking />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
