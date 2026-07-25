@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Task, Doc, Sheet, CalendarEvent } from "../types";
-import { CheckSquare, FileText, Table, Calendar, Plus, ExternalLink, RefreshCw, ArrowRight, Edit3, Trash2, X } from "lucide-react";
+import { CheckSquare, FileText, Table, Calendar, Plus, ExternalLink, RefreshCw, ArrowRight, Edit3, Trash2, X, Download } from "lucide-react";
 import { SkeletonCard, SkeletonRow } from "../components/Skeleton";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+
+const ENTITY_COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6"];
 
 type Tab = "tasks" | "docs" | "sheets" | "calendar";
 type EntityType = "task" | "doc" | "sheet" | "event";
@@ -191,6 +194,52 @@ export default function HyperContext() {
             <span className="text-xs text-gray-600">({t.count})</span>
           </button>
         ))}
+      </div>
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Entity Overview</h3>
+          <div className="flex items-center gap-2">
+            <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+              const data = tab === "tasks" ? tasks : tab === "docs" ? docs : tab === "sheets" ? sheets : events;
+              const headers = data.length > 0 ? Object.keys(data[0]).filter(k => !k.startsWith("_")) : [];
+              const csv = [headers.join(","), ...data.map((item: any) => headers.map(h => `"${String(item[h] ?? "").replace(/"/g, '""')}"`).join(","))].join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = `${tab}_export.csv`; a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              <Download className="w-3 h-3" /> CSV
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {[{ label: "Tasks", count: tasks.length, color: "text-purple-400" },
+            { label: "Documents", count: docs.length, color: "text-green-400" },
+            { label: "Sheets", count: sheets.length, color: "text-yellow-400" },
+            { label: "Events", count: events.length, color: "text-blue-400" },
+          ].map(e => (
+            <div key={e.label} className="bg-gray-800/50 rounded-lg p-3 text-center">
+              <p className={`text-2xl font-bold ${e.color}`}>{e.count}</p>
+              <p className="text-xs text-gray-500">{e.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={[
+                { name: "Tasks", value: tasks.length },
+                { name: "Documents", value: docs.length },
+                { name: "Sheets", value: sheets.length },
+                { name: "Events", value: events.length },
+              ].filter(d => d.value > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                {ENTITY_COLORS.slice(0, 4).map((color, i) => <Cell key={i} fill={color} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {modalMode && helpers && (

@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
-import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity, RefreshCw, AlertCircle, Unplug } from "lucide-react";
+import { ArrowLeft, Share2, Wifi, Play, CheckCircle, XCircle, Clock, Activity, RefreshCw, AlertCircle, Unplug, Download } from "lucide-react";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const STATUS_COLORS: Record<string, string> = { active: "#10b981", error: "#ef4444", pending: "#f59e0b" };
 
 export default function PlatformDetail() {
   const { id } = useParams();
@@ -177,6 +180,33 @@ export default function PlatformDetail() {
         </div>
 
         <div className="space-y-6">
+          <div className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-white">Connection Status</h3>
+              <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+                const info = { name: platform?.name, version: platform?.version, platform: platform?.platform, authType: platform?.authType, connections: connected.length, connectedAccounts: connected };
+                const blob = new Blob([JSON.stringify(info, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `${platform?.name || "platform"}_info.json`; a.click();
+                URL.revokeObjectURL(url);
+              }}>
+                <Download className="w-3 h-3" /> Export
+              </button>
+            </div>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={Object.entries(
+                    connected.reduce((acc: Record<string, number>, a: any) => { const s = a.status || "pending"; acc[s] = (acc[s] || 0) + 1; return acc; }, {})
+                  ).filter(([, c]) => c > 0).map(([status, count]) => ({ name: status, value: count }))}
+                    cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {Object.entries(STATUS_COLORS).map(([s, c]) => <Cell key={s} fill={c} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
           <div className="card">
             <h3 className="text-lg font-semibold text-white mb-3">Gateway Status</h3>
             {health ? (

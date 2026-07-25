@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Webhook, ToggleLeft, ToggleRight, Trash2, CheckCircle, XCircle, RotateCw, Clock, RefreshCw } from "lucide-react";
+import { ArrowLeft, Webhook, ToggleLeft, ToggleRight, Trash2, CheckCircle, XCircle, RotateCw, Clock, RefreshCw, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const DELIVERY_COLORS: Record<string, string> = { delivered: "#10b981", failed: "#ef4444", retrying: "#f59e0b", pending: "#6b7280" };
 
 export default function WebhookDetail() {
   const { id } = useParams();
@@ -164,7 +167,33 @@ export default function WebhookDetail() {
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Delivery Log ({deliveries.length})</h3>
+              <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+                const csv = [["Status", "StatusCode", "Attempts", "MaxRetries", "Error", "LatencyMs", "CreatedAt"].join(","),
+                  ...deliveries.map((d: any) =>
+                    `"${d.status}",${d.statusCode ?? ""},${d.attempts ?? ""},${d.maxRetries ?? ""},"${(d.error || "").replace(/"/g, '""')}",${d.latencyMs ?? ""},"${d.createdAt}"`
+                  )].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `webhook_${id}_deliveries.csv`; a.click();
+                URL.revokeObjectURL(url);
+              }}>
+                <Download className="w-3 h-3" /> CSV
+              </button>
             </div>
+            {deliveries.length > 0 && (
+              <div className="h-40 mb-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={Object.entries(
+                      deliveries.reduce((acc: Record<string, number>, d: any) => { const s = d.status || "pending"; acc[s] = (acc[s] || 0) + 1; return acc; }, {})
+                    ).filter(([, c]) => c > 0).map(([status, count]) => ({ name: status, value: count }))}
+                      cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {Object.entries(DELIVERY_COLORS).map(([s, c]) => <Cell key={s} fill={c} />)}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
             {deliveriesLoading ? (
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => (

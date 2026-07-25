@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, ChevronRight, FileJson, Zap, ListOrdered, Shield, Plus, Trash2, Lightbulb } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, FileJson, Zap, ListOrdered, Shield, Plus, Trash2, Lightbulb, Download } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+const RECIPE_COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#ec4899"];
 
 const PLATFORM_OPTIONS = [
   { id: "meta", label: "Meta Ads" },
@@ -41,6 +44,7 @@ export default function RecipeBuilder() {
   const { addToast } = useToast();
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [existingRecipes, setExistingRecipes] = useState<any[]>([]);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -49,6 +53,8 @@ export default function RecipeBuilder() {
     hitlField: "",
   });
   const [recipeSteps, setRecipeSteps] = useState<{ action: string; platform: string }[]>([{ action: "", platform: "" }]);
+
+  useEffect(() => { api.recipes.list().then(r => setExistingRecipes(Array.isArray(r) ? r : [])).catch(() => {}); }, []);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -120,6 +126,71 @@ export default function RecipeBuilder() {
           </div>
         ))}
       </div>
+
+      {existingRecipes.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Existing Recipes ({existingRecipes.length})</h3>
+            <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+              const platformCounts: Record<string, number> = {};
+              const actionCounts: Record<string, number> = {};
+              existingRecipes.forEach((r: any) => {
+                (r.steps || []).forEach((s: any) => {
+                  if (s.platform) platformCounts[s.platform] = (platformCounts[s.platform] || 0) + 1;
+                  if (s.action) actionCounts[s.action] = (actionCounts[s.action] || 0) + 1;
+                });
+              });
+              const csv = [["Metric", "Category", "Count"].join(","),
+                ...Object.entries(platformCounts).map(([k, v]) => `"Platform","${k}",${v}`),
+                ...Object.entries(actionCounts).map(([k, v]) => `"Action","${k}",${v}`),
+              ].join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "recipes.csv"; a.click();
+              URL.revokeObjectURL(url);
+            }}>
+              <Download className="w-3 h-3" /> CSV
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-40">
+              <p className="text-[10px] text-gray-500 mb-1">By Platform</p>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={(() => {
+                  const counts: Record<string, number> = {};
+                  existingRecipes.forEach((r: any) => (r.steps || []).forEach((s: any) => { if (s.platform) counts[s.platform] = (counts[s.platform] || 0) + 1; }));
+                  return Object.entries(counts).map(([k, v]) => ({ name: k, count: v }));
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, fontSize: 11 }} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {RECIPE_COLORS.map((c, i) => <Cell key={i} fill={c} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="h-40">
+              <p className="text-[10px] text-gray-500 mb-1">By Action</p>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={(() => {
+                  const counts: Record<string, number> = {};
+                  existingRecipes.forEach((r: any) => (r.steps || []).forEach((s: any) => { if (s.action) counts[s.action] = (counts[s.action] || 0) + 1; }));
+                  return Object.entries(counts).map(([k, v]) => ({ name: k, count: v }));
+                })()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} tickFormatter={(v) => v.replace(/_/g, " ")} />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, fontSize: 11 }} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {RECIPE_COLORS.map((c, i) => <Cell key={i} fill={c} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         {step === 0 && (

@@ -1,10 +1,16 @@
 import { useEffect, useState, useMemo } from "react";
-import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, RefreshCw, Filter, ChevronDown, ChevronRight, Settings, BellOff, CheckSquare, Square, Trash2, Loader, Clock, Shield, TrendingDown, ExternalLink } from "lucide-react";
+import { Bell, AlertTriangle, DollarSign, TrendingUp, Bot, Info, CheckCheck, X, RefreshCw, Filter, ChevronDown, ChevronRight, Settings, BellOff, CheckSquare, Square, Trash2, Loader, Clock, Shield, TrendingDown, ExternalLink, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useFraudAlerts, useBudgetAlerts } from "../hooks/useSocket";
 import { useToast } from "../components/Toast";
 import { SkeletonRow } from "../components/Skeleton";
 import { Link } from "react-router-dom";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+
+const NOTIF_COLORS: Record<string, string> = {
+  fraud_alert: "#ef4444", budget_alert: "#f59e0b",
+  campaign_update: "#3b82f6", agent_status: "#8b5cf6", system: "#6b7280",
+};
 
 const typeIcons: Record<string, any> = {
   fraud_alert: AlertTriangle, budget_alert: DollarSign,
@@ -220,6 +226,39 @@ export default function NotificationCenter() {
           </div>
         </div>
       )}
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Type Distribution</h3>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+            const counts: Record<string, number> = {};
+            allItems.forEach(n => { counts[n.type] = (counts[n.type] || 0) + 1; });
+            const csv = [["Type", "Count"].join(","), ...Object.entries(counts).map(([t, c]) => `"${t}",${c}`)].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "notification_types.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+            <Download className="w-3 h-3" /> CSV
+          </button>
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={(() => {
+              const counts: Record<string, number> = {};
+              allItems.forEach(n => { counts[n.type] = (counts[n.type] || 0) + 1; });
+              return Object.entries(counts).map(([type, count]) => ({ type, count }));
+            })()}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="type" tick={{ fill: "#9ca3af", fontSize: 11 }} tickFormatter={(v) => v.replace(/_/g, " ")} />
+              <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} />
+              <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, fontSize: 12 }} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {Object.entries(NOTIF_COLORS).map(([type, color]) => <Cell key={type} fill={color} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       <div className="space-y-4">
         {loading ? (

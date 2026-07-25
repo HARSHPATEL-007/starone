@@ -1,7 +1,10 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Command, Zap, Loader, AlertCircle, History, Trash2, CheckCircle, RefreshCw } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Send, Bot, User, Command, Zap, Loader, AlertCircle, History, Trash2, CheckCircle, RefreshCw, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+
+const RESOLVE_COLORS = ["#10b981", "#ef4444"];
 
 interface ChatMessage {
   id: string; role: "user" | "assistant"; content: string; timestamp: Date;
@@ -233,6 +236,48 @@ export default function IntentConsole() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Intent Resolution</h3>
+          <button className="btn-ghost text-xs flex items-center gap-1" onClick={() => {
+            const csv = [["Role", "Content", "Intent", "Confidence", "Resolved", "Timestamp"].join(","),
+              ...messages.filter(m => m.role === "assistant" && m.intent).map(m =>
+                `"${m.role}","${m.content.replace(/"/g, '""')}","${m.intent!.action}",${m.intent!.confidence},${m.intent!.resolved},"${m.timestamp.toISOString()}"`
+              )].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "intent_console.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>
+            <Download className="w-3 h-3" /> CSV
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[
+            { label: "Total Intents", count: messages.filter(m => m.intent && m.intent.action !== "greeting").length, color: "text-gray-300" },
+            { label: "Resolved", count: messages.filter(m => m.intent && m.intent.resolved && m.intent.action !== "greeting").length, color: "text-green-400" },
+            { label: "Unresolved", count: messages.filter(m => m.intent && !m.intent.resolved && m.intent.action !== "greeting").length, color: "text-red-400" },
+          ].map(e => (
+            <div key={e.label} className="bg-gray-800/50 rounded-lg p-3 text-center">
+              <p className={`text-2xl font-bold ${e.color}`}>{e.count}</p>
+              <p className="text-xs text-gray-500">{e.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={[
+                { name: "Resolved", value: messages.filter(m => m.intent && m.intent.resolved && m.intent.action !== "greeting").length },
+                { name: "Unresolved", value: messages.filter(m => m.intent && !m.intent.resolved && m.intent.action !== "greeting").length },
+              ].filter(d => d.value > 0)} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                {RESOLVE_COLORS.map((c, i) => <Cell key={i} fill={c} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
