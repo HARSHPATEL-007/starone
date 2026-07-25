@@ -90,6 +90,9 @@ import CustomerJourneyBuilder from "./pages/CustomerJourneyBuilder";
 import CampaignBoard from "./pages/CampaignBoard";
 import LaunchReadiness from "./pages/LaunchReadiness";
 import MediaKit from "./pages/MediaKit";
+import CampaignScheduler from "./pages/CampaignScheduler";
+import IntentConsole from "./pages/IntentConsole";
+import SandboxConsole from "./pages/SandboxConsole";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -196,6 +199,9 @@ export default function App() {
                 <Route path="/hyper-context" element={<HyperContext />} />
                 <Route path="/reports" element={<ReportCenter />} />
                 <Route path="/billing" element={<Billing />} />
+                <Route path="/campaign-scheduler" element={<CampaignScheduler />} />
+                <Route path="/intent-console" element={<IntentConsole />} />
+                <Route path="/sandbox-console" element={<SandboxConsole />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
