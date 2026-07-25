@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bot, Play, Pause, Trash2, Settings, Activity, RefreshCw, TrendingUp, Clock, CheckCircle, XCircle, ListChecks } from "lucide-react";
+import { ArrowLeft, Bot, Play, Pause, Trash2, Settings, Activity, RefreshCw, TrendingUp, Clock, CheckCircle, XCircle, ListChecks, Download } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
 import { useRecentItems } from "../hooks/useRecentItems";
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const agentIcons: Record<string, string> = { budget: "💰", creative: "🎨", audience: "👥", bid: "⚡", fraud: "🛡️" };
 
@@ -100,6 +101,36 @@ export default function AgentDetail() {
 
   const metrics = agent.metrics || { runs: 0, successes: 0, failures: 0, actionsTaken: 0 };
   const successRate = metrics.runs > 0 ? ((metrics.successes / metrics.runs) * 100).toFixed(0) : "—";
+
+  const runHistory = (() => {
+    const groups: Record<string, number> = {};
+    const now = Date.now();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * 86400000);
+      groups[d.toLocaleDateString("en-US", { month: "short", day: "numeric" })] = 0;
+    }
+    activities.forEach((a: any) => {
+      const diff = now - new Date(a.timestamp).getTime();
+      const days = Math.floor(diff / 86400000);
+      if (days >= 0 && days <= 6) {
+        const d = new Date(now - days * 86400000);
+        const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        if (groups[key] !== undefined) groups[key]++;
+      }
+    });
+    return Object.entries(groups).map(([day, count]) => ({ day, count }));
+  })();
+
+  function exportActivityCSV() {
+    const rows = [["Timestamp", "Action", "Details"]];
+    activities.forEach((a: any) => rows.push([a.timestamp || "", a.action || "", (a.details || "").replace(/,/g, ";")]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `agent-activity-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${activities.length} activities`);
+  }
 
   return (
     <div className="space-y-6">
@@ -198,6 +229,25 @@ export default function AgentDetail() {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
+          {runHistory.some(r => r.count > 0) && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white">7-Day Activity</h3>
+                {activities.length > 0 && <button onClick={exportActivityCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>}
+              </div>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={runHistory} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="day" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                    <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                    <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Activity & Actions</h3>

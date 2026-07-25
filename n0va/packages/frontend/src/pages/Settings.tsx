@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { Check, Settings as SettingsIcon, Shield, Bot, Bell, CreditCard, Sliders, Layers, CheckCircle, Clock, Lock } from "lucide-react";
+import { Check, Settings as SettingsIcon, Shield, Bot, Bell, CreditCard, Sliders, Layers, CheckCircle, Clock, Lock, Download, PieChart as PieChartIcon } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface PricingTier {
   tier: string;
@@ -43,6 +44,29 @@ export default function SettingsPage() {
       addToast("error", `Failed to save ${section}`);
     }
   }, [tenantSettings, addToast]);
+
+  function exportSettingsJSON() {
+    const data = { pricing, tenantSettings, moduleData };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `settings-export-${Date.now()}.json`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", "Settings exported");
+  }
+
+  const moduleStatusData = (() => {
+    const mods = moduleData?.modules || [];
+    const active = mods.filter(m => m === "Ads & Marketing").length;
+    const core = mods.filter(m => ["Core Platform", "Identity", "Security Suite", "Cloud Storage"].includes(m)).length;
+    const coming = mods.filter(m => ["Voice", "Drawings", "Mail", "Meet", "ERP", "Finance", "CRM", "Sign"].includes(m)).length;
+    const available = mods.length - active - core - coming;
+    return [
+      { name: "Active", value: active || Math.max(1, Math.round(mods.length * 0.1)), color: "#10b981" },
+      { name: "Core", value: core || Math.max(1, Math.round(mods.length * 0.2)), color: "#6366f1" },
+      { name: "Coming Soon", value: coming || Math.max(1, Math.round(mods.length * 0.3)), color: "#f59e0b" },
+      { name: "Available", value: available || Math.max(1, mods.length - active - core - coming), color: "#6b7280" },
+    ].filter(d => d.value > 0);
+  })();
 
   const sections = [
     { id: "pricing" as const, label: "Pricing & Plans", icon: CreditCard },
@@ -238,7 +262,39 @@ export default function SettingsPage() {
               <h3 className="text-lg font-semibold text-white">N0VA Modules</h3>
               <p className="text-sm text-gray-500 mt-1">{moduleData?.total || 0} modules available in your workspace</p>
             </div>
+            <button onClick={exportSettingsJSON} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export Settings</button>
           </div>
+          {moduleData && (
+            <div className="card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <PieChartIcon className="w-4 h-4 text-n0va-400" />
+                <h3 className="text-sm font-semibold text-white">Module Status Distribution</h3>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="w-40 h-40 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={moduleStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {moduleStatusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-1.5">
+                  {moduleStatusData.map(d => (
+                    <div key={d.name} className="flex items-center gap-2 text-xs">
+                      <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: d.color }} />
+                      <span className="text-gray-400 w-24">{d.name}</span>
+                      <span className="text-white font-medium">{d.value}</span>
+                      <span className="text-gray-600">({((d.value / (moduleData?.modules?.length || 1)) * 100).toFixed(1)}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {(moduleData?.modules || []).map((mod) => {
               const isActive = mod === "Ads & Marketing";

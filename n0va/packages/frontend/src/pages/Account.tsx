@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { User, Key, Copy, Check, Eye, EyeOff, Trash2, Plus, Shield, Calendar, Clock, AlertTriangle, Activity, Loader } from "lucide-react";
+import { User, Key, Copy, Check, Eye, EyeOff, Trash2, Plus, Shield, Calendar, Clock, AlertTriangle, Activity, Loader, Download, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
 interface ApiKey {
   id: string;
@@ -148,6 +149,28 @@ export default function AccountPage() {
   const activeKeys = keys.filter((k) => !k.revoked);
   const revokedKeys = keys.filter((k) => k.revoked);
 
+  const keyUsageData = (() => {
+    const groups: Record<string, { created: number; revoked: number }> = {};
+    keys.forEach(k => {
+      const month = new Date(k.createdAt).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      if (!groups[month]) groups[month] = { created: 0, revoked: 0 };
+      groups[month].created++;
+      if (k.revoked) groups[month].revoked++;
+    });
+    return Object.entries(groups).map(([month, counts]) => ({ month, ...counts }));
+  })();
+
+  function exportKeysCSV() {
+    const rows = [["Label", "Prefix", "Created", "Last Used", "Status"]];
+    keys.forEach(k => rows.push([k.label, k.prefix, k.createdAt, k.lastUsed || "Never", k.revoked ? "Revoked" : "Active"]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `api-keys-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${keys.length} keys`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -259,6 +282,26 @@ export default function AccountPage() {
 
       {tab === "api-keys" && (
         <div className="space-y-4">
+          {keyUsageData.length > 0 && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Key Creation Timeline</h3>
+                <button onClick={exportKeysCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>
+              </div>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={keyUsageData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                    <XAxis dataKey="month" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                    <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                    <Bar dataKey="created" fill="#6366f1" radius={[4, 4, 0, 0]} name="Created" />
+                    <Bar dataKey="revoked" fill="#ef4444" radius={[4, 4, 0, 0]} name="Revoked" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
           <div className="card p-6 space-y-4">
             <h2 className="text-sm font-semibold text-white flex items-center gap-2"><Key className="w-4 h-4 text-n0va-400" /> Create API Key</h2>
             <div className="flex gap-3">

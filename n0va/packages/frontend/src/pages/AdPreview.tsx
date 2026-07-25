@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Smartphone, Tablet, Monitor, Share2, Copy, Check, RefreshCw, ExternalLink, Image, Layers, Eye } from "lucide-react";
+import { Smartphone, Tablet, Monitor, Share2, Copy, Check, RefreshCw, ExternalLink, Image, Layers, Eye, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from "recharts";
 
 interface DeviceFrame {
   id: string;
@@ -65,6 +66,8 @@ export default function AdPreview() {
     setSelectedDevice(device);
     setShowPlatforms(false);
   }
+
+  const platformSizeData = PLATFORMS.map(p => ({ name: p.label.length > 12 ? p.label.slice(0, 10) + "…" : p.label, width: p.width, height: p.height }));
 
   const device = selectedDevice;
   const platform = selectedPlatform;
@@ -211,6 +214,27 @@ export default function AdPreview() {
               <div><p className="text-gray-600">Scale</p><p className="text-gray-300 font-medium mt-0.5">{Math.round(scale * 100)}%</p></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Platform dimension chart */}
+      <div className="card p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart3 className="w-4 h-4 text-n0va-400" />
+          <h3 className="text-sm font-semibold text-white">Platform Size Comparison</h3>
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={platformSizeData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+              <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 9 }} interval={0} angle={-25} textAnchor="end" height={50} />
+              <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} />
+              <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+              <Legend />
+              <Bar dataKey="width" fill="#6366f1" radius={[4, 4, 0, 0]} name="Width" />
+              <Bar dataKey="height" fill="#10b981" radius={[4, 4, 0, 0]} name="Height" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

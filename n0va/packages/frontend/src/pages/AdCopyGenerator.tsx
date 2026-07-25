@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Sparkles, Tag, Megaphone, Star, Heart, Target, Zap, Sun, Moon, Cloud, Flame, Smile, Frown } from "lucide-react";
+import { FileText, Plus, X, Edit3, Trash2, Copy, Search, Sparkles, Tag, Megaphone, Star, Heart, Target, Zap, Sun, Moon, Cloud, Flame, Smile, Frown, Download, PieChart as PieChartIcon } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { useEntityData } from "../hooks/useEntityData";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 type Tone = "professional" | "casual" | "urgent" | "friendly" | "humorous" | "inspirational" | "luxury" | "edgy";
 
@@ -110,6 +111,20 @@ export default function AdCopyGenerator() {
     return true;
   });
 
+  const toneColors: Record<string, string> = { professional: "#6366f1", casual: "#10b981", urgent: "#ef4444", friendly: "#ec4899", humorous: "#f59e0b", inspirational: "#8b5cf6", luxury: "#f97316", edgy: "#dc2626" };
+  const toneData = TONE_LIST.map(t => ({ name: TONE_META[t].label, value: copies.filter(c => c.tone === t).length, color: toneColors[t] })).filter(d => d.value > 0);
+
+  function exportCopyCSV() {
+    const rows = [["Headline", "Body", "CTA", "Tone", "Campaign", "Platform", "Tags", "Favorite", "Created"]];
+    copies.forEach(c => rows.push([c.headline, c.body, c.cta, c.tone, c.campaignName, c.platform, c.tags.join("; "), String(c.isFavorite), c.createdAt]));
+    const csv = rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `ad-copy-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${copies.length} copies`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -139,6 +154,39 @@ export default function AdCopyGenerator() {
           <Star className={`w-3.5 h-3.5 mr-1.5 ${showFavorites ? "text-yellow-400 fill-yellow-400" : ""}`} /> Favorites
         </button>
       </div>
+
+      {/* Tone chart & export */}
+      {copies.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-n0va-400" /> Tone Distribution</h3>
+            <button onClick={exportCopyCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="w-44 h-44 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={toneData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {toneData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-1.5">
+              {toneData.map(d => (
+                <div key={d.name} className="flex items-center gap-2 text-xs">
+                  <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: d.color }} />
+                  <span className="text-gray-400 w-20">{d.name}</span>
+                  <span className="text-white font-medium">{d.value}</span>
+                  <span className="text-gray-600">({((d.value / copies.length) * 100).toFixed(1)}%)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form modal */}
       {showForm && (

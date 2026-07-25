@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
-import { ArrowLeft, Check, ChevronRight, Bot, Clock, Shield, Zap, Palette, Users, SearchX, DollarSign } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Bot, Clock, Shield, Zap, Palette, Users, SearchX, DollarSign, Download, BarChart3 } from "lucide-react";
 import { useToast } from "../components/Toast";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
 
 const AGENT_TYPES = [
   { id: "budget", label: "Budget Agent", desc: "Monitors spend pacing and reallocates budget across platforms", icon: DollarSign, color: "text-green-400" },
@@ -26,6 +27,24 @@ const STEPS = ["Basics", "Schedule", "Guardrails", "Review"];
 export default function AgentCreator() {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const [agents, setAgents] = useState<any[]>([]);
+
+  useEffect(() => { api.agents.list().then(setAgents).catch(() => {}); }, []);
+
+  const typeColors: Record<string, string> = { budget: "#10b981", creative: "#8b5cf6", audience: "#6366f1", bid: "#f59e0b", fraud: "#ef4444" };
+  const agentTypeData = AGENT_TYPES.map(t => ({ name: t.label, value: agents.filter(a => a.type === t.id).length, color: typeColors[t.id] })).filter(d => d.value > 0);
+
+  function exportAgentsCSV() {
+    const rows = [["Name", "Type", "Status", "Frequency", "Runs", "Created"]];
+    agents.forEach((a: any) => rows.push([a.name || "", a.type || "", a.status || "", a.frequency || "", String(a.metrics?.runs || 0), a.createdAt || ""]));
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `agents-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", `Exported ${agents.length} agents`);
+  }
+
   const [step, setStep] = useState(0);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -97,6 +116,39 @@ export default function AgentCreator() {
           </div>
         ))}
       </div>
+
+      {agentTypeData.length > 0 && (
+        <div className="card p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><BarChart3 className="w-4 h-4 text-n0va-400" /> Existing Agents by Type</h3>
+            <button onClick={exportAgentsCSV} className="btn-ghost text-xs flex items-center gap-1"><Download className="w-3 h-3" /> Export CSV</button>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="h-36 flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={agentTypeData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "#9ca3af", fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "1px solid #374151", borderRadius: 8, color: "#fff", fontSize: 12 }} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {agentTypeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-1.5 shrink-0">
+              {agentTypeData.map(d => (
+                <div key={d.name} className="flex items-center gap-2 text-xs">
+                  <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: d.color }} />
+                  <span className="text-gray-400 w-20">{d.name}</span>
+                  <span className="text-white font-medium">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         {step === 0 && (
