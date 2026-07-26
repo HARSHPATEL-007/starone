@@ -329,9 +329,11 @@ describe("BudgetOptimizerService", () => {
 
   it("applies urgency multiplier aggressive", () => {
     const platforms = [{ name: "google_ads", currentBudget: 1000 }, { name: "meta_ads", currentBudget: 1000 }];
-    const normal = service.optimizeBudget(platforms, 5000);
-    const aggressive = service.optimizeBudget(platforms, 5000, "aggressive");
-    expect(aggressive[0].recommended).toBeGreaterThan(normal[0].recommended);
+    const normal = service.optimizeBudget(platforms, 50000);
+    const aggressive = service.optimizeBudget(platforms, 50000, "aggressive");
+    const googleNormal = normal.find((a) => a.platform === "google_ads")!.recommended;
+    const googleAggressive = aggressive.find((a) => a.platform === "google_ads")!.recommended;
+    expect(googleAggressive).toBeGreaterThan(googleNormal);
   });
 
   it("applies urgency multiplier conservative", () => {

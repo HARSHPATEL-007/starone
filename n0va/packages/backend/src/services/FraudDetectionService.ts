@@ -28,6 +28,16 @@ interface PlacementRisk {
   signalBreakdown: { signal: string; score: number; weight: number }[];
 }
 
+interface DecisionTreeNode {
+  isLeaf: boolean;
+  prediction?: number;
+  probability?: number;
+  featureIndex?: number;
+  threshold?: number;
+  left?: DecisionTreeNode;
+  right?: DecisionTreeNode;
+}
+
 interface FraudHealthSummary {
   totalFlags: number;
   activeFlags: number;
@@ -300,6 +310,285 @@ export class FraudDetectionService {
       expectedEntropy: Math.round(expectedEntropy * 100) / 100,
       distribution: Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, Math.round(v / n * 10000) / 100])),
       score, severity,
+    };
+  }
+
+  // ─── Random Forest Ensemble ─────────────────────────────────────────
+
+  private forestTrees: DecisionTreeNode[] = [];
+  private readonly forestSize = 20;
+  private readonly maxDepth = 6;
+  private readonly minSamplesSplit = 5;
+  private isForestTrained = false;
+
+  /**
+   * Train a Random Forest classifier on labeled fraud samples.
+   * Each tree is trained on a bootstrap sample using random feature subspaces.
+   */
+  trainRandomForest(trainingData: { features: number[]; label: number }[]): {
+    treeCount: number; accuracy: number; precision: number; recall: number; f1Score: number; oobEstimate: number;
+  } {
+    const n = trainingData.length;
+    const featureCount = trainingData[0]?.features.length ?? 0;
+    if (n < 10 || featureCount === 0) throw new Error("Need at least 10 samples with features");
+
+    const sqrtFeatures = Math.max(1, Math.floor(Math.sqrt(featureCount)));
+    this.forestTrees = [];
+    let tp = 0, fp = 0, fn = 0, tn = 0;
+    const oobPredictions = new Map<number, { sum: number; count: number }>();
+
+    for (let t = 0; t < this.forestSize; t++) {
+      // Bootstrap sample
+      const bootstrap: { features: number[]; label: number }[] = [];
+      const oobIndices = new Set<number>();
+      for (let i = 0; i < n; i++) {
+        const idx = Math.floor(Math.random() * n);
+        bootstrap.push(trainingData[idx]);
+      }
+      for (let i = 0; i < n; i++) if (!bootstrap.some((s) => s === trainingData[i])) oobIndices.add(i);
+
+      // Build tree
+      const tree = this.buildTree(bootstrap, 0, new Set(Array.from({ length: featureCount }, (_, i) => i)), sqrtFeatures);
+
+      // Evaluate OOB
+      for (const idx of oobIndices) {
+        const pred = this.treePredict(tree, trainingData[idx].features);
+        if (!oobPredictions.has(idx)) oobPredictions.set(idx, { sum: 0, count: 0 });
+        const oob = oobPredictions.get(idx)!;
+        oob.sum += pred;
+        oob.count++;
+      }
+
+      this.forestTrees.push(tree);
+    }
+
+    // Full evaluation
+    for (const sample of trainingData) {
+      const pred = this.forestPredict(sample.features);
+      if (pred === 1 && sample.label === 1) tp++;
+      else if (pred === 1 && sample.label === 0) fp++;
+      else if (pred === 0 && sample.label === 1) fn++;
+      else tn++;
+    }
+
+    // OOB estimate
+    let oobCorrect = 0, oobTotal = 0;
+    for (const [idx, data] of oobPredictions) {
+      const avg = data.sum / data.count;
+      const pred = avg >= 0.5 ? 1 : 0;
+      if (pred === trainingData[idx].label) oobCorrect++;
+      oobTotal++;
+    }
+
+    this.isForestTrained = true;
+    const accuracy = (tp + tn) / Math.max(n, 1);
+    const precision = tp / Math.max(tp + fp, 1);
+    const recall = tp / Math.max(tp + fn, 1);
+    const f1Score = precision + recall > 0 ? 2 * (precision * recall) / (precision + recall) : 0;
+
+    return {
+      treeCount: this.forestSize,
+      accuracy: Math.round(accuracy * 10000) / 10000,
+      precision: Math.round(precision * 10000) / 10000,
+      recall: Math.round(recall * 10000) / 10000,
+      f1Score: Math.round(f1Score * 10000) / 10000,
+      oobEstimate: oobTotal > 0 ? Math.round((oobCorrect / oobTotal) * 10000) / 10000 : 0,
+    };
+  }
+
+  private buildTree(
+    data: { features: number[]; label: number }[], depth: number,
+    featureIndices: Set<number>, maxFeatures: number,
+  ): DecisionTreeNode {
+    if (depth >= this.maxDepth || data.length < this.minSamplesSplit || data.every((d) => d.label === data[0].label)) {
+      const avgLabel = data.reduce((s, d) => s + d.label, 0) / data.length;
+      return { isLeaf: true, prediction: avgLabel >= 0.5 ? 1 : 0, probability: avgLabel };
+    }
+
+    const nFeatures = data[0].features.length;
+    const candidateFeatures: number[] = [];
+    const featureArr = Array.from(featureIndices).filter((i) => i < nFeatures);
+    const shuffled = [...featureArr].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < Math.min(maxFeatures, shuffled.length); i++) candidateFeatures.push(shuffled[i]);
+
+    let bestFeature = -1, bestThreshold = 0, bestGini = Infinity;
+    let bestLeft: { features: number[]; label: number }[] = [];
+    let bestRight: { features: number[]; label: number }[] = [];
+
+    for (const f of candidateFeatures) {
+      const values = [...new Set(data.map((d) => d.features[f]))].sort((a, b) => a - b);
+      for (const threshold of values) {
+        const left = data.filter((d) => d.features[f] <= threshold);
+        const right = data.filter((d) => d.features[f] > threshold);
+        if (left.length === 0 || right.length === 0) continue;
+        const gini = this.giniImpurity(left, right);
+        if (gini < bestGini) {
+          bestGini = gini; bestFeature = f; bestThreshold = threshold;
+          bestLeft = left; bestRight = right;
+        }
+      }
+    }
+
+    if (bestFeature === -1) {
+      const avgLabel = data.reduce((s, d) => s + d.label, 0) / data.length;
+      return { isLeaf: true, prediction: avgLabel >= 0.5 ? 1 : 0, probability: avgLabel };
+    }
+
+    return {
+      isLeaf: false, featureIndex: bestFeature, threshold: bestThreshold,
+      left: this.buildTree(bestLeft, depth + 1, featureIndices, maxFeatures),
+      right: this.buildTree(bestRight, depth + 1, featureIndices, maxFeatures),
+    };
+  }
+
+  private giniImpurity(left: { label: number }[], right: { label: number }[]): number {
+    const total = left.length + right.length;
+    const gini = (set: { label: number }[]): number => {
+      if (set.length === 0) return 0;
+      const p = set.filter((s) => s.label === 1).length / set.length;
+      return 1 - p * p - (1 - p) * (1 - p);
+    };
+    return (left.length / total) * gini(left) + (right.length / total) * gini(right);
+  }
+
+  private treePredict(node: DecisionTreeNode, features: number[]): number {
+    if (node.isLeaf) return node.prediction ?? 0;
+    const val = features[node.featureIndex!];
+    return val <= node.threshold! ? this.treePredict(node.left!, features) : this.treePredict(node.right!, features);
+  }
+
+  forestPredict(features: number[]): number {
+    if (!this.isForestTrained || this.forestTrees.length === 0) return 0;
+    let sum = 0;
+    for (const tree of this.forestTrees) sum += this.treePredict(tree, features);
+    return sum / this.forestTrees.length >= 0.5 ? 1 : 0;
+  }
+
+  forestPredictProbability(features: number[]): { probability: number; classification: "fraud" | "legitimate"; confidence: number } {
+    if (!this.isForestTrained || this.forestTrees.length === 0) return { probability: 0, classification: "legitimate", confidence: 0 };
+    let sum = 0;
+    for (const tree of this.forestTrees) sum += this.treePredict(tree, features);
+    const probability = sum / this.forestTrees.length;
+    const confidence = Math.abs(probability - 0.5) * 2;
+    return {
+      probability: Math.round(probability * 10000) / 10000,
+      classification: probability >= 0.5 ? "fraud" : "legitimate",
+      confidence: Math.round(confidence * 10000) / 10000,
+    };
+  }
+
+  generateTrainingData(count: number = 100): { features: number[]; label: number }[] {
+    const data: { features: number[]; label: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      const ivt = Math.random() * 100;
+      const viewability = 100 - Math.random() * 60;
+      const brandSafety = Math.random() * 100;
+      const botProb = Math.random();
+      const clickVel = Math.random() * 60;
+      const geoEntropy = 0.2 + Math.random() * 0.8;
+
+      const features = [ivt, viewability, brandSafety, botProb * 100, clickVel, geoEntropy * 100];
+      // Label: fraud if high IVT, high bot prob, or anomalous geo + click velocity
+      const label = (ivt > 60 || botProb > 0.7 || (geoEntropy < 0.3 && clickVel > 30)) ? 1 : 0;
+      data.push({ features, label });
+    }
+    return data;
+  }
+
+  // ─── Online Learning / Adaptive Thresholds ─────────────────────────
+
+  private adaptiveThresholdHistory: Map<string, { hits: number; misses: number; threshold: number; lastAdjustment: string }> = new Map();
+
+  /**
+   * Adapt a threshold based on observed performance using multiplicative update with momentum.
+   * Responds faster to sudden changes while maintaining stability.
+   */
+  adaptThreshold(thresholdId: string, currentThreshold: number, wasCorrect: boolean, learningRate = 0.1): {
+    adjustedThreshold: number; direction: "tightened" | "loosened" | "unchanged"; momentum: number;
+  } {
+    const state = this.adaptiveThresholdHistory.get(thresholdId) || {
+      hits: 0, misses: 0, threshold: currentThreshold, lastAdjustment: new Date().toISOString(),
+    };
+
+    if (wasCorrect) state.hits++; else state.misses++;
+    const total = state.hits + state.misses;
+    const accuracy = total > 0 ? state.hits / total : 0;
+    const momentum = Math.min(0.9, total * 0.01);
+
+    let direction: "tightened" | "loosened" | "unchanged" = "unchanged";
+    if (total >= 10) {
+      const target = 0.8;
+      const gap = target - accuracy;
+      if (Math.abs(gap) > 0.05) {
+        const adjustedLR = learningRate * (1 + momentum);
+        if (gap > 0) {
+          // Accuracy too low — loosen threshold
+          state.threshold *= (1 + adjustedLR * gap);
+          direction = "loosened";
+        } else {
+          // Accuracy high — can tighten
+          state.threshold *= (1 - adjustedLR * Math.abs(gap) * 0.5);
+          direction = "tightened";
+        }
+        state.hits = Math.floor(state.hits * 0.5);
+        state.misses = Math.floor(state.misses * 0.5);
+        state.lastAdjustment = new Date().toISOString();
+      }
+    }
+
+    this.adaptiveThresholdHistory.set(thresholdId, state);
+    return {
+      adjustedThreshold: Math.round(state.threshold * 100) / 100,
+      direction,
+      momentum: Math.round(momentum * 100) / 100,
+    };
+  }
+
+  getAdaptiveThresholdState(thresholdId: string): { threshold: number; hits: number; misses: number; accuracy: number; lastAdjustment: string } | null {
+    const state = this.adaptiveThresholdHistory.get(thresholdId);
+    if (!state) return null;
+    const total = state.hits + state.misses;
+    return {
+      threshold: Math.round(state.threshold * 100) / 100,
+      hits: state.hits, misses: state.misses,
+      accuracy: total > 0 ? Math.round((state.hits / total) * 10000) / 100 : 0,
+      lastAdjustment: state.lastAdjustment,
+    };
+  }
+
+  // ─── Real-Time Threat Scoring ──────────────────────────────────────
+
+  /**
+   * Compute a real-time threat score using weighted signal fusion with time decay.
+   * Recent signals weighted higher via exponential forgetting factor.
+   */
+  computeRealTimeThreatScore(
+    signals: { name: string; score: number; weight: number; timestamp: number }[],
+    decayHalfLifeMs = 300000,
+  ): { overallScore: number; severity: FraudSeverity; dominantSignal: string; signalBreakdown: { name: string; weightedScore: number }[] } {
+    if (signals.length === 0) return { overallScore: 0, severity: "low", dominantSignal: "none", signalBreakdown: [] };
+
+    const now = Date.now();
+    let totalWeight = 0;
+    const breakdown: { name: string; weightedScore: number }[] = [];
+
+    for (const s of signals) {
+      const age = Math.max(0, now - s.timestamp);
+      const decayFactor = Math.exp(-Math.LN2 * age / decayHalfLifeMs);
+      const effectiveWeight = s.weight * decayFactor;
+      breakdown.push({ name: s.name, weightedScore: Math.round(s.score * effectiveWeight * 100) / 100 });
+      totalWeight += effectiveWeight;
+    }
+
+    const overallScore = totalWeight > 0
+      ? breakdown.reduce((s, b) => s + b.weightedScore, 0) / totalWeight
+      : 0;
+    const dominantSignal = breakdown.sort((a, b) => b.weightedScore - a.weightedScore)[0]?.name || "none";
+    const severity: FraudSeverity = overallScore > 80 ? "critical" : overallScore > 60 ? "high" : overallScore > 40 ? "medium" : "low";
+
+    return {
+      overallScore: Math.round(overallScore * 100) / 100, severity, dominantSignal,
+      signalBreakdown: breakdown.sort((a, b) => b.weightedScore - a.weightedScore).slice(0, 5),
     };
   }
 

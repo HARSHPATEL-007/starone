@@ -152,6 +152,329 @@ export class RecommendationEngineService {
     return { id: `rec_${type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, type, title, description, impact, effort, campaignId, campaignName, action, metric, currentValue, suggestedValue, potentialGain };
   }
 
+  // ─── Thompson Sampling Bandits ───────────────────────────────────────
+
+  private thompsonBanditArms: Map<string, { alpha: number; beta: number; label: string }> = new Map();
+
+  /**
+   * Thompson sampling for Bernoulli bandits.
+   * Each arm maintains a Beta(alpha, beta) posterior. Selection samples from each
+   * posterior and picks the highest — naturally balancing exploration vs exploitation.
+   */
+  registerThompsonArm(armId: string, label: string, priorAlpha = 1, priorBeta = 1): void {
+    if (!this.thompsonBanditArms.has(armId)) {
+      this.thompsonBanditArms.set(armId, { alpha: priorAlpha, beta: priorBeta, label });
+    }
+  }
+
+  selectThompsonArm(experimentId?: string): { armId: string; label: string; probability: number; posteriorAlpha: number; posteriorBeta: number } {
+    const arms = experimentId
+      ? Array.from(this.thompsonBanditArms.entries()).filter(([id]) => id.startsWith(experimentId))
+      : Array.from(this.thompsonBanditArms.entries());
+
+    if (arms.length === 0) throw new Error("No Thompson sampling arms registered");
+
+    let best: { id: string; label: string; alpha: number; beta: number; sample: number } | null = null;
+    for (const [id, arm] of arms) {
+      const sample = this.sampleBetaTS(arm.alpha, arm.beta);
+      if (!best || sample > best.sample) {
+        best = { id, label: arm.label, alpha: arm.alpha, beta: arm.beta, sample };
+      }
+    }
+
+    return {
+      armId: best!.id, label: best!.label,
+      probability: Math.round((best!.alpha / (best!.alpha + best!.beta)) * 10000) / 10000,
+      posteriorAlpha: best!.alpha, posteriorBeta: best!.beta,
+    };
+  }
+
+  rewardThompsonArm(armId: string, reward: 0 | 1): { posteriorAlpha: number; posteriorBeta: number; probability: number } {
+    const arm = this.thompsonBanditArms.get(armId);
+    if (!arm) throw new Error(`Thompson arm "${armId}" not found`);
+    if (reward === 1) arm.alpha++; else arm.beta++;
+    this.thompsonBanditArms.set(armId, arm);
+    return {
+      posteriorAlpha: arm.alpha, posteriorBeta: arm.beta,
+      probability: Math.round((arm.alpha / (arm.alpha + arm.beta)) * 10000) / 10000,
+    };
+  }
+
+  getThompsonState(): { armId: string; label: string; alpha: number; beta: number; probability: number }[] {
+    return Array.from(this.thompsonBanditArms.entries()).map(([id, arm]) => ({
+      armId: id, label: arm.label, alpha: arm.alpha, beta: arm.beta,
+      probability: Math.round((arm.alpha / (arm.alpha + arm.beta)) * 10000) / 10000,
+    }));
+  }
+
+  private sampleBetaTS(alpha: number, beta: number): number {
+    const sampleGamma = (shape: number): number => {
+      if (shape < 1) {
+        const u = Math.random();
+        return sampleGamma(1 + shape) * Math.pow(u, 1 / shape);
+      }
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        const x = this.sampleNormalTS() * c + 1;
+        if (x <= 0) continue;
+        const v = Math.pow(x, 3);
+        const u = Math.random();
+        if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+      }
+    };
+    const x = sampleGamma(alpha);
+    const y = sampleGamma(beta);
+    return x / (x + y);
+  }
+
+  private sampleNormalTS(): number {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // ─── LinUCB Contextual Bandits ─────────────────────────────────────
+
+  private linUCBModels: Map<string, {
+    A: number[][]; b: number[]; theta: number[]; d: number; lastUpdated: string;
+  }> = new Map();
+
+  /**
+   * LinUCB (li near upper confidence bound) — contextual bandit algorithm.
+   * Uses ridge regression to estimate reward for each context vector and selects the
+   * arm with the highest upper confidence bound: theta^T x + alpha * sqrt(x^T A^{-1} x).
+   */
+  initializeLinUCB(dispatcherId: string, contextDimension: number, alpha = 0.5): void {
+    // A = I_d (identity), b = zero vector
+    const A = Array.from({ length: contextDimension }, (_, i) =>
+      Array.from({ length: contextDimension }, (_, j) => (i === j ? 1 : 0)),
+    );
+    const b = new Array(contextDimension).fill(0);
+    this.linUCBModels.set(dispatcherId, {
+      A, b, theta: new Array(contextDimension).fill(0), d: contextDimension, lastUpdated: new Date().toISOString(),
+    });
+  }
+
+  selectLinUCBArm(
+    dispatcherId: string,
+    armContexts: { armId: string; context: number[] }[],
+    alpha = 0.5,
+  ): { armId: string; ucb: number; expectedReward: number; uncertainty: number } {
+    const model = this.linUCBModels.get(dispatcherId);
+    if (!model) throw new Error(`LinUCB dispatcher "${dispatcherId}" not initialized`);
+
+    let bestArm = armContexts[0]?.armId || "";
+    let bestUcb = -Infinity;
+    let bestExpected = 0, bestUncertainty = 0;
+
+    for (const ac of armContexts) {
+      if (ac.context.length !== model.d) throw new Error(`Expected context dimension ${model.d}, got ${ac.context.length}`);
+
+      // A^{-1} using Gaussian elimination (for small d)
+      const Ainv = this.matrixInverse(model.A);
+      // theta = A^{-1} b
+      const theta = this.matrixVectorMultiply(Ainv, model.b);
+      model.theta = theta;
+
+      // Expected reward: theta^T x
+      const expected = ac.context.reduce((s, xi, i) => s + xi * theta[i], 0);
+
+      // Uncertainty: alpha * sqrt(x^T A^{-1} x)
+      const Atx = this.matrixVectorMultiply(Ainv, ac.context);
+      const variance = ac.context.reduce((s, xi, i) => s + xi * Atx[i], 0);
+      const uncertainty = alpha * Math.sqrt(Math.max(0, variance));
+
+      const ucb = expected + uncertainty;
+      if (ucb > bestUcb) { bestUcb = ucb; bestArm = ac.armId; bestExpected = expected; bestUncertainty = uncertainty; }
+    }
+
+    return {
+      armId: bestArm,
+      ucb: Math.round(bestUcb * 10000) / 10000,
+      expectedReward: Math.round(bestExpected * 10000) / 10000,
+      uncertainty: Math.round(bestUncertainty * 10000) / 10000,
+    };
+  }
+
+  rewardLinUCBArm(dispatcherId: string, armContext: number[], reward: number): { theta: number[]; aNorm: number } {
+    const model = this.linUCBModels.get(dispatcherId);
+    if (!model) throw new Error(`LinUCB dispatcher "${dispatcherId}" not initialized`);
+
+    // A <- A + xx^T
+    for (let i = 0; i < model.d; i++) {
+      for (let j = 0; j < model.d; j++) {
+        model.A[i][j] += armContext[i] * armContext[j];
+      }
+    }
+
+    // b <- b + reward * x
+    for (let i = 0; i < model.d; i++) model.b[i] += reward * armContext[i];
+
+    model.lastUpdated = new Date().toISOString();
+
+    const Ainv = this.matrixInverse(model.A);
+    const theta = this.matrixVectorMultiply(Ainv, model.b);
+
+    // A norm: sqrt(theta^T A theta)
+    const Atheta = this.matrixVectorMultiply(model.A, theta);
+    const aNorm = Math.sqrt(theta.reduce((s, ti, i) => s + ti * Atheta[i], 0));
+
+    return { theta, aNorm: Math.round(aNorm * 10000) / 10000 };
+  }
+
+  getLinUCBState(dispatcherId: string): { d: number; lastUpdated: string; theta: number[]; aNorm: number } | null {
+    const model = this.linUCBModels.get(dispatcherId);
+    if (!model) return null;
+    const Ainv = this.matrixInverse(model.A);
+    const theta = this.matrixVectorMultiply(Ainv, model.b);
+    const Atheta = this.matrixVectorMultiply(model.A, theta);
+    const aNorm = Math.sqrt(theta.reduce((s, ti, i) => s + ti * Atheta[i], 0));
+    return { d: model.d, lastUpdated: model.lastUpdated, theta, aNorm: Math.round(aNorm * 10000) / 10000 };
+  }
+
+  private matrixInverse(A: number[][]): number[][] {
+    const n = A.length;
+    // Augment with identity
+    const aug = A.map((row, i) => [...row, ...Array.from({ length: n }, (_, j) => (i === j ? 1 : 0))]);
+
+    // Gaussian elimination with partial pivoting
+    for (let col = 0; col < n; col++) {
+      // Partial pivot
+      let maxRow = col;
+      for (let row = col + 1; row < n; row++) {
+        if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
+      }
+      [aug[col], aug[maxRow]] = [aug[col], aug[maxRow]];
+
+      const pivot = aug[col][col];
+      if (Math.abs(pivot) < 1e-15) continue;
+
+      // Scale row
+      for (let j = col; j < 2 * n; j++) aug[col][j] /= pivot;
+
+      // Eliminate other rows
+      for (let row = 0; row < n; row++) {
+        if (row !== col) {
+          const factor = aug[row][col];
+          for (let j = col; j < 2 * n; j++) aug[row][j] -= factor * aug[col][j];
+        }
+      }
+    }
+
+    return aug.map((row) => row.slice(n));
+  }
+
+  private matrixVectorMultiply(M: number[][], v: number[]): number[] {
+    const n = M.length;
+    return M.map((row) => row.reduce((s, mij, j) => s + mij * v[j], 0));
+  }
+
+  // ─── Collaborative Filtering for Cross-Campaign ────────────────────
+
+  /**
+   * Collaborative filtering using user-campaign interaction matrix.
+   * Predicts campaign performance for a target campaign based on similar campaigns.
+   * Uses cosine similarity between campaign feature vectors.
+   */
+  collaborativeFilteringRecommendations(
+    campaigns: CampaignData[],
+    similarityMetric: "cosine" | "pearson" = "cosine",
+    topK = 3,
+  ): {
+    campaignId: string; campaignName: string; similarCampaigns: { id: string; name: string; similarity: number }[];
+    predictedMetrics: { roas: number; ctr: number; cvr: number };
+  }[] {
+    const valid = campaigns.filter((c) => c.metrics);
+    if (valid.length < 3) return [];
+
+    // Build feature vectors (normalized metrics)
+    const extractVector = (c: CampaignData): number[] => {
+      const m = c.metrics!;
+      return [
+        Math.log10(Math.max(1, m.impressions)),
+        m.clicks / Math.max(m.impressions, 1) * 100, // CTR
+        m.conversions / Math.max(m.clicks, 1) * 100, // CVR
+        m.roas,
+        m.spend / Math.max(m.impressions, 1) * 1000, // CPM
+        m.revenue / Math.max(m.spend, 1), // ROAS alt
+      ];
+    };
+
+    const results: {
+      campaignId: string; campaignName: string; similarCampaigns: { id: string; name: string; similarity: number }[];
+      predictedMetrics: { roas: number; ctr: number; cvr: number };
+    }[] = [];
+
+    for (const target of valid) {
+      const targetVec = extractVector(target);
+      const similarities: { id: string; name: string; similarity: number }[] = [];
+
+      for (const other of valid) {
+        if (other.id === target.id) continue;
+        const otherVec = extractVector(other);
+        const sim = similarityMetric === "cosine" ? this.cosineSimilarity(targetVec, otherVec) : this.pearsonSimilarity(targetVec, otherVec);
+        similarities.push({ id: other.id, name: other.name, similarity: Math.round(sim * 10000) / 10000 });
+      }
+
+      similarities.sort((a, b) => b.similarity - a.similarity);
+      const top = similarities.slice(0, topK).filter((s) => s.similarity > 0.3);
+
+      // Predict metrics as similarity-weighted average of top-k
+      let simSum = 0;
+      let predRoas = 0, predCtr = 0, predCvr = 0;
+      for (const s of top) {
+        const match = valid.find((c) => c.id === s.id);
+        if (match?.metrics) {
+          simSum += s.similarity;
+          predRoas += s.similarity * match.metrics.roas;
+          predCtr += s.similarity * match.metrics.ctr;
+          predCvr += s.similarity * match.metrics.cvr;
+        }
+      }
+
+      results.push({
+        campaignId: target.id,
+        campaignName: target.name,
+        similarCampaigns: top.length > 0 ? top : [{ id: "none", name: "No similar campaigns", similarity: 0 }],
+        predictedMetrics: {
+          roas: simSum > 0 ? Math.round((predRoas / simSum) * 100) / 100 : target.metrics?.roas || 0,
+          ctr: simSum > 0 ? Math.round((predCtr / simSum) * 100) / 100 : target.metrics?.ctr || 0,
+          cvr: simSum > 0 ? Math.round((predCvr / simSum) * 100) / 100 : target.metrics?.cvr || 0,
+        },
+      });
+    }
+
+    return results;
+  }
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    let dot = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) {
+      dot += a[i] * b[i];
+      na += a[i] * a[i];
+      nb += b[i] * b[i];
+    }
+    const denom = Math.sqrt(na) * Math.sqrt(nb);
+    return denom > 0 ? dot / denom : 0;
+  }
+
+  private pearsonSimilarity(a: number[], b: number[]): number {
+    const n = a.length;
+    const ma = a.reduce((s, v) => s + v, 0) / n;
+    const mb = b.reduce((s, v) => s + v, 0) / n;
+    let num = 0, da = 0, db = 0;
+    for (let i = 0; i < n; i++) {
+      num += (a[i] - ma) * (b[i] - mb);
+      da += (a[i] - ma) ** 2;
+      db += (b[i] - mb) ** 2;
+    }
+    const den = Math.sqrt(da) * Math.sqrt(db);
+    return den > 0 ? num / den : 0;
+  }
+
   // ─── Multi-Armed Bandit ──────────────────────────────────────────────
 
   private banditArms: Map<string, BanditArm> = new Map();

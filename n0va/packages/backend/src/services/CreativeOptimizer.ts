@@ -250,6 +250,292 @@ export class CreativeOptimizer {
     return { platformPairs, insight };
   }
 
+  // ─── Bayesian A/B Testing (Beta-Bernoulli) ─────────────────────────
+
+  /**
+   * Bayesian A/B test using Beta-Bernoulli conjugate model.
+   * Returns posterior distributions, expected loss, and probability of being best.
+   */
+  bayesianAbTest(variants: { id: string; impressions: number; clicks: number }[], priorAlpha = 1, priorBeta = 1): {
+    results: { id: string; posteriorAlpha: number; posteriorBeta: number; mean: number; variance: number; credibleInterval: [number, number]; probBest: number; expectedLoss: number }[];
+    probBeatingA: number;
+    bestVariant: string;
+  } {
+    if (variants.length < 2) throw new Error("Need at least 2 variants");
+
+    // Compute posterior distributions
+    const posteriors = variants.map((v) => ({
+      id: v.id,
+      alpha: priorAlpha + v.clicks,
+      beta: priorBeta + v.impressions - v.clicks,
+    }));
+
+    // Monte Carlo estimation of P(best) using 10000 samples
+    const samples = 10000;
+    const bestCount = new Map<string, number>();
+    for (const v of variants) bestCount.set(v.id, 0);
+
+    for (let s = 0; s < samples; s++) {
+      let bestId = posteriors[0].id;
+      let bestVal = -Infinity;
+      for (const p of posteriors) {
+        const sample = this.sampleBeta(p.alpha, p.beta);
+        if (sample > bestVal) { bestVal = sample; bestId = p.id; }
+      }
+      bestCount.set(bestId, (bestCount.get(bestId) || 0) + 1);
+    }
+
+    const results = variants.map((v, i) => {
+      const p = posteriors[i];
+      const mean = p.alpha / (p.alpha + p.beta);
+      const variance = (p.alpha * p.beta) / ((p.alpha + p.beta) ** 2 * (p.alpha + p.beta + 1));
+
+      // Approximate credible interval using normal approximation
+      const std = Math.sqrt(variance);
+      const interval: [number, number] = [
+        Math.max(0, Math.round((mean - 1.96 * std) * 10000) / 10000),
+        Math.min(1, Math.round((mean + 1.96 * std) * 10000) / 10000),
+      ];
+
+      // Expected loss vs the current best
+      let expectedLoss = 0;
+      const bestMean = Math.max(...posteriors.map((pp) => pp.alpha / (pp.alpha + pp.beta)));
+      if (mean < bestMean) expectedLoss = bestMean - mean;
+
+      return {
+        id: v.id,
+        posteriorAlpha: p.alpha,
+        posteriorBeta: p.beta,
+        mean: Math.round(mean * 10000) / 10000,
+        variance: Math.round(variance * 10000) / 10000,
+        credibleInterval: interval,
+        probBest: Math.round(((bestCount.get(v.id) || 0) / samples) * 10000) / 10000,
+        expectedLoss: Math.round(expectedLoss * 10000) / 10000,
+      };
+    });
+
+    const variantA = results.find((r) => r.id === variants[0].id)!;
+    const variantB = results.find((r) => r.id === variants[1].id)!;
+    const probBbeatsA = variantA.mean > 0
+      ? this.computeProbBBeta(variantA.posteriorAlpha, variantA.posteriorBeta, variantB.posteriorAlpha, variantB.posteriorBeta)
+      : 0.5;
+    const bestVariant = results.sort((a, b) => b.probBest - a.probBest)[0].id;
+
+    return { results, probBeatingA: Math.round(probBbeatsA * 10000) / 10000, bestVariant };
+  }
+
+  private sampleBeta(alpha: number, beta: number): number {
+    // Marsaglia-Tsang method for gamma sampling
+    const sampleGamma = (shape: number): number => {
+      if (shape < 1) {
+        const u = Math.random();
+        return sampleGamma(1 + shape) * Math.pow(u, 1 / shape);
+      }
+      const d = shape - 1 / 3;
+      const c = 1 / Math.sqrt(9 * d);
+      while (true) {
+        const x = this.sampleNormal() * c + 1;
+        if (x <= 0) continue;
+        const v = Math.pow(x, 3);
+        const u = Math.random();
+        if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+        if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+      }
+    };
+    const x = sampleGamma(alpha);
+    const y = sampleGamma(beta);
+    return x / (x + y);
+  }
+
+  private sampleNormal(): number {
+    // Box-Muller transform
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  private computeProbBBeta(aA: number, bA: number, aB: number, bB: number): number {
+    // Monte Carlo estimate of P(CTR_B > CTR_A)
+    const n = 10000;
+    let count = 0;
+    for (let i = 0; i < n; i++) {
+      const sA = this.sampleBeta(aA, bA);
+      const sB = this.sampleBeta(aB, bB);
+      if (sB > sA) count++;
+    }
+    return count / n;
+  }
+
+  // ─── Thompson Sampling for Multi-Armed Bandits ─────────────────────
+
+  private thompsonStates: Map<string, { alpha: number; beta: number }[]> = new Map();
+
+  /**
+   * Thompson sampling for creative variant selection.
+   * Each arm is modeled with a Beta posterior. On each selection, sample from all arms
+   * and pick the one with the highest sample (probability of being best under uncertainty).
+   */
+  initializeThompsonSampling(experimentId: string, armCount: number, priorAlpha = 1, priorBeta = 1): void {
+    this.thompsonStates.set(experimentId, Array.from({ length: armCount }, () => ({ alpha: priorAlpha, beta: priorBeta })));
+  }
+
+  selectThompsonArm(experimentId: string): { armIndex: number; posteriorAlpha: number; posteriorBeta: number; mean: number } {
+    const states = this.thompsonStates.get(experimentId);
+    if (!states) throw new Error(`Thompson sampling experiment "${experimentId}" not initialized`);
+
+    let bestArm = 0;
+    let bestSample = -Infinity;
+    for (let i = 0; i < states.length; i++) {
+      const { alpha, beta } = states[i];
+      const sample = this.sampleBeta(alpha, beta);
+      if (sample > bestSample) { bestSample = sample; bestArm = i; }
+    }
+
+    return {
+      armIndex: bestArm,
+      posteriorAlpha: states[bestArm].alpha,
+      posteriorBeta: states[bestArm].beta,
+      mean: Math.round((states[bestArm].alpha / (states[bestArm].alpha + states[bestArm].beta)) * 10000) / 10000,
+    };
+  }
+
+  updateThompsonArm(experimentId: string, armIndex: number, reward: 0 | 1): {
+    posteriorAlpha: number; posteriorBeta: number; mean: number;
+  } {
+    const states = this.thompsonStates.get(experimentId);
+    if (!states) throw new Error(`Thompson sampling experiment "${experimentId}" not initialized`);
+    if (armIndex < 0 || armIndex >= states.length) throw new Error(`Invalid arm index ${armIndex}`);
+
+    if (reward === 1) states[armIndex].alpha++; else states[armIndex].beta++;
+    this.thompsonStates.set(experimentId, states);
+
+    return {
+      posteriorAlpha: states[armIndex].alpha,
+      posteriorBeta: states[armIndex].beta,
+      mean: Math.round((states[armIndex].alpha / (states[armIndex].alpha + states[armIndex].beta)) * 10000) / 10000,
+    };
+  }
+
+  getThompsonState(experimentId: string): { armIndex: number; alpha: number; beta: number; mean: number }[] | null {
+    const states = this.thompsonStates.get(experimentId);
+    if (!states) return null;
+    return states.map((s, i) => ({
+      armIndex: i, alpha: s.alpha, beta: s.beta,
+      mean: Math.round((s.alpha / (s.alpha + s.beta)) * 10000) / 10000,
+    }));
+  }
+
+  // ─── Gaussian Process Regression for Fatigue Modeling ─────────────
+
+  /**
+   * Gaussian Process regression for smooth CTR-over-time modeling with uncertainty.
+   * Uses a squared exponential kernel. Returns mean and variance predictions.
+   */
+  gaussianProcessFatigueModel(
+    observations: { day: number; ctr: number }[],
+    predictDays: number[],
+    lengthScale = 10,
+    signalVariance = 1,
+    noiseVariance = 0.1,
+  ): {
+    predictions: { day: number; mean: number; variance: number; upperBound: number; lowerBound: number }[];
+    logMarginalLikelihood: number;
+  } {
+    const n = observations.length;
+    if (n < 2) throw new Error("Need at least 2 observations");
+
+    const x = observations.map((o) => o.day);
+    const y = observations.map((o) => o.ctr);
+
+    // Build kernel matrix K
+    const K = Array.from({ length: n }, (_, i) =>
+      Array.from({ length: n }, (_, j) =>
+        this.seKernel(x[i], x[j], lengthScale, signalVariance) + (i === j ? noiseVariance : 0),
+      ),
+    );
+
+    // Cholesky decomposition LL^T = K
+    const L = this.choleskyDecomposition(K);
+    const m = predictDays.length;
+
+    // Compute alpha = K^{-1} y via forward/backward substitution
+    const alpha = this.choleskySolve(L, y);
+
+    // Log marginal likelihood
+    let logDet = 0;
+    for (let i = 0; i < n; i++) logDet += 2 * Math.log(Math.max(L[i][i], 1e-300));
+    const yAlpha = y.reduce((s, yi, i) => s + yi * alpha[i], 0);
+    const logMarginalLikelihood = -0.5 * yAlpha - 0.5 * logDet - (n / 2) * Math.log(2 * Math.PI);
+
+    const predictions = predictDays.map((day) => {
+      // k* = vector of kernel(x_i, x_pred)
+      const ks = x.map((xi) => this.seKernel(xi, day, lengthScale, signalVariance));
+
+      // Mean = k*^T * alpha
+      const mean = ks.reduce((s, ki, i) => s + ki * alpha[i], 0);
+
+      // Variance = k(x_pred, x_pred) - k*^T * K^{-1} * k*
+      const v = this.choleskySolve(L, ks);
+      const kStar = this.seKernel(day, day, lengthScale, signalVariance);
+      let varSum = 0;
+      for (let i = 0; i < n; i++) varSum += ks[i] * v[i];
+      const variance = Math.max(0, kStar - varSum);
+      const std = Math.sqrt(variance);
+
+      return {
+        day,
+        mean: Math.round(mean * 10000) / 10000,
+        variance: Math.round(variance * 10000) / 10000,
+        upperBound: Math.round((mean + 1.96 * std) * 10000) / 10000,
+        lowerBound: Math.round((mean - 1.96 * std) * 10000) / 10000,
+      };
+    });
+
+    return {
+      predictions,
+      logMarginalLikelihood: Math.round(logMarginalLikelihood * 100) / 100,
+    };
+  }
+
+  private seKernel(xi: number, xj: number, lengthScale: number, signalVariance: number): number {
+    const dist = xi - xj;
+    return signalVariance * Math.exp(-(dist * dist) / (2 * lengthScale * lengthScale));
+  }
+
+  private choleskyDecomposition(A: number[][]): number[][] {
+    const n = A.length;
+    const L = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j <= i; j++) {
+        let sum = 0;
+        for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
+        if (i === j) L[i][j] = Math.sqrt(Math.max(1e-300, A[i][i] - sum));
+        else L[i][j] = (A[i][j] - sum) / L[j][j];
+      }
+    }
+    return L;
+  }
+
+  private choleskySolve(L: number[][], b: number[]): number[] {
+    const n = L.length;
+    // Forward substitution: L y = b
+    const y = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      let sum = 0;
+      for (let j = 0; j < i; j++) sum += L[i][j] * y[j];
+      y[i] = (b[i] - sum) / L[i][i];
+    }
+    // Back substitution: L^T x = y
+    const x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) {
+      let sum = 0;
+      for (let j = i + 1; j < n; j++) sum += L[j][i] * x[j];
+      x[i] = (y[i] - sum) / L[i][i];
+    }
+    return x;
+  }
+
   // ─── Multi-Variant A/B Significance ─────────────────────────────────
 
   /**
