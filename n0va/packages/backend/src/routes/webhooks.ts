@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { webhookService } from "../services/WebhookService";
+import { webhookOrchestrator } from "../business-logic/WebhookOrchestrator";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -13,7 +15,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const webhooks = webhookService.listWebhooks(tenantId);
-    res.json(webhooks);
+    sendSuccess(res, webhooks, { count: webhooks.length });
   })
 );
 
@@ -45,7 +47,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const webhook = webhookService.getWebhook(req.params.id);
     if (!webhook) throw new AppError(404, "Webhook not found");
-    res.json(webhook);
+    sendSuccess(res, webhook);
   })
 );
 
@@ -53,7 +55,7 @@ router.get(
   "/:id/deliveries",
   asyncHandler(async (req: Request, res: Response) => {
     const deliveries = webhookService.getDeliveries(req.params.id);
-    res.json(deliveries);
+    sendSuccess(res, deliveries, { count: deliveries.length });
   })
 );
 
@@ -73,7 +75,7 @@ router.post(
     const { type, source, payload } = req.body;
     if (!type || !payload) throw new AppError(400, "Missing required fields: type, payload");
     await webhookService.emit({ type, tenantId, source: source || "api", payload });
-    res.json({ success: true, eventType: type });
+    sendSuccess(res, { success: true, eventType: type });
   })
 );
 
@@ -82,7 +84,7 @@ router.patch(
   asyncHandler(async (req: Request, res: Response) => {
     const webhook = webhookService.updateWebhook(req.params.id, req.body);
     if (!webhook) throw new AppError(404, "Webhook not found");
-    res.json(webhook);
+    sendSuccess(res, webhook);
   })
 );
 

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
 import { ruleEngine } from "../services/RuleEngineService";
+import { ruleEngineOrchestrator } from "../business-logic/RuleEngineOrchestrator";
 import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
@@ -117,5 +118,10 @@ router.post(
     sendSuccess(res, updated);
   })
 );
+
+router.get("/dashboard/effectiveness", asyncHandler(async (req: Request, res: Response) => {
+  const dashboard = ruleEngineOrchestrator.getDashboard(req.user!.tenantId);
+  sendSuccess(res, dashboard);
+}));
 
 export default router;

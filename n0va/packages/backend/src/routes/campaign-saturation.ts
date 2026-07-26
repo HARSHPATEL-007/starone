@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { campaignSaturationService } from "../services/CampaignSaturationService";
+import { campaignSaturationOrchestrator } from "../business-logic/CampaignSaturationOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
 
@@ -23,6 +24,11 @@ router.get("/", asyncHandler(async (req, res) => {
   const avgSaturation = arr.length > 0 ? Math.round(arr.reduce((s: number, r: any) => s + (r.saturationScore || 0), 0) / arr.length * 100) / 100 : 0;
   meta.avgSaturationScore = avgSaturation;
   sendSuccess(res, arr, meta);
+}));
+
+router.get("/portfolio/intelligence", asyncHandler(async (req, res) => {
+  const report = campaignSaturationOrchestrator.analyzePortfolio(req.user!.tenantId);
+  sendSuccess(res, report);
 }));
 
 export default router;

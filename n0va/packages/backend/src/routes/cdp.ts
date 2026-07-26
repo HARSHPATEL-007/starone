@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { cdpService } from "../services/CDPService";
+import { cdpOrchestrator } from "../business-logic/CDPOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt } from "./route-utils";
 
@@ -115,6 +116,18 @@ router.get("/ltv/:id", asyncHandler(async (req, res) => {
 router.get("/ltv-batch", asyncHandler(async (req, res) => {
   const batch = cdpService.batchPredictLTV(req.user!.tenantId);
   sendSuccess(res, batch);
+}));
+
+router.get("/intelligence", asyncHandler(async (req, res) => {
+  const report = cdpOrchestrator.getIntelligenceReport(req.user!.tenantId);
+  sendSuccess(res, report);
+}));
+
+router.post("/lookalike/effectiveness", asyncHandler(async (req, res) => {
+  const { seedProfileIds } = req.body;
+  if (!seedProfileIds?.length) throw new AppError(400, "seedProfileIds required");
+  const report = cdpOrchestrator.getLookalikeEffectiveness(req.user!.tenantId, seedProfileIds);
+  sendSuccess(res, report);
 }));
 
 export default router;

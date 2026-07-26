@@ -8,6 +8,7 @@ import { sendSuccess, safeInt } from "./route-utils";
 import { AppError } from "../middleware/errorHandler";
 import { budgetOptimizationOrchestrator } from "../business-logic/BudgetOptimizationOrchestrator";
 import { roasDecompositionOrchestrator } from "../business-logic/ROASDecompositionOrchestrator";
+import { campaignOptimizerOrchestrator } from "../business-logic/CampaignOptimizerOrchestrator";
 
 const router = Router();
 
@@ -155,6 +156,14 @@ router.get(
     } catch (e: any) {
       throw new AppError(404, e.message);
     }
+  })
+);
+
+router.get(
+  "/dashboard/intelligence",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = campaignOptimizerOrchestrator.getDashboard(req.user!.tenantId);
+    sendSuccess(res, dashboard);
   })
 );
 
