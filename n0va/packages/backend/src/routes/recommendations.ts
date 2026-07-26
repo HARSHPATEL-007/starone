@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { recommendationEngine } from "../services/RecommendationEngineService";
 import { DataStore } from "../services/DataStore";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -24,7 +25,9 @@ router.get(
     const tenantId = req.user!.tenantId;
     const campaigns = await loadCampaigns(tenantId);
     const recs = campaigns.flatMap((c) => recommendationEngine.generateCampaignRecommendations(c));
-    res.json(recs);
+    const byType = recs.reduce((acc: Record<string, number>, r: any) => { const t = r.type || "general"; acc[t] = (acc[t] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const avgImpact = recs.length > 0 ? parseFloat((recs.reduce((s: number, r: any) => s + (r.impact || r.priority || 0), 0) / recs.length).toFixed(1)) : 0;
+    sendSuccess(res, recs, { total: recs.length, byType, avgImpact, generatedAt: new Date().toISOString() });
   })
 );
 
@@ -34,7 +37,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const campaigns = await loadCampaigns(tenantId);
     const recs = recommendationEngine.generateCrossCampaignRecommendations(campaigns);
-    res.json(recs);
+    sendSuccess(res, recs, { total: recs.length, campaignCount: campaigns.length });
   })
 );
 
@@ -48,7 +51,7 @@ router.get(
     const metrics = (await DataStore.findMetrics({ tenantId, campaignId: id })) as any[];
     const full = { ...campaign, metrics: metrics && metrics[0] ? metrics[0] : undefined };
     const recs = recommendationEngine.generateCampaignRecommendations(full);
-    res.json(recs);
+    sendSuccess(res, recs, { campaignId: id, campaignName: campaign.name, total: recs.length });
   })
 );
 
@@ -59,7 +62,7 @@ router.get(
     const campaigns = await loadCampaigns(tenantId);
     const perCampaign = campaigns.flatMap((c) => recommendationEngine.generateCampaignRecommendations(c));
     const crossCampaign = recommendationEngine.generateCrossCampaignRecommendations(campaigns);
-    res.json({ recommendations: perCampaign, crossCampaign, total: perCampaign.length + crossCampaign.length });
+    sendSuccess(res, { recommendations: perCampaign, crossCampaign }, { total: perCampaign.length + crossCampaign.length, campaignCount: campaigns.length });
   })
 );
 
