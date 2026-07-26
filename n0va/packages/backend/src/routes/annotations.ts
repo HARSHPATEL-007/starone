@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt } from "./route-utils";
 
 const router = Router();
 
@@ -25,10 +26,16 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { campaignId } = req.params;
-    const result = annotations.filter(
-      (a) => a.tenantId === tenantId && a.campaignId === campaignId
-    );
-    res.json(result);
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
+    const result = annotations.filter((a) => a.tenantId === tenantId && a.campaignId === campaignId);
+    result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const total = result.length;
+    const paginated = result.slice((page - 1) * limit, page * limit);
+    const typeDist: Record<string, number> = {};
+    for (const a of result) typeDist[a.type] = (typeDist[a.type] || 0) + 1;
+    const meta: Record<string, unknown> = { totalAnnotations: total, typeDistribution: typeDist };
+    sendPaginated(res, paginated, computePagination(page, limit, total), meta);
   })
 );
 
@@ -40,17 +47,12 @@ router.post(
     if (!campaignId || !date || !text) return res.status(400).json({ error: "campaignId, date, and text required" });
     const annotation: Annotation = {
       id: `ann_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      tenantId,
-      campaignId,
-      date,
-      text,
-      type: type || "note",
+      tenantId, campaignId, date, text, type: type || "note",
       createdBy: req.user!.userId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
     annotations.push(annotation);
-    res.status(201).json(annotation);
+    sendCreated(res, annotation);
   })
 );
 
@@ -65,7 +67,7 @@ router.patch(
     if (type) annotations[idx].type = type;
     if (date) annotations[idx].date = date;
     annotations[idx].updatedAt = new Date().toISOString();
-    res.json(annotations[idx]);
+    sendSuccess(res, annotations[idx]);
   })
 );
 
@@ -76,7 +78,7 @@ router.delete(
     const idx = annotations.findIndex((a) => a.id === req.params.id && a.tenantId === tenantId);
     if (idx === -1) return res.status(404).json({ error: "Annotation not found" });
     annotations.splice(idx, 1);
-    res.json({ success: true });
+    sendSuccess(res, { success: true });
   })
 );
 

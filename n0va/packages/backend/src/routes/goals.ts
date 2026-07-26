@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt } from "./route-utils";
 
 const router = Router();
 
@@ -13,11 +14,22 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { status, type } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
     const filter: Record<string, any> = { tenantId };
     if (status) filter.status = status;
     if (type) filter.type = type;
     const goals = await DataStore.findGoals(filter);
-    res.json(goals);
+    const arr = Array.isArray(goals) ? goals : [];
+    const total = arr.length;
+    const paginated = arr.slice((page - 1) * limit, page * limit);
+    const active = arr.filter((g: any) => g.status === "active");
+    const onTrack = active.filter((g: any) => (g.progress || 0) >= 50);
+    const typeDistribution: Record<string, number> = {};
+    for (const g of arr) typeDistribution[g.type || "unknown"] = (typeDistribution[g.type || "unknown"] || 0) + 1;
+    const avgProgress = arr.length > 0 ? Math.round(arr.reduce((s: number, g: any) => s + (g.progress || 0), 0) / arr.length * 100) / 100 : 0;
+    const meta: Record<string, unknown> = { activeCount: active.length, onTrackCount: onTrack.length, avgProgress, typeDistribution };
+    sendPaginated(res, paginated, computePagination(page, limit, total), meta);
   })
 );
 
@@ -28,7 +40,12 @@ router.get(
     const { id } = req.params;
     const goal = await DataStore.findGoalById(id, tenantId);
     if (!goal) throw new AppError(404, "Goal not found");
-    res.json(goal);
+    const daysSinceCreation = goal.createdAt ? Math.round((Date.now() - new Date(goal.createdAt).getTime()) / 86400000) : 0;
+    const projectedCompletion = goal.progress > 0 && daysSinceCreation > 0 ? Math.round(daysSinceCreation / (goal.progress / 100)) : null;
+    const meta: Record<string, unknown> = {};
+    if (projectedCompletion) meta.projectedDaysToCompletion = projectedCompletion;
+    meta.daysElapsed = daysSinceCreation;
+    sendSuccess(res, goal, meta);
   })
 );
 
@@ -39,18 +56,10 @@ router.post(
     const { name, type, target, deadline } = req.body;
     if (!name || !type || !target || !deadline) throw new AppError(400, "Missing required fields: name, type, target, deadline");
     const goal = await DataStore.createGoal({
-      tenantId,
-      name,
-      type,
-      target,
-      deadline: new Date(deadline),
-      current: 0,
-      progress: 0,
-      status: "active",
-      owner: req.user!.userId,
-      createdBy: req.user!.userId,
+      tenantId, name, type, target, deadline: new Date(deadline), current: 0, progress: 0, status: "active",
+      owner: req.user!.userId, createdBy: req.user!.userId,
     });
-    res.status(201).json(goal);
+    sendCreated(res, goal);
   })
 );
 
@@ -69,7 +78,7 @@ router.patch(
     if (owner) update.owner = owner;
     const updated = await DataStore.updateGoal(id, tenantId, update);
     if (!updated) throw new AppError(404, "Goal not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 

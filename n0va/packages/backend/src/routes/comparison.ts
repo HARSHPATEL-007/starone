@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -16,13 +17,10 @@ function aggMetrics(metrics: any[]) {
   const totalSpend = metrics.reduce((s, m) => s + (m.spend || 0), 0);
   const totalRevenue = metrics.reduce((s, m) => s + (m.revenue || 0), 0);
   return {
-    totalImpressions,
-    totalClicks,
-    totalConversions,
-    totalSpend,
-    totalRevenue,
+    totalImpressions, totalClicks, totalConversions, totalSpend, totalRevenue,
     avgCtr: totalImpressions > 0 ? parseFloat(((totalClicks / totalImpressions) * 100).toFixed(2)) : 0,
     avgCpc: totalClicks > 0 ? parseFloat((totalSpend / totalClicks).toFixed(2)) : 0,
+    avgCvr: totalClicks > 0 ? parseFloat(((totalConversions / totalClicks) * 100).toFixed(2)) : 0,
     avgRoas: totalSpend > 0 ? parseFloat((totalRevenue / totalSpend).toFixed(2)) : 0,
   };
 }
@@ -61,14 +59,18 @@ router.get(
     const all = Object.values(allMetrics).flat();
     const totals = aggMetrics(all);
 
-    res.json({ campaigns, dailySeries, totals });
+    const maxRoas = Math.max(...campaigns.map((c: any) => c.metrics.avgRoas));
+    const minRoas = Math.min(...campaigns.map((c: any) => c.metrics.avgRoas));
+    const bestCampaign = campaigns.find((c: any) => c.metrics.avgRoas === maxRoas);
+    const meta: Record<string, unknown> = { comparedCampaigns: campaignIds.length, bestROAS: bestCampaign ? bestCampaign.name : null, bestROASValue: maxRoas, worstROASValue: minRoas, ...totals };
+    sendSuccess(res, { campaigns, dailySeries, totals }, meta);
   })
 );
 
 router.get(
   "/dimensions",
   asyncHandler(async (_req: Request, res: Response) => {
-    res.json(["impressions", "clicks", "conversions", "spend", "revenue", "ctr", "cpc", "cvr", "roas"]);
+    sendSuccess(res, ["impressions", "clicks", "conversions", "spend", "revenue", "ctr", "cpc", "cvr", "roas"]);
   })
 );
 

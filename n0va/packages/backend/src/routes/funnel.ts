@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendPaginated, computePagination, safeInt } from "./route-utils";
+import { funnelAnalysisOrchestrator } from "../business-logic/FunnelAnalysisOrchestrator";
 
 const router = Router();
 
@@ -13,6 +15,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { stage } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
     const filter: Record<string, any> = { tenantId };
     if (stage) filter.stage = stage;
     const stages = await DataStore.findFunnelData(filter);
@@ -24,36 +28,29 @@ router.get(
       },
       { totalCount: 0, totalValue: 0 }
     );
-    res.json({ stages, totals });
+    const arr = Array.isArray(stages) ? stages : [];
+    const paginated = arr.slice((page - 1) * limit, page * limit);
+    const stageNames = arr.map((s: any) => s.stage).filter(Boolean);
+    const uniqueCount = new Set(stageNames).size;
+    const meta: Record<string, unknown> = { ...totals, stageCount: uniqueCount };
+    sendPaginated(res, paginated, computePagination(page, limit, arr.length), meta);
   })
 );
 
 router.get(
-  "/summary",
+  "/orchestrate/:campaignId",
   asyncHandler(async (req: Request, res: Response) => {
-    const tenantId = req.user!.tenantId;
-    const allData = await DataStore.findFunnelData({ tenantId });
-    const stageMap: Record<string, { stage: string; totalCount: number; totalValue: number }> = {};
-    for (const d of allData) {
-      const st = d.stage || "unknown";
-      if (!stageMap[st]) stageMap[st] = { stage: st, totalCount: 0, totalValue: 0 };
-      stageMap[st].totalCount += d.count || 0;
-      stageMap[st].totalValue += d.value || 0;
-    }
-    const stages = Object.values(stageMap);
-    const stageOrder = ["awareness", "interest", "consideration", "intent", "conversion", "retention"];
-    stages.sort((a: any, b: any) => {
-      const ai = stageOrder.indexOf(a.stage.toLowerCase());
-      const bi = stageOrder.indexOf(b.stage.toLowerCase());
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-    });
-    let previousCount = stages.length > 0 ? (stages[0] as any).totalCount : 0;
-    const result = stages.map((s: any) => {
-      const dropOff = previousCount > 0 ? ((previousCount - s.totalCount) / previousCount) * 100 : 0;
-      previousCount = s.totalCount;
-      return { ...s, dropOffPercentage: parseFloat(dropOff.toFixed(1)) };
-    });
-    res.json({ stages: result });
+    const { campaignId } = req.params;
+    const report = await funnelAnalysisOrchestrator.analyzeCampaignFunnel(campaignId, req.user!.tenantId);
+    sendSuccess(res, report);
+  })
+);
+
+router.get(
+  "/orchestrate/portfolio",
+  asyncHandler(async (req: Request, res: Response) => {
+    const report = await funnelAnalysisOrchestrator.analyzePortfolioFunnel(req.user!.tenantId);
+    sendSuccess(res, report);
   })
 );
 

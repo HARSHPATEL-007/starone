@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt } from "./route-utils";
 
 const router = Router();
 
@@ -13,12 +14,24 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { type, status, search } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
     const filter: Record<string, any> = { tenantId };
     if (type) filter.type = type;
     if (status) filter.status = status;
     if (search) filter.title = { $regex: search, $options: "i" };
     const assets = await DataStore.findContentAssets(filter);
-    res.json(assets);
+    const arr = Array.isArray(assets) ? assets : [];
+    const total = arr.length;
+    const paginated = arr.slice((page - 1) * limit, page * limit);
+    const typeDist: Record<string, number> = {};
+    const statusDist: Record<string, number> = {};
+    for (const a of arr) {
+      typeDist[a.type || "unknown"] = (typeDist[a.type || "unknown"] || 0) + 1;
+      statusDist[a.status || "unknown"] = (statusDist[a.status || "unknown"] || 0) + 1;
+    }
+    const meta: Record<string, unknown> = { typeDistribution: typeDist, statusDistribution: statusDist };
+    sendPaginated(res, paginated, computePagination(page, limit, total), meta);
   })
 );
 
@@ -29,7 +42,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const asset = await DataStore.findContentAssetById(id, tenantId);
     if (!asset) throw new AppError(404, "Content asset not found");
-    res.json(asset);
+    sendSuccess(res, asset);
   })
 );
 
@@ -40,13 +53,9 @@ router.post(
     const { title, type } = req.body;
     if (!title || !type) throw new AppError(400, "Missing required fields: title, type");
     const asset = await DataStore.createContentAsset({
-      tenantId,
-      title,
-      type,
-      status: "draft",
-      createdBy: req.user!.userId,
+      tenantId, title, type, status: "draft", createdBy: req.user!.userId,
     });
-    res.status(201).json(asset);
+    sendCreated(res, asset);
   })
 );
 
@@ -60,7 +69,7 @@ router.patch(
     delete update._id;
     const updated = await DataStore.updateContentAsset(id, tenantId, update);
     if (!updated) throw new AppError(404, "Content asset not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 

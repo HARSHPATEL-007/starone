@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
+import { sendSuccess, sendPaginated, computePagination, safeInt } from "./route-utils";
+import { channelOptimizationOrchestrator } from "../business-logic/ChannelOptimizationOrchestrator";
 
 const router = Router();
 
@@ -11,12 +13,13 @@ router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
 
     const metrics = await DataStore.findMetrics({ tenantId });
     const campaigns = await DataStore.findCampaigns({ tenantId });
 
     const platformMap: Record<string, { impressions: number; clicks: number; conversions: number; spend: number; revenue: number; campaigns: Set<string> }> = {};
-
     for (const m of metrics) {
       const platform = m.platform || "unknown";
       if (!platformMap[platform]) {
@@ -30,51 +33,30 @@ router.get(
       if (m.campaignId) platformMap[platform].campaigns.add(String(m.campaignId));
     }
 
-    const channels = Object.entries(platformMap).map(([platform, data]) => ({
-      platform,
-      impressions: data.impressions,
-      clicks: data.clicks,
-      conversions: data.conversions,
-      spend: parseFloat(data.spend.toFixed(2)),
-      revenue: parseFloat(data.revenue.toFixed(2)),
-      ctr: data.impressions > 0 ? parseFloat(((data.clicks / data.impressions) * 100).toFixed(2)) : 0,
-      cpc: data.clicks > 0 ? parseFloat((data.spend / data.clicks).toFixed(2)) : 0,
-      cvr: data.clicks > 0 ? parseFloat(((data.conversions / data.clicks) * 100).toFixed(2)) : 0,
-      roas: data.spend > 0 ? parseFloat((data.revenue / data.spend).toFixed(2)) : 0,
-      campaignCount: data.campaigns.size,
-    }));
+    const totalSpendAll = Object.values(platformMap).reduce((s, v) => s + v.spend, 0);
+    const enriched = Object.entries(platformMap).map(([platform, data]) => {
+      const ctr = data.impressions > 0 ? Math.round((data.clicks / data.impressions) * 10000) / 100 : 0;
+      const cpc = data.clicks > 0 ? Math.round((data.spend / data.clicks) * 100) / 100 : 0;
+      const roas = data.spend > 0 ? Math.round((data.revenue / data.spend) * 100) / 100 : 0;
+      const share = totalSpendAll > 0 ? Math.round((data.spend / totalSpendAll) * 10000) / 100 : 0;
+      const efficiency = Math.round((roas * 40 + (100 - Math.min(100, cpc * 0.5)) * 0.3 + ctr * 0.3) * 100) / 100;
+      return { platform, ...data, campaigns: data.campaigns.size, ctr, cpc, roas, shareOfSpend: share, efficiencyScore: efficiency };
+    });
+    enriched.sort((a, b) => b.efficiencyScore - a.efficiencyScore);
+    const total = enriched.length;
+    const paginated = enriched.slice((page - 1) * limit, page * limit);
+    const bestPlatform = enriched.length > 0 ? enriched[0].platform : null;
+    const meta: Record<string, unknown> = { totalPlatforms: total, totalSpend: totalSpendAll, topPlatform: bestPlatform };
+    sendPaginated(res, paginated, computePagination(page, limit, total), meta);
+  })
+);
 
-    const totals = {
-      impressions: channels.reduce((s, c) => s + c.impressions, 0),
-      clicks: channels.reduce((s, c) => s + c.clicks, 0),
-      conversions: channels.reduce((s, c) => s + c.conversions, 0),
-      spend: parseFloat(channels.reduce((s, c) => s + c.spend, 0).toFixed(2)),
-      revenue: parseFloat(channels.reduce((s, c) => s + c.revenue, 0).toFixed(2)),
-      ctr: 0,
-      cpc: 0,
-      cvr: 0,
-      roas: 0,
-      campaignCount: campaigns.campaigns.length,
-    };
-    totals.ctr = totals.impressions > 0 ? parseFloat(((totals.clicks / totals.impressions) * 100).toFixed(2)) : 0;
-    totals.cpc = totals.clicks > 0 ? parseFloat((totals.spend / totals.clicks).toFixed(2)) : 0;
-    totals.cvr = totals.clicks > 0 ? parseFloat(((totals.conversions / totals.clicks) * 100).toFixed(2)) : 0;
-    totals.roas = totals.spend > 0 ? parseFloat((totals.revenue / totals.spend).toFixed(2)) : 0;
-
-    const dailyMetrics = await DataStore.findDailyMetrics(tenantId, 90);
-    const dateMap: Record<string, any> = {};
-    for (const d of dailyMetrics) {
-      const dateStr = d.date ? new Date(d.date).toISOString().split("T")[0] : "unknown";
-      const platform = d.platform || "unknown";
-      if (!dateMap[dateStr]) dateMap[dateStr] = { date: dateStr };
-      if (!dateMap[dateStr][platform]) dateMap[dateStr][platform] = { impressions: 0, clicks: 0, spend: 0 };
-      dateMap[dateStr][platform].impressions += d.impressions || 0;
-      dateMap[dateStr][platform].clicks += d.clicks || 0;
-      dateMap[dateStr][platform].spend += d.spend || 0;
-    }
-    const dailyTrend = Object.values(dateMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
-
-    res.json({ channels, totals, dailyTrend });
+router.get(
+  "/orchestrate",
+  asyncHandler(async (req: Request, res: Response) => {
+    const days = safeInt(req.query.days, 90);
+    const report = await channelOptimizationOrchestrator.analyze(req.user!.tenantId, days);
+    sendSuccess(res, report);
   })
 );
 

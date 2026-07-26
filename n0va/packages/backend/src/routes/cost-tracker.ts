@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendPaginated, computePagination, safeInt } from "./route-utils";
 
 const router = Router();
 
@@ -13,6 +14,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { category, dateFrom, dateTo } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
     const filter: Record<string, any> = { tenantId };
     if (category) filter.category = category;
     if (dateFrom || dateTo) {
@@ -21,16 +24,23 @@ router.get(
       if (dateTo) filter.date.$lte = new Date(dateTo as string);
     }
     const costs = await DataStore.findCosts(filter);
-    const summary = costs.reduce(
-      (acc: any, c: any) => {
-        acc.totalPlanned += c.planned || 0;
-        acc.totalActual += c.actual || 0;
-        acc.totalVariance += (c.planned || 0) - (c.actual || 0);
-        return acc;
-      },
-      { totalPlanned: 0, totalActual: 0, totalVariance: 0 }
-    );
-    res.json({ costs, summary });
+    const arr = Array.isArray(costs) ? costs : [];
+    const total = arr.length;
+    const paginated = arr.slice((page - 1) * limit, page * limit);
+    const totalPlanned = arr.reduce((s: number, c: any) => s + (c.planned || 0), 0);
+    const totalActual = arr.reduce((s: number, c: any) => s + (c.actual || 0), 0);
+    const totalVariance = totalPlanned - totalActual;
+    const variancePct = totalPlanned > 0 ? Math.round((totalVariance / totalPlanned) * 10000) / 100 : 0;
+    const categoryDist: Record<string, { planned: number; actual: number; count: number }> = {};
+    for (const c of arr) {
+      const cat = c.category || "uncategorized";
+      if (!categoryDist[cat]) categoryDist[cat] = { planned: 0, actual: 0, count: 0 };
+      categoryDist[cat].planned += c.planned || 0;
+      categoryDist[cat].actual += c.actual || 0;
+      categoryDist[cat].count += 1;
+    }
+    const meta: Record<string, unknown> = { totalPlanned, totalActual, totalVariance, variancePercentage: variancePct, categorySummary: categoryDist, totalEntries: total };
+    sendPaginated(res, paginated, computePagination(page, limit, total), meta);
   })
 );
 
@@ -48,7 +58,12 @@ router.get(
       grouped[cat].totalVariance += (c.planned || 0) - (c.actual || 0);
       grouped[cat].count += 1;
     }
-    res.json(Object.values(grouped));
+    const enriched = Object.values(grouped).map((g: any) => ({
+      ...g, variancePercentage: g.totalPlanned > 0 ? Math.round(((g.totalPlanned - g.totalActual) / g.totalPlanned) * 10000) / 100 : 0,
+    }));
+    const totalPlanned = enriched.reduce((s: number, g: any) => s + g.totalPlanned, 0);
+    const totalActual = enriched.reduce((s: number, g: any) => s + g.totalActual, 0);
+    sendSuccess(res, enriched, { totalPlanned, totalActual, totalVariance: totalPlanned - totalActual });
   })
 );
 
@@ -66,7 +81,10 @@ router.get(
       dailyMap[day].planned += c.planned || 0;
       dailyMap[day].actual += c.actual || 0;
     }
-    res.json(Object.values(dailyMap).sort((a: any, b: any) => a.date.localeCompare(b.date)));
+    const sorted = Object.values(dailyMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
+    const totalPlanned = sorted.reduce((s: number, d: any) => s + d.planned, 0);
+    const totalActual = sorted.reduce((s: number, d: any) => s + d.actual, 0);
+    sendSuccess(res, sorted, { daysWithData: sorted.length, totalPlanned, totalActual, totalVariance: totalPlanned - totalActual });
   })
 );
 

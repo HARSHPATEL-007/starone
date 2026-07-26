@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt, safeFloat, validateRequired } from "./route-utils";
 
 const router = Router();
 
@@ -13,12 +14,22 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { status, matchType, search } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
     const filter: Record<string, any> = { tenantId };
     if (status) filter.status = status;
     if (matchType) filter.matchType = matchType;
     if (search) filter.keyword = { $regex: search, $options: "i" };
     const keywords = await DataStore.findKeywords(filter);
-    res.json(keywords);
+    const arr = Array.isArray(keywords) ? keywords : [];
+    const total = arr.length;
+    const paginated = arr.slice((page - 1) * limit, page * limit);
+    const active = arr.filter((k: any) => k.status === "active");
+    const totalBid = active.reduce((s: number, k: any) => s + (k.bid || 0), 0);
+    const matchTypeDist: Record<string, number> = {};
+    for (const k of arr) matchTypeDist[k.matchType || "unknown"] = (matchTypeDist[k.matchType || "unknown"] || 0) + 1;
+    const meta: Record<string, unknown> = { activeCount: active.length, totalBid: Math.round(totalBid * 100) / 100, matchTypeDistribution: matchTypeDist };
+    sendPaginated(res, paginated, computePagination(page, limit, total), meta);
   })
 );
 
@@ -30,16 +41,10 @@ router.post(
     if (!keyword || !matchType || volume === undefined || cpc === undefined)
       throw new AppError(400, "Missing required fields: keyword, matchType, volume, cpc");
     const kw = await DataStore.createKeyword({
-      tenantId,
-      keyword,
-      matchType,
-      volume,
-      cpc,
-      bid: 0,
-      status: "active",
+      tenantId, keyword, matchType, volume, cpc, bid: 0, status: "active",
       createdBy: req.user!.userId,
     });
-    res.status(201).json(kw);
+    sendCreated(res, kw);
   })
 );
 
@@ -55,7 +60,7 @@ router.patch(
     if (matchType) update.matchType = matchType;
     const updated = await DataStore.updateKeyword(id, tenantId, update);
     if (!updated) throw new AppError(404, "Keyword not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -79,7 +84,8 @@ router.post(
     if (bid === undefined || bid === null) throw new AppError(400, "Missing bid amount");
     const updated = await DataStore.updateKeyword(id, tenantId, { bid });
     if (!updated) throw new AppError(404, "Keyword not found");
-    res.json(updated);
+    const suggestedBid = Math.round((bid as number) * 1.15 * 100) / 100;
+    sendSuccess(res, updated, { suggestedOptimalBid: suggestedBid, note: "Suggested bid is 15% above current — review before applying." });
   })
 );
 
