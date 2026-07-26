@@ -86,4 +86,30 @@ router.delete(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const filter: Record<string, any> = { tenantId };
+    const audiences = await DataStore.findAudiences(filter);
+    const items = Array.isArray(audiences) ? audiences : (audiences as any).audiences || [];
+    const byPlatform: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let totalReach = 0;
+    for (const a of items) {
+      byPlatform[a.platform] = (byPlatform[a.platform] || 0) + 1;
+      byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+      totalReach += a.size || 0;
+    }
+    const avgSize = items.length > 0 ? Math.round(totalReach / items.length) : 0;
+    sendSuccess(res, {
+      totalAudiences: items.length,
+      byPlatform,
+      byStatus,
+      totalReach,
+      avgSize,
+    });
+  })
+);
+
 export default router;

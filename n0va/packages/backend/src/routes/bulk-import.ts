@@ -102,7 +102,30 @@ router.post(
       }
     }
 
-    sendCreated(res, { imported: imported.length, failed: errors.length, errors, total: data.length, successRate: data.length > 0 ? Math.round((imported.length / data.length) * 10000) / 100 : 0 });
+    const result = { imported: imported.length, failed: errors.length, errors, total: data.length, successRate: data.length > 0 ? Math.round((imported.length / data.length) * 10000) / 100 : 0 };
+    if (DataStore.usingMemory()) {
+      DataStore["mem"]().insert("bulk_imports", {
+        tenantId, entityType, imported: imported.length, total: data.length,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    sendCreated(res, result);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const imports = DataStore.usingMemory()
+      ? DataStore["mem"]().find("bulk_imports", (i: any) => i.tenantId === tenantId)
+      : [];
+    const totalItems = imports.reduce((s: number, i: any) => s + (i.total || 0), 0);
+    const totalImported = imports.reduce((s: number, i: any) => s + (i.imported || 0), 0);
+    sendSuccess(res, {
+      importCount: imports.length,
+      successRate: totalItems > 0 ? Math.round((totalImported / totalItems) * 10000) / 100 : 0,
+    });
   })
 );
 

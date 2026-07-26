@@ -111,4 +111,24 @@ router.patch(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const all = DataStore.mem().find("approvals", (a: any) => a.tenantId === tenantId);
+    const pendingCount = all.filter((a: any) => a.status === "pending").length;
+    const approvedCount = all.filter((a: any) => a.status === "approved").length;
+    const rejectedCount = all.filter((a: any) => a.status === "rejected").length;
+    const sevenDaysAgo = Date.now() - 7 * 86400000;
+    const recentActivity = all.filter((a: any) => new Date(a.createdAt || a.updatedAt).getTime() >= sevenDaysAgo).length;
+    sendSuccess(res, {
+      totalApprovals: all.length,
+      pendingCount,
+      approvedCount,
+      rejectedCount,
+      recentActivity,
+    });
+  })
+);
+
 export default router;

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
 import { N0VA1OService } from "../services/N0VA1OService";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 const n0va1o = new N0VA1OService();
@@ -15,7 +16,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const recipes = DataStore.findRecipes(tenantId);
-    res.json(recipes);
+    sendSuccess(res, recipes, { count: recipes.length });
   })
 );
 
@@ -26,7 +27,7 @@ router.get(
     const { id } = req.params;
     const recipe = DataStore.findRecipes(tenantId).find((r: any) => r._id === id);
     if (!recipe) throw new AppError(404, "Recipe not found");
-    res.json(recipe);
+    sendSuccess(res, recipe);
   })
 );
 
@@ -52,7 +53,7 @@ router.post(
       createdBy: req.user!.userId,
     });
 
-    res.status(201).json(recipe);
+    sendCreated(res, recipe);
   })
 );
 
@@ -71,7 +72,7 @@ router.post(
       compiledCode: `# N0VA1O Compiled Recipe: ${recipe.name}\n# Generated: ${new Date().toISOString()}\n# Compiled ID: ${compiledId}\n# Bypasses LLM inference — deterministic execution <100ms p99`,
     });
 
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -99,7 +100,7 @@ router.post(
       }
     }
 
-    res.json({ recipeId: id, name: recipe.name, results });
+    sendSuccess(res, { recipeId: id, name: recipe.name, results });
   })
 );
 
@@ -110,7 +111,7 @@ router.patch(
     const { id } = req.params;
     const updated = DataStore.updateRecipe(id, tenantId, req.body);
     if (!updated) throw new AppError(404, "Recipe not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -122,6 +123,23 @@ router.delete(
     const deleted = DataStore.deleteRecipe(id, tenantId);
     if (!deleted) throw new AppError(404, "Recipe not found");
     res.status(204).send();
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const recipes = DataStore.findRecipes(tenantId);
+    const totalRecipes = recipes.length;
+    const compiledCount = recipes.filter((r: any) => r.isCompiled).length;
+    const executableCount = recipes.filter((r: any) => r.isCompiled).length;
+    const byTriggerType: Record<string, number> = {};
+    for (const r of recipes) {
+      const t = r.trigger?.type || "unknown";
+      byTriggerType[t] = (byTriggerType[t] || 0) + 1;
+    }
+    sendSuccess(res, { totalRecipes, compiledCount, executableCount, byTriggerType });
   })
 );
 

@@ -182,4 +182,13 @@ router.post(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const reports = DataStore.mem().find("report_history", (r: any) => r.tenantId === tenantId);
+    sendSuccess(res, { reportCount: reports.length });
+  })
+);
+
 export default router;

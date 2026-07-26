@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ const DEFAULT_PREFS = {
 router.get(
   "/defaults",
   asyncHandler(async (_req: Request, res: Response) => {
-    res.json(DEFAULT_PREFS);
+    sendSuccess(res, DEFAULT_PREFS);
   })
 );
 
@@ -35,7 +36,7 @@ router.get(
     if (!prefs) {
       prefs = DataStore.mem().insert("notification_prefs", { tenantId, ...DEFAULT_PREFS });
     }
-    res.json(prefs);
+    sendSuccess(res, prefs);
   })
 );
 
@@ -56,11 +57,22 @@ router.put(
     const existing = DataStore.mem().findOne("notification_prefs", (p: any) => p.tenantId === tenantId);
     if (existing) {
       const updated = DataStore.mem().update("notification_prefs", (p: any) => p.tenantId === tenantId, update);
-      res.json(updated);
+      sendSuccess(res, updated);
     } else {
       const prefs = DataStore.mem().insert("notification_prefs", { tenantId, ...DEFAULT_PREFS, ...update });
-      res.status(201).json(prefs);
+      sendCreated(res, prefs);
     }
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const prefs = DataStore.mem().findOne("notification_prefs", (p: any) => p.tenantId === tenantId);
+    const hasPrefs = !!prefs;
+    const alertTypes = prefs ? Object.keys(prefs).filter((k) => k.endsWith("_alerts") && prefs[k] === true) : [];
+    sendSuccess(res, { hasPrefs, digestFrequency: prefs?.digest_frequency || "none", alertTypes });
   })
 );
 

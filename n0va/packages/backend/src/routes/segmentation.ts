@@ -86,4 +86,29 @@ router.delete(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const segments = await DataStore.findSegments({ tenantId });
+    const arr = Array.isArray(segments) ? segments : [];
+    const byType: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let totalCount = 0;
+    for (const s of arr) {
+      byType[s.type || "unknown"] = (byType[s.type || "unknown"] || 0) + 1;
+      byStatus[s.status || "unknown"] = (byStatus[s.status || "unknown"] || 0) + 1;
+      totalCount += s.size || 0;
+    }
+    const avgSegmentSize = arr.length > 0 ? Math.round(totalCount / arr.length) : 0;
+    sendSuccess(res, {
+      totalSegments: arr.length,
+      byType,
+      byStatus,
+      totalCount,
+      avgSegmentSize,
+    });
+  })
+);
+
 export default router;

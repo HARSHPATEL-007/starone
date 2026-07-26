@@ -69,4 +69,12 @@ router.get(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const stats = notificationDelivery.getStats();
+    sendSuccess(res, { status: "operational", ...stats });
+  })
+);
+
 export default router;

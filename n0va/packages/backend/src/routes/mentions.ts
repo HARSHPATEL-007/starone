@@ -1,4 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { sendSuccess, sendCreated } from "./route-utils";
+import { AppError } from "../middleware/errorHandler";
 
 const router = Router();
 
@@ -26,7 +28,7 @@ router.post(
     const tenantId = req.user!.tenantId;
     const { entityType, entityId, mentionedUsers, context } = req.body;
     if (!entityType || !entityId || !mentionedUsers?.length)
-      return res.status(400).json({ error: "entityType, entityId, and mentionedUsers required" });
+      throw new AppError(400, "entityType, entityId, and mentionedUsers required");
 
     const records = mentionedUsers.map((userId: string) => ({
       id: `men_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -41,7 +43,7 @@ router.post(
     }));
 
     mentions.push(...records);
-    res.status(201).json({ mentions: records, count: records.length });
+    sendCreated(res, { mentions: records, count: records.length });
   })
 );
 
@@ -54,7 +56,7 @@ router.get(
     let result = mentions.filter((m) => m.tenantId === tenantId && m.mentionedUser === userId);
     if (unreadOnly === "true") result = result.filter((m) => !m.read);
     result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    res.json(result);
+    sendSuccess(res, result, { count: result.length, unreadCount: result.filter((m) => !m.read).length });
   })
 );
 
@@ -64,7 +66,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const userId = req.user!.userId;
     const count = mentions.filter((m) => m.tenantId === tenantId && m.mentionedUser === userId && !m.read).length;
-    res.json({ count });
+    sendSuccess(res, { count });
   })
 );
 
@@ -74,9 +76,9 @@ router.patch(
     const tenantId = req.user!.tenantId;
     const userId = req.user!.userId;
     const mention = mentions.find((m) => m.id === req.params.id && m.tenantId === tenantId && m.mentionedUser === userId);
-    if (!mention) return res.status(404).json({ error: "Mention not found" });
+    if (!mention) throw new AppError(404, "Mention not found");
     mention.read = true;
-    res.json(mention);
+    sendSuccess(res, mention);
   })
 );
 
@@ -92,7 +94,18 @@ router.post(
         count++;
       }
     });
-    res.json({ markedRead: count });
+    sendSuccess(res, { markedRead: count });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const userMentions = mentions.filter((m) => m.tenantId === tenantId);
+    const unreadMentions = userMentions.filter((m) => !m.read).length;
+    const uniqueEntityTypes = [...new Set(userMentions.map((m) => m.entityType))];
+    sendSuccess(res, { totalMentions: userMentions.length, unreadMentions, uniqueEntityTypes });
   })
 );
 

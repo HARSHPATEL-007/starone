@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { AppError } from "../middleware/errorHandler";
 import { DataStore } from "../services/DataStore";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -70,7 +71,7 @@ router.get(
       scopes: cfg.scopes,
       authorizeParams: cfg.authorizeParams,
     }));
-    res.json(configs);
+    sendSuccess(res, configs, { count: configs.length });
   })
 );
 
@@ -91,7 +92,7 @@ router.post(
     authUrl.searchParams.set("scope", cfg.scopes.join(" "));
     for (const [k, v] of Object.entries(cfg.authorizeParams)) authUrl.searchParams.set(k, v);
 
-    res.json({ authUrl: authUrl.toString(), state, platform });
+    sendSuccess(res, { authUrl: authUrl.toString(), state, platform });
   })
 );
 
@@ -167,7 +168,7 @@ router.post(
       "credentials.accessToken": newToken,
       "credentials.expiresAt": new Date(Date.now() + 3600000).toISOString(),
     });
-    res.json({ platform, accessToken: newToken, expiresAt: new Date(Date.now() + 3600000).toISOString() });
+    sendSuccess(res, { platform, accessToken: newToken, expiresAt: new Date(Date.now() + 3600000).toISOString() });
   })
 );
 
@@ -188,7 +189,18 @@ router.get(
         accountId: acct?._id || null,
       };
     });
-    res.json({ platforms: statuses, totalConnected: accounts.length });
+    sendSuccess(res, { platforms: statuses, totalConnected: accounts.length }, { count: accounts.length });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const mem = DataStore["mem"]();
+    const accounts = mem.find("connected_accounts", () => true);
+    const platforms = [...new Set(accounts.map((a: any) => a.platform))] as string[];
+    const activeCount = accounts.filter((a: any) => a.status === "active").length;
+    sendSuccess(res, { totalConnected: accounts.length, platforms, activeCount });
   })
 );
 

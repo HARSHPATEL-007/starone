@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { entityStore } from "../services/EntityStore";
 import { EntityRecord } from "../models/EntityRecord";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const q = (req.query.q as string || "").trim().toLowerCase();
-    if (!q) { res.json([]); return; }
+    if (!q) { sendSuccess(res, []); return; }
 
     const allTypes = [
       "campaigns", "creatives", "audiences", "goals", "ab_tests",
@@ -40,7 +41,7 @@ router.get(
           { "data.description": regex },
         ],
       }).sort({ createdAt: -1 }).limit(50).lean();
-      return res.json(results.map((r: any) => ({
+      return sendSuccess(res, results.map((r: any) => ({
         entityType: r.entityType,
         _id: r._id.toString(),
         label: r.data.name || r.data.title || r.data.label || r.data.email || r._id.toString(),
@@ -65,7 +66,7 @@ router.get(
         }
       }
     }
-    res.json(results.slice(0, 50));
+    sendSuccess(res, results.slice(0, 50));
   })
 );
 
@@ -75,7 +76,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const results = await entityStore.list(tenantId, "team_members");
-    res.json(results);
+    sendSuccess(res, results, { count: results.length });
   })
 );
 
@@ -84,7 +85,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const record = await entityStore.create(tenantId, "team_members", req.body, req.user!.userId);
-    res.status(201).json(record);
+    sendCreated(res, record);
   })
 );
 
@@ -95,7 +96,7 @@ router.patch(
     const record = await entityStore.get(req.params.id, tenantId);
     if (!record) throw new AppError(404, "Team member not found");
     const updated = await entityStore.update(req.params.id, tenantId, req.body);
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -120,11 +121,11 @@ router.get(
         tenantId, entityType: "comments",
         "data.entityType": entityType, "data.entityId": entityId,
       }).sort({ createdAt: -1 }).lean();
-      return res.json(results.map((r: any) => ({ _id: r._id.toString(), ...r.data })));
+      return sendSuccess(res, results.map((r: any) => ({ _id: r._id.toString(), ...r.data })));
     }
     const items = await entityStore.list(tenantId, "comments");
     const results = items.filter((r: any) => r.entityType === entityType && r.entityId === entityId);
-    res.json(results);
+    sendSuccess(res, results);
   })
 );
 
@@ -135,7 +136,7 @@ router.post(
     const { entityType, entityId } = req.params;
     const data = { ...req.body, entityType, entityId, authorId: req.user!.userId, createdAt: new Date().toISOString() };
     const record = await entityStore.create(tenantId, "comments", data, req.user!.userId);
-    res.status(201).json(record);
+    sendCreated(res, record);
   })
 );
 
@@ -157,7 +158,7 @@ router.get(
     const filter: Record<string, unknown> = {};
     if (req.query.status) filter.status = req.query.status as string;
     const results = await entityStore.list(tenantId, "approvals", Object.keys(filter).length ? filter : undefined);
-    res.json(results);
+    sendSuccess(res, results, { count: results.length });
   })
 );
 
@@ -167,7 +168,7 @@ router.post(
     const tenantId = req.user!.tenantId;
     const data = { ...req.body, status: req.body.status || "pending", createdBy: req.user!.userId, createdAt: new Date().toISOString() };
     const record = await entityStore.create(tenantId, "approvals", data, req.user!.userId);
-    res.status(201).json(record);
+    sendCreated(res, record);
   })
 );
 
@@ -182,7 +183,7 @@ router.patch(
     const updated = await entityStore.update(req.params.id, tenantId, {
       status: action, reviewedBy: req.user!.userId, reviewedAt: new Date().toISOString(),
     });
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -196,10 +197,10 @@ router.get(
         .sort({ createdAt: -1 }).limit(1).lean();
       if (subs.length > 0) {
         const s: any = subs[0];
-        return res.json({ _id: s._id.toString(), ...s.data });
+        return sendSuccess(res, { _id: s._id.toString(), ...s.data });
       }
     }
-    res.json({
+    sendSuccess(res, {
       plan: "Transcendent", status: "active",
       periodStart: new Date(Date.now() - 86400000 * 30).toISOString(),
       periodEnd: new Date(Date.now() + 86400000 * 30).toISOString(),
@@ -214,7 +215,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const record = await entityStore.create(tenantId, "billing_subscriptions", req.body, req.user!.userId);
-    res.status(201).json(record);
+    sendCreated(res, record);
   })
 );
 
@@ -223,7 +224,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const results = await entityStore.list(tenantId, "billing_invoices");
-    res.json(results);
+    sendSuccess(res, results, { count: results.length });
   })
 );
 
@@ -232,7 +233,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const record = await entityStore.get(req.params.id, req.user!.tenantId);
     if (!record) throw new AppError(404, "Invoice not found");
-    res.json(record);
+    sendSuccess(res, record);
   })
 );
 
@@ -241,7 +242,30 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const record = await entityStore.create(tenantId, "billing_invoices", req.body, req.user!.userId);
-    res.status(201).json(record);
+    sendCreated(res, record);
+  })
+);
+
+// ---- Orchestrate Dashboard ----
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const [teamItems, commentItems, approvalItems, subItems, invItems] = await Promise.all([
+      entityStore.list(tenantId, "team_members"),
+      entityStore.list(tenantId, "comments"),
+      entityStore.list(tenantId, "approvals"),
+      entityStore.list(tenantId, "billing_subscriptions"),
+      entityStore.list(tenantId, "billing_invoices"),
+    ]);
+    sendSuccess(res, {
+      searchEnabled: true,
+      teamCount: teamItems.length,
+      commentCount: commentItems.length,
+      approvalCount: approvalItems.length,
+      subscriptionCount: subItems.length,
+      invoiceCount: invItems.length,
+    });
   })
 );
 

@@ -65,4 +65,22 @@ router.post(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const entries = await DataStore.findCompetitiveIntel({ tenantId });
+    const competitors = [...new Set(entries.map((e: any) => e.competitor))];
+    const dates = entries.map((e: any) => new Date(e.date)).filter((d: Date) => !isNaN(d.getTime())).sort((a: Date, b: Date) => a.getTime() - b.getTime());
+    const dateRange = dates.length >= 2 ? { from: dates[0].toISOString().split("T")[0], to: dates[dates.length - 1].toISOString().split("T")[0] } : null;
+    const avgShareOfVoice = entries.length > 0 ? parseFloat((entries.reduce((s: number, e: any) => s + (e.shareOfVoice || 0), 0) / entries.length).toFixed(2)) : 0;
+    sendSuccess(res, {
+      competitors,
+      totalDataPoints: entries.length,
+      dateRange,
+      avgShareOfVoice,
+    });
+  })
+);
+
 export default router;

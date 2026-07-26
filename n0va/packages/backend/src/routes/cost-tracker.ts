@@ -88,4 +88,34 @@ router.get(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const costs = await DataStore.findCosts({ tenantId });
+    const arr = Array.isArray(costs) ? costs : [];
+    const uniqueCategories = [...new Set(arr.map((c: any) => c.category).filter(Boolean))];
+    const dates = arr.map((c: any) => new Date(c.date)).filter((d: Date) => !isNaN(d.getTime())).sort((a: Date, b: Date) => a.getTime() - b.getTime());
+    const dateRange = dates.length >= 2 ? { from: dates[0].toISOString().split("T")[0], to: dates[dates.length - 1].toISOString().split("T")[0] } : null;
+    const totalPlanned = arr.reduce((s: number, c: any) => s + (c.planned || 0), 0);
+    const totalActual = arr.reduce((s: number, c: any) => s + (c.actual || 0), 0);
+    const totalVariance = totalPlanned - totalActual;
+    const catSpend: Record<string, number> = {};
+    for (const c of arr) {
+      const cat = c.category || "uncategorized";
+      catSpend[cat] = (catSpend[cat] || 0) + (c.actual || 0);
+    }
+    const topCategories = Object.entries(catSpend).sort(([, a], [, b]) => b - a).slice(0, 10).map(([category, actual]) => ({ category, actual }));
+    sendSuccess(res, {
+      totalCostRecords: arr.length,
+      uniqueCategories: uniqueCategories.length,
+      dateRange,
+      totalPlanned,
+      totalActual,
+      totalVariance,
+      topCategories,
+    });
+  })
+);
+
 export default router;

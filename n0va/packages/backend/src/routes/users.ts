@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { USERS, isConnected } from "./auth";
 import { User } from "../models/User";
+import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -14,12 +16,12 @@ router.get(
     const { userId } = req.user!;
     if (isConnected()) {
       const user = await User.findById(userId).select("-passwordHash");
-      if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json({ name: user.name, email: user.email, role: user.role, userId: user._id.toString(), tenantId: user.tenantId });
+      if (!user) throw new AppError(404, "User not found");
+      return sendSuccess(res, { name: user.name, email: user.email, role: user.role, userId: user._id.toString(), tenantId: user.tenantId });
     }
     const user = USERS.find((u) => u.userId === userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ name: user.name, email: user.email, role: user.role, userId: user.userId, tenantId: user.tenantId });
+    if (!user) throw new AppError(404, "User not found");
+    sendSuccess(res, { name: user.name, email: user.email, role: user.role, userId: user.userId, tenantId: user.tenantId });
   })
 );
 
@@ -33,14 +35,21 @@ router.patch(
       if (name) updates.name = name;
       if (email) updates.email = email;
       const user = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true }).select("-passwordHash");
-      if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json({ name: user.name, email: user.email, role: user.role, userId: user._id.toString(), tenantId: user.tenantId });
+      if (!user) throw new AppError(404, "User not found");
+      return sendSuccess(res, { name: user.name, email: user.email, role: user.role, userId: user._id.toString(), tenantId: user.tenantId });
     }
     const user = USERS.find((u) => u.userId === userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) throw new AppError(404, "User not found");
     if (name) user.name = name;
     if (email) user.email = email;
-    res.json({ name: user.name, email: user.email, role: user.role, userId: user.userId, tenantId: user.tenantId });
+    sendSuccess(res, { name: user.name, email: user.email, role: user.role, userId: user.userId, tenantId: user.tenantId });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    sendSuccess(res, { totalUsers: USERS.length });
   })
 );
 

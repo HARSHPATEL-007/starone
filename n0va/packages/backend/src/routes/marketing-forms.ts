@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -17,7 +18,7 @@ router.get(
     if (type) filter.type = type;
     if (status) filter.status = status;
     const forms = await DataStore.findMarketingForms(filter);
-    res.json(forms);
+    sendSuccess(res, forms, { count: forms.length, typeFilter: type || null, statusFilter: status || null });
   })
 );
 
@@ -29,7 +30,7 @@ router.get(
     const form = await DataStore.findMarketingFormById(id, tenantId);
     if (!form) throw new AppError(404, "Form not found");
     const submissions = await DataStore.findFormSubmissions({ tenantId, formId: id });
-    res.json({ ...form, recentSubmissions: submissions });
+    sendSuccess(res, { ...form, recentSubmissions: submissions });
   })
 );
 
@@ -47,7 +48,7 @@ router.post(
       status: "draft",
       createdBy: req.user!.userId,
     });
-    res.status(201).json(form);
+    sendCreated(res, form);
   })
 );
 
@@ -61,7 +62,7 @@ router.patch(
     delete update._id;
     const updated = await DataStore.updateMarketingForm(id, tenantId, update);
     if (!updated) throw new AppError(404, "Form not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -82,7 +83,22 @@ router.get(
     const { id } = req.params;
     const tenantId = req.user!.tenantId;
     const submissions = await DataStore.findFormSubmissions({ tenantId, formId: id });
-    res.json(submissions);
+    sendSuccess(res, submissions);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const forms = DataStore.mem().find("marketing_forms", (f: any) => f.tenantId === tenantId);
+    const byType: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    for (const f of forms) {
+      byType[f.type] = (byType[f.type] || 0) + 1;
+      byStatus[f.status] = (byStatus[f.status] || 0) + 1;
+    }
+    sendSuccess(res, { totalForms: forms.length, byType, byStatus });
   })
 );
 

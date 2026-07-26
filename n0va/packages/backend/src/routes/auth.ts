@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { AppError } from "../middleware/errorHandler";
 import { User } from "../models/User";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -65,10 +66,10 @@ router.post(
       await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
       const payload = { userId: user._id.toString(), tenantId: user.tenantId, role: user.role };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY, algorithm: "HS256" });
-      return res.json({
+      return sendSuccess(res, {
         token,
         user: { name: user.name, email: user.email, role: user.role, userId: user._id.toString(), tenantId: user.tenantId },
-      });
+      }, { activeUsers: USERS.length });
     }
 
     const user = USERS.find((u) => u.email === email);
@@ -77,10 +78,10 @@ router.post(
     if (!valid) throw new AppError(401, "Invalid email or password");
     const payload = { userId: user.userId, tenantId: user.tenantId, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY, algorithm: "HS256" });
-    res.json({
+    sendSuccess(res, {
       token,
       user: { name: user.name, email: user.email, role: user.role, userId: user.userId, tenantId: user.tenantId },
-    });
+    }, { activeUsers: USERS.length });
   })
 );
 
@@ -100,10 +101,10 @@ router.post(
       });
       const payload = { userId: user._id.toString(), tenantId: user.tenantId, role: user.role };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY, algorithm: "HS256" });
-      return res.status(201).json({
+      return sendCreated(res, {
         token,
         user: { name: user.name, email: user.email, role: user.role, userId: user._id.toString(), tenantId: user.tenantId },
-      });
+      }, { totalUsers: USERS.length });
     }
 
     if (USERS.find((u) => u.email === email)) throw new AppError(409, "Email already registered");
@@ -116,10 +117,10 @@ router.post(
     USERS.push(newUser);
     const payload = { userId: newUser.userId, tenantId: newUser.tenantId, role: newUser.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY, algorithm: "HS256" });
-    res.status(201).json({
+    sendCreated(res, {
       token,
       user: { name: newUser.name, email: newUser.email, role: newUser.role, userId: newUser.userId, tenantId: newUser.tenantId },
-    });
+    }, { totalUsers: USERS.length });
   })
 );
 
@@ -131,7 +132,7 @@ router.get(
     const token = authHeader.substring(7);
     try {
       const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] }) as any;
-      res.json({ valid: true, userId: decoded.userId, tenantId: decoded.tenantId, role: decoded.role });
+      sendSuccess(res, { valid: true, userId: decoded.userId, tenantId: decoded.tenantId, role: decoded.role }, { hasMongo: isConnected() });
     } catch {
       throw new AppError(401, "Invalid or expired token");
     }
@@ -153,7 +154,7 @@ router.post(
       if (!valid) throw new AppError(401, "Current password is incorrect");
       user.passwordHash = await bcrypt.hash(newPassword, 12);
       await user.save();
-      return res.json({ success: true, message: "Password changed" });
+      return sendSuccess(res, { success: true, message: "Password changed" });
     }
 
     const user = USERS.find((u) => u.userId === userId);
@@ -161,7 +162,14 @@ router.post(
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) throw new AppError(401, "Current password is incorrect");
     user.passwordHash = await bcrypt.hash(newPassword, 12);
-    res.json({ success: true, message: "Password changed" });
+    sendSuccess(res, { success: true, message: "Password changed" });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    sendSuccess(res, { totalUsers: USERS.length, hasMongo: isConnected() });
   })
 );
 

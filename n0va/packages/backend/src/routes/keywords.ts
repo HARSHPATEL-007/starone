@@ -89,4 +89,39 @@ router.post(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const keywords = await DataStore.findKeywords({ tenantId });
+    const arr = Array.isArray(keywords) ? keywords : [];
+    const byMatchType: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let totalVolume = 0, totalDifficulty = 0, totalCPC = 0, totalImpressions = 0, totalClicks = 0, totalConversions = 0;
+    for (const k of arr) {
+      byMatchType[k.matchType || "unknown"] = (byMatchType[k.matchType || "unknown"] || 0) + 1;
+      byStatus[k.status || "unknown"] = (byStatus[k.status || "unknown"] || 0) + 1;
+      totalVolume += k.volume || 0;
+      totalDifficulty += k.difficulty || 0;
+      totalCPC += k.cpc || 0;
+      totalImpressions += k.impressions || 0;
+      totalClicks += k.clicks || 0;
+      totalConversions += k.conversions || 0;
+    }
+    const avgDifficulty = arr.length > 0 ? parseFloat((totalDifficulty / arr.length).toFixed(2)) : 0;
+    const avgCPC = arr.length > 0 ? parseFloat((totalCPC / arr.length).toFixed(2)) : 0;
+    sendSuccess(res, {
+      totalKeywords: arr.length,
+      byMatchType,
+      byStatus,
+      totalVolume,
+      avgDifficulty,
+      avgCPC,
+      totalImpressions,
+      totalClicks,
+      totalConversions,
+    });
+  })
+);
+
 export default router;

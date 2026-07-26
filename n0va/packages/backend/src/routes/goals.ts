@@ -93,4 +93,32 @@ router.delete(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const goals = await DataStore.findGoals({ tenantId });
+    const arr = Array.isArray(goals) ? goals : [];
+    const byStatus: Record<string, number> = {};
+    const byType: Record<string, number> = {};
+    for (const g of arr) {
+      byStatus[g.status || "unknown"] = (byStatus[g.status || "unknown"] || 0) + 1;
+      byType[g.type || "unknown"] = (byType[g.type || "unknown"] || 0) + 1;
+    }
+    const avgProgress = arr.length > 0 ? parseFloat((arr.reduce((s: number, g: any) => s + (g.progress || 0), 0) / arr.length).toFixed(2)) : 0;
+    const onTrackCount = arr.filter((g: any) => (g.progress || 0) >= 75).length;
+    const behindCount = arr.filter((g: any) => (g.progress || 0) >= 25 && (g.progress || 0) < 75).length;
+    const atRiskCount = arr.filter((g: any) => (g.progress || 0) < 25).length;
+    sendSuccess(res, {
+      totalGoals: arr.length,
+      byStatus,
+      byType,
+      avgProgress,
+      onTrackCount,
+      behindCount,
+      atRiskCount,
+    });
+  })
+);
+
 export default router;

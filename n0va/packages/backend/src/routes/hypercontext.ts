@@ -6,6 +6,7 @@ import { Sheet } from "../models/Sheet";
 import { CalendarEvent } from "../models/CalendarEvent";
 import { AppError } from "../middleware/errorHandler";
 import { MemoryStore } from "../services/MemoryStore";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -30,9 +31,10 @@ router.get(
     const tenantId = req.user!.tenantId;
     if (isConnected()) {
       const tasks = await Task.find({ tenantId }).sort({ createdAt: -1 }).lean();
-      return res.json(tasks);
+      return sendSuccess(res, tasks, { count: tasks.length });
     }
-    res.json(mem().find("tasks", (t: any) => t.tenantId === tenantId));
+    const data = mem().find("tasks", (t: any) => t.tenantId === tenantId);
+    sendSuccess(res, data, { count: data.length });
   })
 );
 
@@ -42,11 +44,11 @@ router.get(
     if (isConnected()) {
       const task = await Task.findById(req.params.id).lean();
       if (!task) throw new AppError(404, "Task not found");
-      return res.json(task);
+      return sendSuccess(res, task);
     }
     const task = mem().findOne("tasks", (t: any) => t._id === req.params.id);
     if (!task) throw new AppError(404, "Task not found");
-    res.json(task);
+    sendSuccess(res, task);
   })
 );
 
@@ -63,14 +65,14 @@ router.post(
         assignee, dueDate, source: "n0va",
         createdBy: new mongoose.Types.ObjectId(req.user!.userId),
       });
-      return res.status(201).json(task);
+      return sendCreated(res, task);
     }
     const task = mem().insert("tasks", {
       tenantId, title, description, campaignId,
       status: "todo", priority: priority || "medium",
       assignee, dueDate, source: "n0va", createdBy: req.user!.userId,
     });
-    res.status(201).json(task);
+    sendCreated(res, task);
   })
 );
 
@@ -80,11 +82,11 @@ router.patch(
     if (isConnected()) {
       const task = await Task.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true }).lean();
       if (!task) throw new AppError(404, "Task not found");
-      return res.json(task);
+      return sendSuccess(res, task);
     }
     const task = mem().update("tasks", (t: any) => t._id === req.params.id, req.body);
     if (!task) throw new AppError(404, "Task not found");
-    res.json(task);
+    sendSuccess(res, task);
   })
 );
 
@@ -109,9 +111,10 @@ router.get(
     const tenantId = req.user!.tenantId;
     if (isConnected()) {
       const docs = await Doc.find({ tenantId }).sort({ createdAt: -1 }).lean();
-      return res.json(docs);
+      return sendSuccess(res, docs, { count: docs.length });
     }
-    res.json(mem().find("docs", (d: any) => d.tenantId === tenantId));
+    const data = mem().find("docs", (d: any) => d.tenantId === tenantId);
+    sendSuccess(res, data, { count: data.length });
   })
 );
 
@@ -121,11 +124,11 @@ router.get(
     if (isConnected()) {
       const doc = await Doc.findById(req.params.id).lean();
       if (!doc) throw new AppError(404, "Doc not found");
-      return res.json(doc);
+      return sendSuccess(res, doc);
     }
     const doc = mem().findOne("docs", (d: any) => d._id === req.params.id);
     if (!doc) throw new AppError(404, "Doc not found");
-    res.json(doc);
+    sendSuccess(res, doc);
   })
 );
 
@@ -142,13 +145,13 @@ router.post(
         tags: tags || [],
         createdBy: new mongoose.Types.ObjectId(req.user!.userId),
       });
-      return res.status(201).json(doc);
+      return sendCreated(res, doc);
     }
     const doc = mem().insert("docs", {
       tenantId, title, content, type: type || "other",
       campaignId, source: "n0va", tags: tags || [], createdBy: req.user!.userId,
     });
-    res.status(201).json(doc);
+    sendCreated(res, doc);
   })
 );
 
@@ -158,11 +161,11 @@ router.patch(
     if (isConnected()) {
       const doc = await Doc.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true }).lean();
       if (!doc) throw new AppError(404, "Doc not found");
-      return res.json(doc);
+      return sendSuccess(res, doc);
     }
     const doc = mem().update("docs", (d: any) => d._id === req.params.id, req.body);
     if (!doc) throw new AppError(404, "Doc not found");
-    res.json(doc);
+    sendSuccess(res, doc);
   })
 );
 
@@ -187,9 +190,10 @@ router.get(
     const tenantId = req.user!.tenantId;
     if (isConnected()) {
       const sheets = await Sheet.find({ tenantId }).sort({ createdAt: -1 }).lean();
-      return res.json(sheets);
+      return sendSuccess(res, sheets, { count: sheets.length });
     }
-    res.json(mem().find("sheets", (s: any) => s.tenantId === tenantId));
+    const data = mem().find("sheets", (s: any) => s.tenantId === tenantId);
+    sendSuccess(res, data, { count: data.length });
   })
 );
 
@@ -199,11 +203,11 @@ router.get(
     if (isConnected()) {
       const sheet = await Sheet.findById(req.params.id).lean();
       if (!sheet) throw new AppError(404, "Sheet not found");
-      return res.json(sheet);
+      return sendSuccess(res, sheet);
     }
     const sheet = mem().findOne("sheets", (s: any) => s._id === req.params.id);
     if (!sheet) throw new AppError(404, "Sheet not found");
-    res.json(sheet);
+    sendSuccess(res, sheet);
   })
 );
 
@@ -219,14 +223,14 @@ router.post(
         campaignId, rows: rows || 0, columns: columns || 0,
         source: "n0va", createdBy: new mongoose.Types.ObjectId(req.user!.userId),
       });
-      return res.status(201).json(sheet);
+      return sendCreated(res, sheet);
     }
     const sheet = mem().insert("sheets", {
       tenantId, title, type: type || "custom",
       campaignId, rows: rows || 0, columns: columns || 0,
       source: "n0va", createdBy: req.user!.userId,
     });
-    res.status(201).json(sheet);
+    sendCreated(res, sheet);
   })
 );
 
@@ -236,11 +240,11 @@ router.patch(
     if (isConnected()) {
       const sheet = await Sheet.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true }).lean();
       if (!sheet) throw new AppError(404, "Sheet not found");
-      return res.json(sheet);
+      return sendSuccess(res, sheet);
     }
     const sheet = mem().update("sheets", (s: any) => s._id === req.params.id, req.body);
     if (!sheet) throw new AppError(404, "Sheet not found");
-    res.json(sheet);
+    sendSuccess(res, sheet);
   })
 );
 
@@ -265,9 +269,10 @@ router.get(
     const tenantId = req.user!.tenantId;
     if (isConnected()) {
       const events = await CalendarEvent.find({ tenantId }).sort({ startDate: 1 }).lean();
-      return res.json(events);
+      return sendSuccess(res, events, { count: events.length });
     }
-    res.json(mem().find("calendar_events", (e: any) => e.tenantId === tenantId));
+    const data = mem().find("calendar_events", (e: any) => e.tenantId === tenantId);
+    sendSuccess(res, data, { count: data.length });
   })
 );
 
@@ -277,11 +282,11 @@ router.get(
     if (isConnected()) {
       const event = await CalendarEvent.findById(req.params.id).lean();
       if (!event) throw new AppError(404, "Calendar event not found");
-      return res.json(event);
+      return sendSuccess(res, event);
     }
     const event = mem().findOne("calendar_events", (e: any) => e._id === req.params.id);
     if (!event) throw new AppError(404, "Calendar event not found");
-    res.json(event);
+    sendSuccess(res, event);
   })
 );
 
@@ -298,14 +303,14 @@ router.post(
         type: type || "other", campaignId, source: "n0va",
         createdBy: new mongoose.Types.ObjectId(req.user!.userId),
       });
-      return res.status(201).json(event);
+      return sendCreated(res, event);
     }
     const event = mem().insert("calendar_events", {
       tenantId, title, description,
       startDate: new Date(startDate).toISOString(), endDate: new Date(endDate).toISOString(),
       type: type || "other", campaignId, source: "n0va", createdBy: req.user!.userId,
     });
-    res.status(201).json(event);
+    sendCreated(res, event);
   })
 );
 
@@ -315,11 +320,11 @@ router.patch(
     if (isConnected()) {
       const event = await CalendarEvent.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true }).lean();
       if (!event) throw new AppError(404, "Calendar event not found");
-      return res.json(event);
+      return sendSuccess(res, event);
     }
     const event = mem().update("calendar_events", (e: any) => e._id === req.params.id, req.body);
     if (!event) throw new AppError(404, "Calendar event not found");
-    res.json(event);
+    sendSuccess(res, event);
   })
 );
 
@@ -334,6 +339,34 @@ router.delete(
     const deleted = mem().delete("calendar_events", (e: any) => e._id === req.params.id);
     if (!deleted) throw new AppError(404, "Calendar event not found");
     res.status(204).send();
+  })
+);
+
+// ---- Orchestrate Dashboard ----
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const store = mem();
+    const allTasks = store.find("tasks", (t: any) => t.tenantId === tenantId) as any[];
+    const totalTasks = allTasks.length;
+    const byStatus = allTasks.reduce((acc: Record<string, number>, t: any) => {
+      acc[t.status] = (acc[t.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const byPriority = allTasks.reduce((acc: Record<string, number>, t: any) => {
+      acc[t.priority] = (acc[t.priority] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const totalDocs = store.find("docs", (d: any) => d.tenantId === tenantId).length;
+    const byDocType = store.find("docs", (d: any) => d.tenantId === tenantId)
+      .reduce((acc: Record<string, number>, d: any) => {
+        acc[d.type] = (acc[d.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    const totalSheets = store.find("sheets", (s: any) => s.tenantId === tenantId).length;
+    const totalCalendarEvents = store.find("calendar_events", (e: any) => e.tenantId === tenantId).length;
+    sendSuccess(res, { totalTasks, totalDocs, totalSheets, totalCalendarEvents, byStatus, byPriority, byDocType });
   })
 );
 

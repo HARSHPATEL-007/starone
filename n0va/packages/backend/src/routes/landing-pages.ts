@@ -80,4 +80,31 @@ router.delete(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const pages = await DataStore.findLandingPages({ tenantId });
+    const arr = Array.isArray(pages) ? pages : [];
+    const byStatus: Record<string, number> = {};
+    let totalVisits = 0, totalConversions = 0, totalSeoScore = 0;
+    for (const p of arr) {
+      byStatus[p.status || "unknown"] = (byStatus[p.status || "unknown"] || 0) + 1;
+      totalVisits += p.visits || 0;
+      totalConversions += p.conversions || 0;
+      totalSeoScore += p.seoScore || 0;
+    }
+    const avgConversionRate = totalVisits > 0 ? parseFloat(((totalConversions / totalVisits) * 100).toFixed(2)) : 0;
+    const avgSeoScore = arr.length > 0 ? parseFloat((totalSeoScore / arr.length).toFixed(2)) : 0;
+    sendSuccess(res, {
+      totalPages: arr.length,
+      byStatus,
+      avgConversionRate,
+      totalVisits,
+      totalConversions,
+      avgSeoScore,
+    });
+  })
+);
+
 export default router;

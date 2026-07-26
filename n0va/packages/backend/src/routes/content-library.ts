@@ -84,4 +84,33 @@ router.delete(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const assets = await DataStore.findContentAssets({ tenantId });
+    const arr = Array.isArray(assets) ? assets : [];
+    const byType: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    let totalViews = 0, totalDownloads = 0, totalShares = 0, totalLeads = 0;
+    for (const a of arr) {
+      byType[a.type || "unknown"] = (byType[a.type || "unknown"] || 0) + 1;
+      byStatus[a.status || "unknown"] = (byStatus[a.status || "unknown"] || 0) + 1;
+      totalViews += a.views || 0;
+      totalDownloads += a.downloads || 0;
+      totalShares += a.shares || 0;
+      totalLeads += a.leads || 0;
+    }
+    sendSuccess(res, {
+      totalAssets: arr.length,
+      byType,
+      byStatus,
+      totalViews,
+      totalDownloads,
+      totalShares,
+      totalLeads,
+    });
+  })
+);
+
 export default router;

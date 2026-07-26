@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -17,7 +18,7 @@ router.get(
     if (source) filter.source = source;
     if (campaign) filter.campaign = campaign;
     const links = await DataStore.findUtmLinks(filter);
-    res.json(links);
+    sendSuccess(res, links, { count: links.length, source: source || null, campaign: campaign || null });
   })
 );
 
@@ -48,7 +49,7 @@ router.post(
       conversions: 0,
       createdBy: req.user!.userId,
     });
-    res.status(201).json({ url: fullUrl, parsed, link });
+    sendCreated(res, { url: fullUrl, parsed, link });
   })
 );
 
@@ -69,10 +70,25 @@ router.get(
       byCampaign[camp].clicks += l.clicks || 0;
       byCampaign[camp].conversions += l.conversions || 0;
     }
-    res.json({
+    sendSuccess(res, {
       bySource: Object.values(bySource),
       byCampaign: Object.values(byCampaign),
     });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const links = DataStore.mem().find("utm_links", (l: any) => l.tenantId === tenantId);
+    const totalLinks = links.length;
+    const clicksTotal = links.reduce((sum: number, l: any) => sum + (l.clicks || 0), 0);
+    const conversionsTotal = links.reduce((sum: number, l: any) => sum + (l.conversions || 0), 0);
+    const totalCvr = clicksTotal > 0 ? parseFloat(((conversionsTotal / clicksTotal) * 100).toFixed(2)) : 0;
+    const sources = [...new Set(links.map((l: any) => l.source).filter(Boolean))];
+    const campaigns = [...new Set(links.map((l: any) => l.campaign).filter(Boolean))];
+    sendSuccess(res, { totalLinks, clicksTotal, conversionsTotal, totalCvr, sources, campaigns });
   })
 );
 

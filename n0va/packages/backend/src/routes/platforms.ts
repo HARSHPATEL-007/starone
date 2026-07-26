@@ -126,4 +126,12 @@ router.get(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const platforms = await n0va1oService.getPlatforms();
+    sendSuccess(res, { platformCount: Array.isArray(platforms) ? platforms.length : 0 });
+  })
+);
+
 export default router;

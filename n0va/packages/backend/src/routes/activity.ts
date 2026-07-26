@@ -53,4 +53,25 @@ router.post(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const activities = store().find("activities", (a: any) => a.tenantId === tenantId);
+    const uniqueActions = new Set(activities.map((a: any) => a.action));
+    const uniqueEntityTypes = new Set(activities.map((a: any) => a.entityType));
+    const actionsDistribution: Record<string, number> = {};
+    for (const a of activities) actionsDistribution[a.action] = (actionsDistribution[a.action] || 0) + 1;
+    const now = Date.now();
+    const recentCount = activities.filter((a: any) => now - new Date(a.timestamp).getTime() < 86400000).length;
+    sendSuccess(res, {
+      totalActivities: activities.length,
+      uniqueActions: uniqueActions.size,
+      uniqueEntityTypes: uniqueEntityTypes.size,
+      actionsDistribution,
+      recentCount,
+    });
+  })
+);
+
 export default router;

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get(
       }
       return true;
     }).reverse();
-    res.json(templates);
+    sendSuccess(res, templates, { count: templates.length, typeFilter: req.query.type || null, goalFilter: req.query.goal || null });
   })
 );
 
@@ -49,7 +50,7 @@ router.post(
       useCount: 0,
       createdBy: req.user!.userId,
     });
-    res.status(201).json(template);
+    sendCreated(res, template);
   })
 );
 
@@ -64,7 +65,7 @@ router.get(
     for (const t of templates) {
       usageByType[t.type] = (usageByType[t.type] || 0) + t.useCount;
     }
-    res.json({ total, mostUsed, usageByType });
+    sendSuccess(res, { total, mostUsed, usageByType });
   })
 );
 
@@ -74,7 +75,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const template = DataStore.mem().findOne("campaign_templates", (t: any) => t._id === req.params.id && t.tenantId === tenantId);
     if (!template) throw new AppError(404, "Template not found");
-    res.json(template);
+    sendSuccess(res, template);
   })
 );
 
@@ -89,7 +90,7 @@ router.patch(
     }
     const updated = DataStore.mem().update("campaign_templates", (t: any) => t._id === req.params.id && t.tenantId === tenantId, update);
     if (!updated) throw new AppError(404, "Template not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -130,7 +131,24 @@ router.post(
       createdBy: req.user!.userId,
     });
     DataStore.mem().update("campaign_templates", (t: any) => t._id === req.params.id && t.tenantId === tenantId, { useCount: template.useCount + 1 });
-    res.status(201).json(campaign);
+    sendCreated(res, campaign);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const templates = DataStore.mem().find("campaign_templates", (t: any) => t.tenantId === tenantId) as any[];
+    const totalTemplates = templates.length;
+    const sorted = templates.slice().sort((a: any, b: any) => b.useCount - a.useCount);
+    const mostUsedType = sorted.length > 0 ? sorted[0].type : null;
+    const totalUseCount = templates.reduce((sum: number, t: any) => sum + (t.useCount || 0), 0);
+    const byType: Record<string, number> = {};
+    for (const t of templates) {
+      byType[t.type] = (byType[t.type] || 0) + 1;
+    }
+    sendSuccess(res, { totalTemplates, mostUsedType, totalUseCount, byType });
   })
 );
 

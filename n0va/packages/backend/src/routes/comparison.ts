@@ -74,4 +74,11 @@ router.get(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    sendSuccess(res, { status: "operational" });
+  })
+);
+
 export default router;

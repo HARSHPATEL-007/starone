@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import { EntityRecord } from "../models/EntityRecord";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -83,7 +84,7 @@ const defaultTenantSettings = {
 router.get(
   "/pricing",
   asyncHandler(async (_req: Request, res: Response) => {
-    res.json({ tiers: pricingTiers, bundleDiscounts, addOns });
+    sendSuccess(res, { tiers: pricingTiers, bundleDiscounts, addOns }, { tierCount: pricingTiers.length, addOnCount: addOns.length });
   })
 );
 
@@ -96,10 +97,10 @@ router.get(
         .sort({ createdAt: -1 }).lean();
       if (record) {
         const r: any = record;
-        return res.json({ _id: r._id.toString(), ...r.data });
+        return sendSuccess(res, { _id: r._id.toString(), ...r.data });
       }
     }
-    res.json(defaultTenantSettings);
+    sendSuccess(res, defaultTenantSettings);
   })
 );
 
@@ -115,19 +116,19 @@ router.put(
         await EntityRecord.updateOne({ _id: existing._id }, { $set: { data: { ...((existing as any).data || {}), ...updates } } });
         const updated = await EntityRecord.findById(existing._id).lean();
         const u: any = updated;
-        return res.json(u ? { _id: u._id.toString(), ...u.data } : defaultTenantSettings);
+        return sendSuccess(res, u ? { _id: u._id.toString(), ...u.data } : defaultTenantSettings);
       }
       const doc = await EntityRecord.create({ tenantId, entityType: "tenant_settings", data: { ...defaultTenantSettings, ...updates } });
-      return res.json({ _id: doc._id.toString(), ...doc.data });
+      return sendSuccess(res, { _id: doc._id.toString(), ...doc.data });
     }
-    res.json({ ...defaultTenantSettings, ...updates });
+    sendSuccess(res, { ...defaultTenantSettings, ...updates });
   })
 );
 
 router.get(
   "/modules",
   asyncHandler(async (_req: Request, res: Response) => {
-    res.json({
+    sendSuccess(res, {
       total: 28,
       modules: [
         "Core Platform", "Identity", "Chat", "Calendar", "Contacts", "Drawings",
@@ -136,7 +137,14 @@ router.get(
         "Cloud Storage", "Command Center", "Forms", "Sign", "Workflows",
         "Analytics", "Security Suite", "Voice",
       ],
-    });
+    }, { moduleCount: 28 });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (_req: Request, res: Response) => {
+    sendSuccess(res, { pricingTierCount: pricingTiers.length, addOnCount: addOns.length, moduleCount: 28 });
   })
 );
 

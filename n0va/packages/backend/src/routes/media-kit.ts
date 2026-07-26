@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const kits = await DataStore.findMediaKits({ tenantId });
-    res.json(kits);
+    sendSuccess(res, kits, { count: kits.length });
   })
 );
 
@@ -24,7 +25,7 @@ router.post(
     const { name, description } = req.body;
     if (!name || !description) throw new AppError(400, "Missing required fields: name, description");
     const kit = await DataStore.createMediaKit({ tenantId, name, description, version: 1, assets: [], reach: 0, contacts: [], tags: [] });
-    res.status(201).json(kit);
+    sendCreated(res, kit);
   })
 );
 
@@ -44,7 +45,20 @@ router.patch(
     if (tags !== undefined) update.tags = tags;
     const updated = await DataStore.updateMediaKit(id, tenantId, update);
     if (!updated) throw new AppError(404, "Media kit not found");
-    res.json(updated);
+    sendSuccess(res, updated);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const kits = DataStore.mem().find("media_kits", (k: any) => k.tenantId === tenantId);
+    const totalKits = kits.length;
+    const totalReach = kits.reduce((sum: number, k: any) => sum + (k.reach || 0), 0);
+    const avgReach = totalKits > 0 ? Math.round(totalReach / totalKits) : 0;
+    const versions = [...new Set(kits.map((k: any) => k.version).filter(Boolean))];
+    sendSuccess(res, { totalKits, avgReach, versions: versions.length });
   })
 );
 

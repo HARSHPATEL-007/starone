@@ -82,4 +82,22 @@ router.delete(
   })
 );
 
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const userAnnotations = annotations.filter((a) => a.tenantId === tenantId);
+    const uniqueColors = new Set(userAnnotations.map((a) => a.type));
+    const uniqueTargetTypes = new Set(userAnnotations.map((a) => a.campaignId));
+    const byColor: Record<string, number> = {};
+    for (const a of userAnnotations) byColor[a.type] = (byColor[a.type] || 0) + 1;
+    sendSuccess(res, {
+      totalAnnotations: userAnnotations.length,
+      uniqueColors: uniqueColors.size,
+      uniqueTargetTypes: uniqueTargetTypes.size,
+      byColor,
+    });
+  })
+);
+
 export default router;
