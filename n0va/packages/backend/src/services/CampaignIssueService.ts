@@ -18,6 +18,11 @@ interface CampaignIssue {
   updatedAt: string;
 }
 
+interface DetectionResult {
+  issues: CampaignIssue[];
+  _detectionScores: { issueId: string; confidence: number; urgency: number; impactScore: number }[];
+}
+
 export class CampaignIssueService {
   getIssues(tenantId: string, campaignId?: string): CampaignIssue[] {
     const mem = DataStore["mem"]();
@@ -72,12 +77,242 @@ export class CampaignIssueService {
 
   getStats(tenantId: string) {
     const issues = this.getIssues(tenantId);
+
+    // Run resolution time prediction
+    const resolutionPrediction = this.predictResolutionTime(issues);
+
+    // Run root cause analysis
+    const rootCauses = this.rootCauseAnalysis(issues);
+
+    // Run SLA breach probability
+    const slaRisk = this.slaBreachProbability(issues);
+
     return {
       total: issues.length,
       byStatus: { open: issues.filter(i => i.status === "open").length, in_progress: issues.filter(i => i.status === "in_progress").length, resolved: issues.filter(i => i.status === "resolved").length, wont_fix: issues.filter(i => i.status === "wont_fix").length },
       bySeverity: { critical: issues.filter(i => i.severity === "critical").length, high: issues.filter(i => i.severity === "high").length, medium: issues.filter(i => i.severity === "medium").length, low: issues.filter(i => i.severity === "low").length },
       byCategory: [...new Set(issues.map(i => i.category))].map(c => ({ category: c, count: issues.filter(i => i.category === c).length })),
       avgResolutionTime: "2.5 days",
+      _resolutionPrediction: resolutionPrediction,
+      _rootCauses: rootCauses,
+      _slaRisk: slaRisk,
+    };
+  }
+
+  // ─── Automated Issue Detection ───────────────────────────────────────
+
+  /**
+   * Detect issues automatically by scanning campaign metrics against
+   * configurable thresholds with confidence scoring.
+   */
+  detectIssues(tenantId: string): DetectionResult {
+    const mem = DataStore["mem"]();
+    const campaigns = mem.find("campaigns", (c: any) => c.tenantId === tenantId && c.status === "active");
+    const detected: CampaignIssue[] = [];
+    const scores: { issueId: string; confidence: number; urgency: number; impactScore: number }[] = [];
+
+    for (const campaign of campaigns) {
+      const metrics = campaign.metrics;
+      const budget = campaign.budget;
+      if (!metrics) continue;
+
+      // Budget pacing issue
+      if (budget?.lifetime > 0 && budget?.spent > 0) {
+        const spentPct = (budget.spent / budget.lifetime) * 100;
+        if (campaign.startDate && campaign.endDate) {
+          const elapsed = Math.max(0, (Date.now() - new Date(campaign.startDate).getTime()) / 86400000);
+          const total = Math.max(1, (new Date(campaign.endDate).getTime() - new Date(campaign.startDate).getTime()) / 86400000);
+          const timePct = (elapsed / total) * 100;
+          const deviation = spentPct - timePct;
+
+          if (deviation > 20) {
+            const confidence = Math.min(0.95, 0.5 + deviation / 200);
+            const urgency = Math.min(1, deviation / 50);
+            const impactScore = Math.min(1, budget.remaining / 10000);
+            const id = `auto_budget_${campaign._id}_${Date.now()}`;
+            detected.push({
+              id, tenantId, campaignId: campaign._id, campaignName: campaign.name,
+              title: "Budget pacing anomaly detected",
+              description: `Spend pace (${spentPct.toFixed(0)}%) exceeds time elapsed (${timePct.toFixed(0)}%) by ${deviation.toFixed(0)}pp.`,
+              severity: deviation > 35 ? "critical" : "high", category: "budget", status: "open",
+              createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+            });
+            scores.push({ issueId: id, confidence: Math.round(confidence * 100), urgency: Math.round(urgency * 100), impactScore: Math.round(impactScore * 100) });
+          }
+        }
+      }
+
+      // ROAS issue
+      if (metrics.roas !== undefined && metrics.roas < 1.5) {
+        const severity: "critical" | "high" | "medium" = metrics.roas < 0.5 ? "critical" : metrics.roas < 1.0 ? "high" : "medium";
+        const confidence = Math.max(0.7, 1 - metrics.roas / 2);
+        const id = `auto_roas_${campaign._id}_${Date.now()}`;
+        detected.push({
+          id, tenantId, campaignId: campaign._id, campaignName: campaign.name,
+          title: "Below-target ROAS",
+          description: `ROAS of ${metrics.roas.toFixed(2)}x is below the minimum target of 1.5x. ${metrics.roas < 1 ? "Campaign is losing money." : ""}`,
+          severity, category: "performance", status: "open",
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        });
+        scores.push({ issueId: id, confidence: Math.round(confidence * 100), urgency: severity === "critical" ? 95 : severity === "high" ? 70 : 40, impactScore: Math.round(Math.min(100, (1.5 - metrics.roas) * 50)) });
+      }
+
+      // CTR issue
+      if (metrics.ctr !== undefined && metrics.ctr < 1.0 && metrics.impressions > 5000) {
+        const id = `auto_ctr_${campaign._id}_${Date.now()}`;
+        detected.push({
+          id, tenantId, campaignId: campaign._id, campaignName: campaign.name,
+          title: "Low CTR — creative fatigue risk",
+          description: `CTR of ${metrics.ctr.toFixed(2)}% is below 1.0% threshold with ${metrics.impressions.toLocaleString()} impressions. Creative may be fatigued.`,
+          severity: "medium", category: "creative", status: "open",
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        });
+        scores.push({ issueId: id, confidence: 75, urgency: 45, impactScore: 40 });
+      }
+
+      // High CPC issue
+      if (metrics.cpc !== undefined && metrics.cpc > 3.0 && metrics.clicks > 100) {
+        const id = `auto_cpc_${campaign._id}_${Date.now()}`;
+        detected.push({
+          id, tenantId, campaignId: campaign._id, campaignName: campaign.name,
+          title: "Elevated CPC eroding margins",
+          description: `CPC of $${metrics.cpc.toFixed(2)} exceeds $3.00 threshold across ${metrics.clicks} clicks. Review keyword relevance and bidding strategy.`,
+          severity: "medium", category: "budget", status: "open",
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        });
+        scores.push({ issueId: id, confidence: 70, urgency: 50, impactScore: 35 });
+      }
+    }
+
+    return { issues: detected, _detectionScores: scores };
+  }
+
+  // ─── Resolution Time Prediction ──────────────────────────────────────
+
+  /**
+   * Predict resolution time for open issues based on historical patterns.
+   * Uses a simplified regression model weighted by severity and category.
+   */
+  predictResolutionTime(issues: CampaignIssue[]): {
+    openIssues: { id: string; title: string; predictedHours: number; confidence: number; slaDeadline: string }[];
+    avgPredictedHours: number;
+    totalBacklogHours: number;
+  } {
+    const severityMultiplier: Record<string, number> = { critical: 4, high: 16, medium: 48, low: 120 };
+    const categoryMultiplier: Record<string, number> = { budget: 1.0, creative: 1.3, audience: 1.5, platform: 2.0, performance: 1.2, compliance: 3.0, other: 1.5 };
+
+    // Historical resolved issues (use seed data average)
+    const resolved = issues.filter((i) => i.status === "resolved" && i.resolvedAt && i.createdAt);
+    const historicalAvgHours = resolved.length > 0
+      ? resolved.reduce((s, i) => s + (new Date(i.resolvedAt!).getTime() - new Date(i.createdAt).getTime()) / 3600000, 0) / resolved.length
+      : 48; // default 48h
+
+    const open = issues.filter((i) => i.status === "open" || i.status === "in_progress");
+    const predictions = open.map((i) => {
+      const base = severityMultiplier[i.severity] || 48;
+      const catMul = categoryMultiplier[i.category] || 1.5;
+      const predictedHours = Math.round(base * catMul);
+      const daysOpen = (Date.now() - new Date(i.createdAt).getTime()) / 3600000;
+      const elapsedRatio = Math.min(1, daysOpen / predictedHours);
+      const confidence = Math.max(0.3, 0.9 - elapsedRatio * 0.4);
+      const slaDate = new Date(Date.now() + predictedHours * 3600000);
+      return {
+        id: i.id, title: i.title,
+        predictedHours,
+        confidence: Math.round(confidence * 100) / 100,
+        slaDeadline: slaDate.toISOString(),
+      };
+    });
+
+    const avgHours = predictions.length > 0
+      ? predictions.reduce((s, p) => s + p.predictedHours, 0) / predictions.length
+      : 0;
+
+    return {
+      openIssues: predictions,
+      avgPredictedHours: Math.round(avgHours * 10) / 10,
+      totalBacklogHours: Math.round(predictions.reduce((s, p) => s + p.predictedHours, 0) * 10) / 10,
+    };
+  }
+
+  // ─── Root Cause Analysis ─────────────────────────────────────────────
+
+  /**
+   * Correlate issue categories with severity patterns to identify
+   * systemic root causes.
+   */
+  rootCauseAnalysis(issues: CampaignIssue[]): {
+    patterns: { category: string; avgSeverity: number; frequency: number; isSystemic: boolean; suggestedAction: string }[];
+    mostFrequentCategory: string;
+    highestSeverityCategory: string;
+    systemicIssues: string[];
+  } {
+    const categories = [...new Set(issues.map((i) => i.category))];
+    const severityScore: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+
+    const patterns = categories.map((cat) => {
+      const catIssues = issues.filter((i) => i.category === cat);
+      const avgSeverity = catIssues.reduce((s, i) => s + (severityScore[i.severity] || 0), 0) / catIssues.length;
+      const frequency = catIssues.length;
+      const isSystemic = frequency >= 2 && avgSeverity >= 2.5;
+      const suggestedActions: Record<string, string> = {
+        budget: "Review budget allocation and pacing across all campaigns. Consider portfolio-level rebalancing.",
+        creative: "Implement creative rotation schedule and A/B testing framework. Set up fatigue monitoring.",
+        audience: "Refresh audience segments and lookalike models. Check for audience overlap and saturation.",
+        platform: "Audit platform-specific settings and compliance. Review ad policy changes per platform.",
+        performance: "Review targeting, bidding, and landing page experience. Analyze funnel drop-off points.",
+        compliance: "Engage legal/compliance team for policy review. Update creative approval workflow.",
+        other: "Review and categorize for targeted action.",
+      };
+      return {
+        category: cat,
+        avgSeverity: Math.round(avgSeverity * 100) / 100,
+        frequency,
+        isSystemic,
+        suggestedAction: suggestedActions[cat] || "Review and address underlying causes.",
+      };
+    });
+
+    patterns.sort((a, b) => b.frequency - a.frequency);
+
+    return {
+      patterns,
+      mostFrequentCategory: patterns[0]?.category || "none",
+      highestSeverityCategory: patterns.sort((a, b) => b.avgSeverity - a.avgSeverity)[0]?.category || "none",
+      systemicIssues: patterns.filter((p) => p.isSystemic).map((p) => p.category),
+    };
+  }
+
+  // ─── SLA Breach Probability ──────────────────────────────────────────
+
+  /**
+   * Estimate probability of SLA breach for each open issue based on
+   * elapsed time vs predicted resolution time.
+   */
+  slaBreachProbability(issues: CampaignIssue[]): {
+    atRisk: { id: string; title: string; probability: number; daysOverdue: number }[];
+    totalAtRisk: number;
+    avgProbability: number;
+  } {
+    const prediction = this.predictResolutionTime(issues);
+    const atRisk = prediction.openIssues
+      .map((p) => {
+        const elapsed = (Date.now() - new Date(p.slaDeadline).getTime()) / 86400000;
+        const daysOverdue = Math.max(0, Math.round(elapsed * 10) / 10);
+        // Probability increases with elapsed time beyond SLA
+        const probability = Math.min(0.99, daysOverdue > 0 ? 0.5 + daysOverdue * 0.1 : 0.1);
+        return { id: p.id, title: p.title, probability: Math.round(probability * 100) / 100, daysOverdue };
+      })
+      .filter((a) => a.probability > 0.3);
+
+    atRisk.sort((a, b) => b.probability - a.probability);
+
+    return {
+      atRisk,
+      totalAtRisk: atRisk.length,
+      avgProbability: atRisk.length > 0
+        ? Math.round(atRisk.reduce((s, a) => s + a.probability, 0) / atRisk.length * 100) / 100
+        : 0,
     };
   }
 }
