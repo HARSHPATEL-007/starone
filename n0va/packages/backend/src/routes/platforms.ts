@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { N0VA1OService } from "../services/N0VA1OService";
+import { n0va1oOrchestrator } from "../business-logic/N0VA1OOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { DataStore } from "../services/DataStore";
 import { sendSuccess, sendCreated } from "./route-utils";
@@ -128,9 +129,14 @@ router.get(
 
 router.get(
   "/orchestrate/dashboard",
-  asyncHandler(async (_req: Request, res: Response) => {
-    const platforms = await n0va1oService.getPlatforms();
-    sendSuccess(res, { platformCount: Array.isArray(platforms) ? platforms.length : 0 });
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = n0va1oOrchestrator.getGatewayDashboard();
+    sendSuccess(res, dashboard, {
+      healthBand: dashboard.healthBand,
+      platformCount: dashboard.platformCount,
+      degradedCount: dashboard.degradedPlatforms.length,
+      warnings: dashboard.warnings.length,
+    });
   })
 );
 
