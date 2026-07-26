@@ -104,6 +104,10 @@ import nlpRoutes from "./routes/nlp";
 import marketingMixModelRoutes from "./routes/marketing-mix-model";
 import campaignSimulationRoutes from "./routes/campaign-simulation";
 import realTimeBiddingRoutes from "./routes/real-time-bidding";
+import creativeAIEnhancedRoutes from "./routes/creative-ai-enhanced";
+import audienceInsightsEnhancedRoutes from "./routes/audience-insights-enhanced";
+import adCopyPersonalizationRoutes from "./routes/ad-copy-personalization";
+import campaignHealthPredictorRoutes from "./routes/campaign-health-predictor";
 
 const app = express();
 const httpServer = createServer(app);
@@ -221,6 +225,10 @@ app.use("/api/v1/nlp", authMiddleware, tenantMiddleware, nlpRoutes);
 app.use("/api/v1/marketing-mix-model", authMiddleware, tenantMiddleware, marketingMixModelRoutes);
 app.use("/api/v1/campaign-simulation", authMiddleware, tenantMiddleware, campaignSimulationRoutes);
 app.use("/api/v1/real-time-bidding", authMiddleware, tenantMiddleware, realTimeBiddingRoutes);
+app.use("/api/v1/creative-ai/enhanced", authMiddleware, tenantMiddleware, creativeAIEnhancedRoutes);
+app.use("/api/v1/audience-insights/enhanced", authMiddleware, tenantMiddleware, audienceInsightsEnhancedRoutes);
+app.use("/api/v1/ad-copy-personalization", authMiddleware, tenantMiddleware, adCopyPersonalizationRoutes);
+app.use("/api/v1/campaign-health-predictor", authMiddleware, tenantMiddleware, campaignHealthPredictorRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 

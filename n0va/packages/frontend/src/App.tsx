@@ -125,6 +125,10 @@ import AdCopyOptimizer from "./pages/AdCopyOptimizer";
 import MarketingMixModel from "./pages/MarketingMixModel";
 import CampaignSimulation from "./pages/CampaignSimulation";
 import RealTimeBidding from "./pages/RealTimeBidding";
+import CreativeAIEnhanced from "./pages/CreativeAIEnhanced";
+import AudienceInsightsEnhanced from "./pages/AudienceInsightsEnhanced";
+import AdCopyPersonalization from "./pages/AdCopyPersonalization";
+import CampaignHealthPredictor from "./pages/CampaignHealthPredictor";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -266,6 +270,10 @@ export default function App() {
                 <Route path="/marketing-mix-model" element={<MarketingMixModel />} />
                 <Route path="/campaign-simulation" element={<CampaignSimulation />} />
                 <Route path="/real-time-bidding" element={<RealTimeBidding />} />
+                <Route path="/creative-ai-enhanced" element={<CreativeAIEnhanced />} />
+                <Route path="/audience-insights-enhanced" element={<AudienceInsightsEnhanced />} />
+                <Route path="/ad-copy-personalization" element={<AdCopyPersonalization />} />
+                <Route path="/campaign-health-predictor" element={<CampaignHealthPredictor />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

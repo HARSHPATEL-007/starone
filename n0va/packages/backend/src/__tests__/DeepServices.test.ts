@@ -604,6 +604,270 @@ describe("BudgetOptimizerService (Enhanced)", () => {
   });
 });
 
+import { creativeAI } from "../services/CreativeAIService";
+import { audienceInsightsService } from "../services/AudienceInsightsService";
+import { adCopyPersonalizationService } from "../services/AdCopyPersonalizationService";
+import { campaignHealthPredictorService } from "../services/CampaignHealthPredictorService";
+
+describe("CreativeAIService (Enhanced)", () => {
+  describe("mabSelectVariant", () => {
+    it("returns a variant key from the provided list", () => {
+      const result = creativeAI.mabSelectVariant(["hero_a", "hero_b", "hero_c"]);
+      expect(["hero_a", "hero_b", "hero_c"]).toContain(result.selectedKey);
+      expect(result.probabilities).toBeDefined();
+      expect(Object.keys(result.probabilities).length).toBe(3);
+    });
+  });
+
+  describe("mabRecordResult", () => {
+    it("records a conversion and updates variant state", () => {
+      creativeAI.mabRecordResult("test_variant_a", true);
+      const variants = creativeAI.mabGetAllVariants();
+      const found = variants.find((v: any) => v.variantKey === "test_variant_a");
+      expect(found).toBeDefined();
+      expect(found.conversions).toBeGreaterThan(0);
+    });
+  });
+
+  describe("mabGetAllVariants", () => {
+    it("returns array of variants with expected fields", () => {
+      creativeAI.mabRecordResult("test_variant_b", false);
+      const variants = creativeAI.mabGetAllVariants();
+      expect(Array.isArray(variants)).toBe(true);
+      for (const v of variants) {
+        expect(v).toHaveProperty("variantKey");
+        expect(v).toHaveProperty("impressions");
+        expect(v).toHaveProperty("conversions");
+        expect(v.ctr).toBeGreaterThanOrEqual(0);
+      }
+    });
+  });
+
+  describe("detectFatigue", () => {
+    it("returns fatigue analysis with stage and decay", () => {
+      const result = creativeAI.detectFatigue([
+        { creativeId: "img_a", dailyImpressions: [5000, 4900, 4700, 4400, 4000], dailyClicks: [200, 185, 160, 130, 95], channel: "social" },
+      ]);
+      expect(result).toHaveProperty("stage");
+      expect(result).toHaveProperty("fatigueScore");
+      expect(result).toHaveProperty("decayRate");
+      expect(["growth", "maturity", "decline", "exhausted"]).toContain(result.stage);
+    });
+  });
+
+  describe("simulateABTest", () => {
+    it("returns winner and significance metrics", () => {
+      const result = creativeAI.simulateABTest(
+        [{ name: "Control", impressions: 5000, conversions: 200 }, { name: "Variant", impressions: 5000, conversions: 220 }],
+        5000, 14,
+      );
+      expect(result).toHaveProperty("winner");
+      expect(result).toHaveProperty("confidence");
+      expect(result).toHaveProperty("daysToSignificance");
+      expect(result.winner).toBeTruthy();
+    });
+  });
+});
+
+describe("AudienceInsightsService (Enhanced)", () => {
+  describe("pca", () => {
+    it("returns projected data and explained variance", () => {
+      const data = Array.from({ length: 20 }, () => Array.from({ length: 5 }, () => Math.random() * 100));
+      const result = audienceInsightsService.pca(data, 2);
+      expect(result.projected.length).toBe(20);
+      expect(result.projected[0].length).toBe(2);
+      expect(Array.isArray(result.explainedVariance)).toBe(true);
+      expect(result.explainedVariance.length).toBeGreaterThan(0);
+      expect(result.loadings.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("gmmClustering", () => {
+    it("returns cluster assignments and BIC", () => {
+      const data = Array.from({ length: 30 }, () => Array.from({ length: 3 }, () => Math.random() * 100));
+      const result = audienceInsightsService.gmmClustering(data, 3);
+      expect(result.assignments.length).toBe(30);
+      expect(result.means.length).toBe(3);
+      expect(result.weights.length).toBe(3);
+      expect(typeof result.bic).toBe("number");
+      expect(typeof result.logLikelihood).toBe("number");
+    });
+  });
+
+  describe("computeRFM", () => {
+    it("returns scored customers with segments", () => {
+      const customers = Array.from({ length: 20 }, (_, i) => ({
+        id: `c_${i}`,
+        daysSinceLastPurchase: Math.floor(Math.random() * 365),
+        purchaseCount: Math.floor(Math.random() * 50),
+        totalSpent: Math.random() * 5000,
+      }));
+      const result = audienceInsightsService.computeRFM(customers);
+      expect(result.length).toBe(20);
+      for (const c of result) {
+        expect(c.compositeScore).toBeGreaterThanOrEqual(0);
+        expect(c.rfmSegment).toBeTruthy();
+      }
+    });
+  });
+
+  describe("generateLookalike", () => {
+    it("expands seed audience with similarity scores", () => {
+      const pool = Array.from({ length: 50 }, (_, i) => ({ id: `u_${i}`, features: Array.from({ length: 4 }, () => Math.random()) }));
+      const seed = pool.slice(0, 5);
+      const result = audienceInsightsService.generateLookalike(seed, pool, 20);
+      expect(result.candidates.length).toBeGreaterThan(0);
+      expect(result.candidates.length).toBeLessThanOrEqual(20);
+      for (const c of result.candidates) {
+        expect(c).toHaveProperty("id");
+        expect(c).toHaveProperty("similarity");
+      }
+    });
+  });
+});
+
+describe("AdCopyPersonalizationService", () => {
+  describe("generateSampleElements", () => {
+    it("returns array of creative elements", () => {
+      const elements = adCopyPersonalizationService.generateSampleElements();
+      expect(Array.isArray(elements)).toBe(true);
+      expect(elements.length).toBeGreaterThan(0);
+      for (const el of elements) {
+        expect(el).toHaveProperty("type");
+        expect(el).toHaveProperty("variants");
+      }
+    });
+  });
+
+  describe("generateSampleUserContext", () => {
+    it("returns user context with device and segments", () => {
+      const ctx = adCopyPersonalizationService.generateSampleUserContext();
+      expect(ctx).toHaveProperty("deviceType");
+      expect(ctx).toHaveProperty("segments");
+      expect(ctx).toHaveProperty("timeOfDay");
+    });
+  });
+
+  describe("scoreElement", () => {
+    it("returns element score with relevance", () => {
+      const elements = adCopyPersonalizationService.generateSampleElements();
+      const ctx = adCopyPersonalizationService.generateSampleUserContext();
+      const score = adCopyPersonalizationService.scoreElement(elements[0], ctx);
+      expect(score).toHaveProperty("elementType");
+      expect(score).toHaveProperty("overallScore");
+      expect(score.overallScore).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("selectBestElements", () => {
+    it("returns personalized variant with all elements", () => {
+      const elements = adCopyPersonalizationService.generateSampleElements();
+      const ctx = adCopyPersonalizationService.generateSampleUserContext();
+      const result = adCopyPersonalizationService.selectBestElements(elements, ctx);
+      expect(result).toHaveProperty("elements");
+      expect(result).toHaveProperty("personalizationScore");
+      expect(result.personalizationScore).toBeGreaterThan(0);
+    });
+  });
+
+  describe("runMVTest", () => {
+    it("returns MVT result with winner and significance", () => {
+      const variants = adCopyPersonalizationService.generateSampleMVTVariants();
+      const result = adCopyPersonalizationService.runMVTest(variants, 10000);
+      expect(result).toHaveProperty("winner");
+      expect(result).toHaveProperty("variants");
+      expect(result.variants.length).toBe(variants.length);
+      expect(result.significanceLevel).toBeGreaterThan(0);
+      for (const v of result.variants) {
+        expect(v).toHaveProperty("conversionRate");
+        expect(v).toHaveProperty("probabilityBest");
+      }
+    });
+  });
+});
+
+describe("CampaignHealthPredictorService", () => {
+  describe("generateSampleMetrics", () => {
+    it("returns array of campaign metrics over days", () => {
+      const metrics = campaignHealthPredictorService.generateSampleMetrics(14);
+      expect(metrics.length).toBe(14);
+      for (const m of metrics) {
+        expect(m).toHaveProperty("day");
+        expect(m).toHaveProperty("impressions");
+        expect(m).toHaveProperty("clicks");
+        expect(m).toHaveProperty("conversions");
+        expect(m).toHaveProperty("spend");
+      }
+    });
+  });
+
+  describe("computeHealthScore", () => {
+    it("returns health score with components", () => {
+      const metrics = campaignHealthPredictorService.generateSampleMetrics(14);
+      const result = campaignHealthPredictorService.computeHealthScore(metrics);
+      expect(result).toHaveProperty("overall");
+      expect(result).toHaveProperty("components");
+      expect(result).toHaveProperty("category");
+      expect(result.overall).toBeGreaterThanOrEqual(0);
+      expect(result.overall).toBeLessThanOrEqual(100);
+      expect(["excellent", "good", "fair", "poor", "critical"]).toContain(result.category);
+    });
+  });
+
+  describe("identifyRiskFactors", () => {
+    it("returns array of risk factors with severity", () => {
+      const metrics = campaignHealthPredictorService.generateSampleMetrics(14);
+      const risks = campaignHealthPredictorService.identifyRiskFactors(metrics);
+      expect(Array.isArray(risks)).toBe(true);
+      for (const r of risks) {
+        expect(r).toHaveProperty("name");
+        expect(r).toHaveProperty("severity");
+        expect(r).toHaveProperty("description");
+        expect(["critical", "high", "medium", "low"]).toContain(r.severity);
+      }
+    });
+  });
+
+  describe("computeEarlyWarning", () => {
+    it("returns early warning with risk score", () => {
+      const metrics = campaignHealthPredictorService.generateSampleMetrics(14);
+      const warning = campaignHealthPredictorService.computeEarlyWarning(metrics);
+      expect(warning).toHaveProperty("triggered");
+      expect(warning).toHaveProperty("riskScore");
+      expect(warning).toHaveProperty("warnings");
+      expect(warning.riskScore).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("computeSurvivalAnalysis", () => {
+    it("returns kaplan-meier curves and hazard rate", () => {
+      const metrics = campaignHealthPredictorService.generateSampleMetrics(30);
+      const survival = campaignHealthPredictorService.computeSurvivalAnalysis(metrics);
+      expect(survival).toHaveProperty("kaplanMeier");
+      expect(survival).toHaveProperty("medianLifetime");
+      expect(survival).toHaveProperty("predictedRemainingDays");
+      expect(survival).toHaveProperty("hazardRate");
+      expect(survival.kaplanMeier.length).toBeGreaterThan(0);
+      expect(survival.medianLifetime).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("generateReport", () => {
+    it("returns comprehensive health report", () => {
+      const metrics = campaignHealthPredictorService.generateSampleMetrics(30);
+      const report = campaignHealthPredictorService.generateReport("camp_test", metrics);
+      expect(report).toHaveProperty("campaignId");
+      expect(report).toHaveProperty("currentHealth");
+      expect(report).toHaveProperty("riskFactors");
+      expect(report).toHaveProperty("earlyWarning");
+      expect(report).toHaveProperty("survivalAnalysis");
+      expect(report).toHaveProperty("recommendations");
+      expect(report.campaignId).toBe("camp_test");
+      expect(Array.isArray(report.recommendations)).toBe(true);
+    });
+  });
+});
+
 describe("AttributionService (Enhanced)", () => {
   describe("shapleyValueApprox", () => {
     it("returns attribution with approximation error", () => {

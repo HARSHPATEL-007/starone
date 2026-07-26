@@ -955,4 +955,49 @@ export const api = {
     winRateModel: () => request<any>("/real-time-bidding/win-rate-model"),
     sampleRequest: () => request<any>("/real-time-bidding/sample-request"),
   },
+  creativeAI: {
+    mabSelect: (variants: string[]) =>
+      request<any>("/creative-ai/enhanced/mab/select", { method: "POST", body: JSON.stringify({ variants }) }),
+    mabRecord: (variantKey: string, converted: boolean) =>
+      request<any>("/creative-ai/enhanced/mab/record", { method: "POST", body: JSON.stringify({ variantKey, converted }) }),
+    mabVariants: () => request<any>("/creative-ai/enhanced/mab/variants"),
+    detectFatigue: (creativeHistory: Record<string, unknown>[]) =>
+      request<any>("/creative-ai/enhanced/fatigue", { method: "POST", body: JSON.stringify({ creativeHistory }) }),
+    simulateABTest: (variants: Record<string, unknown>[], visitorsPerDay?: number, days?: number) =>
+      request<any>("/creative-ai/enhanced/ab-test-simulate", { method: "POST", body: JSON.stringify({ variants, visitorsPerDay, days }) }),
+  },
+  audienceInsights: {
+    pca: (data: number[][], nComponents?: number) =>
+      request<any>("/audience-insights/enhanced/pca", { method: "POST", body: JSON.stringify({ data, nComponents }) }),
+    gmm: (data: number[][], k?: number) =>
+      request<any>("/audience-insights/enhanced/gmm", { method: "POST", body: JSON.stringify({ data, k }) }),
+    rfm: (customers: Record<string, unknown>[]) =>
+      request<any>("/audience-insights/enhanced/rfm", { method: "POST", body: JSON.stringify({ customers }) }),
+    lookalike: (seedAudience: Record<string, unknown>[], candidatePool: Record<string, unknown>[], targetSize?: number) =>
+      request<any>("/audience-insights/enhanced/lookalike", { method: "POST", body: JSON.stringify({ seedAudience, candidatePool, targetSize }) }),
+  },
+  adCopyPersonalization: {
+    scoreElement: (element: Record<string, unknown>, userContext: Record<string, unknown>) =>
+      request<any>("/ad-copy-personalization/score-element", { method: "POST", body: JSON.stringify({ element, userContext }) }),
+    personalize: (elements: Record<string, unknown>[], userContext: Record<string, unknown>) =>
+      request<any>("/ad-copy-personalization/personalize", { method: "POST", body: JSON.stringify({ elements, userContext }) }),
+    mvt: (variants: Record<string, unknown>[], totalVisitors?: number) =>
+      request<any>("/ad-copy-personalization/mvt", { method: "POST", body: JSON.stringify({ variants, totalVisitors }) }),
+    sampleElements: () => request<any>("/ad-copy-personalization/sample-elements"),
+    sampleUser: () => request<any>("/ad-copy-personalization/sample-user"),
+    sampleMVTVariants: () => request<any>("/ad-copy-personalization/sample-mvt-variants"),
+  },
+  campaignHealth: {
+    healthScore: (metrics: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/health-score", { method: "POST", body: JSON.stringify({ metrics }) }),
+    riskFactors: (metrics: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/risk-factors", { method: "POST", body: JSON.stringify({ metrics }) }),
+    earlyWarning: (metrics: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/early-warning", { method: "POST", body: JSON.stringify({ metrics }) }),
+    survivalAnalysis: (metrics: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/survival-analysis", { method: "POST", body: JSON.stringify({ metrics }) }),
+    report: (campaignId: string, metrics: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/report", { method: "POST", body: JSON.stringify({ campaignId, metrics }) }),
+    sampleMetrics: (days?: number) => request<any>(`/campaign-health-predictor/sample-metrics?days=${days || 30}`),
+  },
 };

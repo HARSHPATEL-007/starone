@@ -1,5 +1,17 @@
 import { DataStore } from "./DataStore";
 
+export interface RFMScore {
+  customerId: string;
+  recency: number;
+  frequency: number;
+  monetary: number;
+  rScore: number;
+  fScore: number;
+  mScore: number;
+  rfmSegment: string;
+  compositeScore: number;
+}
+
 export class AudienceInsightsService {
   getInsights(tenantId: string, audienceId?: string) {
     const mem = DataStore["mem"]();
@@ -323,6 +335,288 @@ export class AudienceInsightsService {
     let sum = 0;
     for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
     return Math.sqrt(sum);
+  }
+
+  // ─── PCA Dimensionality Reduction ──────────────────────────────────────
+
+  pca(
+    data: number[][],
+    nComponents: number = 2,
+  ): { projected: number[][]; explainedVariance: number[]; loadings: number[][]; mean: number[] } {
+    const n = data.length;
+    const dim = data[0].length;
+    const mean = Array(dim).fill(0);
+    for (let j = 0; j < dim; j++) {
+      for (let i = 0; i < n; i++) mean[j] += data[i][j];
+      mean[j] /= n;
+    }
+    const centered = data.map((row) => row.map((v, j) => v - mean[j]));
+    const cov: number[][] = Array.from({ length: dim }, () => new Array(dim).fill(0));
+    for (let i = 0; i < dim; i++) {
+      for (let j = i; j < dim; j++) {
+        let s = 0;
+        for (let k = 0; k < n; k++) s += centered[k][i] * centered[k][j];
+        cov[i][j] = s / (n - 1);
+        cov[j][i] = cov[i][j];
+      }
+    }
+    const eig = this.powerIteration(cov, nComponents);
+    const projected = data.map((row) => {
+      const proj: number[] = [];
+      for (let c = 0; c < nComponents; c++) {
+        let val = 0;
+        for (let j = 0; j < dim; j++) val += (row[j] - mean[j]) * (eig.vectors[c]?.[j] ?? 0);
+        proj.push(Math.round(val * 10000) / 10000);
+      }
+      return proj;
+    });
+    return { projected, explainedVariance: eig.values.map((v) => Math.round(v * 10000) / 100), loadings: eig.vectors, mean };
+  }
+
+  private powerIteration(matrix: number[][], k: number): { values: number[]; vectors: number[][] } {
+    const n = matrix.length;
+    const values: number[] = [];
+    const vectors: number[][] = [];
+    let residual = matrix.map((row) => [...row]);
+    for (let comp = 0; comp < k; comp++) {
+      let v = Array(n).fill(0).map(() => Math.random() * 2 - 1);
+      let prevLambda = 0;
+      for (let iter = 0; iter < 100; iter++) {
+        const vNew = Array(n).fill(0);
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) vNew[i] += residual[i][j] * v[j];
+        }
+        const norm = Math.sqrt(vNew.reduce((s, x) => s + x * x, 0));
+        if (norm > 1e-10) for (let i = 0; i < n; i++) v[i] = vNew[i] / norm;
+        const lambda = vNew.reduce((s, x, i) => s + x * v[i], 0);
+        if (Math.abs(lambda - prevLambda) < 1e-8) break;
+        prevLambda = lambda;
+      }
+      const eigenvalue = v.reduce((s, x, i) => s + x * residual[0].reduce((ss, _, j) => ss + residual[i][j] * v[j], 0), 0);
+      values.push(Math.abs(eigenvalue));
+      vectors.push([...v]);
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          residual[i][j] -= eigenvalue * v[i] * v[j];
+        }
+      }
+    }
+    return { values, vectors };
+  }
+
+  // ─── GMM Clustering ────────────────────────────────────────────────────
+
+  gmmClustering(
+    data: number[][],
+    k: number,
+    maxIterations: number = 100,
+  ): { assignments: number[]; means: number[][]; covariances: number[][][]; weights: number[]; logLikelihood: number; bic: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const kmeansInit = this.kMeansClustering(data.map((_, i) => ({ size: 1, _id: `p_${i}`, name: "", engagement: data[i][0], conversionRate: data[i][1], cpa: data[i][2] || 10, spend: (data[i][3] || 0) * 1000 })), k);
+    const means: number[][] = Array.from({ length: k }, () => Array(dim).fill(0));
+    for (let c = 0; c < k; c++) {
+      const clusterPoints = data.filter((_, i) => kmeansInit.clusters[i] === c);
+      if (clusterPoints.length > 0) {
+        for (let j = 0; j < dim; j++) {
+          means[c][j] = clusterPoints.reduce((s, p) => s + p[j], 0) / clusterPoints.length;
+        }
+      } else {
+        means[c] = data[Math.floor(Math.random() * n)].map((v) => v);
+      }
+    }
+    const covariances: number[][][] = Array.from({ length: k }, () => Array.from({ length: dim }, () => Array(dim).fill(0)));
+    for (let c = 0; c < k; c++) {
+      for (let i = 0; i < dim; i++) covariances[c][i][i] = 1;
+    }
+    const weights: number[] = Array(k).fill(1 / k);
+    const responsibilities: number[][] = Array.from({ length: n }, () => Array(k).fill(0));
+
+    for (let iter = 0; iter < maxIterations; iter++) {
+      for (let i = 0; i < n; i++) {
+        let totalResp = 0;
+        for (let c = 0; c < k; c++) {
+          const prob = this.gaussianPDF(data[i], means[c], covariances[c]);
+          responsibilities[i][c] = weights[c] * prob;
+          totalResp += responsibilities[i][c];
+        }
+        if (totalResp > 0) {
+          for (let c = 0; c < k; c++) responsibilities[i][c] /= totalResp;
+        }
+      }
+      for (let c = 0; c < k; c++) {
+        let nC = 0;
+        for (let i = 0; i < n; i++) nC += responsibilities[i][c];
+        weights[c] = nC / n;
+        if (nC < 1e-10) continue;
+        for (let j = 0; j < dim; j++) {
+          let sum = 0;
+          for (let i = 0; i < n; i++) sum += responsibilities[i][c] * data[i][j];
+          means[c][j] = sum / nC;
+        }
+        for (let i2 = 0; i2 < dim; i2++) {
+          for (let j2 = 0; j2 < dim; j2++) {
+            let sum = 0;
+            for (let i = 0; i < n; i++) {
+              sum += responsibilities[i][c] * (data[i][i2] - means[c][i2]) * (data[i][j2] - means[c][j2]);
+            }
+            covariances[c][i2][j2] = sum / nC + 1e-6;
+          }
+        }
+      }
+    }
+
+    const assignments = data.map((_, i) => {
+      let maxResp = -1;
+      let bestC = 0;
+      for (let c = 0; c < k; c++) {
+        if (responsibilities[i][c] > maxResp) { maxResp = responsibilities[i][c]; bestC = c; }
+      }
+      return bestC;
+    });
+
+    let logLikelihood = 0;
+    for (let i = 0; i < n; i++) {
+      let total = 0;
+      for (let c = 0; c < k; c++) {
+        total += weights[c] * this.gaussianPDF(data[i], means[c], covariances[c]);
+      }
+      logLikelihood += Math.log(Math.max(total, 1e-300));
+    }
+    const numParams = k * dim + k * dim * dim + k - 1;
+    const bic = -2 * logLikelihood + numParams * Math.log(n);
+
+    return { assignments, means, covariances, weights, logLikelihood: Math.round(logLikelihood * 100) / 100, bic: Math.round(bic * 100) / 100 };
+  }
+
+  private gaussianPDF(x: number[], mean: number[], cov: number[][]): number {
+    const dim = x.length;
+    const diff = x.map((v, i) => v - mean[i]);
+    let det = 1;
+    const L: number[][] = Array.from({ length: dim }, () => new Array(dim).fill(0));
+    for (let i = 0; i < dim; i++) {
+      for (let j = 0; j <= i; j++) {
+        let sum = 0;
+        for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
+        if (i === j) L[i][j] = Math.sqrt(Math.max(cov[i][i] - sum, 1e-10));
+        else L[i][j] = (cov[i][j] - sum) / L[j][j];
+      }
+    }
+    for (let i = 0; i < dim; i++) det *= L[i][i];
+    det = det * det;
+    const inv: number[][] = Array.from({ length: dim }, () => new Array(dim).fill(0));
+    for (let i = 0; i < dim; i++) {
+      for (let j = 0; j < dim; j++) {
+        let sum = 0;
+        for (let k = 0; k < Math.min(i, j); k++) sum += L[j][k] * inv[i][k];
+        inv[i][j] = (i === j ? 1 : 0) - sum;
+      }
+    }
+    for (let i = dim - 1; i >= 0; i--) {
+      for (let j = dim - 1; j >= 0; j--) {
+        let sum = 0;
+        for (let k = i + 1; k < dim; k++) sum += L[k][i] * inv[k][j];
+        inv[i][j] = (inv[i][j] - sum) / L[i][i];
+      }
+    }
+    let exponent = 0;
+    for (let i = 0; i < dim; i++) {
+      for (let j = 0; j < dim; j++) {
+        exponent += diff[i] * inv[i][j] * diff[j];
+      }
+    }
+    const coef = 1 / Math.sqrt(Math.pow(2 * Math.PI, dim) * Math.max(det, 1e-10));
+    return coef * Math.exp(-0.5 * exponent);
+  }
+
+  // ─── RFM Scoring ───────────────────────────────────────────────────────
+
+  computeRFM(
+    customers: { id: string; daysSinceLastPurchase: number; purchaseCount: number; totalSpent: number }[],
+  ): RFMScore[] {
+    const rVals = customers.map((c) => c.daysSinceLastPurchase);
+    const fVals = customers.map((c) => c.purchaseCount);
+    const mVals = customers.map((c) => c.totalSpent);
+
+    const rQuintiles = this.quintileBreakpoints(rVals, true);
+    const fQuintiles = this.quintileBreakpoints(fVals);
+    const mQuintiles = this.quintileBreakpoints(mVals);
+
+    return customers.map((c) => {
+      const rScore = this.scoreQuintile(c.daysSinceLastPurchase, rQuintiles, true);
+      const fScore = this.scoreQuintile(c.purchaseCount, fQuintiles);
+      const mScore = this.scoreQuintile(c.totalSpent, mQuintiles);
+      const composite = rScore + fScore + mScore;
+
+      let rfmSegment: string;
+      if (composite >= 13) rfmSegment = "Champions";
+      else if (composite >= 10) rfmSegment = "Loyal";
+      else if (composite >= 7) rfmSegment = "Potential";
+      else if (composite >= 4) rfmSegment = "Needs Attention";
+      else rfmSegment = "At Risk";
+
+      return {
+        customerId: c.id, recency: c.daysSinceLastPurchase, frequency: c.purchaseCount,
+        monetary: c.totalSpent, rScore, fScore, mScore, rfmSegment, compositeScore: composite,
+      };
+    });
+  }
+
+  private quintileBreakpoints(values: number[], reversed: boolean = false): number[] {
+    const sorted = [...values].sort((a, b) => a - b);
+    const n = sorted.length;
+    const breaks: number[] = [];
+    for (let q = 1; q <= 4; q++) {
+      const idx = Math.floor((q / 5) * n);
+      breaks.push(sorted[Math.min(idx, n - 1)]);
+    }
+    return reversed ? breaks.reverse() : breaks;
+  }
+
+  private scoreQuintile(value: number, breakpoints: number[], reversed: boolean = false): number {
+    for (let i = 0; i < breakpoints.length; i++) {
+      if (reversed) {
+        if (value <= breakpoints[i]) return 5 - i;
+      } else {
+        if (value <= breakpoints[i]) return i + 1;
+      }
+    }
+    return reversed ? 1 : 5;
+  }
+
+  // ─── Automated Lookalike Expansion ─────────────────────────────────────
+
+  generateLookalike(
+    seedAudience: { id: string; features: Record<string, number> }[],
+    candidatePool: { id: string; features: Record<string, number> }[],
+    targetSize: number,
+  ): { candidates: { id: string; similarity: number; matchedFeatures: string[] }[]; seedProfile: Record<string, number> } {
+    const dims = new Set<string>();
+    for (const s of seedAudience) for (const k of Object.keys(s.features)) dims.add(k);
+    for (const c of candidatePool) for (const k of Object.keys(c.features)) dims.add(k);
+    const allDims = Array.from(dims);
+
+    const seedProfile: Record<string, number> = {};
+    for (const d of allDims) {
+      seedProfile[d] = seedAudience.reduce((s, a) => s + (a.features[d] || 0), 0) / seedAudience.length;
+    }
+
+    const candidates = candidatePool.map((c) => {
+      let dot = 0, normA = 0, normB = 0;
+      for (const d of allDims) {
+        const a = seedProfile[d] || 0;
+        const b = c.features[d] || 0;
+        dot += a * b;
+        normA += a * a;
+        normB += b * b;
+      }
+      const similarity = normA > 0 && normB > 0 ? dot / (Math.sqrt(normA) * Math.sqrt(normB)) : 0;
+      const matchedFeatures = allDims.filter((d) => (seedProfile[d] || 0) > 0 && (c.features[d] || 0) > 0);
+      return { id: c.id, similarity: Math.round(similarity * 10000) / 100, matchedFeatures };
+    });
+
+    candidates.sort((a, b) => b.similarity - a.similarity);
+    return { candidates: candidates.slice(0, targetSize), seedProfile };
   }
 }
 

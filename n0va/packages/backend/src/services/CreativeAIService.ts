@@ -468,6 +468,281 @@ export class CreativeAIService {
     return "neutral";
   }
 
+  // ─── Thompson Sampling MAB ─────────────────────────────────────────
+
+  private mabState: Map<string, { alpha: number; beta: number; impressions: number; conversions: number }> = new Map();
+
+  mabGetOrCreateVariant(variantKey: string): { alpha: number; beta: number } {
+    if (!this.mabState.has(variantKey)) {
+      this.mabState.set(variantKey, { alpha: 1, beta: 1, impressions: 0, conversions: 0 });
+    }
+    const s = this.mabState.get(variantKey)!;
+    return { alpha: s.alpha, beta: s.beta };
+  }
+
+  mabSelectVariant(variantKeys: string[]): { selectedKey: string; probabilities: Record<string, number> } {
+    const samples: Record<string, number> = {};
+    let maxSample = -Infinity;
+    let selectedKey = variantKeys[0];
+
+    for (const key of variantKeys) {
+      const { alpha, beta } = this.mabGetOrCreateVariant(key);
+      const sample = this.sampleBeta(alpha, beta);
+      samples[key] = Math.round(sample * 10000) / 100;
+      if (sample > maxSample) {
+        maxSample = sample;
+        selectedKey = key;
+      }
+    }
+
+    const total = Object.values(samples).reduce((s, v) => s + v, 0);
+    const probabilities: Record<string, number> = {};
+    for (const [k, v] of Object.entries(samples)) {
+      probabilities[k] = total > 0 ? Math.round((v / total) * 10000) / 100 : 0;
+    }
+
+    return { selectedKey, probabilities };
+  }
+
+  mabRecordResult(variantKey: string, converted: boolean): void {
+    const state = this.mabGetOrCreateVariant(variantKey);
+    this.mabState.set(variantKey, {
+      alpha: state.alpha + (converted ? 1 : 0),
+      beta: state.beta + (converted ? 0 : 1),
+      impressions: this.mabState.get(variantKey)!.impressions + 1,
+      conversions: this.mabState.get(variantKey)!.conversions + (converted ? 1 : 0),
+    });
+  }
+
+  mabGetAllVariants(): { variantKey: string; alpha: number; beta: number; impressions: number; conversions: number; ctr: number; posteriorMean: number }[] {
+    const results: any[] = [];
+    for (const [key, state] of this.mabState.entries()) {
+      results.push({
+        variantKey: key,
+        alpha: state.alpha,
+        beta: state.beta,
+        impressions: state.impressions,
+        conversions: state.conversions,
+        ctr: state.impressions > 0 ? Math.round((state.conversions / state.impressions) * 10000) / 100 : 0,
+        posteriorMean: Math.round((state.alpha / (state.alpha + state.beta)) * 10000) / 100,
+      });
+    }
+    return results.sort((a, b) => b.posteriorMean - a.posteriorMean);
+  }
+
+  private sampleBeta(alpha: number, beta: number): number {
+    const alphaSample = this.sampleGamma(alpha);
+    const betaSample = this.sampleGamma(beta);
+    return alphaSample / (alphaSample + betaSample);
+  }
+
+  private sampleGamma(shape: number): number {
+    if (shape < 1) {
+      const u = Math.random();
+      return this.sampleGamma(1 + shape) * Math.pow(u, 1 / shape);
+    }
+    const d = shape - 1 / 3;
+    const c = 1 / Math.sqrt(9 * d);
+    while (true) {
+      let x: number;
+      let v: number;
+      do {
+        x = this.sampleNormal();
+        v = 1 + c * x;
+      } while (v <= 0);
+      v = v * v * v;
+      const u = Math.random();
+      if (u < 1 - 0.0331 * (x * x) * (x * x)) return d * v;
+      if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
+    }
+  }
+
+  private sampleNormal(): number {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  // ─── Creative Fatigue Detection ─────────────────────────────────────
+
+  detectFatigue(
+    creativeHistory: { day: number; impressions: number; clicks: number; conversions: number }[],
+  ): {
+    fatigueScore: number;
+    saturationPoint: number;
+    decayRate: number;
+    recommendedRefresh: boolean;
+    expectedLift: number;
+    stage: "growth" | "maturity" | "decline" | "exhausted";
+    dailyDecay: { day: number; predictedCTR: number; actualCTR: number }[];
+  } {
+    if (creativeHistory.length < 3) {
+      return {
+        fatigueScore: 0, saturationPoint: 0, decayRate: 0,
+        recommendedRefresh: false, expectedLift: 0, stage: "growth",
+        dailyDecay: creativeHistory.map((d) => ({ day: d.day, predictedCTR: d.clicks / Math.max(1, d.impressions), actualCTR: d.clicks / Math.max(1, d.impressions) })),
+      };
+    }
+
+    const ctrs = creativeHistory.map((d) => d.clicks / Math.max(1, d.impressions));
+    const n = ctrs.length;
+    const xMean = (n - 1) / 2;
+    const yMean = ctrs.reduce((s, v) => s + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) {
+      num += (i - xMean) * (ctrs[i] - yMean);
+      den += (i - xMean) ** 2;
+    }
+    const decayRate = den > 0 ? num / den : 0;
+
+    const totalImpressions = creativeHistory.reduce((s, d) => s + d.impressions, 0);
+    const initialCTR = ctrs[0];
+    const currentCTR = ctrs[n - 1];
+    const ctrDrop = initialCTR > 0 ? (initialCTR - currentCTR) / initialCTR : 0;
+    const saturationPoint = Math.round(totalImpressions * ctrDrop * 100) / 100;
+
+    const fatigueScore = Math.round(Math.min(100, Math.max(0, ctrDrop * 100 + (decayRate < 0 ? Math.abs(decayRate) * 50 : 0))) * 100) / 100;
+
+    let stage: "growth" | "maturity" | "decline" | "exhausted";
+    if (fatigueScore < 15) stage = "growth";
+    else if (fatigueScore < 40) stage = "maturity";
+    else if (fatigueScore < 70) stage = "decline";
+    else stage = "exhausted";
+
+    const recommendedRefresh = fatigueScore > 40;
+    const expectedLift = recommendedRefresh ? Math.round(Math.min(80, fatigueScore * 0.6 + 10) * 100) / 100 : 0;
+
+    const dailyDecay = creativeHistory.map((d, i) => {
+      const predictedCTR = Math.max(0, initialCTR + decayRate * i);
+      return { day: d.day, predictedCTR: Math.round(predictedCTR * 10000) / 100, actualCTR: Math.round(ctrs[i] * 10000) / 100 };
+    });
+
+    return { fatigueScore, saturationPoint, decayRate: Math.round(decayRate * 10000) / 100, recommendedRefresh, expectedLift, stage, dailyDecay };
+  }
+
+  // ─── Bayesian A/B Test Simulator ────────────────────────────────────
+
+  simulateABTest(
+    variants: { name: string; baselineCtr: number; lift: number }[],
+    visitorsPerDay: number,
+    days: number,
+  ): {
+    winner: string;
+    confidence: number;
+    daysToSignificance: number;
+    dailyResults: { day: number; variant: string; visitors: number; conversions: number; ctr: number; probabilityWinning: number }[];
+    summary: { variant: string; totalVisitors: number; totalConversions: number; observedCtr: number; probabilityWinning: number }[];
+  } {
+    const dailyResults: any[] = [];
+    const totals: Record<string, { visitors: number; conversions: number }> = {};
+    const probWinning: Record<string, number[]> = {};
+
+    for (const v of variants) {
+      totals[v.name] = { visitors: 0, conversions: 0 };
+      probWinning[v.name] = [];
+    }
+
+    for (let day = 0; day < days; day++) {
+      for (const v of variants) {
+        const visitors = Math.round(visitorsPerDay / variants.length * (0.8 + Math.random() * 0.4));
+        const trueCtr = v.baselineCtr * (1 + v.lift / 100);
+        const conversions = Math.round(this.binomialSample(visitors, trueCtr));
+        totals[v.name].visitors += visitors;
+        totals[v.name].conversions += conversions;
+        const observedCtr = totals[v.name].visitors > 0
+          ? totals[v.name].conversions / totals[v.name].visitors : 0;
+
+        const prob = this.monteCarloWinProb(
+          variants.map((vv) => ({
+            name: vv.name,
+            alpha: 1 + totals[vv.name].conversions,
+            beta: 1 + totals[vv.name].visitors - totals[vv.name].conversions,
+          })),
+        );
+
+        dailyResults.push({
+          day: day + 1, variant: v.name, visitors, conversions,
+          ctr: Math.round(observedCtr * 10000) / 100,
+          probabilityWinning: Math.round((prob[v.name] || 0) * 10000) / 100,
+        });
+      }
+    }
+
+    const finalProbs = this.monteCarloWinProb(
+      variants.map((v) => ({
+        name: v.name,
+        alpha: 1 + totals[v.name].conversions,
+        beta: 1 + totals[v.name].visitors - totals[v.name].conversions,
+      })),
+    );
+
+    let winner = variants[0].name;
+    let maxProb = 0;
+    for (const [name, prob] of Object.entries(finalProbs)) {
+      if (prob > maxProb) { maxProb = prob; winner = name; }
+    }
+
+    let daysToSignificance = days;
+    for (let d = 0; d < days; d++) {
+      const dayProbs: Record<string, number[]> = {};
+      for (const v of variants) dayProbs[v.name] = [];
+      for (const r of dailyResults) {
+        if (r.day <= d + 1) dayProbs[r.variant].push(r.probabilityWinning);
+      }
+      const lastProbs: Record<string, number> = {};
+      for (const [name, vals] of Object.entries(dayProbs)) {
+        lastProbs[name] = vals[vals.length - 1] || 0;
+      }
+      if ((lastProbs[winner] || 0) > 95) {
+        daysToSignificance = d + 1;
+        break;
+      }
+    }
+
+    const summary = variants.map((v) => ({
+      variant: v.name,
+      totalVisitors: totals[v.name].visitors,
+      totalConversions: totals[v.name].conversions,
+      observedCtr: totals[v.name].visitors > 0
+        ? Math.round((totals[v.name].conversions / totals[v.name].visitors) * 10000) / 100
+        : 0,
+      probabilityWinning: Math.round((finalProbs[v.name] || 0) * 10000) / 100,
+    }));
+
+    return { winner, confidence: Math.round(maxProb * 10000) / 100, daysToSignificance, dailyResults, summary };
+  }
+
+  private monteCarloWinProb(
+    variants: { name: string; alpha: number; beta: number }[],
+    samples: number = 50000,
+  ): Record<string, number> {
+    let wins: Record<string, number> = {};
+    for (const v of variants) wins[v.name] = 0;
+    for (let s = 0; s < samples; s++) {
+      let bestVal = -Infinity;
+      let bestName = variants[0].name;
+      for (const v of variants) {
+        const val = this.sampleBeta(v.alpha, v.beta);
+        if (val > bestVal) { bestVal = val; bestName = v.name; }
+      }
+      wins[bestName]++;
+    }
+    const result: Record<string, number> = {};
+    for (const [name, count] of Object.entries(wins)) {
+      result[name] = (count / samples) * 100;
+    }
+    return result;
+  }
+
+  private binomialSample(n: number, p: number): number {
+    let count = 0;
+    for (let i = 0; i < n; i++) {
+      if (Math.random() < p) count++;
+    }
+    return count;
+  }
+
   // ─── Performance Prediction ─────────────────────────────────────────
 
   predictPerformance(input: {

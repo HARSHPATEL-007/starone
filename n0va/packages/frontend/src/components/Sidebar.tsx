@@ -73,6 +73,7 @@ import {
   Sigma,
   Globe,
   Cpu,
+  Lightbulb,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -188,6 +189,10 @@ const navItems = [
   { to: "/marketing-mix-model", icon: BarChart3, label: "MMM Analysis" },
   { to: "/campaign-simulation", icon: Layers, label: "Campaign Sim" },
   { to: "/real-time-bidding", icon: Zap, label: "RTB Engine" },
+  { to: "/creative-ai-enhanced", icon: Lightbulb, label: "Creative AI+" },
+  { to: "/audience-insights-enhanced", icon: Users, label: "Audience Insights+" },
+  { to: "/ad-copy-personalization", icon: Sparkles, label: "Ad Personalization" },
+  { to: "/campaign-health-predictor", icon: HeartPulse, label: "Health Predictor" },
   { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
 
