@@ -4,6 +4,7 @@ import { campaignService } from "../services/CampaignService";
 import { AppError } from "../middleware/errorHandler";
 import { webhookService } from "../services/WebhookService";
 import { io } from "../index";
+import { computePagination, sendPaginated, sendSuccess, sendCreated, safeInt, pickAllowed } from "./route-utils";
 
 const router = Router();
 
@@ -15,7 +16,9 @@ router.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    const { status, type, search, page = "1", limit = "20" } = req.query;
+    const { status, type, search } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
 
     const filter: Record<string, any> = { tenantId };
     if (status) filter.status = status;
@@ -28,15 +31,19 @@ router.get(
         status: status as string | undefined,
         type: type as string | undefined,
         search: search as string | undefined,
-        page: parseInt(page as string, 10),
-        limit: parseInt(limit as string, 10),
+        page,
+        limit,
       });
-      res.json(result);
+      const total = (result as any).total || 0;
+      const items = (result as any).campaigns || result;
+      const pagination = computePagination(page, limit, total);
+      sendPaginated(res, items, pagination, { tenantId });
     } else {
-      const p = parseInt(page as string, 10);
-      const l = parseInt(limit as string, 10);
-      const result = await DataStore.findCampaigns(filter, { createdAt: -1 }, (p - 1) * l, l);
-      res.json(result);
+      const offset = (page - 1) * limit;
+      const result = await DataStore.findCampaigns(filter, { createdAt: -1 }, offset, limit);
+      const total = result.total;
+      const pagination = computePagination(page, limit, total);
+      sendPaginated(res, result.campaigns, pagination, { tenantId });
     }
   })
 );
@@ -48,7 +55,7 @@ router.get(
 
     if (!DataStore.usingMemory()) {
       const result = await campaignService.getDashboardMetrics(tenantId);
-      res.json(result);
+      sendSuccess(res, result);
     } else {
       const campaigns = await DataStore.findCampaigns({ tenantId });
       const totalBudget = campaigns.campaigns.reduce((s: number, c: any) => s + (c.budget?.lifetime || 0), 0);
@@ -61,9 +68,14 @@ router.get(
         { $group: { _id: null, totalImpressions: { $sum: "$impressions" }, totalClicks: { $sum: "$clicks" }, totalConversions: { $sum: "$conversions" }, totalSpend: { $sum: "$spend" }, totalRevenue: { $sum: "$revenue" } } },
       ]);
 
-      const metrics = Array.isArray(agg) && agg.length > 0 ? agg[0] : { totalImpressions: 0, totalClicks: 0, totalConversions: 0, totalSpend: 0, totalRevenue: 0, avgCtr: 0, avgRoas: 0 };
+      const metrics = Array.isArray(agg) && agg.length > 0
+        ? { ...agg[0], avgCtr: agg[0].totalImpressions > 0 ? parseFloat(((agg[0].totalClicks / agg[0].totalImpressions) * 100).toFixed(2)) : 0, avgRoas: agg[0].totalSpend > 0 ? parseFloat((agg[0].totalRevenue / agg[0].totalSpend).toFixed(2)) : 0 }
+        : { totalImpressions: 0, totalClicks: 0, totalConversions: 0, totalSpend: 0, totalRevenue: 0, avgCtr: 0, avgRoas: 0 };
 
-      res.json({ totalCampaigns, activeCampaigns, totalBudget, totalSpent, remaining: totalBudget - totalSpent, metrics });
+      const utilization = totalBudget > 0 ? parseFloat(((totalSpent / totalBudget) * 100).toFixed(1)) : 0;
+      const concentration = totalBudget > 0 ? parseFloat(campaigns.campaigns.reduce((s: number, c: any) => { const share = (c.budget?.lifetime || 0) / totalBudget; return s + share * share; }, 0).toFixed(4)) : 0;
+
+      sendSuccess(res, { totalCampaigns, activeCampaigns, totalBudget, totalSpent, remaining: totalBudget - totalSpent, utilization, concentration, metrics });
     }
   })
 );
@@ -96,7 +108,8 @@ router.post(
         results.push({ id, success: false, error: e.message });
       }
     }
-    res.json({ results, total: ids.length, succeeded: results.filter((r) => r.success).length });
+    const successCount = results.filter((r) => r.success).length;
+    sendSuccess(res, { results, total: ids.length, succeeded: successCount, failed: ids.length - successCount, successRate: parseFloat(((successCount / ids.length) * 100).toFixed(1)) });
   })
 );
 
@@ -104,8 +117,8 @@ router.get(
   "/metrics/timeseries",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    const { days = "30", granularity = "day" } = req.query;
-    const dayCount = parseInt(days as string, 10);
+    const dayCount = safeInt(req.query.days, 30);
+    const { granularity = "day" } = req.query;
 
     const metrics = await DataStore.findDailyMetrics(tenantId, dayCount);
     const campaigns = await DataStore.findCampaigns({ tenantId });
@@ -119,19 +132,21 @@ router.get(
     ]);
 
     const totals = Array.isArray(agg) && agg.length > 0 ? agg[0] : { totalImpressions: 0, totalClicks: 0, totalConversions: 0, totalSpend: 0, totalRevenue: 0 };
-
     const avgDailySpend = dayCount > 0 ? totals.totalSpend / dayCount : 0;
     const remaining = totalBudget - totalSpent;
     const daysRemaining = avgDailySpend > 0 ? Math.round(remaining / avgDailySpend) : 0;
     const projectedEndDate = new Date();
     projectedEndDate.setDate(projectedEndDate.getDate() + daysRemaining);
+    const utilization = totalBudget > 0 ? parseFloat(((totalSpent / totalBudget) * 100).toFixed(1)) : 0;
+    const concentration = totalBudget > 0 ? parseFloat(campaigns.campaigns.reduce((s: number, c: any) => { const share = (c.budget?.lifetime || 0) / totalBudget; return s + share * share; }, 0).toFixed(4)) : 0;
 
-    res.json({
+    sendSuccess(res, {
       daily: metrics,
-      totals,
-      budget: { total: totalBudget, spent: totalSpent, remaining, utilization: totalBudget > 0 ? parseFloat(((totalSpent / totalBudget) * 100).toFixed(1)) : 0 },
-      forecast: { avgDailySpend, daysRemaining, projectedEndDate, willExceedBudget: daysRemaining <= dayCount * 0.7 },
-      campaignCounts: { total: campaigns.campaigns.length, active: campaigns.campaigns.filter((c: any) => c.status === "active").length },
+      totals: { ...totals, avgCtr: totals.totalImpressions > 0 ? parseFloat(((totals.totalClicks / totals.totalImpressions) * 100).toFixed(2)) : 0, avgRoas: totals.totalSpend > 0 ? parseFloat((totals.totalRevenue / totals.totalSpend).toFixed(2)) : 0 },
+      budget: { total: totalBudget, spent: totalSpent, remaining, utilization, concentration },
+      forecast: { avgDailySpend, daysRemaining, projectedEndDate, willExceedBudget: daysRemaining <= dayCount * 0.7, monthlyBurn: parseFloat((avgDailySpend * 30).toFixed(2)) },
+      campaignCounts: { total: campaigns.campaigns.length, active: campaigns.campaigns.filter((c: any) => c.status === "active").length, byStatus: campaigns.campaigns.reduce((acc: Record<string, number>, c: any) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; }, {} as Record<string, number>) },
+      granularity,
     });
   })
 );
@@ -145,11 +160,12 @@ router.get(
     if (!DataStore.usingMemory()) {
       const campaign = await campaignService.findById(id, tenantId);
       if (!campaign) throw new AppError(404, "Campaign not found");
-      res.json(campaign);
+      sendSuccess(res, campaign);
     } else {
       const campaign = await DataStore.findCampaignById(id, tenantId);
       if (!campaign) throw new AppError(404, "Campaign not found");
-      res.json(campaign);
+      const budgetUtil = (campaign as any).budget?.lifetime > 0 ? parseFloat((((campaign as any).budget?.spent || 0) / (campaign as any).budget?.lifetime * 100).toFixed(1)) : 0;
+      sendSuccess(res, { ...campaign, _budgetUtilization: budgetUtil });
     }
   })
 );
@@ -185,25 +201,15 @@ router.post(
         goal,
         startDate,
         endDate,
-        audiences: [],
-        creatives: [],
-        tags: [],
-        kpis: {},
+        audiences: [], creatives: [], tags: [], kpis: {},
         hyperContext: { linkedTasks: [], linkedDocs: [], linkedSheets: [], linkedCalendar: [] },
         createdBy: req.user!.userId,
       });
     }
 
-    webhookService.emit({
-      type: "campaign.created",
-      tenantId,
-      source: "api",
-      payload: { campaignId: campaign._id, name, type: type || "performance", platforms },
-    });
-
+    webhookService.emit({ type: "campaign.created", tenantId, source: "api", payload: { campaignId: campaign._id, name, type: type || "performance", platforms } });
     io.to(`tenant:${tenantId}`).emit("campaign:created", campaign);
-
-    res.status(201).json(campaign);
+    sendCreated(res, campaign, { action: "created" });
   })
 );
 
@@ -225,16 +231,9 @@ router.patch(
     }
 
     const eventType = status === "active" ? "campaign.launched" : status === "paused" ? "campaign.paused" : "campaign.status_changed";
-    webhookService.emit({
-      type: eventType,
-      tenantId,
-      source: "api",
-      payload: { campaignId: id, status, name: campaign.name },
-    });
-
+    webhookService.emit({ type: eventType, tenantId, source: "api", payload: { campaignId: id, status, name: campaign.name } });
     io.to(`campaign:${id}`).emit(`campaign:${id}:update`, { status, updatedAt: new Date().toISOString() });
-
-    res.json(campaign);
+    sendSuccess(res, campaign, { event: eventType });
   })
 );
 
@@ -245,13 +244,10 @@ router.patch(
     const tenantId = req.user!.tenantId;
     const update = req.body;
     const allowed = ["name", "type", "status", "goal", "platforms", "tags", "kpis", "hyperContext", "creatives", "audiences", "startDate", "endDate"];
-    const filtered: Record<string, any> = {};
-    for (const key of allowed) {
-      if (update[key] !== undefined) filtered[key] = update[key];
-    }
+    const filtered = pickAllowed(update, allowed);
     const updated = await DataStore.updateCampaign(id, tenantId, filtered);
     if (!updated) throw new AppError(404, "Campaign not found");
-    res.json(updated);
+    sendSuccess(res, updated, { updatedFields: Object.keys(filtered) });
   })
 );
 
@@ -269,25 +265,14 @@ router.patch(
     } else {
       const campaign = await DataStore.findCampaignById(id, tenantId);
       if (!campaign) throw new AppError(404, "Campaign not found");
-
       const update: any = {};
       if (daily !== undefined) update["budget.daily"] = daily;
-      if (lifetime !== undefined) {
-        update["budget.lifetime"] = lifetime;
-        update["budget.remaining"] = lifetime - (campaign.budget?.spent || 0);
-      }
-
+      if (lifetime !== undefined) { update["budget.lifetime"] = lifetime; update["budget.remaining"] = lifetime - (campaign.budget?.spent || 0); }
       updated = await DataStore.updateCampaign(id, tenantId, update);
     }
 
-    webhookService.emit({
-      type: "campaign.budget_updated",
-      tenantId,
-      source: "api",
-      payload: { campaignId: id, daily, lifetime },
-    });
-
-    res.json(updated);
+    webhookService.emit({ type: "campaign.budget_updated", tenantId, source: "api", payload: { campaignId: id, daily, lifetime } });
+    sendSuccess(res, updated, { action: "budget_updated" });
   })
 );
 
@@ -301,34 +286,21 @@ router.post(
       const original = await campaignService.findById(id, tenantId);
       if (!original) throw new AppError(404, "Campaign not found");
       const cloned = await campaignService.create({
-        tenantId,
-        name: `${original.name} (Copy)`,
-        type: original.type,
-        budget: original.budget,
-        platforms: original.platforms,
-        goal: original.goal,
-        createdBy: req.user!.userId,
+        tenantId, name: `${original.name} (Copy)`, type: original.type, budget: original.budget, platforms: original.platforms, goal: original.goal, createdBy: req.user!.userId,
       });
-      res.status(201).json(cloned);
+      sendCreated(res, cloned, { source: id });
     } else {
       const original = await DataStore.findCampaignById(id, tenantId);
       if (!original) throw new AppError(404, "Campaign not found");
       const cloned = await DataStore.createCampaign({
-        tenantId,
-        name: `${original.name} (Copy)`,
-        type: original.type,
-        status: "draft",
+        tenantId, name: `${original.name} (Copy)`, type: original.type, status: "draft",
         budget: { ...original.budget, spent: 0, remaining: original.budget?.lifetime || 0 },
-        platforms: [...(original.platforms || [])],
-        goal: original.goal,
-        audiences: [],
-        creatives: [],
-        tags: [...(original.tags || [])],
-        kpis: {},
+        platforms: [...(original.platforms || [])], goal: original.goal,
+        audiences: [], creatives: [], tags: [...(original.tags || [])], kpis: {},
         hyperContext: { linkedTasks: [], linkedDocs: [], linkedSheets: [], linkedCalendar: [] },
         createdBy: req.user!.userId,
       });
-      res.status(201).json(cloned);
+      sendCreated(res, cloned, { source: id });
     }
   })
 );
@@ -338,7 +310,6 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const tenantId = req.user!.tenantId;
-
     if (!DataStore.usingMemory()) {
       const deleted = await campaignService.delete(id, tenantId);
       if (!deleted) throw new AppError(404, "Campaign not found");
@@ -351,5 +322,3 @@ router.delete(
 );
 
 export default router;
-
-
