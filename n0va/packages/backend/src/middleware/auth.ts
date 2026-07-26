@@ -18,6 +18,13 @@ declare global {
   }
 }
 
+const ROLE_HIERARCHY: Record<string, number> = {
+  viewer: 1,
+  analyst: 2,
+  manager: 3,
+  admin: 4,
+};
+
 export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -46,6 +53,20 @@ export function tenantMiddleware(req: Request, _res: Response, next: NextFunctio
     req.user.tenantId = tenantId;
   }
   next();
+}
+
+export function requireRole(minimumRole: string) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      throw new AppError(401, "Authentication required");
+    }
+    const userLevel = ROLE_HIERARCHY[req.user.role] ?? 0;
+    const requiredLevel = ROLE_HIERARCHY[minimumRole] ?? Infinity;
+    if (userLevel < requiredLevel) {
+      throw new AppError(403, `Insufficient permissions. Required role: ${minimumRole}`);
+    }
+    next();
+  };
 }
 
 export { JWT_SECRET };
