@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
+import { roiCalculatorService } from "../services/ROICalculatorService";
+import { roiCalculatorOrchestrator } from "../business-logic/ROICalculatorOrchestrator";
 import { sendSuccess, safeInt } from "./route-utils";
 import { cohortAnalysisOrchestrator } from "../business-logic/CohortAnalysisOrchestrator";
 
@@ -138,6 +140,22 @@ router.get(
     sendSuccess(res, report);
   })
 );
+
+router.get("/roi/scenarios", asyncHandler(async (req: Request, res: Response) => {
+  const scenarios = roiCalculatorService.generateComparisonScenarios();
+  sendSuccess(res, scenarios, { count: scenarios.length });
+}));
+
+router.post("/roi/calculate", asyncHandler(async (req: Request, res: Response) => {
+  const { totalSpend, totalRevenue, leadsGenerated, conversionRate, averageDealSize, platformFees, creativeCosts, laborCosts, timeframeDays, campaignName } = req.body;
+  if (totalSpend === undefined || totalRevenue === undefined) return res.status(400).json({ error: "totalSpend and totalRevenue are required" });
+  const dashboard = roiCalculatorOrchestrator.getDashboard({
+    campaignName: campaignName || "Custom Scenario", totalSpend: Number(totalSpend), totalRevenue: Number(totalRevenue),
+    leadsGenerated: Number(leadsGenerated) || 0, conversionRate: Number(conversionRate) || 0, averageDealSize: Number(averageDealSize) || 0,
+    platformFees: Number(platformFees) || 0, creativeCosts: Number(creativeCosts) || 0, laborCosts: Number(laborCosts) || 0, timeframeDays: Number(timeframeDays) || 90,
+  });
+  sendSuccess(res, dashboard);
+}));
 
 function generateMockAudiences() {
   return [

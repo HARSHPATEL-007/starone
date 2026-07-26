@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { creativeAI } from "../services/CreativeAIService";
+import { creativeAIOrchestrator } from "../business-logic/CreativeAIOrchestrator";
 import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
@@ -90,5 +91,12 @@ router.post(
     sendSuccess(res, optimized);
   })
 );
+
+router.post("/cross-platform-analysis", asyncHandler(async (req: Request, res: Response) => {
+  const { productDescription, targetAudience } = req.body;
+  if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
+  const analysis = creativeAIOrchestrator.getCrossPlatformAnalysis({ productDescription, targetAudience: targetAudience || "general audience" });
+  sendSuccess(res, analysis);
+}));
 
 export default router;

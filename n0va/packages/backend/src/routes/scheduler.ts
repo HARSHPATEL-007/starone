@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { schedulerService } from "../services/SchedulerService";
+import { schedulerOrchestrator } from "../business-logic/SchedulerOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated } from "./route-utils";
 
@@ -72,5 +73,15 @@ router.delete(
     res.status(204).send();
   })
 );
+
+router.get("/dashboard/health", asyncHandler(async (req: Request, res: Response) => {
+  const dashboard = schedulerOrchestrator.getDashboard(req.user!.tenantId);
+  sendSuccess(res, dashboard);
+}));
+
+router.get("/dependencies", asyncHandler(async (req: Request, res: Response) => {
+  const report = schedulerOrchestrator.getDependencyReport(req.user!.tenantId);
+  sendSuccess(res, report);
+}));
 
 export default router;

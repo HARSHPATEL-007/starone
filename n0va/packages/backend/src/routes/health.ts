@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
+import { campaignHealthOrchestrator } from "../business-logic/CampaignHealthOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
 
@@ -120,5 +121,10 @@ router.get(
     sendSuccess(res, { campaignId: id, campaignName: campaign.name, score, status: categorize(score), dimensions, issues, trend });
   })
 );
+
+router.get("/dashboard/portfolio", asyncHandler(async (req: Request, res: Response) => {
+  const dashboard = await campaignHealthOrchestrator.getPortfolioDashboard(req.user!.tenantId);
+  sendSuccess(res, dashboard);
+}));
 
 export default router;
