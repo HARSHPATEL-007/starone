@@ -98,6 +98,9 @@ import swarmRoutes from "./routes/swarm";
 import n0va1oGatewayRoutes from "./routes/n0va1o-gateway";
 import marketingIntelligenceRoutes from "./routes/marketing-intelligence";
 import agentIntelligenceRoutes from "./routes/agent-intelligence";
+import predictiveBiddingRoutes from "./routes/predictive-bidding";
+import clvRoutes from "./routes/clv";
+import nlpRoutes from "./routes/nlp";
 
 const app = express();
 const httpServer = createServer(app);
@@ -209,6 +212,9 @@ app.use("/api/v1/portfolio", authMiddleware, tenantMiddleware, portfolioRoutes);
 app.use("/api/v1/n0va1o", authMiddleware, tenantMiddleware, n0va1oGatewayRoutes);
 app.use("/api/v1/marketing-intelligence", authMiddleware, tenantMiddleware, marketingIntelligenceRoutes);
 app.use("/api/v1/agent-intelligence", authMiddleware, tenantMiddleware, agentIntelligenceRoutes);
+app.use("/api/v1/predictive-bidding", authMiddleware, tenantMiddleware, predictiveBiddingRoutes);
+app.use("/api/v1/clv", authMiddleware, tenantMiddleware, clvRoutes);
+app.use("/api/v1/nlp", authMiddleware, tenantMiddleware, nlpRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 

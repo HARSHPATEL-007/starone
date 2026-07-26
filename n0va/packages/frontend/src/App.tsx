@@ -119,6 +119,9 @@ import CampaignSaturation from "./pages/CampaignSaturation";
 import N0VA1OGateway from "./pages/N0VA1OGateway";
 import MarketingIntelligence from "./pages/MarketingIntelligence";
 import AgentIntelligence from "./pages/AgentIntelligence";
+import PredictiveBidding from "./pages/PredictiveBidding";
+import CustomerLifetimeValue from "./pages/CustomerLifetimeValue";
+import AdCopyOptimizer from "./pages/AdCopyOptimizer";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -254,6 +257,9 @@ export default function App() {
                 <Route path="/n0va1o" element={<N0VA1OGateway />} />
                 <Route path="/marketing-intelligence" element={<MarketingIntelligence />} />
                 <Route path="/agent-intelligence" element={<AgentIntelligence />} />
+                <Route path="/predictive-bidding" element={<PredictiveBidding />} />
+                <Route path="/customer-lifetime-value" element={<CustomerLifetimeValue />} />
+                <Route path="/ad-copy-optimizer" element={<AdCopyOptimizer />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

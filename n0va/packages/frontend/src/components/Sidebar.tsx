@@ -182,6 +182,9 @@ const navItems = [
   { to: "/n0va1o", icon: Globe, label: "N0VA1O Gateway" },
   { to: "/marketing-intelligence", icon: TrendingUp, label: "Marketing Intel" },
   { to: "/agent-intelligence", icon: Cpu, label: "Agent Intel" },
+  { to: "/predictive-bidding", icon: TrendingUp, label: "Predictive Bidding" },
+  { to: "/customer-lifetime-value", icon: DollarSign, label: "Customer LTV" },
+  { to: "/ad-copy-optimizer", icon: FileText, label: "Ad Copy Optimizer" },
   { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
 

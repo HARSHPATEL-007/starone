@@ -893,4 +893,40 @@ export const api = {
       request<any>(`/agent-intelligence/security/interrogate/${id}/resolve`, { method: "POST", body: JSON.stringify({ approved, signature }) }),
     pendingInterrogations: () => request<any[]>("/agent-intelligence/security/interrogate/pending"),
   },
+  predictiveBidding: {
+    config: () => request<any>("/predictive-bidding/config"),
+    recommend: (state: Record<string, unknown>, campaignId?: string) =>
+      request<any>("/predictive-bidding/recommend", { method: "POST", body: JSON.stringify({ state, campaignId }) }),
+    reward: (campaignId: string, state: Record<string, unknown>, actionIndex: number, reward: number) =>
+      request<any>("/predictive-bidding/reward", { method: "POST", body: JSON.stringify({ campaignId, state, actionIndex, reward }) }),
+    simulate: (campaignId: string, initialState: Record<string, unknown>, steps?: number) =>
+      request<any>("/predictive-bidding/simulate", { method: "POST", body: JSON.stringify({ campaignId, initialState, steps }) }),
+    qtable: (campaignId: string) => request<any>(`/predictive-bidding/qtable/${campaignId}`),
+    history: (campaignId: string) => request<any>(`/predictive-bidding/history/${campaignId}`),
+    sampleState: (platformId?: string) =>
+      request<any>("/predictive-bidding/sample-state", { method: "POST", body: JSON.stringify({ platformId }) }),
+  },
+  clv: {
+    predict: (customer: Record<string, unknown>, forecastPeriodDays?: number) =>
+      request<any>("/clv/predict", { method: "POST", body: JSON.stringify({ customer, forecastPeriodDays }) }),
+    batchPredict: (customers: Record<string, unknown>[], forecastPeriodDays?: number) =>
+      request<any>("/clv/batch-predict", { method: "POST", body: JSON.stringify({ customers, forecastPeriodDays }) }),
+    cohortAnalysis: (customers: Record<string, unknown>[]) =>
+      request<any>("/clv/cohort-analysis", { method: "POST", body: JSON.stringify({ customers }) }),
+    segment: (customers: Record<string, unknown>[]) =>
+      request<any>("/clv/segment", { method: "POST", body: JSON.stringify({ customers }) }),
+    sampleCustomers: (count?: number) => request<any>(`/clv/sample-customers?count=${count || 20}`),
+  },
+  nlp: {
+    sentiment: (text: string) =>
+      request<any>("/nlp/sentiment", { method: "POST", body: JSON.stringify({ text }) }),
+    keywords: (text: string) =>
+      request<any>("/nlp/keywords", { method: "POST", body: JSON.stringify({ text }) }),
+    readability: (text: string) =>
+      request<any>("/nlp/readability", { method: "POST", body: JSON.stringify({ text }) }),
+    tone: (text: string) =>
+      request<any>("/nlp/tone", { method: "POST", body: JSON.stringify({ text }) }),
+    optimize: (text: string) =>
+      request<any>("/nlp/optimize", { method: "POST", body: JSON.stringify({ text }) }),
+  },
 };
