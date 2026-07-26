@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { entityStore } from "../services/EntityStore";
+import { entityStoreOrchestrator } from "../business-logic/EntityStoreOrchestrator";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -53,6 +55,14 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
 }
 
 router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = await entityStoreOrchestrator.getDashboard(req.user!.tenantId);
+    sendSuccess(res, dashboard, { totalRecords: dashboard.totalRecords, entityTypes: dashboard.entityTypes.length, healthBand: dashboard.healthBand });
+  })
+);
+
+router.get(
   "/:entityType",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
@@ -67,7 +77,7 @@ router.get(
       if (typeof v === "string") filter[k] = v;
     }
     const results = await entityStore.list(tenantId, entityType, Object.keys(filter).length ? filter : undefined);
-    res.json(results);
+    sendSuccess(res, results, { count: results.length, entityType });
   })
 );
 
@@ -80,7 +90,7 @@ router.get(
     if (!record) {
       throw new AppError(404, "Entity not found");
     }
-    res.json(record);
+    sendSuccess(res, record);
   })
 );
 
@@ -93,7 +103,7 @@ router.post(
       throw new AppError(400, `Invalid entity type: ${entityType}`);
     }
     const record = await entityStore.create(tenantId, entityType, req.body, req.user!.userId);
-    res.status(201).json(record);
+    sendCreated(res, record);
   })
 );
 
@@ -107,7 +117,7 @@ router.patch(
       throw new AppError(404, "Entity not found");
     }
     const updated = await entityStore.update(id, tenantId, req.body);
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -128,7 +138,7 @@ router.delete(
     const tenantId = req.user!.tenantId;
     const { entityType } = req.params;
     const count = await entityStore.deleteAll(tenantId, entityType);
-    res.json({ deleted: count });
+    sendSuccess(res, { deleted: count });
   })
 );
 

@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { developerPortalService } from "../services/DeveloperPortalService";
+import { developerPortalOrchestrator } from "../business-logic/DeveloperPortalOrchestrator";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -12,7 +14,8 @@ router.get(
   "/keys",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    res.json(developerPortalService.listKeys(tenantId));
+    const keys = developerPortalService.listKeys(tenantId);
+    sendSuccess(res, keys, { count: keys.length });
   })
 );
 
@@ -23,7 +26,7 @@ router.post(
     const { name, scopes, expiresInDays } = req.body;
     if (!name) throw new AppError(400, "Key name is required");
     const key = developerPortalService.generateKey(tenantId, name, scopes || ["campaigns:read"], expiresInDays);
-    res.status(201).json(key);
+    sendCreated(res, key);
   })
 );
 
@@ -33,7 +36,7 @@ router.post(
     const tenantId = req.user!.tenantId;
     const revoked = developerPortalService.revokeKey(tenantId, req.params.id);
     if (!revoked) throw new AppError(404, "Key not found");
-    res.json({ success: true });
+    sendSuccess(res, { success: true });
   })
 );
 
@@ -50,7 +53,8 @@ router.delete(
 router.get(
   "/scopes",
   asyncHandler(async (_req: Request, res: Response) => {
-    res.json(developerPortalService.getAvailableScopes());
+    const scopes = developerPortalService.getAvailableScopes();
+    sendSuccess(res, scopes, { count: scopes.length });
   })
 );
 
@@ -58,7 +62,8 @@ router.get(
   "/webhook-logs",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    res.json(developerPortalService.getWebhookLogs(tenantId));
+    const logs = developerPortalService.getWebhookLogs(tenantId);
+    sendSuccess(res, logs, { count: logs.length });
   })
 );
 
@@ -66,7 +71,16 @@ router.get(
   "/usage",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    res.json(developerPortalService.getApiUsageStats(tenantId));
+    const stats = developerPortalService.getApiUsageStats(tenantId);
+    sendSuccess(res, stats);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = developerPortalOrchestrator.getDashboard(req.user!.tenantId);
+    sendSuccess(res, dashboard, { healthBand: dashboard.healthBand, keysDueRotation: dashboard.apiHealth.keysDueRotation, anomalies: dashboard.usageAnomalies.filter(a => a.flagged).length });
   })
 );
 

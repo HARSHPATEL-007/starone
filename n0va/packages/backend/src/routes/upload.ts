@@ -3,6 +3,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileStorage } from "../services/FileStorageService";
+import { fileStorageOrchestrator } from "../business-logic/FileStorageOrchestrator";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const UPLOAD_DIR = path.resolve(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -40,7 +42,7 @@ router.post(
     const tenantId = req.user!.tenantId;
     const { entityType, entityId } = req.body;
     const record = fileStorage.saveFile(req.file, tenantId, entityType, entityId);
-    res.json({ file: record });
+    sendCreated(res, { file: record });
   })
 );
 
@@ -55,7 +57,7 @@ router.post(
     const records = (req.files as Express.Multer.File[]).map((f) =>
       fileStorage.saveFile(f, tenantId, entityType, entityId)
     );
-    res.json({ files: records });
+    sendCreated(res, { files: records }, { count: records.length });
   })
 );
 
@@ -65,7 +67,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const { entityType } = req.query;
     const files = fileStorage.list(tenantId, entityType as string);
-    res.json(files);
+    sendSuccess(res, files, { count: files.length, entityType: entityType || "all" });
   })
 );
 
@@ -74,7 +76,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const file = fileStorage.get(req.params.id);
     if (!file) return res.status(404).json({ error: "File not found" });
-    res.json(file);
+    sendSuccess(res, file);
   })
 );
 
@@ -83,7 +85,16 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const ok = fileStorage.delete(req.params.id);
     if (!ok) return res.status(404).json({ error: "File not found" });
-    res.json({ success: true });
+    sendSuccess(res, { success: true });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const dashboard = fileStorageOrchestrator.getDashboard(tenantId);
+    sendSuccess(res, dashboard, { totalFiles: dashboard.totalFiles, formattedTotalSize: dashboard.formattedTotalSize, healthBand: dashboard.healthBand, duplicatesFound: dashboard.duplicates.duplicates.length });
   })
 );
 

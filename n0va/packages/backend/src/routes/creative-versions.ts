@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { creativeVersionService } from "../services/CreativeVersionService";
+import { creativeVersionOrchestrator } from "../business-logic/CreativeVersionOrchestrator";
 import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
@@ -39,6 +40,22 @@ router.get(
     const latest = creativeVersionService.getLatestVersion(req.params.creativeId, tenantId);
     if (!latest) return res.status(404).json({ error: "No versions found" });
     sendSuccess(res, latest);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard/:creativeId",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = creativeVersionOrchestrator.getDashboard(req.params.creativeId, req.user!.tenantId);
+    sendSuccess(res, dashboard, { totalVersions: dashboard.totalVersions, activityBand: dashboard.activityBand });
+  })
+);
+
+router.get(
+  "/orchestrate/history/:creativeId",
+  asyncHandler(async (req: Request, res: Response) => {
+    const summary = creativeVersionOrchestrator.getVersionHistorySummary(req.params.creativeId, req.user!.tenantId);
+    sendSuccess(res, summary, { totalVersions: summary.versionHistory.length, healthBand: summary.healthBand });
   })
 );
 
