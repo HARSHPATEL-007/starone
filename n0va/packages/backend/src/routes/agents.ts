@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { agentService } from "../services/AgentService";
+import { agentOrchestrator } from "../business-logic/AgentOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated, safeInt } from "./route-utils";
 
@@ -134,6 +135,11 @@ router.patch(
     }
   })
 );
+
+router.get("/orchestrate", asyncHandler(async (req, res) => {
+  const report = await agentOrchestrator.analyzeFleet(req.user!.tenantId);
+  sendSuccess(res, report);
+}));
 
 router.delete(
   "/:id",

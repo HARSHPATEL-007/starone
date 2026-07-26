@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { reportBuilderService } from "../services/ReportBuilderService";
+import { reportBuilderOrchestrator } from "../business-logic/ReportBuilderOrchestrator";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -102,5 +104,9 @@ router.get(
     res.json(reportBuilderService.getDefaultWidgets());
   })
 );
+
+router.get("/orchestrate", asyncHandler(async (req, res) => {
+  sendSuccess(res, reportBuilderOrchestrator.analyze(req.user!.tenantId));
+}));
 
 export default router;
