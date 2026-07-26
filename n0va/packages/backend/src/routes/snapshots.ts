@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { campaignSnapshotService } from "../services/CampaignSnapshotService";
+import { campaignSnapshotOrchestrator } from "../business-logic/CampaignSnapshotOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated } from "./route-utils";
 
@@ -55,6 +56,26 @@ router.post(
       snapshots.push(snapshot);
     }
     sendCreated(res, { captured: snapshots.length, snapshots }, { totalSnapshots: snapshots.length, campaignCount: campaigns.length });
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard/:campaignId",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = await campaignSnapshotOrchestrator.getCampaignSnapshotDashboard(req.user!.tenantId, req.params.campaignId);
+    sendSuccess(res, dashboard, {
+      snapshotCount: dashboard.snapshotCount,
+      healthBand: dashboard.healthBand,
+      regressions: dashboard.regressions.length,
+    });
+  })
+);
+
+router.get(
+  "/orchestrate/auto-capture",
+  asyncHandler(async (req: Request, res: Response) => {
+    const results = await campaignSnapshotOrchestrator.captureAllActiveSnapshots(req.user!.tenantId);
+    sendSuccess(res, results, { count: results.length });
   })
 );
 

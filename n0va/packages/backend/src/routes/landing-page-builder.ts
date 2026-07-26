@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { landingPageBuilderService } from "../services/LandingPageBuilderService";
+import { landingPageOrchestrator } from "../business-logic/LandingPageOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated } from "./route-utils";
 
@@ -41,6 +42,16 @@ router.post("/:id/publish", asyncHandler(async (req, res) => {
   const p = landingPageBuilderService.publishPage(req.user!.tenantId, req.params.id);
   if (!p) throw new AppError(404, "Page not found");
   sendSuccess(res, p, { action: "published" });
+}));
+
+router.get("/orchestrate/dashboard", asyncHandler(async (req, res) => {
+  const dashboard = landingPageOrchestrator.getDashboard(req.user!.tenantId);
+  sendSuccess(res, dashboard, {
+    totalPages: dashboard.totalPages,
+    pagesNeedingAttention: dashboard.pagesNeedingAttention.length,
+    avgConversionPrediction: dashboard.avgConversionPrediction,
+    avgSeoScore: dashboard.avgSeoScore,
+  });
 }));
 
 router.delete("/:id", asyncHandler(async (req, res) => {

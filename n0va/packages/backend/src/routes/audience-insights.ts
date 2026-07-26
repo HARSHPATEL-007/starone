@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { audienceInsightsService } from "../services/AudienceInsightsService";
+import { audienceInsightsOrchestrator } from "../business-logic/AudienceInsightsOrchestrator";
 import { sendSuccess, sendPaginated, computePagination, safeInt } from "./route-utils";
 
 const router = Router();
@@ -26,6 +27,19 @@ router.get(
     const totalSpend = valid.reduce((s: number, i: any) => s + (i.estimatedSpend || 0), 0);
     if (valid.length > 0) { meta.avgROAS = avgROAS; meta.totalSpend = Math.round(totalSpend * 100) / 100; meta.totalSegments = valid.length; }
     sendPaginated(res, paginated, computePagination(page, limit, total), Object.keys(meta).length > 0 ? meta : undefined);
+  })
+);
+
+router.get(
+  "/orchestrate/dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = audienceInsightsOrchestrator.getDashboard(req.user!.tenantId);
+    sendSuccess(res, dashboard, {
+      totalAudiences: dashboard.totalAudiences,
+      clusterCount: dashboard.clusters.length,
+      overlapWarnings: dashboard.overlapWarnings.length,
+      topAudience: dashboard.topAudience,
+    });
   })
 );
 

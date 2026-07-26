@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { MemoryStore } from "../services/MemoryStore";
+import { notificationOrchestrator } from "../business-logic/NotificationOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt } from "./route-utils";
 
@@ -102,6 +103,26 @@ router.patch(
     const updated = store().update("notifications", (n: any) => n._id === req.params.id && n.tenantId === tenantId, req.body);
     if (!updated) throw new AppError(404, "Notification not found");
     sendSuccess(res, updated);
+  })
+);
+
+router.get(
+  "/orchestrate/delivery-dashboard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = notificationOrchestrator.getDeliveryDashboard();
+    sendSuccess(res, dashboard, {
+      healthBand: dashboard.healthBand,
+      channelsAtRisk: dashboard.channelsAtRisk.length,
+      deliverySLA: dashboard.deliverySLA,
+    });
+  })
+);
+
+router.get(
+  "/orchestrate/channel-trend/:channel",
+  asyncHandler(async (req: Request, res: Response) => {
+    const trend = notificationOrchestrator.getChannelTrend(req.params.channel);
+    sendSuccess(res, trend);
   })
 );
 

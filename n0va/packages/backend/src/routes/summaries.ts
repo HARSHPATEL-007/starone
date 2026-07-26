@@ -3,6 +3,7 @@ import { campaignSummary } from "../services/CampaignSummaryService";
 import { DataStore } from "../services/DataStore";
 import { sendSuccess, safeInt } from "./route-utils";
 import { executiveSummaryOrchestrator } from "../business-logic/ExecutiveSummaryOrchestrator";
+import { campaignSummaryOrchestrator } from "../business-logic/CampaignSummaryOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 
 const router = Router();
@@ -70,6 +71,18 @@ router.get(
     const days = safeInt(req.query.days, 30);
     const report = await executiveSummaryOrchestrator.generate(req.user!.tenantId, days);
     sendSuccess(res, report);
+  })
+);
+
+router.get(
+  "/orchestrate/portfolio-summary",
+  asyncHandler(async (req: Request, res: Response) => {
+    const dashboard = await campaignSummaryOrchestrator.getPortfolioSummary(req.user!.tenantId);
+    sendSuccess(res, dashboard, {
+      totalCampaigns: dashboard.portfolio.totalCampaigns,
+      healthBand: dashboard.healthBand,
+      atRisk: dashboard.atRiskCampaigns.length,
+    });
   })
 );
 
