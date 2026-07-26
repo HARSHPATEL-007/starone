@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { sendSuccess, safeInt } from "./route-utils";
+import { cohortAnalysisOrchestrator } from "../business-logic/CohortAnalysisOrchestrator";
 
 const router = Router();
 
@@ -127,6 +128,14 @@ router.get(
     const maxOverlap = overlaps.reduce((max: any, o: any) => o.overlapSize > (max?.overlapSize || 0) ? o : max, overlaps[0]);
     const avgOverlap = overlaps.length > 0 ? parseFloat((overlaps.reduce((s: number, o: any) => s + o.overlapPercentage, 0) / overlaps.length).toFixed(1)) : 0;
     sendSuccess(res, overlaps, { audienceCount: audiences.length, pairCount: overlaps.length, avgOverlap, maxOverlap: maxOverlap ? { pair: `${maxOverlap.audienceA} x ${maxOverlap.audienceB}`, percentage: maxOverlap.overlapPercentage } : null });
+  })
+);
+
+router.get(
+  "/cohorts",
+  asyncHandler(async (req: Request, res: Response) => {
+    const report = await cohortAnalysisOrchestrator.analyze(req.user!.tenantId);
+    sendSuccess(res, report);
   })
 );
 

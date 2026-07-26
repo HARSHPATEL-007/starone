@@ -1,6 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { campaignSummary } from "../services/CampaignSummaryService";
 import { DataStore } from "../services/DataStore";
+import { sendSuccess, safeInt } from "./route-utils";
+import { executiveSummaryOrchestrator } from "../business-logic/ExecutiveSummaryOrchestrator";
+import { AppError } from "../middleware/errorHandler";
 
 const router = Router();
 
@@ -27,7 +30,9 @@ router.get(
     const tenantId = req.user!.tenantId;
     const campaigns = await loadCampaigns(tenantId);
     const summaries = campaignSummary.generateAll(campaigns);
-    res.json(summaries);
+    const statusDist: Record<string, number> = {};
+    for (const c of campaigns) statusDist[c.status || "unknown"] = (statusDist[c.status || "unknown"] || 0) + 1;
+    sendSuccess(res, summaries, { count: summaries.length, statusDistribution: statusDist });
   })
 );
 
@@ -37,7 +42,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const campaigns = await loadCampaigns(tenantId);
     const portfolio = campaignSummary.generatePortfolioSummary(campaigns);
-    res.json(portfolio);
+    sendSuccess(res, portfolio);
   })
 );
 
@@ -46,7 +51,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const c = await DataStore.findCampaignById(req.params.id, tenantId) as any;
-    if (!c) return res.status(404).json({ error: "Campaign not found" });
+    if (!c) throw new AppError(404, "Campaign not found");
     const metrics = (await DataStore.findMetrics({ tenantId, campaignId: req.params.id })) as any[];
     const campaign = {
       name: c.name, status: c.status, type: c.type || "performance",
@@ -55,7 +60,16 @@ router.get(
       metrics: metrics[0], startDate: c.startDate, endDate: c.endDate, tags: c.tags,
     };
     const summary = campaignSummary.generateSummary(campaign);
-    res.json(summary);
+    sendSuccess(res, summary);
+  })
+);
+
+router.get(
+  "/orchestrate/executive",
+  asyncHandler(async (req: Request, res: Response) => {
+    const days = safeInt(req.query.days, 30);
+    const report = await executiveSummaryOrchestrator.generate(req.user!.tenantId, days);
+    sendSuccess(res, report);
   })
 );
 

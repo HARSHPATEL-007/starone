@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { N0VA1OService } from "../services/N0VA1OService";
 import { AppError } from "../middleware/errorHandler";
 import { DataStore } from "../services/DataStore";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 const n0va1oService = new N0VA1OService();
@@ -14,7 +15,7 @@ router.get(
   "/",
   asyncHandler(async (_req: Request, res: Response) => {
     const platforms = await n0va1oService.getPlatforms();
-    res.json(platforms);
+    sendSuccess(res, platforms, { count: Array.isArray(platforms) ? platforms.length : 0 });
   })
 );
 
@@ -29,7 +30,7 @@ router.get(
       const { ConnectedAccountModel } = require("../models/ConnectedAccount");
       accounts = await ConnectedAccountModel.find({ tenantId });
     }
-    res.json(accounts);
+    sendSuccess(res, accounts, { count: Array.isArray(accounts) ? accounts.length : 0 });
   })
 );
 
@@ -56,8 +57,7 @@ router.post(
         scopes: scopes || ["read", "write"],
       });
     }
-
-    res.status(201).json(account);
+    sendCreated(res, account);
   })
 );
 
@@ -67,9 +67,8 @@ router.post(
     const tenantId = req.user!.tenantId;
     const { platform, action, params } = req.body;
     if (!platform || !action) throw new AppError(400, "Missing required fields: platform, action");
-
     const result = await n0va1oService.executeAction(tenantId, platform, action, params || {});
-    res.json(result);
+    sendSuccess(res, result);
   })
 );
 
@@ -96,7 +95,7 @@ router.get(
     const platforms = await n0va1oService.getPlatforms();
     const platform = platforms.find((p: any) => p._id === req.params.id || p.id === req.params.id || p.name === req.params.id);
     if (!platform) throw new AppError(404, "Platform not found");
-    res.json(platform);
+    sendSuccess(res, platform);
   })
 );
 
@@ -108,14 +107,14 @@ router.patch(
     if (DataStore.usingMemory()) {
       const updated = DataStore["mem"]().update("connected_accounts", (a: any) => a._id === id && a.tenantId === tenantId, req.body);
       if (!updated) throw new AppError(404, "Connected account not found");
-      return res.json(updated);
+      return sendSuccess(res, updated);
     }
     const { ConnectedAccountModel } = require("../models/ConnectedAccount");
     const updated = await ConnectedAccountModel.findOneAndUpdate(
       { _id: id, tenantId }, { $set: req.body }, { new: true }
     );
     if (!updated) throw new AppError(404, "Connected account not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -123,10 +122,8 @@ router.get(
   "/health",
   asyncHandler(async (_req: Request, res: Response) => {
     const health = n0va1oService.getGatewayHealth();
-    res.json(health);
+    sendSuccess(res, health);
   })
 );
 
 export default router;
-
-

@@ -3,6 +3,7 @@ import { campaignHealthService } from "../services/CampaignHealthService";
 import { leadScoringService } from "../services/LeadScoringService";
 import { roiCalculatorService } from "../services/ROICalculatorService";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -10,14 +11,14 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
   return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
 }
 
-/* ---- Campaign Health ---- */
-
 router.get(
   "/health",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const scores = await campaignHealthService.scoreAll(tenantId);
-    res.json(scores);
+    const arr = Array.isArray(scores) ? scores : [];
+    const avg = arr.length > 0 ? Math.round(arr.reduce((s: number, sc: any) => s + (sc.score || 0), 0) / arr.length * 100) / 100 : 0;
+    sendSuccess(res, scores, { count: arr.length, averageScore: avg });
   })
 );
 
@@ -27,7 +28,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const score = await campaignHealthService.score(req.params.campaignId, tenantId);
     if (!score) throw new AppError(404, "Campaign not found");
-    res.json(score);
+    sendSuccess(res, score);
   })
 );
 
@@ -36,16 +37,15 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const samples = await campaignHealthService.generateSampleScores(tenantId);
-    res.json(samples);
+    sendSuccess(res, samples, { count: Array.isArray(samples) ? samples.length : 0 });
   })
 );
-
-/* ---- Lead Scoring ---- */
 
 router.get(
   "/lead-scoring/models/default",
   asyncHandler(async (_req: Request, res: Response) => {
-    res.json(leadScoringService.generateSampleModel());
+    const model = leadScoringService.generateSampleModel();
+    sendSuccess(res, model);
   })
 );
 
@@ -55,7 +55,7 @@ router.post(
     const { model, lead } = req.body;
     if (!model || !lead) throw new AppError(400, "Model and lead data required");
     const result = leadScoringService.calculateScore(lead, model);
-    res.json(result);
+    sendSuccess(res, result);
   })
 );
 
@@ -65,21 +65,17 @@ router.get(
     const tenantId = req.user!.tenantId;
     const model = leadScoringService.generateSampleModel();
     const results = leadScoringService.generateSampleLeads(model);
-    res.json({ model, results });
+    sendSuccess(res, { model, results }, { leadCount: results.length });
   })
 );
-
-/* ---- ROI Calculator ---- */
 
 router.post(
   "/roi/calculate",
   asyncHandler(async (req: Request, res: Response) => {
     const input = req.body;
-    if (!input.totalSpend || !input.totalRevenue) {
-      throw new AppError(400, "totalSpend and totalRevenue are required");
-    }
+    if (!input.totalSpend || !input.totalRevenue) throw new AppError(400, "totalSpend and totalRevenue are required");
     const result = roiCalculatorService.calculate(input);
-    res.json(result);
+    sendSuccess(res, result);
   })
 );
 
@@ -87,11 +83,9 @@ router.post(
   "/roi/compare",
   asyncHandler(async (req: Request, res: Response) => {
     const { scenarios } = req.body;
-    if (!Array.isArray(scenarios) || scenarios.length === 0) {
-      throw new AppError(400, "Array of scenarios required");
-    }
+    if (!Array.isArray(scenarios) || scenarios.length === 0) throw new AppError(400, "Array of scenarios required");
     const results = roiCalculatorService.compare(scenarios);
-    res.json(results);
+    sendSuccess(res, results, { count: results.length });
   })
 );
 
@@ -99,10 +93,8 @@ router.get(
   "/roi/sample",
   asyncHandler(async (_req: Request, res: Response) => {
     const scenarios = roiCalculatorService.generateComparisonScenarios();
-    res.json(scenarios);
+    sendSuccess(res, scenarios, { count: scenarios.length });
   })
 );
 
 export default router;
-
-

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { influencerService } from "../services/InfluencerService";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
+import { influencerROIOrchestrator } from "../business-logic/InfluencerROIOrchestrator";
 
 const router = Router();
 function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
@@ -47,5 +48,13 @@ router.patch("/campaign/:id", asyncHandler(async (req, res) => {
   if (!ci) throw new AppError(404, "Campaign influencer not found");
   sendSuccess(res, ci, { action: "updated" });
 }));
+
+router.get(
+  "/roi/report",
+  asyncHandler(async (req: Request, res: Response) => {
+    const report = await influencerROIOrchestrator.analyze(req.user!.tenantId);
+    sendSuccess(res, report);
+  })
+);
 
 export default router;

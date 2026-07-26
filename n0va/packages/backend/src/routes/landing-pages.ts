@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated, sendPaginated, computePagination, safeInt } from "./route-utils";
 
 const router = Router();
 
@@ -13,16 +14,18 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { status, search } = req.query;
+    const page = safeInt(req.query.page, 1);
+    const limit = safeInt(req.query.limit, 20);
     const filter: Record<string, any> = { tenantId };
     if (status) filter.status = status;
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { slug: { $regex: search, $options: "i" } },
-      ];
-    }
+    if (search) filter.$or = [{ title: { $regex: search, $options: "i" } }, { slug: { $regex: search, $options: "i" } }];
     const pages = await DataStore.findLandingPages(filter);
-    res.json(pages);
+    const arr = Array.isArray(pages) ? pages : [];
+    const total = arr.length;
+    const paginated = arr.slice((page - 1) * limit, page * limit);
+    const statusDist: Record<string, number> = {};
+    for (const p of arr) statusDist[p.status || "unknown"] = (statusDist[p.status || "unknown"] || 0) + 1;
+    sendPaginated(res, paginated, computePagination(page, limit, total), { statusDistribution: statusDist });
   })
 );
 
@@ -31,9 +34,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const { id } = req.params;
-    const page = await DataStore.findLandingPageById(id, tenantId);
+    const pages = await DataStore.findLandingPages({ tenantId });
+    const page = Array.isArray(pages) ? pages.find((p: any) => p._id === id) : null;
     if (!page) throw new AppError(404, "Landing page not found");
-    res.json(page);
+    sendSuccess(res, page);
   })
 );
 
@@ -41,17 +45,13 @@ router.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
-    const { title, slug, template } = req.body;
-    if (!title || !slug || !template) throw new AppError(400, "Missing required fields: title, slug, template");
+    const { title, slug, content, templateId, campaignId, status } = req.body;
+    if (!title || !slug) throw new AppError(400, "Missing required fields: title, slug");
     const page = await DataStore.createLandingPage({
-      tenantId,
-      title,
-      slug,
-      template,
-      status: "draft",
-      createdBy: req.user!.userId,
+      tenantId, title, slug, content: content || "", templateId, campaignId,
+      status: status || "draft", createdBy: req.user!.userId, createdAt: new Date(),
     });
-    res.status(201).json(page);
+    sendCreated(res, page);
   })
 );
 
@@ -60,17 +60,12 @@ router.patch(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const tenantId = req.user!.tenantId;
-    const { title, slug, template, status, content, seo } = req.body;
-    const update: Record<string, any> = {};
-    if (title) update.title = title;
-    if (slug) update.slug = slug;
-    if (template) update.template = template;
-    if (status) update.status = status;
-    if (content) update.content = content;
-    if (seo) update.seo = seo;
+    const update = req.body;
+    delete update.tenantId;
+    delete update._id;
     const updated = await DataStore.updateLandingPage(id, tenantId, update);
     if (!updated) throw new AppError(404, "Landing page not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 

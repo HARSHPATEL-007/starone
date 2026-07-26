@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { schedulerService } from "../services/SchedulerService";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -13,7 +14,11 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const actions = schedulerService.list(tenantId);
-    res.json(actions);
+    const execCounts = { executed: 0, pending: 0 };
+    for (const a of actions) if (a.executed) execCounts.executed++; else execCounts.pending++;
+    const typeCounts: Record<string, number> = {};
+    for (const a of actions) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
+    sendSuccess(res, actions, { count: actions.length, executionStatus: execCounts, typeDistribution: typeCounts });
   })
 );
 
@@ -22,7 +27,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const action = schedulerService.get(req.params.id);
     if (!action) throw new AppError(404, "Scheduled action not found");
-    res.json(action);
+    sendSuccess(res, action);
   })
 );
 
@@ -55,7 +60,7 @@ router.post(
       createdBy: req.user!.userId,
     });
 
-    res.status(201).json(action);
+    sendCreated(res, action);
   })
 );
 
@@ -69,5 +74,3 @@ router.delete(
 );
 
 export default router;
-
-
