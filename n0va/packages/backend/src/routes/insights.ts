@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { campaignHealthService } from "../services/CampaignHealthService";
 import { leadScoringService } from "../services/LeadScoringService";
+import { leadScoringOrchestrator } from "../business-logic/LeadScoringOrchestrator";
 import { roiCalculatorService } from "../services/ROICalculatorService";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
@@ -96,5 +97,10 @@ router.get(
     sendSuccess(res, scenarios, { count: scenarios.length });
   })
 );
+
+router.get("/orchestrate/lead-scoring", asyncHandler(async (req, res) => {
+  const report = await leadScoringOrchestrator.generateReport(req.user!.tenantId);
+  sendSuccess(res, report);
+}));
 
 export default router;

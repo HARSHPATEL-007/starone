@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { campaignScorecardService } from "../services/CampaignScorecardService";
+import { campaignScorecardOrchestrator } from "../business-logic/CampaignScorecardOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
 
@@ -23,6 +24,11 @@ router.get("/", asyncHandler(async (req, res) => {
 router.post("/weights", asyncHandler(async (req, res) => {
   campaignScorecardService.setWeights(req.body);
   sendSuccess(res, { ok: true });
+}));
+
+router.get("/orchestrate", asyncHandler(async (req, res) => {
+  const report = campaignScorecardOrchestrator.analyze(req.user!.tenantId);
+  sendSuccess(res, report);
 }));
 
 export default router;

@@ -11,7 +11,7 @@ interface CampaignData {
   tags?: string[];
 }
 
-interface Recommendation {
+export interface Recommendation {
   id: string;
   type: "budget" | "creative" | "audience" | "platform" | "scheduling" | "cross_campaign" | "optimization";
   title: string;

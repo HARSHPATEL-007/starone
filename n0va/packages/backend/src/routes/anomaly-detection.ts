@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { anomalyDetectionService } from "../services/AnomalyDetectionService";
+import { anomalyDetectionOrchestrator } from "../business-logic/AnomalyDetectionOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
 
@@ -22,6 +23,11 @@ router.post("/scan-campaign", asyncHandler(async (req, res) => {
   if (!campaignId || !metrics) throw new AppError(400, "campaignId and metrics required");
   const result = anomalyDetectionService.scanCampaign(campaignId, metrics, config);
   sendSuccess(res, result);
+}));
+
+router.get("/orchestrate/investigate", asyncHandler(async (req, res) => {
+  const report = await anomalyDetectionOrchestrator.investigate(req.user!.tenantId);
+  sendSuccess(res, report);
 }));
 
 export default router;

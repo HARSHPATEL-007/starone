@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { recommendationEngine } from "../services/RecommendationEngineService";
+import { recommendationOrchestrator } from "../business-logic/RecommendationOrchestrator";
 import { DataStore } from "../services/DataStore";
 import { sendSuccess } from "./route-utils";
 
@@ -65,5 +66,10 @@ router.get(
     sendSuccess(res, { recommendations: perCampaign, crossCampaign }, { total: perCampaign.length + crossCampaign.length, campaignCount: campaigns.length });
   })
 );
+
+router.get("/orchestrate", asyncHandler(async (req, res) => {
+  const report = await recommendationOrchestrator.generate(req.user!.tenantId);
+  sendSuccess(res, report);
+}));
 
 export default router;

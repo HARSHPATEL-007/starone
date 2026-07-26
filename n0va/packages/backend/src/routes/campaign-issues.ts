@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { campaignIssueService } from "../services/CampaignIssueService";
+import { campaignIssueOrchestrator } from "../business-logic/CampaignIssueOrchestrator";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess, sendCreated } from "./route-utils";
 
@@ -20,6 +21,11 @@ router.get("/", asyncHandler(async (req, res) => {
 router.get("/stats", asyncHandler(async (req, res) => {
   const stats = campaignIssueService.getStats(req.user!.tenantId);
   sendSuccess(res, stats);
+}));
+
+router.get("/orchestrate", asyncHandler(async (req, res) => {
+  const report = campaignIssueOrchestrator.analyze(req.user!.tenantId);
+  sendSuccess(res, report);
 }));
 
 router.post("/", asyncHandler(async (req, res) => {
