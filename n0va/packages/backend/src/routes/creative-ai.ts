@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { creativeAI } from "../services/CreativeAIService";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -13,13 +14,10 @@ router.post(
     const { productDescription, targetAudience, tone, platform, count } = req.body;
     if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
     const variants = creativeAI.generateVariants({
-      productDescription,
-      targetAudience: targetAudience || "general audience",
-      tone: tone || "professional",
-      platform: platform || "meta",
-      count: Math.min(count || 3, 8),
+      productDescription, targetAudience: targetAudience || "general audience",
+      tone: tone || "professional", platform: platform || "meta", count: Math.min(count || 3, 8),
     });
-    res.json({ variants, generatedAt: new Date().toISOString() });
+    sendSuccess(res, { variants, generatedAt: new Date().toISOString() }, { count: variants.length, platform: platform || "meta" });
   })
 );
 
@@ -29,7 +27,7 @@ router.post(
     const { productDescription, targetAudience, count } = req.body;
     if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
     const headlines = creativeAI.generateHeadlines(productDescription, targetAudience || "general audience", count);
-    res.json({ headlines });
+    sendSuccess(res, { headlines }, { count: headlines.length });
   })
 );
 
@@ -39,7 +37,7 @@ router.post(
     const { productDescription, targetAudience, tone, count } = req.body;
     if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
     const bodies = creativeAI.generateBody(productDescription, targetAudience || "general audience", tone || "professional", count);
-    res.json({ bodies });
+    sendSuccess(res, { bodies }, { count: bodies.length });
   })
 );
 
@@ -49,7 +47,7 @@ router.post(
     const { productDescription, platform } = req.body;
     if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
     const tone = creativeAI.suggestTone(productDescription, platform || "meta");
-    res.json({ suggestedTone: tone });
+    sendSuccess(res, { suggestedTone: tone });
   })
 );
 
@@ -59,27 +57,27 @@ router.post(
     const { headline } = req.body;
     if (!headline) return res.status(400).json({ error: "headline is required" });
     const expanded = creativeAI.expandHeadline(headline);
-    res.json({ expanded });
+    sendSuccess(res, { expanded });
   })
 );
 
-// ─── Text Analysis ────────────────────────────────────────────────
 router.post(
   "/analyze-text",
   asyncHandler(async (req: Request, res: Response) => {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: "text is required" });
-    res.json(creativeAI.analyzeText(text));
+    const analysis = creativeAI.analyzeText(text);
+    sendSuccess(res, analysis);
   })
 );
 
-// ─── Performance Prediction ───────────────────────────────────────
 router.post(
   "/predict-performance",
   asyncHandler(async (req: Request, res: Response) => {
     const { headline, body, cta, platform, tone } = req.body;
     if (!headline || !platform) return res.status(400).json({ error: "headline and platform are required" });
-    res.json(creativeAI.predictPerformance({ headline, body, cta, platform, tone: tone || "professional" }));
+    const prediction = creativeAI.predictPerformance({ headline, body, cta, platform, tone: tone || "professional" });
+    sendSuccess(res, prediction);
   })
 );
 
@@ -88,7 +86,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { productDescription, targetAudience, platform, tone } = req.body;
     if (!productDescription) return res.status(400).json({ error: "productDescription is required" });
-    res.json(creativeAI.optimizeVariant({ productDescription, targetAudience: targetAudience || "general audience", platform: platform || "meta", tone }));
+    const optimized = creativeAI.optimizeVariant({ productDescription, targetAudience: targetAudience || "general audience", platform: platform || "meta", tone });
+    sendSuccess(res, optimized);
   })
 );
 

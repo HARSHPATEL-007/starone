@@ -3,6 +3,7 @@ import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
 import { creativeLifecycleOrchestrator } from "../business-logic/CreativeLifecycleOrchestrator";
+import { contentPerformanceOrchestrator } from "../business-logic/ContentPerformanceOrchestrator";
 
 const router = Router();
 
@@ -129,6 +130,14 @@ router.get(
     const tenantId = req.user!.tenantId;
     const suggestions = await creativeLifecycleOrchestrator.getReplacementSuggestions(req.params.id, tenantId);
     sendSuccess(res, suggestions);
+  })
+);
+
+router.get(
+  "/performance/report",
+  asyncHandler(async (req: Request, res: Response) => {
+    const report = await contentPerformanceOrchestrator.analyze(req.user!.tenantId);
+    sendSuccess(res, report);
   })
 );
 

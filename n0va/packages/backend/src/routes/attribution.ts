@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { attributionService } from "../services/AttributionService";
 import { ConversionPath } from "../models/ConversionPath";
 import { EntityRecord } from "../models/EntityRecord";
+import { sendSuccess } from "./route-utils";
+import { crossCampaignAttributionOrchestrator } from "../business-logic/CrossCampaignAttributionOrchestrator";
 
 const router = Router();
 
@@ -169,6 +171,19 @@ router.get(
       return res.json(reports.map((r: any) => ({ _id: r._id.toString(), ...r.data })));
     }
     res.json([]);
+  })
+);
+
+router.post(
+  "/orchestrate/cross-campaign",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const { campaignIds } = req.body;
+      const report = await crossCampaignAttributionOrchestrator.analyze(req.user!.tenantId, campaignIds);
+      sendSuccess(res, report);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
   })
 );
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { adminService } from "../services/AdminService";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
 
 const router = Router();
 
@@ -15,11 +16,37 @@ function adminOnly(req: Request, _res: Response, next: NextFunction) {
 
 router.use(adminOnly);
 
-router.get("/stats", asyncHandler(async (_req, res) => res.json(adminService.getAdminStats())));
-router.get("/tenants", asyncHandler(async (_req, res) => res.json(adminService.getTenants())));
-router.get("/tenants/:id", asyncHandler(async (req, res) => { const t = adminService.getTenant(req.params.id); if (!t) throw new AppError(404, "Tenant not found"); res.json(t); }));
-router.patch("/tenants/:id", asyncHandler(async (req, res) => { const t = adminService.updateTenant(req.params.id, req.body); if (!t) throw new AppError(404, "Tenant not found"); res.json(t); }));
-router.get("/features", asyncHandler(async (_req, res) => res.json(adminService.getAvailableFeatures())));
-router.get("/audit-log", asyncHandler(async (req, res) => { const limit = req.query.limit ? Number(req.query.limit) : 50; res.json(adminService.getAuditLog(limit)); }));
+router.get("/stats", asyncHandler(async (_req, res) => {
+  const stats = adminService.getAdminStats();
+  sendSuccess(res, stats);
+}));
+
+router.get("/tenants", asyncHandler(async (_req, res) => {
+  const tenants = adminService.getTenants();
+  sendSuccess(res, tenants, { count: Array.isArray(tenants) ? tenants.length : 0 });
+}));
+
+router.get("/tenants/:id", asyncHandler(async (req, res) => {
+  const t = adminService.getTenant(req.params.id);
+  if (!t) throw new AppError(404, "Tenant not found");
+  sendSuccess(res, t);
+}));
+
+router.patch("/tenants/:id", asyncHandler(async (req, res) => {
+  const t = adminService.updateTenant(req.params.id, req.body);
+  if (!t) throw new AppError(404, "Tenant not found");
+  sendSuccess(res, t);
+}));
+
+router.get("/features", asyncHandler(async (_req, res) => {
+  const features = adminService.getAvailableFeatures();
+  sendSuccess(res, features);
+}));
+
+router.get("/audit-log", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? Number(req.query.limit) : 50;
+  const log = adminService.getAuditLog(limit);
+  sendSuccess(res, log, { count: Array.isArray(log) ? log.length : 0 });
+}));
 
 export default router;

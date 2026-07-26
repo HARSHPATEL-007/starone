@@ -4,7 +4,10 @@ import { budgetOptimizer } from "../services/BudgetOptimizer";
 import { creativeOptimizer } from "../services/CreativeOptimizer";
 import { ABTest } from "../models/ABTest";
 import { EntityRecord } from "../models/EntityRecord";
-import { sendSuccess } from "./route-utils";
+import { sendSuccess, safeInt } from "./route-utils";
+import { AppError } from "../middleware/errorHandler";
+import { budgetOptimizationOrchestrator } from "../business-logic/BudgetOptimizationOrchestrator";
+import { roasDecompositionOrchestrator } from "../business-logic/ROASDecompositionOrchestrator";
 
 const router = Router();
 
@@ -129,5 +132,30 @@ function generateMockABTest(type: string) {
   const recommendation = best.cvr > variantData[0].cvr * 1.15 ? `${best.name} outperforms the control by ${((best.cvr / variantData[0].cvr - 1) * 100).toFixed(1)}% in conversion rate. Recommend scaling ${best.name} to 70% of traffic.` : "No significant winner yet. Continue testing.";
   return [{ testId: `test_${type}_${Date.now()}`, testName: type === "creative" ? "Creative Messaging Test" : "Audience Segmentation Test", status: "completed" as const, confidence: parseFloat(confidence.toFixed(2)), winner: best.id, variants: variantData, recommendation }];
 }
+
+router.get(
+  "/optimize/portfolio",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const totalBudget = safeInt(req.query.totalBudget, 0);
+      const report = await budgetOptimizationOrchestrator.optimize(req.user!.tenantId, totalBudget > 0 ? totalBudget : undefined);
+      sendSuccess(res, report);
+    } catch (e: any) {
+      throw new AppError(400, e.message);
+    }
+  })
+);
+
+router.get(
+  "/roas/decompose/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const decomposition = await roasDecompositionOrchestrator.decompose(req.params.id, req.user!.tenantId);
+      sendSuccess(res, decomposition);
+    } catch (e: any) {
+      throw new AppError(404, e.message);
+    }
+  })
+);
 
 export default router;

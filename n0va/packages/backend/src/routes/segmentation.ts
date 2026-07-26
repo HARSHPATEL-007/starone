@@ -54,7 +54,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const tenantId = req.user!.tenantId;
-    const segment = await DataStore.findSegmentById(id, tenantId);
+    const segments = await DataStore.findSegments({ tenantId });
+    const segment = Array.isArray(segments) ? segments.find((s: any) => s._id === id) : null;
     if (!segment) throw new AppError(404, "Segment not found");
     sendSuccess(res, segment);
   })

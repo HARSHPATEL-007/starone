@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { creativeVersionService } from "../services/CreativeVersionService";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -12,7 +13,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const versions = creativeVersionService.getVersions(req.params.creativeId, tenantId);
-    res.json(versions);
+    const arr = Array.isArray(versions) ? versions : [];
+    sendSuccess(res, arr, { count: arr.length, creativeId: req.params.creativeId });
   })
 );
 
@@ -26,7 +28,7 @@ router.post(
       req.params.creativeId, tenantId, snapshot,
       changeDescription || "Updated", req.user!.userId,
     );
-    res.status(201).json(entry);
+    sendCreated(res, entry);
   })
 );
 
@@ -36,7 +38,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const latest = creativeVersionService.getLatestVersion(req.params.creativeId, tenantId);
     if (!latest) return res.status(404).json({ error: "No versions found" });
-    res.json(latest);
+    sendSuccess(res, latest);
   })
 );
 
@@ -46,7 +48,7 @@ router.delete(
     const tenantId = req.user!.tenantId;
     const ok = creativeVersionService.deleteVersion(req.params.versionId, tenantId);
     if (!ok) return res.status(404).json({ error: "Version not found" });
-    res.json({ success: true });
+    sendSuccess(res, { success: true });
   })
 );
 

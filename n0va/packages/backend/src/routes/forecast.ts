@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { sendSuccess, safeInt } from "./route-utils";
+import { predictiveForecastOrchestrator } from "../business-logic/PredictiveForecastOrchestrator";
 
 const router = Router();
 
@@ -130,6 +131,26 @@ router.post(
       efficiency: { marginalRoas, incrementalRevenue: parseFloat(incrementalRevenue.toFixed(2)), incrementalCost: parseFloat(incrementalCost.toFixed(2)), currentEfficiency: currentCpa > 0 ? parseFloat((currentRoas / currentCpa).toFixed(4)) : 0 },
       budgetImpact: { currentDailyBurn: parseFloat(dailyAvgSpend.toFixed(2)), projectedDailyBurn: parseFloat((dailyAvgSpend * scale).toFixed(2)), remainingBudget, daysRemaining: dailyAvgSpend > 0 ? Math.round(remainingBudget / (dailyAvgSpend * scale)) : 999 },
     });
+  })
+);
+
+router.get(
+  "/orchestrate/campaign/:campaignId",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const forecast = await predictiveForecastOrchestrator.forecastCampaign(req.params.campaignId, req.user!.tenantId);
+      sendSuccess(res, forecast);
+    } catch (e: any) {
+      res.status(404).json({ error: e.message });
+    }
+  })
+);
+
+router.get(
+  "/orchestrate/portfolio",
+  asyncHandler(async (req: Request, res: Response) => {
+    const report = await predictiveForecastOrchestrator.forecastPortfolio(req.user!.tenantId);
+    sendSuccess(res, report);
   })
 );
 

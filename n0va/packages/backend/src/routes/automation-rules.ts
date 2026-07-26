@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
 import { ruleEngine } from "../services/RuleEngineService";
+import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
 
@@ -17,11 +18,13 @@ router.get(
     const filter: Record<string, any> = { tenantId };
     if (status === "enabled") filter.enabled = true;
     else if (status === "disabled") filter.enabled = false;
-    const rules = DataStore.mem().find("automation_rules", (r: any) => {
+    const rules: any[] = DataStore.mem().find("automation_rules", (r: any) => {
       for (const [k, v] of Object.entries(filter)) if (r[k] !== v) return false;
       return true;
     }).reverse();
-    res.json(rules);
+    const enabled = rules.filter(r => r.enabled).length;
+    const disabled = rules.filter(r => !r.enabled).length;
+    sendSuccess(res, rules, { count: rules.length, enabledCount: enabled, disabledCount: disabled });
   })
 );
 
@@ -32,20 +35,11 @@ router.post(
     const { name, description, enabled, config } = req.body;
     if (!name) throw new AppError(400, "Missing required field: name");
     const rule = DataStore.mem().insert("automation_rules", {
-      tenantId,
-      name,
-      description: description || "",
-      enabled: enabled !== undefined ? enabled : true,
-      config: {
-        trigger: config?.trigger || "",
-        conditions: config?.conditions || {},
-        action: config?.action || "",
-        actionParams: config?.actionParams || {},
-        cooldownMinutes: config?.cooldownMinutes ?? 30,
-      },
+      tenantId, name, description: description || "", enabled: enabled !== undefined ? enabled : true,
+      config: { trigger: config?.trigger || "", conditions: config?.conditions || {}, action: config?.action || "", actionParams: config?.actionParams || {}, cooldownMinutes: config?.cooldownMinutes ?? 30 },
       createdBy: req.user!.userId,
     });
-    res.status(201).json(rule);
+    sendCreated(res, rule);
   })
 );
 
@@ -54,7 +48,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const history = ruleEngine.getExecutionHistory(tenantId);
-    res.json(history);
+    sendSuccess(res, history, { count: Array.isArray(history) ? history.length : 0 });
   })
 );
 
@@ -64,7 +58,7 @@ router.get(
     const tenantId = req.user!.tenantId;
     const rule = DataStore.mem().findOne("automation_rules", (r: any) => r._id === req.params.id && r.tenantId === tenantId);
     if (!rule) throw new AppError(404, "Automation rule not found");
-    res.json(rule);
+    sendSuccess(res, rule);
   })
 );
 
@@ -79,7 +73,7 @@ router.patch(
     }
     const updated = DataStore.mem().update("automation_rules", (r: any) => r._id === req.params.id && r.tenantId === tenantId, update);
     if (!updated) throw new AppError(404, "Automation rule not found");
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 
@@ -100,7 +94,7 @@ router.post(
     const rule = DataStore.mem().findOne("automation_rules", (r: any) => r._id === req.params.id && r.tenantId === tenantId);
     if (!rule) throw new AppError(404, "Automation rule not found");
     const result = await ruleEngine.evaluateRule(rule, tenantId);
-    res.json(result);
+    sendSuccess(res, result);
   })
 );
 
@@ -109,7 +103,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.user!.tenantId;
     const results = await ruleEngine.evaluateAllRules(tenantId);
-    res.json(results);
+    sendSuccess(res, results, { count: Array.isArray(results) ? results.length : 0 });
   })
 );
 
@@ -120,7 +114,7 @@ router.post(
     const rule = DataStore.mem().findOne("automation_rules", (r: any) => r._id === req.params.id && r.tenantId === tenantId);
     if (!rule) throw new AppError(404, "Automation rule not found");
     const updated = DataStore.mem().update("automation_rules", (r: any) => r._id === req.params.id && r.tenantId === tenantId, { enabled: !rule.enabled });
-    res.json(updated);
+    sendSuccess(res, updated);
   })
 );
 

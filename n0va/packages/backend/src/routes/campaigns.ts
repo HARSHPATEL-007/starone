@@ -8,6 +8,9 @@ import { computePagination, sendPaginated, sendSuccess, sendCreated, safeInt, pi
 import { campaignLaunchOrchestrator } from "../business-logic/CampaignLaunchOrchestrator";
 import { portfolioHealthOrchestrator } from "../business-logic/PortfolioHealthOrchestrator";
 import { budgetAlertOrchestrator } from "../business-logic/BudgetAlertOrchestrator";
+import { campaignLifecycleOrchestrator } from "../business-logic/CampaignLifecycleOrchestrator";
+import { budgetOptimizationOrchestrator } from "../business-logic/BudgetOptimizationOrchestrator";
+import { roasDecompositionOrchestrator } from "../business-logic/ROASDecompositionOrchestrator";
 
 const router = Router();
 
@@ -367,6 +370,51 @@ router.delete(
       if (!deleted) throw new AppError(404, "Campaign not found");
     }
     res.status(204).send();
+  })
+);
+
+router.get(
+  "/lifecycle/assess/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const assessment = await campaignLifecycleOrchestrator.assessCampaign(req.params.id, req.user!.tenantId);
+      sendSuccess(res, assessment);
+    } catch (e: any) {
+      throw new AppError(404, e.message);
+    }
+  })
+);
+
+router.get(
+  "/lifecycle/portfolio",
+  asyncHandler(async (req: Request, res: Response) => {
+    const report = await campaignLifecycleOrchestrator.assessPortfolio(req.user!.tenantId);
+    sendSuccess(res, report);
+  })
+);
+
+router.get(
+  "/budget/optimize",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const totalBudget = req.query.totalBudget ? safeInt(req.query.totalBudget, 0) : undefined;
+      const report = await budgetOptimizationOrchestrator.optimize(req.user!.tenantId, totalBudget);
+      sendSuccess(res, report);
+    } catch (e: any) {
+      throw new AppError(400, e.message);
+    }
+  })
+);
+
+router.get(
+  "/roas/decompose/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    try {
+      const decomposition = await roasDecompositionOrchestrator.decompose(req.params.id, req.user!.tenantId);
+      sendSuccess(res, decomposition);
+    } catch (e: any) {
+      throw new AppError(404, e.message);
+    }
   })
 );
 
