@@ -116,6 +116,9 @@ import ABTestStatistics from "./pages/ABTestStatistics";
 import AnomalyDetection from "./pages/AnomalyDetection";
 import PortfolioBudgetOptimizer from "./pages/PortfolioBudgetOptimizer";
 import CampaignSaturation from "./pages/CampaignSaturation";
+import N0VA1OGateway from "./pages/N0VA1OGateway";
+import MarketingIntelligence from "./pages/MarketingIntelligence";
+import AgentIntelligence from "./pages/AgentIntelligence";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -248,6 +251,9 @@ export default function App() {
                 <Route path="/anomaly-detection" element={<AnomalyDetection />} />
                 <Route path="/portfolio-budget-optimizer" element={<PortfolioBudgetOptimizer />} />
                 <Route path="/campaign-saturation" element={<CampaignSaturation />} />
+                <Route path="/n0va1o" element={<N0VA1OGateway />} />
+                <Route path="/marketing-intelligence" element={<MarketingIntelligence />} />
+                <Route path="/agent-intelligence" element={<AgentIntelligence />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

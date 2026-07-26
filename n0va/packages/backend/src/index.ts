@@ -91,6 +91,7 @@ import portfolioBudgetOptimizerRoutes from "./routes/portfolio-budget-optimizer"
 import campaignSaturationRoutes from "./routes/campaign-saturation";
 import channelMixOptimizerRoutes from "./routes/channel-mix-optimizer";
 import keywordInsightsRoutes from "./routes/keyword-insights";
+import portfolioRoutes from "./routes/portfolio";
 import formAnalyticsRoutes from "./routes/form-analytics";
 import orchestratorRegistryRoutes from "./routes/orchestrator-registry";
 import swarmRoutes from "./routes/swarm";
@@ -204,6 +205,7 @@ app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, chann
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);
 app.use("/api/v1/form-analytics", authMiddleware, tenantMiddleware, formAnalyticsRoutes);
 app.use("/api/v1/swarm", authMiddleware, tenantMiddleware, swarmRoutes);
+app.use("/api/v1/portfolio", authMiddleware, tenantMiddleware, portfolioRoutes);
 app.use("/api/v1/n0va1o", authMiddleware, tenantMiddleware, n0va1oGatewayRoutes);
 app.use("/api/v1/marketing-intelligence", authMiddleware, tenantMiddleware, marketingIntelligenceRoutes);
 app.use("/api/v1/agent-intelligence", authMiddleware, tenantMiddleware, agentIntelligenceRoutes);

@@ -834,4 +834,63 @@ export const api = {
     status: () => request<{ platforms: { platform: string; connected: boolean; active: boolean; label: string | null; expiresAt: string | null; accountId: string | null }[]; totalConnected: number }>("/oauth/status"),
     refresh: (platform: string) => request<any>(`/oauth/refresh/${platform}`, { method: "POST" }),
   },
+  n0va1o: {
+    dashboard: () => request<any>("/n0va1o/orchestrate/dashboard"),
+    provisionJIT: (platform: string, scopes: string[]) =>
+      request<any>("/n0va1o/orchestrate/jit", { method: "POST", body: JSON.stringify({ platform, scopes }) }),
+    activeSessions: () => request<any>("/n0va1o/orchestrate/jit/sessions"),
+    createSandbox: (script: string, runtime: string) =>
+      request<any>("/n0va1o/orchestrate/sandbox", { method: "POST", body: JSON.stringify({ script, runtime }) }),
+    intents: (platform: string) => request<any>(`/n0va1o/orchestrate/intents/${platform}`),
+    resolveIntent: (intent: string, tenantPlatforms: string[]) =>
+      request<any>("/n0va1o/orchestrate/intents/resolve", { method: "POST", body: JSON.stringify({ intent, tenantPlatforms }) }),
+    registerWebhook: (source: string, eventType: string, callbackUrl: string) =>
+      request<any>("/n0va1o/orchestrate/webhooks", { method: "POST", body: JSON.stringify({ source, eventType, callbackUrl }) }),
+    webhooks: () => request<any>("/n0va1o/orchestrate/webhooks"),
+    catalog: () => request<any>("/n0va1o/orchestrate/catalog"),
+  },
+  marketingIntelligence: {
+    attributionDashboard: (model?: string) =>
+      request<any>(`/marketing-intelligence/attribution/dashboard${model ? `?model=${model}` : ""}`),
+    createAttributionPath: (data: Record<string, unknown>) =>
+      request<any>("/marketing-intelligence/attribution/path", { method: "POST", body: JSON.stringify(data) }),
+    attributionModels: () => request<any>("/marketing-intelligence/attribution/models"),
+    incrementalityTest: (campaignId: string, testDays?: number) =>
+      request<any>("/marketing-intelligence/attribution/incrementality", { method: "POST", body: JSON.stringify({ campaignId, testDays: testDays || 30 }) }),
+    channelCredits: (model?: string) =>
+      request<any>(`/marketing-intelligence/attribution/channels${model ? `?model=${model}` : ""}`),
+    predictROAS: (platform: string, recentROAS?: number) =>
+      request<any>("/marketing-intelligence/budget/predict", { method: "POST", body: JSON.stringify({ platform, recentROAS }) }),
+    optimizeBudget: (platforms: { name: string; currentBudget: number; recentROAS?: number }[], totalBudget: number, urgency?: string) =>
+      request<any>("/marketing-intelligence/budget/optimize", { method: "POST", body: JSON.stringify({ platforms, totalBudget, urgency }) }),
+    spendPacing: (dailyBudgets: Record<string, number>) =>
+      request<any>("/marketing-intelligence/budget/pacing", { method: "POST", body: JSON.stringify({ dailyBudgets }) }),
+    budgetAdvice: (platforms: { name: string; currentBudget: number; recentROAS?: number }[], totalBudget: number) =>
+      request<any>("/marketing-intelligence/budget/advice", { method: "POST", body: JSON.stringify({ platforms, totalBudget }) }),
+    budgetForecast: (platforms: string[], totalBudget: number, days: number) =>
+      request<any>("/marketing-intelligence/budget/forecast", { method: "POST", body: JSON.stringify({ platforms, totalBudget, days }) }),
+  },
+  agentIntelligence: {
+    definitions: () => request<any[]>("/agent-intelligence/agents/definitions"),
+    definition: (type: string) => request<any>(`/agent-intelligence/agents/definitions/${type}`),
+    schedules: () => request<any[]>("/agent-intelligence/agents/schedules"),
+    status: () => request<any[]>("/agent-intelligence/agents/status"),
+    compliance: () => request<any[]>("/agent-intelligence/agents/compliance"),
+    agentDashboard: () => request<any>("/agent-intelligence/agents/dashboard"),
+    crossModuleMatrix: (action?: string) =>
+      request<any>(`/agent-intelligence/cross-module/matrix${action ? `?action=${action}` : ""}`),
+    executeCrossModule: (sourceAction: string, sourceEntity: string) =>
+      request<any>("/agent-intelligence/cross-module/execute", { method: "POST", body: JSON.stringify({ sourceAction, sourceEntity }) }),
+    crossModuleHistory: () => request<any[]>("/agent-intelligence/cross-module/history"),
+    crossModuleDashboard: () => request<any>("/agent-intelligence/cross-module/dashboard"),
+    crossModuleSummary: (action: string) => request<any>(`/agent-intelligence/cross-module/summarize/${action}`),
+    securityModifiers: () => request<any[]>("/agent-intelligence/security/modifiers"),
+    validateAction: (action: string, params: Record<string, unknown>) =>
+      request<any>("/agent-intelligence/security/validate", { method: "POST", body: JSON.stringify({ action, params }) }),
+    createInterrogation: (actionId: string, actionDescription: string, value: number, threshold: number) =>
+      request<any>("/agent-intelligence/security/interrogate", { method: "POST", body: JSON.stringify({ actionId, actionDescription, value, threshold }) }),
+    resolveInterrogation: (id: string, approved: boolean, signature: string) =>
+      request<any>(`/agent-intelligence/security/interrogate/${id}/resolve`, { method: "POST", body: JSON.stringify({ approved, signature }) }),
+    pendingInterrogations: () => request<any[]>("/agent-intelligence/security/interrogate/pending"),
+  },
 };

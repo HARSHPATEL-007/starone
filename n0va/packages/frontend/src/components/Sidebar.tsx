@@ -71,6 +71,8 @@ import {
   AlertTriangle,
   Database,
   Sigma,
+  Globe,
+  Cpu,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -177,6 +179,9 @@ const navItems = [
   { to: "/campaign-scheduler", icon: Clock, label: "Scheduler" },
   { to: "/intent-console", icon: Terminal, label: "Intent Console" },
   { to: "/sandbox-console", icon: Code2, label: "Sandbox" },
+  { to: "/n0va1o", icon: Globe, label: "N0VA1O Gateway" },
+  { to: "/marketing-intelligence", icon: TrendingUp, label: "Marketing Intel" },
+  { to: "/agent-intelligence", icon: Cpu, label: "Agent Intel" },
   { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
 
