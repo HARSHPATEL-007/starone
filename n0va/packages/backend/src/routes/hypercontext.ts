@@ -6,6 +6,7 @@ import { Sheet } from "../models/Sheet";
 import { CalendarEvent } from "../models/CalendarEvent";
 import { AppError } from "../middleware/errorHandler";
 import { MemoryStore } from "../services/MemoryStore";
+import { hyperContextService } from "../services/HyperContextService";
 import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
@@ -370,6 +371,71 @@ router.get(
   })
 );
 
+// ---- Hyper-Context Linking (HyperContextService) ----
+router.get(
+  "/orchestrate/links/:entityType/:entityId",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { entityType, entityId } = req.params;
+    const links = hyperContextService.getLinks(tenantId, entityType, entityId);
+    sendSuccess(res, links, { count: links.length });
+  })
+);
+
+router.get(
+  "/orchestrate/links/module/:module",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { module } = req.params;
+    const links = hyperContextService.getLinksByModule(tenantId, module);
+    sendSuccess(res, links, { count: links.length });
+  })
+);
+
+router.post(
+  "/orchestrate/link-campaign",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { campaignId, campaignName, tasks, events, docTitle, chatRoomName, linkCrm, spendAmount } = req.body;
+    if (!campaignId || !campaignName) throw new AppError(400, "Missing required fields: campaignId, campaignName");
+
+    const allLinks: Record<string, any[]> = {};
+    if (tasks && Array.isArray(tasks)) allLinks.tasks = hyperContextService.linkCampaignToTasks(tenantId, campaignId, campaignName, tasks);
+    if (events && Array.isArray(events)) allLinks.calendar = hyperContextService.linkCampaignToCalendar(tenantId, campaignId, campaignName, events);
+    if (docTitle) allLinks.docs = hyperContextService.linkCampaignToDocs(tenantId, campaignId, docTitle);
+    if (chatRoomName) allLinks.chat = hyperContextService.linkCampaignToChat(tenantId, campaignId, chatRoomName);
+    if (linkCrm) allLinks.crm = hyperContextService.linkCampaignToCRM(tenantId, campaignId);
+    if (spendAmount) allLinks.finance = hyperContextService.linkCampaignToFinance(tenantId, campaignId, spendAmount);
+
+    sendSuccess(res, allLinks);
+  })
+);
+
+router.get(
+  "/orchestrate/campaign/:campaignId",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { campaignId } = req.params;
+    const context = hyperContextService.getCampaignHyperContext(tenantId, campaignId);
+    const modules = hyperContextService.getConnectedModules(tenantId, campaignId);
+    sendSuccess(res, { campaignId, modules, links: context, moduleCount: modules.length });
+  })
+);
+
+router.post(
+  "/orchestrate/dispatch",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { sourceModule, sourceEntity, sourceEntityId, targetModule, targetEntityType, targetData } = req.body;
+    if (!sourceModule || !sourceEntity || !sourceEntityId || !targetModule || !targetEntityType) {
+      throw new AppError(400, "Missing required fields: sourceModule, sourceEntity, sourceEntityId, targetModule, targetEntityType");
+    }
+    const action = hyperContextService.dispatchCrossModuleAction(tenantId, sourceModule, sourceEntity, sourceEntityId, targetModule, targetEntityType, targetData || {});
+    sendSuccess(res, action);
+  })
+);
+
 export default router;
+
 
 

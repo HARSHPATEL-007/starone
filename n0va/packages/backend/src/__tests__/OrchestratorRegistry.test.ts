@@ -2,11 +2,11 @@ import { describe, it, expect } from "vitest";
 import { OrchestratorRegistry, orchestratorRegistry } from "../business-logic/OrchestratorRegistry";
 
 describe("OrchestratorRegistry", () => {
-  it("has 57 registered orchestrators", () => {
+  it("has 65 registered orchestrators", () => {
     const all = orchestratorRegistry.getAll();
     const health = orchestratorRegistry.getHealth();
-    expect(all.length).toBe(57);
-    expect(health.total).toBe(57);
+    expect(all.length).toBe(65);
+    expect(health.total).toBe(65);
   });
 
   it("returns orchestrators grouped by domain", () => {

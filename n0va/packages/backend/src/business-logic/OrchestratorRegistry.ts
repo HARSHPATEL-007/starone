@@ -56,6 +56,12 @@ import { channelMixOptimizerOrchestrator } from "./ChannelMixOptimizerOrchestrat
 import { keywordInsightsOrchestrator } from "./KeywordInsightsOrchestrator";
 import { formAnalyticsOrchestrator } from "./FormAnalyticsOrchestrator";
 import { decisionEngine } from "./DecisionEngine";
+import { n0va1oGatewayOrchestrator } from "./N0VA1OGatewayOrchestrator";
+import { enhancedAttributionOrchestrator } from "./EnhancedAttributionOrchestrator";
+import { budgetOptimizerOrchestrator } from "./BudgetOptimizerOrchestrator";
+import { enhancedAgentOrchestrator } from "./EnhancedAgentOrchestrator";
+import { crossModuleIntegrationOrchestrator } from "./CrossModuleIntegrationOrchestrator";
+import { securityModifierOrchestrator } from "./SecurityModifierOrchestrator";
 
 export interface OrchestratorEntry {
   name: string;
@@ -153,3 +159,11 @@ orchestratorRegistry.register("N0VA1OOrchestrator", "infrastructure", ["getGatew
 orchestratorRegistry.register("UnifiedIntelligenceOrchestrator", "cross-domain", ["getCrossDomainIntelligence"], ASYNC);
 orchestratorRegistry.register("KeywordInsightsOrchestrator", "analytics", ["analyze"], ASYNC);
 orchestratorRegistry.register("FormAnalyticsOrchestrator", "analytics", ["analyze"], ASYNC);
+orchestratorRegistry.register("AgentSwarmOrchestrator", "automation", ["getDashboard", "executeAction", "resolveHITL", "getHITLQueue", "getExecutionHistory"], ASYNC);
+orchestratorRegistry.register("RecipeCompilationOrchestrator", "automation", ["compileRecipe", "evaluateAndExecute", "getCompiled", "getAllCompiled", "getExecutionHistory", "getDashboard"], ASYNC);
+orchestratorRegistry.register("N0VA1OGatewayOrchestrator", "infrastructure", ["getDashboard", "provisionJIT", "getActiveSessions", "createSandbox", "resolveIntent", "getAvailableIntents", "registerWebhook", "getWebhooks"], ASYNC);
+orchestratorRegistry.register("EnhancedAttributionOrchestrator", "analytics", ["getDashboard", "createPath", "getModelComparison", "simulateIncrementality", "getChannelCredits"], ASYNC);
+orchestratorRegistry.register("BudgetOptimizerOrchestrator", "budget", ["predictROAS", "optimizeBudget", "getSpendPacing", "getAdvice", "getForecast", "getDashboard"], ASYNC);
+orchestratorRegistry.register("EnhancedAgentOrchestrator", "automation", ["getDefinitions", "getDefinition", "getSchedules", "getDetailedStatus", "getCompliance", "getDashboard"], ASYNC);
+orchestratorRegistry.register("CrossModuleIntegrationOrchestrator", "cross-domain", ["getMatrix", "executeAction", "getHistory", "getDashboard", "summarize"], ASYNC);
+orchestratorRegistry.register("SecurityModifierOrchestrator", "infrastructure", ["getModifiers", "validateAction", "createInterrogation", "resolveInterrogation", "getPendingInterrogations", "getDashboard"], ASYNC);

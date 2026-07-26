@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
 import { N0VA1OService } from "../services/N0VA1OService";
+import { recipeCompilationOrchestrator } from "../business-logic/RecipeCompilationOrchestrator";
 import { sendSuccess, sendCreated } from "./route-utils";
 
 const router = Router();
@@ -126,23 +127,67 @@ router.delete(
   })
 );
 
+// ---- Recipe Compilation Orchestration (RecipeCompilationService) ----
+router.post(
+  "/orchestrate/compile",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { name, description, trigger, actions, hitlGate, auditLevel } = req.body;
+    if (!name || !trigger || !actions) throw new AppError(400, "Missing required fields: name, trigger, actions");
+    const compiled = recipeCompilationOrchestrator.compileRecipe({
+      name, description: description || "", trigger, actions, hitlGate,
+      auditLevel: auditLevel || "basic", isCompiled: true,
+    });
+    sendSuccess(res, compiled);
+  })
+);
+
+router.get(
+  "/orchestrate/compiled",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const compiled = await recipeCompilationOrchestrator.getAllCompiled();
+    sendSuccess(res, compiled, { count: compiled.length });
+  })
+);
+
+router.get(
+  "/orchestrate/compiled/:name",
+  asyncHandler(async (req: Request, res: Response) => {
+    const compiled = recipeCompilationOrchestrator.getCompiled(req.params.name);
+    if (!compiled) throw new AppError(404, "Compiled recipe not found");
+    sendSuccess(res, compiled);
+  })
+);
+
+router.post(
+  "/orchestrate/evaluate",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { recipeName, currentMetrics, skipHITL } = req.body;
+    if (!recipeName || !currentMetrics) throw new AppError(400, "Missing required fields: recipeName, currentMetrics");
+    const result = await recipeCompilationOrchestrator.evaluateAndExecute(tenantId, recipeName, currentMetrics, skipHITL || false);
+    if (!result) throw new AppError(404, "Recipe not found or no trigger match");
+    sendSuccess(res, result);
+  })
+);
+
+router.get(
+  "/orchestrate/executions",
+  asyncHandler(async (req: Request, res: Response) => {
+    const limit = parseInt(req.query.limit as string, 10) || 20;
+    const history = await recipeCompilationOrchestrator.getExecutionHistory(limit);
+    sendSuccess(res, history, { count: history.length });
+  })
+);
+
 router.get(
   "/orchestrate/dashboard",
   asyncHandler(async (req: Request, res: Response) => {
-    const tenantId = req.user!.tenantId;
-    const recipes = DataStore.findRecipes(tenantId);
-    const totalRecipes = recipes.length;
-    const compiledCount = recipes.filter((r: any) => r.isCompiled).length;
-    const executableCount = recipes.filter((r: any) => r.isCompiled).length;
-    const byTriggerType: Record<string, number> = {};
-    for (const r of recipes) {
-      const t = r.trigger?.type || "unknown";
-      byTriggerType[t] = (byTriggerType[t] || 0) + 1;
-    }
-    sendSuccess(res, { totalRecipes, compiledCount, executableCount, byTriggerType });
+    const dashboard = await recipeCompilationOrchestrator.getDashboard(req.user!.tenantId);
+    sendSuccess(res, dashboard);
   })
 );
 
 export default router;
+
 
 
