@@ -83,6 +83,50 @@ export class CampaignHealthOrchestrator {
 
     return { portfolioAvg, dimensionTrends, distribution, trend, issueClusters, topCampaigns, bottomCampaigns, healthBand: decisionEngine.label(decisionEngine.band(portfolioAvg)), recommendations };
   }
+
+  async getCampaignHealthDetail(tenantId: string, campaignId: string): Promise<{
+    campaignId: string; campaignName: string; overall: number; dimensions: Record<string, number>;
+    dimensionDirection: Record<string, string>; issues: { type: string; severity: string; message: string }[];
+    healthBand: string; recommendations: string[];
+  }> {
+    const scores = await campaignHealthService.scoreAll(tenantId);
+    const campaign = scores.find((s) => s.campaignId === campaignId);
+
+    if (!campaign) {
+      return {
+        campaignId, campaignName: "Unknown", overall: 0,
+        dimensions: { budget: 0, performance: 0, engagement: 0, efficiency: 0 },
+        dimensionDirection: {}, issues: [], healthBand: "Critical",
+        recommendations: ["Campaign not found. Verify campaign ID."],
+      };
+    }
+
+    const dimensions: Record<string, number> = {};
+    const dimensionDirection: Record<string, string> = {};
+    const dimFields: (keyof CampaignHealthScore)[] = ["budget", "performance", "engagement", "efficiency"];
+    for (const dim of dimFields) {
+      const val = campaign[dim] as number || 0;
+      dimensions[dim] = val;
+      dimensionDirection[dim] = val > 70 ? "good" : val > 40 ? "fair" : "poor";
+    }
+
+    const recommendations: string[] = [];
+    if (campaign.overall < 40) recommendations.push("Campaign health is critical. Review budget, targeting, and creative simultaneously.");
+    if ((campaign.budget as number || 0) < 30) recommendations.push("Budget dimension is low. Consider increasing or reallocating budget.");
+    if ((campaign.performance as number || 0) < 40) recommendations.push("Performance dimension is poor. Check ROAS and conversion metrics.");
+    if ((campaign.engagement as number || 0) < 40) recommendations.push("Engagement is low. Refresh creatives and review audience targeting.");
+    if ((campaign.efficiency as number || 0) < 40) recommendations.push("Efficiency is low. Review CPC and cost per conversion.");
+    if (campaign.trend === "down") recommendations.push("Health is declining. Take corrective action to reverse the trend.");
+    if (campaign.trend === "up") recommendations.push("Health is improving. Continue current strategy and monitor closely.");
+
+    return {
+      campaignId: campaign.campaignId, campaignName: campaign.campaignName,
+      overall: campaign.overall, dimensions, dimensionDirection,
+      issues: campaign.issues.map((i) => ({ type: i.type, severity: i.severity, message: i.message })),
+      healthBand: decisionEngine.label(decisionEngine.band(campaign.overall)),
+      recommendations,
+    };
+  }
 }
 
 export const campaignHealthOrchestrator = new CampaignHealthOrchestrator();

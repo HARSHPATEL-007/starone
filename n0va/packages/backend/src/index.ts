@@ -89,6 +89,10 @@ import abTestStatisticsRoutes from "./routes/ab-test-statistics";
 import anomalyDetectionRoutes from "./routes/anomaly-detection";
 import portfolioBudgetOptimizerRoutes from "./routes/portfolio-budget-optimizer";
 import campaignSaturationRoutes from "./routes/campaign-saturation";
+import channelMixOptimizerRoutes from "./routes/channel-mix-optimizer";
+import keywordInsightsRoutes from "./routes/keyword-insights";
+import formAnalyticsRoutes from "./routes/form-analytics";
+import orchestratorRegistryRoutes from "./routes/orchestrator-registry";
 
 const app = express();
 const httpServer = createServer(app);
@@ -192,6 +196,10 @@ app.use("/api/v1/ab-test-statistics", authMiddleware, tenantMiddleware, abTestSt
 app.use("/api/v1/anomaly-detection", authMiddleware, tenantMiddleware, anomalyDetectionRoutes);
 app.use("/api/v1/portfolio-budget-optimizer", authMiddleware, tenantMiddleware, portfolioBudgetOptimizerRoutes);
 app.use("/api/v1/campaign-saturation", authMiddleware, tenantMiddleware, campaignSaturationRoutes);
+app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
+app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);
+app.use("/api/v1/form-analytics", authMiddleware, tenantMiddleware, formAnalyticsRoutes);
+app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
 app.use(errorHandler);

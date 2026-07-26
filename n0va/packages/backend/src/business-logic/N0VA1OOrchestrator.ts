@@ -26,6 +26,17 @@ export interface PlatformActionReport {
   topActions: string[];
   uniquePlatforms: string[];
   platformDiversity: number;
+  platformHealthSummary: { platform: string; callCount: number; successRate: number; circuitBreaker: string }[];
+  overallReliability: number;
+}
+
+export interface PlatformLatencyProfile {
+  platform: string;
+  avgLatency: number;
+  p95Latency: number;
+  latencyGrade: string;
+  callCount: number;
+  latencyTrend: "improving" | "degrading" | "stable";
 }
 
 export class N0VA1OOrchestrator {
@@ -76,6 +87,53 @@ export class N0VA1OOrchestrator {
       warnings,
       recommendations,
     };
+  }
+
+  getPlatformActionReport(): PlatformActionReport {
+    const performance = n0va1oService.getPlatformPerformance();
+    const platforms = n0va1oService.getPlatforms();
+
+    const platformEntries = Object.entries(performance);
+    const platformHealthSummary = platformEntries.map(([platform, p]) => ({
+      platform,
+      callCount: p.callCount,
+      successRate: p.successRate,
+      circuitBreaker: p.circuitOpen ? "OPEN" : p.successRate < 90 ? "DEGRADED" : "CLOSED",
+    }));
+
+    const actionPatterns: Record<string, number> = {};
+    let totalActions = 0;
+    for (const [, p] of platformEntries) {
+      const actionName = `${p.callCount > 100 ? "high" : p.callCount > 20 ? "medium" : "low"}-traffic`;
+      actionPatterns[actionName] = (actionPatterns[actionName] || 0) + p.callCount;
+      totalActions += p.callCount;
+    }
+    if (totalActions === 0) actionPatterns["no_activity"] = 1;
+
+    const topActions = Object.entries(actionPatterns)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([action]) => action);
+
+    const totalRate = platformHealthSummary.reduce((s, p) => s + p.successRate, 0);
+    const overallReliability = platformHealthSummary.length > 0 ? Math.round(totalRate / platformHealthSummary.length) : 0;
+
+    return {
+      actionPatterns, topActions, overallReliability,
+      uniquePlatforms: platformEntries.map(([p]) => p),
+      platformDiversity: platformEntries.length,
+      platformHealthSummary,
+    };
+  }
+
+  getLatencyProfiles(): PlatformLatencyProfile[] {
+    const performance = n0va1oService.getPlatformPerformance();
+    return Object.entries(performance).map(([platform, p]) => {
+      const ratio = p.avgLatency > 0 ? p.p95Latency / p.avgLatency : 1;
+      const latencyGrade = p.avgLatency < 200 ? "fast" : p.avgLatency < 800 ? "moderate" : p.avgLatency < 2000 ? "slow" : "degraded";
+      const latencyTrend: "improving" | "degrading" | "stable" = ratio > 2 ? "degrading" : ratio < 1.2 ? "stable" : "improving";
+      return { platform, avgLatency: p.avgLatency, p95Latency: p.p95Latency, latencyGrade, callCount: p.callCount, latencyTrend };
+    }).sort((a, b) => a.avgLatency - b.avgLatency);
   }
 }
 

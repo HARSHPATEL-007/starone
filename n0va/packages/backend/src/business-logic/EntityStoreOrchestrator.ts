@@ -17,6 +17,16 @@ export interface EntityStoreDashboard {
   recommendations: string[];
 }
 
+export interface EntityTypeDetail {
+  entityType: string;
+  totalRecords: number;
+  attributeCoverage: { field: string; coverage: number; type: string }[];
+  attributeCorrelations: { field1: string; field2: string; coOccurrence: number }[];
+  creationTrend: { date: string; count: number }[];
+  staleDays: number | null;
+  recommendations: string[];
+}
+
 export class EntityStoreOrchestrator {
   async getDashboard(tenantId: string): Promise<EntityStoreDashboard> {
     const allTypes = [
@@ -70,6 +80,77 @@ export class EntityStoreOrchestrator {
     if (totalRecords > 0 && activeTypes === 1) recommendations.push(`Only one entity type has records (${typeBreakdown.filter(t => t.count > 0)[0]?.entityType}). Expand to other types for richer analysis.`);
 
     return { totalRecords, entityTypes: allTypes, typeBreakdown, recentActivity, healthBand, recommendations };
+  }
+
+  async getEntityTypeDetail(tenantId: string, entityType: string): Promise<EntityTypeDetail> {
+    const records = await entityStore.list(tenantId, entityType);
+    const totalRecords = records.length;
+
+    const attrMap = new Map<string, { count: number; types: Set<string> }>();
+    for (const r of records) {
+      for (const [key, value] of Object.entries(r)) {
+        if (key === "_id") continue;
+        if (!attrMap.has(key)) attrMap.set(key, { count: 0, types: new Set() });
+        const entry = attrMap.get(key)!;
+        entry.count++;
+        entry.types.add(typeof value);
+      }
+    }
+
+    const attributeCoverage = Array.from(attrMap.entries())
+      .map(([field, info]) => ({
+        field,
+        coverage: totalRecords > 0 ? Math.round((info.count / totalRecords) * 100) : 0,
+        type: Array.from(info.types).join(" | "),
+      }))
+      .sort((a, b) => b.coverage - a.coverage);
+
+    const fields = attributeCoverage.map((a) => a.field);
+    const attributeCorrelations: { field1: string; field2: string; coOccurrence: number }[] = [];
+    for (let i = 0; i < Math.min(fields.length, 5); i++) {
+      for (let j = i + 1; j < Math.min(fields.length, 5); j++) {
+        const f1 = fields[i], f2 = fields[j];
+        const both = records.filter((r: any) => r[f1] !== undefined && r[f2] !== undefined).length;
+        attributeCorrelations.push({
+          field1: f1, field2: f2,
+          coOccurrence: totalRecords > 0 ? Math.round((both / totalRecords) * 100) : 0,
+        });
+      }
+    }
+
+    const dateMap = new Map<string, number>();
+    for (const r of records) {
+      const d = r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : (r.uploadedAt ? new Date(r.uploadedAt).toISOString().split("T")[0] : null);
+      if (d) dateMap.set(d, (dateMap.get(d) || 0) + 1);
+    }
+    const creationTrend = Array.from(dateMap.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    const dates = records
+      .map((r: any) => r.createdAt || r.uploadedAt)
+      .filter(Boolean)
+      .sort()
+      .reverse();
+    const staleDays = dates.length > 0
+      ? Math.round((Date.now() - new Date(dates[0]).getTime()) / 86400000)
+      : null;
+
+    const recommendations: string[] = [];
+    if (totalRecords === 0) {
+      recommendations.push(`No records for entity type "${entityType}". Create your first record to start tracking.`);
+    } else {
+      const sparse = attributeCoverage.filter((a) => a.coverage < 60);
+      if (sparse.length > 0) recommendations.push(`Sparse attributes: ${sparse.map((a) => a.field).join(", ")}. Consider standardizing data collection.`);
+      if (staleDays !== null && staleDays > 30) recommendations.push(`No new records in ${staleDays} days. Entity type may be stale.`);
+      if (creationTrend.length >= 7) {
+        const recent = creationTrend.slice(-7).reduce((s, d) => s + d.count, 0);
+        const prior = creationTrend.slice(-14, -7).reduce((s, d) => s + d.count, 0);
+        if (prior > 0 && recent < prior * 0.5) recommendations.push("Creation rate has dropped >50% in the last week. Investigate pipeline health.");
+      }
+    }
+
+    return { entityType, totalRecords, attributeCoverage, attributeCorrelations, creationTrend, staleDays, recommendations };
   }
 }
 
