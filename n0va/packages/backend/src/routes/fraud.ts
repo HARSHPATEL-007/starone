@@ -2,7 +2,9 @@ import { Router, Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import { fraudDetectionService } from "../services/FraudDetectionService";
 import { FraudFlag } from "../models/FraudFlag";
+import { AppError } from "../middleware/errorHandler";
 import { sendSuccess } from "./route-utils";
+import { fraudResponseOrchestrator } from "../business-logic/FraudResponseOrchestrator";
 
 const router = Router();
 
@@ -123,6 +125,39 @@ router.post(
     const totalFlagged = results.filter(r => r.flags.length > 0).length;
     const totalFlags = results.reduce((s, r) => s + r.flags.length, 0);
     sendSuccess(res, { evaluated: results.length, placements: results, summary: fraudDetectionService.getHealthSummary() }, { totalFlagged, totalFlags, flagRate: parseFloat(((totalFlags / (results.length * 5)) * 100).toFixed(1)) });
+  })
+);
+
+router.post(
+  "/orchestrate/evaluate",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { placementId, platform, metrics, campaignId } = req.body;
+    if (!placementId || !platform || !metrics) throw new AppError(400, "Missing required fields: placementId, platform, metrics");
+    const result = await fraudResponseOrchestrator.evaluateAndRespond(tenantId, placementId, platform, metrics, campaignId || "unknown");
+    sendSuccess(res, result);
+  })
+);
+
+router.post(
+  "/orchestrate/batch",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { placements } = req.body;
+    if (!Array.isArray(placements) || placements.length === 0) throw new AppError(400, "Placements array required");
+    const results = await fraudResponseOrchestrator.batchEvaluate(tenantId, placements);
+    const totalFlags = results.reduce((s, r) => s + r.flags.length, 0);
+    const autoPaused = results.filter(r => r.actions.some(a => a.type === "auto_pause" && a.status === "success")).length;
+    sendSuccess(res, { results, totalFlags, autoPaused, requiresReview: results.filter(r => r.requiresHumanReview).length });
+  })
+);
+
+router.get(
+  "/orchestrate/pending-review",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const flags = await fraudResponseOrchestrator.getPendingReviews(tenantId);
+    sendSuccess(res, flags, { count: flags.length });
   })
 );
 

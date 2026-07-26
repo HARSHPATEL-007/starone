@@ -5,6 +5,9 @@ import { AppError } from "../middleware/errorHandler";
 import { webhookService } from "../services/WebhookService";
 import { io } from "../index";
 import { computePagination, sendPaginated, sendSuccess, sendCreated, safeInt, pickAllowed } from "./route-utils";
+import { campaignLaunchOrchestrator } from "../business-logic/CampaignLaunchOrchestrator";
+import { portfolioHealthOrchestrator } from "../business-logic/PortfolioHealthOrchestrator";
+import { budgetAlertOrchestrator } from "../business-logic/BudgetAlertOrchestrator";
 
 const router = Router();
 
@@ -110,6 +113,52 @@ router.post(
     }
     const successCount = results.filter((r) => r.success).length;
     sendSuccess(res, { results, total: ids.length, succeeded: successCount, failed: ids.length - successCount, successRate: parseFloat(((successCount / ids.length) * 100).toFixed(1)) });
+  })
+);
+
+router.post(
+  "/validate",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const validation = await campaignLaunchOrchestrator.validate(tenantId, req.body, req.user!.userId);
+    sendSuccess(res, validation, { action: "validation_complete" });
+  })
+);
+
+router.post(
+  "/launch",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const result = await campaignLaunchOrchestrator.launch(tenantId, req.body, req.user!.userId);
+    if (!result.campaign) throw new AppError(400, `Campaign launch blocked: ${result.validation.recommendations.join(" ")}`);
+    sendSuccess(res, result, { action: "launched" });
+  })
+);
+
+router.get(
+  "/portfolio/health",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const report = await portfolioHealthOrchestrator.generatePortfolioReport(tenantId);
+    sendSuccess(res, report);
+  })
+);
+
+router.get(
+  "/budget/alerts",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const alerts = await budgetAlertOrchestrator.monitor(tenantId);
+    sendSuccess(res, alerts);
+  })
+);
+
+router.get(
+  "/budget/alerts/critical",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const alerts = await budgetAlertOrchestrator.getCriticalAlerts(tenantId);
+    sendSuccess(res, alerts, { count: alerts.length });
   })
 );
 
