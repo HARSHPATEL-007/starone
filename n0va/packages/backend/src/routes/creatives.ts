@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess } from "./route-utils";
+import { creativeLifecycleOrchestrator } from "../business-logic/CreativeLifecycleOrchestrator";
 
 const router = Router();
 
@@ -100,6 +102,33 @@ router.delete(
       if (!ok) throw new AppError(404, "Creative not found");
     }
     res.status(204).send();
+  })
+);
+
+router.get(
+  "/lifecycle/health",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const report = await creativeLifecycleOrchestrator.assessCreativeHealth(tenantId);
+    sendSuccess(res, report);
+  })
+);
+
+router.get(
+  "/lifecycle/summary",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const summary = await creativeLifecycleOrchestrator.getCreativePortfolioSummary(tenantId);
+    sendSuccess(res, summary);
+  })
+);
+
+router.get(
+  "/lifecycle/replacement/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const suggestions = await creativeLifecycleOrchestrator.getReplacementSuggestions(req.params.id, tenantId);
+    sendSuccess(res, suggestions);
   })
 );
 

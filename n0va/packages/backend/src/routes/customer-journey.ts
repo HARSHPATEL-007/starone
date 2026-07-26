@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { DataStore } from "../services/DataStore";
 import { AppError } from "../middleware/errorHandler";
+import { sendSuccess, safeInt } from "./route-utils";
+import { attributionOrchestrator } from "../business-logic/AttributionOrchestrator";
 
 const router = Router();
 
@@ -70,6 +72,16 @@ router.delete(
     const deleted = await DataStore.deleteCustomerJourney(id, tenantId);
     if (!deleted) throw new AppError(404, "Customer journey not found");
     res.status(204).send();
+  })
+);
+
+router.get(
+  "/attribution/report",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const days = safeInt(req.query.days, 90);
+    const report = await attributionOrchestrator.generateReport(tenantId, days);
+    sendSuccess(res, report);
   })
 );
 

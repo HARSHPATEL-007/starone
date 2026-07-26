@@ -5,6 +5,7 @@ import { AppError } from "../middleware/errorHandler";
 import { ABTest } from "../models/ABTest";
 import { ABTestService } from "../services/ABTestService";
 import { sendSuccess, safeInt } from "./route-utils";
+import { abTestAdvisorOrchestrator } from "../business-logic/ABTestAdvisorOrchestrator";
 
 const router = Router();
 
@@ -13,6 +14,36 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
   return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
 }
 function mem(): MemoryStore { return MemoryStore.getInstance(); }
+
+router.post(
+  "/design",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { testName, testType, variantCount } = req.body;
+    if (!testName || !testType) throw new AppError(400, "testName and testType required");
+    const advice = await abTestAdvisorOrchestrator.designTest(tenantId, testName, testType, variantCount || 2);
+    sendSuccess(res, advice);
+  })
+);
+
+router.get(
+  "/analyze/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const result = await abTestAdvisorOrchestrator.analyzeTest(req.params.id, tenantId);
+    if (!result) throw new AppError(404, "AB test not found");
+    sendSuccess(res, result);
+  })
+);
+
+router.get(
+  "/portfolio/summary",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const summary = await abTestAdvisorOrchestrator.getPortfolioABTestSummary(tenantId);
+    sendSuccess(res, summary);
+  })
+);
 
 router.get(
   "/significance",
