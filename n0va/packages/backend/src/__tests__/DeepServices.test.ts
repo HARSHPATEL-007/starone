@@ -395,3 +395,256 @@ describe("NaturalLanguageInsightService", () => {
     });
   });
 });
+
+import { marketingMixModelService } from "../services/MarketingMixModelService";
+import { campaignSimulationService } from "../services/CampaignSimulationService";
+import { realTimeBiddingService } from "../services/RealTimeBiddingService";
+import { budgetOptimizerService } from "../services/BudgetOptimizerService";
+import { attributionService } from "../services/AttributionService";
+
+describe("MarketingMixModelService", () => {
+  describe("generateSampleData", () => {
+    it("returns sample MMM input with channels and historical data", () => {
+      const data = marketingMixModelService.generateSampleData();
+      expect(data.channels).toBeDefined();
+      expect(data.channels.length).toBeGreaterThan(0);
+      expect(data.historicalData).toBeDefined();
+      expect(data.historicalData.length).toBe(52);
+    });
+  });
+
+  describe("runMMM", () => {
+    it("returns MMM result with contribution breakdown", () => {
+      const data = marketingMixModelService.generateSampleData();
+      const result = marketingMixModelService.runMMM(data);
+      expect(result.contributions).toBeDefined();
+      expect(result.contributions.length).toBe(data.channels.length);
+      expect(result.totalRevenue).toBeGreaterThan(0);
+      expect(result.totalSpend).toBeGreaterThan(0);
+      expect(result.overallROAS).toBeGreaterThan(0);
+      expect(typeof result.R2).toBe("number");
+    });
+
+    it("adstock transforms spend data correctly", () => {
+      const result = marketingMixModelService.runMMM({
+        channels: ["test_channel"],
+        historicalData: Array.from({ length: 10 }, (_, i) => ({ week: i + 1, spend: { test_channel: 1000 }, revenue: 5000 + i * 100 })),
+      });
+      expect(result.contributions.length).toBe(1);
+      expect(result.contributions[0].totalSpend).toBeGreaterThan(0);
+    });
+  });
+
+  describe("runScenario", () => {
+    it("returns scenario projection with expected fields", () => {
+      const data = marketingMixModelService.generateSampleData();
+      const mmmResult = marketingMixModelService.runMMM(data);
+      const baseSpend: Record<string, number> = {};
+      for (const c of mmmResult.contributions) baseSpend[c.channel] = c.totalSpend;
+      const scenario = { name: "test", budgetChanges: { google_ads: 20, meta_ads: -10 }, description: "test" };
+      const result = marketingMixModelService.runScenario(mmmResult, scenario, baseSpend);
+      expect(result.name).toBe("test");
+      expect(result.projectedRevenue).toBeGreaterThan(0);
+      expect(result.channelProjections).toBeDefined();
+    });
+  });
+});
+
+describe("CampaignSimulationService", () => {
+  describe("runSimulation", () => {
+    it("runs Monte Carlo simulation and returns results", () => {
+      const channels = campaignSimulationService.generateSampleChannels();
+      const scenarios = campaignSimulationService.generateSampleScenarios();
+      const result = campaignSimulationService.runSimulation(channels, scenarios[0], 100);
+      expect(result.trials.length).toBe(100);
+      expect(result.summary.meanRevenue).toBeGreaterThan(0);
+      expect(result.summary.meanROAS).toBeGreaterThan(0);
+      expect(result.summary.valueAtRisk95).toBeDefined();
+      expect(result.summary.conditionalVaR95).toBeDefined();
+    });
+
+    it("calculates probability of positive ROI correctly", () => {
+      const channels = campaignSimulationService.generateSampleChannels();
+      const scenario = { name: "test", budgetChanges: { google_ads: 10 }, description: "test" };
+      const result = campaignSimulationService.runSimulation(channels, scenario, 50);
+      expect(result.summary.probabilityPositiveROI).toBeGreaterThanOrEqual(0);
+      expect(result.summary.probabilityPositiveROI).toBeLessThanOrEqual(100);
+    });
+  });
+
+  describe("runMultiScenario", () => {
+    it("runs multiple scenarios and returns array of results", () => {
+      const channels = campaignSimulationService.generateSampleChannels();
+      const scenarios = campaignSimulationService.generateSampleScenarios();
+      const results = campaignSimulationService.runMultiScenario(channels, scenarios, 30);
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBe(scenarios.length);
+    });
+  });
+
+  describe("generateSampleChannels", () => {
+    it("returns array of channel configs with required fields", () => {
+      const channels = campaignSimulationService.generateSampleChannels();
+      expect(channels.length).toBeGreaterThan(0);
+      for (const ch of channels) {
+        expect(ch.name).toBeTruthy();
+        expect(ch.baseSpend).toBeGreaterThan(0);
+        expect(ch.baseROAS).toBeGreaterThan(0);
+      }
+    });
+  });
+});
+
+describe("RealTimeBiddingService", () => {
+  describe("evaluateBid", () => {
+    it("returns bid response with all required fields", () => {
+      const request = realTimeBiddingService.generateSampleRequest();
+      const response = realTimeBiddingService.evaluateBid(request, 10);
+      expect(response.auctionId).toBe(request.auctionId);
+      expect(response.bidAmount).toBeGreaterThan(0);
+      expect(response.winProbability).toBeGreaterThanOrEqual(0);
+      expect(response.winProbability).toBeLessThanOrEqual(100);
+      expect(["aggressive", "balanced", "conservative", "exploratory"]).toContain(response.strategy);
+    });
+
+    it("produces higher bid for higher target CPA", () => {
+      const request = realTimeBiddingService.generateSampleRequest();
+      const lowCPA = realTimeBiddingService.evaluateBid(request, 5);
+      const highCPA = realTimeBiddingService.evaluateBid(request, 50);
+      expect(highCPA.bidAmount).toBeGreaterThanOrEqual(lowCPA.bidAmount);
+    });
+  });
+
+  describe("simulateAuction", () => {
+    it("returns winner and rankings", () => {
+      const result = realTimeBiddingService.simulateAuction([
+        { bidderId: "a", bidAmount: 10 },
+        { bidderId: "b", bidAmount: 15 },
+        { bidderId: "c", bidAmount: 8 },
+      ]);
+      expect(result.winner).toBe("b");
+      expect(result.allBids.length).toBe(3);
+      expect(result.allBids[0].rank).toBe(1);
+    });
+
+    it("second-price winner pays second highest bid", () => {
+      const result = realTimeBiddingService.simulateAuction([
+        { bidderId: "a", bidAmount: 20 },
+        { bidderId: "b", bidAmount: 15 },
+      ]);
+      expect(result.winner).toBe("a");
+      expect(result.winPrice).toBe(15);
+    });
+  });
+
+  describe("getPublisherScore", () => {
+    it("returns publisher score with recommendation", () => {
+      const score = realTimeBiddingService.getPublisherScore("pub_001");
+      expect(score.publisherId).toBe("pub_001");
+      expect(score.qualityScore).toBeGreaterThanOrEqual(0);
+      expect(score.qualityScore).toBeLessThanOrEqual(100);
+      expect(["highly_recommended", "recommended", "caution", "block"]).toContain(score.recommendation);
+    });
+  });
+});
+
+describe("BudgetOptimizerService (Enhanced)", () => {
+  describe("kalmanFilterPacing", () => {
+    it("returns pacing estimates with remaining budget", () => {
+      const result = budgetOptimizerService.kalmanFilterPacing("google_ads", 1000, [1050, 980, 1100, 1020, 990]);
+      expect(result.estimatedRemaining).toBeGreaterThan(0);
+      expect(result.recommendedDaily).toBeGreaterThan(0);
+      expect(result.confidence).toBeGreaterThan(0);
+    });
+
+    it("handles empty spend history", () => {
+      const result = budgetOptimizerService.kalmanFilterPacing("meta_ads", 500, []);
+      expect(result.estimatedRemaining).toBe(15000);
+      expect(result.recommendedDaily).toBeGreaterThan(0);
+    });
+  });
+
+  describe("kellyCriterionAllocation", () => {
+    it("allocates budget proportionally to edge", () => {
+      const platforms = [
+        { name: "google", expectedROAS: 4.0, winProbability: 0.7 },
+        { name: "meta", expectedROAS: 3.0, winProbability: 0.6 },
+      ];
+      const result = budgetOptimizerService.kellyCriterionAllocation(platforms, 10000);
+      expect(result.length).toBe(2);
+      expect(result[0].allocatedBudget + result[1].allocatedBudget).toBeLessThanOrEqual(10000);
+    });
+  });
+
+  describe("diminishingReturnsFit", () => {
+    it("fits power law to spend-revenue data", () => {
+      const data = [
+        { spend: 1000, revenue: 4000 },
+        { spend: 2000, revenue: 7200 },
+        { spend: 5000, revenue: 15000 },
+      ];
+      const result = budgetOptimizerService.diminishingReturnsFit(data);
+      expect(result.alpha).toBeGreaterThan(0);
+      expect(result.beta).toBeGreaterThan(0);
+      expect(typeof result.R2).toBe("number");
+    });
+  });
+
+  describe("efficientFrontier", () => {
+    it("returns set of portfolios", () => {
+      const platforms = [
+        { name: "google", expectedReturn: 0.15, variance: 0.05 },
+        { name: "meta", expectedReturn: 0.12, variance: 0.08 },
+        { name: "tiktok", expectedReturn: 0.18, variance: 0.12 },
+      ];
+      const result = budgetOptimizerService.efficientFrontier(platforms);
+      expect(result.portfolios.length).toBe(500);
+      expect(result.efficientPortfolios.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("AttributionService (Enhanced)", () => {
+  describe("shapleyValueApprox", () => {
+    it("returns attribution with approximation error", () => {
+      const paths = attributionService.generateSamplePaths(20);
+      const result = attributionService.shapleyValueApprox(paths, 500);
+      expect(result.approximationError).toBeDefined();
+      expect(result.totalRevenue).toBeGreaterThan(0);
+    });
+  });
+
+  describe("timeAwareMarkovChain", () => {
+    it("returns attribution with removal effects and time decay", () => {
+      const paths = attributionService.generateSamplePaths(30);
+      const result = attributionService.timeAwareMarkovChain(paths, 7);
+      expect(result.removalEffects).toBeDefined();
+      expect(Object.keys(result.removalEffects).length).toBeGreaterThan(0);
+      expect(result.totalConversions).toBeGreaterThan(0);
+    });
+  });
+
+  describe("attributionConfidence", () => {
+    it("returns confidence intervals for each platform", () => {
+      const paths = attributionService.generateSamplePaths(20);
+      const intervals = attributionService.attributionConfidence(paths, "last_click", 30);
+      expect(intervals.length).toBeGreaterThan(0);
+      for (const interval of intervals) {
+        expect(interval.platform).toBeTruthy();
+        expect(interval.meanAttribution).toBeGreaterThanOrEqual(0);
+        expect(interval.ciLower95).toBeDefined();
+        expect(interval.ciUpper95).toBeDefined();
+      }
+    });
+  });
+
+  describe("synergyAttribution", () => {
+    it("returns pairwise synergies between platforms", () => {
+      const paths = attributionService.generateSamplePaths(30);
+      const result = attributionService.synergyAttribution(paths);
+      expect(result.pairwiseSynergies).toBeDefined();
+      expect(result.channelContributions).toBeDefined();
+      expect(typeof result.totalSynergy).toBe("number");
+    });
+  });
+});

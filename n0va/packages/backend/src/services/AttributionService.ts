@@ -1,4 +1,5 @@
 export type AttributionModel = "first_click" | "last_click" | "linear" | "time_decay" | "position_based" | "data_driven";
+export type DeepAttributionModel = AttributionModel | "shapley_value" | "markov_chain" | "time_aware_markov";
 
 interface Touchpoint {
   id: string;
@@ -473,6 +474,304 @@ export class AttributionService {
     }
 
     return probsFrom["(start)"] || 0;
+  }
+
+  // ─── Approximate Shapley Value (via Sampling) for Large Channel Sets ────
+  shapleyValueApprox(paths: ConversionPath[], samples: number = 2000): AttributionResult & { approximationError: number } {
+    const channelSet = new Set<string>();
+    const pathChannels: { channels: string[]; revenue: number }[] = [];
+
+    for (const path of paths) {
+      const channels = [...new Set(path.touchpoints.map((tp) => tp.platform))];
+      channels.forEach((c) => channelSet.add(c));
+      pathChannels.push({ channels, revenue: path.totalRevenue });
+    }
+
+    const channels = Array.from(channelSet);
+    const n = channels.length;
+    const shapleyScores: Record<string, number> = {};
+    channels.forEach((c) => (shapleyScores[c] = 0));
+
+    const marginals: Record<string, number[]> = {};
+    channels.forEach((c) => (marginals[c] = []));
+
+    for (let s = 0; s < samples; s++) {
+      const perm = [...channels].sort(() => Math.random() - 0.5);
+      let prevSet = new Set<string>();
+      let prevValue = this.coalitionValue(pathChannels, prevSet);
+
+      for (const ch of perm) {
+        const newSet = new Set([...prevSet, ch]);
+        const newValue = this.coalitionValue(pathChannels, newSet);
+        const marginal = newValue - prevValue;
+        marginals[ch].push(marginal);
+        shapleyScores[ch] += marginal;
+        prevSet = newSet;
+        prevValue = newValue;
+      }
+    }
+
+    for (const ch of channels) {
+      shapleyScores[ch] = Math.max(0, shapleyScores[ch] / samples);
+    }
+
+    // Estimate approximation error via bootstrap
+    let bootstrapSE = 0;
+    for (const ch of channels) {
+      const vals = marginals[ch];
+      const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+      const sqDiffs = vals.map((v) => (v - mean) ** 2);
+      bootstrapSE += Math.sqrt(sqDiffs.reduce((s, v) => s + v, 0) / vals.length);
+    }
+    const approximationError = Math.round((bootstrapSE / channels.length) * 100) / 100;
+
+    const totalShapley = Object.values(shapleyScores).reduce((a, b) => a + b, 0) || 1;
+
+    for (const path of paths) {
+      const platformGroups: Record<string, Touchpoint[]> = {};
+      for (const tp of path.touchpoints) {
+        if (!platformGroups[tp.platform]) platformGroups[tp.platform] = [];
+        platformGroups[tp.platform].push(tp);
+      }
+      for (const [platform, tps] of Object.entries(platformGroups)) {
+        const platformShare = shapleyScores[platform] / totalShapley;
+        const perTpWeight = platformShare / tps.length;
+        for (const tp of tps) tp.weight = perTpWeight;
+      }
+    }
+
+    return { ...this.buildResult(paths, "shapley_value" as any, 30), approximationError };
+  }
+
+  // ─── Time-Aware Markov Chain ────────────────────────────────────────────
+  timeAwareMarkovChain(paths: ConversionPath[], timeDecayHalfLife: number = 7): AttributionResult & { removalEffects: Record<string, number> } {
+    const channels = new Set<string>();
+    for (const path of paths) {
+      for (const tp of path.touchpoints) channels.add(tp.platform);
+    }
+    const states = ["(start)", "(conversion)", "(null)", ...Array.from(channels)];
+
+    const transitions: Record<string, Record<string, number>> = {};
+    states.forEach((s) => {
+      transitions[s] = {};
+      states.forEach((t) => (transitions[s][t] = 0));
+    });
+
+    let totalConversions = 0;
+    let totalNull = 0;
+
+    for (const path of paths) {
+      const sorted = [...path.touchpoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      let prev = "(start)";
+      const conversionTime = path.conversionDate.getTime();
+      for (const tp of sorted) {
+        const hoursDiff = (conversionTime - tp.timestamp.getTime()) / 3600000;
+        const recencyWeight = Math.pow(0.5, hoursDiff / (timeDecayHalfLife * 24));
+
+        if (tp.type === "conversion") {
+          transitions[prev]["(conversion)"] += recencyWeight;
+          totalConversions += recencyWeight;
+        } else {
+          transitions[prev][tp.platform] += recencyWeight;
+          prev = tp.platform;
+        }
+      }
+      if (prev !== "(start)" && prev !== "(conversion)") {
+        const lastTp = sorted[sorted.length - 1];
+        const hoursDiff = (conversionTime - lastTp.timestamp.getTime()) / 3600000;
+        const recencyWeight = Math.pow(0.5, hoursDiff / (timeDecayHalfLife * 24));
+        transitions[prev]["(null)"] += recencyWeight;
+        totalNull += recencyWeight;
+      }
+    }
+
+    const transitionProbs: Record<string, Record<string, number>> = {};
+    states.forEach((s) => {
+      transitionProbs[s] = {};
+      const total = Object.values(transitions[s]).reduce((a, b) => a + b, 0);
+      if (total === 0) {
+        states.forEach((t) => (transitionProbs[s][t] = t === "(null)" ? 1 : 0));
+      } else {
+        states.forEach((t) => (transitionProbs[s][t] = transitions[s][t] / total));
+      }
+    });
+
+    const allConvProb = this.markovConversionProb(transitionProbs, states);
+
+    const removalEffects: Record<string, number> = {};
+    for (const ch of channels) {
+      const reducedStates = states.filter((s) => s !== ch);
+      const reducedProbs: Record<string, Record<string, number>> = {};
+      reducedStates.forEach((s) => {
+        reducedProbs[s] = {};
+        reducedStates.forEach((t) => {
+          if (s === ch || t === ch) {
+            reducedProbs[s][t] = 0;
+          } else {
+            reducedProbs[s][t] = transitionProbs[s][t];
+          }
+        });
+        if (s !== ch && s !== "(conversion)" && s !== "(null)") {
+          const removedWeight = transitionProbs[s][ch] || 0;
+          if (removedWeight > 0) {
+            const remaining = Object.entries(transitionProbs[s])
+              .filter(([k]) => k !== s && k !== ch)
+              .reduce((a, [, v]) => a + v, 0);
+            if (remaining > 0) {
+              const scale = (1 - removedWeight) / remaining;
+              reducedStates.forEach((t) => {
+                if (t !== s && t !== ch) {
+                  reducedProbs[s][t] = (transitionProbs[s][t] || 0) * scale;
+                }
+              });
+            } else {
+              reducedProbs[s]["(null)"] = 1;
+            }
+          }
+        }
+      });
+
+      const convProb = this.markovConversionProb(reducedProbs, reducedStates);
+      removalEffects[ch] = Math.max(0, 1 - convProb / Math.max(allConvProb, 0.001));
+    }
+
+    const totalRemoval = Object.values(removalEffects).reduce((a, b) => a + b, 0) || 1;
+
+    for (const path of paths) {
+      const platformGroups: Record<string, Touchpoint[]> = {};
+      for (const tp of path.touchpoints) {
+        if (!platformGroups[tp.platform]) platformGroups[tp.platform] = [];
+        platformGroups[tp.platform].push(tp);
+      }
+      for (const [platform, tps] of Object.entries(platformGroups)) {
+        const weight = (removalEffects[platform] || 0) / totalRemoval;
+        for (const tp of tps) tp.weight = weight / tps.length;
+      }
+    }
+
+    return { ...this.buildResult(paths, "time_aware_markov" as any, 30), removalEffects };
+  }
+
+  // ─── Bootstrapped Attribution Confidence ────────────────────────────────
+  attributionConfidence(
+    paths: ConversionPath[],
+    model: AttributionModel,
+    bootstrapSamples: number = 100,
+  ): { platform: string; meanAttribution: number; stdErr: number; ciLower95: number; ciUpper95: number }[] {
+    const n = paths.length;
+    const platformAttributions: Record<string, number[]> = {};
+
+    for (let b = 0; b < bootstrapSamples; b++) {
+      const sample: ConversionPath[] = [];
+      for (let i = 0; i < n; i++) {
+        const idx = Math.floor(Math.random() * n);
+        sample.push(paths[idx]);
+      }
+      const result = this.attribute(sample, model);
+      for (const [platform, data] of Object.entries(result.platformBreakdown)) {
+        if (!platformAttributions[platform]) platformAttributions[platform] = [];
+        platformAttributions[platform].push(data.attributedRevenue);
+      }
+    }
+
+    return Object.entries(platformAttributions).map(([platform, values]) => {
+      const sorted = [...values].sort((a, b) => a - b);
+      const mean = values.reduce((s, v) => s + v, 0) / values.length;
+      const stdErr = Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length);
+      const ciLower95 = sorted[Math.floor(bootstrapSamples * 0.025)];
+      const ciUpper95 = sorted[Math.floor(bootstrapSamples * 0.975)];
+      return {
+        platform,
+        meanAttribution: Math.round(mean * 100) / 100,
+        stdErr: Math.round(stdErr * 100) / 100,
+        ciLower95: Math.round(ciLower95 * 100) / 100,
+        ciUpper95: Math.round(ciUpper95 * 100) / 100,
+      };
+    });
+  }
+
+  // ─── Halo Effect / Synergy Attribution ──────────────────────────────────
+  synergyAttribution(paths: ConversionPath[]): {
+    pairwiseSynergies: Record<string, Record<string, number>>;
+    channelContributions: Record<string, number>;
+    totalSynergy: number;
+  } {
+    const platformSet = new Set<string>();
+    for (const path of paths) {
+      for (const tp of path.touchpoints) platformSet.add(tp.platform);
+    }
+    const platforms = Array.from(platformSet);
+
+    const checkPresence = (path: ConversionPath, plats: string[]): boolean => {
+      const pathPlats = new Set(path.touchpoints.map((tp) => tp.platform));
+      return plats.every((p) => pathPlats.has(p));
+    };
+
+    const totalWithPair: Record<string, Record<string, number>> = {};
+    const totalWithoutPair: Record<string, Record<string, number>> = {};
+    const totalSingle: Record<string, number> = {};
+
+    for (let i = 0; i < platforms.length; i++) {
+      totalWithPair[platforms[i]] = {};
+      totalWithoutPair[platforms[i]] = {};
+      for (let j = 0; j < platforms.length; j++) {
+        totalWithPair[platforms[i]][platforms[j]] = 0;
+        totalWithoutPair[platforms[i]][platforms[j]] = 0;
+      }
+      totalSingle[platforms[i]] = 0;
+    }
+
+    for (const path of paths) {
+      for (const p of platforms) {
+        if (checkPresence(path, [p])) {
+          totalSingle[p] += path.totalRevenue;
+        }
+      }
+      for (let i = 0; i < platforms.length; i++) {
+        for (let j = i + 1; j < platforms.length; j++) {
+          if (checkPresence(path, [platforms[i], platforms[j]])) {
+            totalWithPair[platforms[i]][platforms[j]] += path.totalRevenue;
+            totalWithPair[platforms[j]][platforms[i]] = totalWithPair[platforms[i]][platforms[j]];
+          }
+          if (!checkPresence(path, [platforms[i]]) && !checkPresence(path, [platforms[j]])) {
+            totalWithoutPair[platforms[i]][platforms[j]] += path.totalRevenue;
+            totalWithoutPair[platforms[j]][platforms[i]] = totalWithoutPair[platforms[i]][platforms[j]];
+          }
+        }
+      }
+    }
+
+    const pairwiseSynergies: Record<string, Record<string, number>> = {};
+    let totalSynergy = 0;
+    for (const p of platforms) {
+      pairwiseSynergies[p] = {};
+      for (const q of platforms) {
+        if (p === q) {
+          pairwiseSynergies[p][q] = 0;
+        } else {
+          const expectedIfIndependent = paths.length > 0
+            ? (totalSingle[p] / paths.length) * (totalSingle[q] / paths.length) * paths.length
+            : 0;
+          const observed = totalWithPair[p][q] || 0;
+          const synergy = observed - expectedIfIndependent - totalWithoutPair[p][q] / Math.max(1, paths.length);
+          pairwiseSynergies[p][q] = Math.round(synergy * 100) / 100;
+          if (p < q) totalSynergy += synergy;
+        }
+      }
+    }
+
+    const totalRevenue = paths.reduce((s, p) => s + p.totalRevenue, 0);
+    const individualSum = platforms.reduce((s, p) => s + totalSingle[p], 0);
+    const channelContributions: Record<string, number> = {};
+    for (const p of platforms) {
+      const baseShare = totalRevenue > 0 ? totalSingle[p] / totalRevenue : 0;
+      const synergyShare = totalSynergy > 0 && individualSum > 0
+        ? (totalSingle[p] / individualSum) * (totalSynergy / totalRevenue)
+        : 0;
+      channelContributions[p] = Math.round((baseShare + synergyShare) * 10000) / 100;
+    }
+
+    return { pairwiseSynergies, channelContributions, totalSynergy: Math.round(totalSynergy * 100) / 100 };
   }
 
   generateSamplePaths(

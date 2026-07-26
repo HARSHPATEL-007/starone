@@ -122,6 +122,9 @@ import AgentIntelligence from "./pages/AgentIntelligence";
 import PredictiveBidding from "./pages/PredictiveBidding";
 import CustomerLifetimeValue from "./pages/CustomerLifetimeValue";
 import AdCopyOptimizer from "./pages/AdCopyOptimizer";
+import MarketingMixModel from "./pages/MarketingMixModel";
+import CampaignSimulation from "./pages/CampaignSimulation";
+import RealTimeBidding from "./pages/RealTimeBidding";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -260,6 +263,9 @@ export default function App() {
                 <Route path="/predictive-bidding" element={<PredictiveBidding />} />
                 <Route path="/customer-lifetime-value" element={<CustomerLifetimeValue />} />
                 <Route path="/ad-copy-optimizer" element={<AdCopyOptimizer />} />
+                <Route path="/marketing-mix-model" element={<MarketingMixModel />} />
+                <Route path="/campaign-simulation" element={<CampaignSimulation />} />
+                <Route path="/real-time-bidding" element={<RealTimeBidding />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

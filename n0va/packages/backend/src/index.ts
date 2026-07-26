@@ -101,6 +101,9 @@ import agentIntelligenceRoutes from "./routes/agent-intelligence";
 import predictiveBiddingRoutes from "./routes/predictive-bidding";
 import clvRoutes from "./routes/clv";
 import nlpRoutes from "./routes/nlp";
+import marketingMixModelRoutes from "./routes/marketing-mix-model";
+import campaignSimulationRoutes from "./routes/campaign-simulation";
+import realTimeBiddingRoutes from "./routes/real-time-bidding";
 
 const app = express();
 const httpServer = createServer(app);
@@ -215,6 +218,9 @@ app.use("/api/v1/agent-intelligence", authMiddleware, tenantMiddleware, agentInt
 app.use("/api/v1/predictive-bidding", authMiddleware, tenantMiddleware, predictiveBiddingRoutes);
 app.use("/api/v1/clv", authMiddleware, tenantMiddleware, clvRoutes);
 app.use("/api/v1/nlp", authMiddleware, tenantMiddleware, nlpRoutes);
+app.use("/api/v1/marketing-mix-model", authMiddleware, tenantMiddleware, marketingMixModelRoutes);
+app.use("/api/v1/campaign-simulation", authMiddleware, tenantMiddleware, campaignSimulationRoutes);
+app.use("/api/v1/real-time-bidding", authMiddleware, tenantMiddleware, realTimeBiddingRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 

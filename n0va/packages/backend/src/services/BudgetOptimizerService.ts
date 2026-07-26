@@ -159,6 +159,186 @@ export class BudgetOptimizerService {
       projectedAt: new Date(Date.now() + days * 86400000).toISOString(),
     };
   }
+
+  kalmanFilterPacing(
+    platform: string,
+    dailyBudget: number,
+    spentHistory: number[],
+    observationNoise: number = 0.1,
+    processNoise: number = 0.01,
+  ): { estimatedRemaining: number; predictedBurnRate: number; recommendedDaily: number; confidence: number } {
+    let x = dailyBudget / 30;
+    let P = 1;
+    const Q = processNoise;
+    const R = observationNoise;
+
+    for (const spent of spentHistory) {
+      x = x;
+      P = P + Q;
+      const K = P / (P + R);
+      x = x + K * (spent - x);
+      P = (1 - K) * P;
+    }
+
+    const daysRemaining = 30 - spentHistory.length;
+    const estimatedRemaining = Math.max(0, 30 * dailyBudget - spentHistory.reduce((s, v) => s + v, 0));
+    const predictedBurnRate = Math.max(0, x);
+    const daysLeft = Math.max(1, daysRemaining);
+    const rawDaily = estimatedRemaining / daysLeft;
+    const fullPeriodSpend = (spentHistory.reduce((s, v) => s + v, 0) + rawDaily * daysLeft);
+    const overUnder = fullPeriodSpend / (30 * dailyBudget);
+    const recommendedDaily = Math.round((rawDaily / Math.max(1, overUnder)) * 100) / 100;
+    const confidence = Math.round(Math.min(95, (1 - Math.sqrt(P)) * 100) * 100) / 100;
+
+    return {
+      estimatedRemaining: Math.round(estimatedRemaining * 100) / 100,
+      predictedBurnRate: Math.round(predictedBurnRate * 100) / 100,
+      recommendedDaily,
+      confidence,
+    };
+  }
+
+  kellyCriterionAllocation(
+    platforms: { name: string; expectedROAS: number; winProbability: number }[],
+    totalBudget: number,
+  ): { platform: string; fraction: number; allocatedBudget: number; expectedValue: number }[] {
+    const fractions = platforms.map((p) => {
+      const b = p.expectedROAS - 1;
+      const pWin = p.winProbability;
+      const q = 1 - pWin;
+      if (b <= 0 || pWin <= 0) return { platform: p.name, fraction: 0 };
+      const fStar = Math.max(0, (b * pWin - q) / b);
+      return { platform: p.name, fraction: fStar };
+    });
+
+    const totalFraction = fractions.reduce((s, f) => s + f.fraction, 0);
+    const normalized = totalFraction > 0
+      ? fractions.map((f) => ({
+          ...f,
+          fraction: Math.round((f.fraction / totalFraction) * 10000) / 100,
+          allocatedBudget: Math.round((f.fraction / totalFraction) * totalBudget * 100) / 100,
+          expectedValue: Math.round((f.fraction / totalFraction) * totalBudget * (f.fraction > 0 ? 1 : 0) * 100) / 100,
+        }))
+      : fractions.map((f) => ({
+          ...f,
+          fraction: 0,
+          allocatedBudget: 0,
+          expectedValue: 0,
+        }));
+
+    return normalized;
+  }
+
+  efficientFrontier(
+    platforms: { name: string; expectedReturn: number; variance: number }[],
+    covarianceMatrix?: number[][],
+  ): { portfolios: { risk: number; return_: number; allocations: Record<string, number> }[]; efficientPortfolios: { risk: number; return_: number; allocations: Record<string, number> }[] } {
+    const n = platforms.length;
+    const covMat = covarianceMatrix ?? this.estimateCovariance(platforms);
+    const portfolios: { risk: number; return_: number; allocations: Record<string, number> }[] = [];
+
+    for (let iteration = 0; iteration < 500; iteration++) {
+      let weights = platforms.map(() => Math.random());
+      const sum = weights.reduce((s, w) => s + w, 0);
+      weights = weights.map((w) => w / sum);
+
+      let portReturn = 0;
+      let portVariance = 0;
+      for (let i = 0; i < n; i++) {
+        portReturn += weights[i] * platforms[i].expectedReturn;
+        for (let j = 0; j < n; j++) {
+          portVariance += weights[i] * weights[j] * (covMat[i]?.[j] ?? 0);
+        }
+      }
+
+      const allocations: Record<string, number> = {};
+      platforms.forEach((p, i) => { allocations[p.name] = Math.round(weights[i] * 10000) / 100; });
+
+      portfolios.push({
+        risk: Math.round(Math.sqrt(portVariance) * 100) / 100,
+        return_: Math.round(portReturn * 100) / 100,
+        allocations,
+      });
+    }
+
+    const sorted = [...portfolios].sort((a, b) => a.risk - b.risk);
+    const efficient: typeof portfolios = [];
+    let maxReturn = -Infinity;
+    for (const p of sorted) {
+      if (p.return_ > maxReturn) {
+        maxReturn = p.return_;
+        efficient.push(p);
+      }
+    }
+
+    const maxReturnPortfolio = portfolios.reduce((a, b) => a.return_ > b.return_ ? a : b);
+    const minRiskPortfolio = portfolios.reduce((a, b) => a.risk < b.risk ? a : b);
+
+    return { portfolios, efficientPortfolios: [minRiskPortfolio, ...efficient.slice(-20), maxReturnPortfolio] };
+  }
+
+  private estimateCovariance(platforms: { name: string; expectedReturn: number; variance: number }[]): number[][] {
+    const n = platforms.length;
+    const mat: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          mat[i][j] = platforms[i].variance;
+        } else {
+          const correlation = 0.3 + Math.random() * 0.4;
+          mat[i][j] = correlation * Math.sqrt(platforms[i].variance * platforms[j].variance);
+        }
+      }
+    }
+    return mat;
+  }
+
+  diminishingReturnsFit(
+    channelHistory: { spend: number; revenue: number }[],
+  ): { alpha: number; beta: number; R2: number; saturationPoint: number; maxEfficientSpend: number } {
+    const n = channelHistory.length;
+    if (n < 3) {
+      return { alpha: 1, beta: 0.5, R2: 0, saturationPoint: 0, maxEfficientSpend: 0 };
+    }
+
+    const logSpend = channelHistory.map((p) => Math.log(Math.max(1, p.spend)));
+    const logRev = channelHistory.map((p) => Math.log(Math.max(1, p.revenue)));
+    const meanX = logSpend.reduce((s, v) => s + v, 0) / n;
+    const meanY = logRev.reduce((s, v) => s + v, 0) / n;
+
+    let numBeta = 0;
+    let denBeta = 0;
+    for (let i = 0; i < n; i++) {
+      numBeta += (logSpend[i] - meanX) * (logRev[i] - meanY);
+      denBeta += (logSpend[i] - meanX) ** 2;
+    }
+
+    const beta = denBeta > 0 ? numBeta / denBeta : 0.5;
+    const alpha = Math.exp(meanY - beta * meanX);
+
+    const predicted = channelHistory.map((p) => alpha * Math.pow(p.spend, beta));
+    const meanRev = channelHistory.reduce((s, p) => s + p.revenue, 0) / n;
+    const ssRes = channelHistory.reduce((s, p, i) => s + (p.revenue - predicted[i]) ** 2, 0);
+    const ssTot = channelHistory.reduce((s, p) => s + (p.revenue - meanRev) ** 2, 0);
+    const R2 = ssTot > 0 ? Math.round((1 - ssRes / ssTot) * 10000) / 100 : 0;
+
+    const marginalRevenue = (spend: number) => alpha * beta * Math.pow(spend, beta - 1);
+    let low = 1;
+    let high = 1e7;
+    for (let iter = 0; iter < 50; iter++) {
+      const mid = (low + high) / 2;
+      if (marginalRevenue(mid) > 1) low = mid;
+      else high = mid;
+    }
+    const maxEfficientSpend = Math.round(low * 100) / 100;
+    const saturationPoint = Math.round(Math.pow(1 / (alpha * beta), 1 / (beta - 1)) * 100) / 100;
+
+    return {
+      alpha: Math.round(alpha * 10000) / 10000,
+      beta: Math.round(beta * 10000) / 10000,
+      R2, saturationPoint, maxEfficientSpend,
+    };
+  }
 }
 
 export const budgetOptimizerService = new BudgetOptimizerService();

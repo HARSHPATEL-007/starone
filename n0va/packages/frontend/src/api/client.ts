@@ -929,4 +929,30 @@ export const api = {
     optimize: (text: string) =>
       request<any>("/nlp/optimize", { method: "POST", body: JSON.stringify({ text }) }),
   },
+  marketingMixModel: {
+    run: (channels: string[], historicalData: Record<string, unknown>[], adstockParams?: Record<string, unknown>, saturationParams?: Record<string, unknown>) =>
+      request<any>("/marketing-mix-model/run", { method: "POST", body: JSON.stringify({ channels, historicalData, adstockParams, saturationParams }) }),
+    scenario: (mmmResult: Record<string, unknown>, scenario: Record<string, unknown>, baseSpend: Record<string, number>) =>
+      request<any>("/marketing-mix-model/scenario", { method: "POST", body: JSON.stringify({ mmmResult, scenario, baseSpend }) }),
+    sampleData: () => request<any>("/marketing-mix-model/sample-data"),
+  },
+  campaignSimulation: {
+    simulate: (channels: Record<string, unknown>[], scenario: Record<string, unknown>, trials?: number, seed?: number) =>
+      request<any>("/campaign-simulation/simulate", { method: "POST", body: JSON.stringify({ channels, scenario, trials, seed }) }),
+    multiScenario: (channels: Record<string, unknown>[], scenarios: Record<string, unknown>[], trials?: number) =>
+      request<any>("/campaign-simulation/multi-scenario", { method: "POST", body: JSON.stringify({ channels, scenarios, trials }) }),
+    sampleChannels: () => request<any>("/campaign-simulation/sample-channels"),
+    sampleScenarios: () => request<any>("/campaign-simulation/sample-scenarios"),
+  },
+  realTimeBidding: {
+    evaluateBid: (bidReq: Record<string, unknown>, targetCPA: number) =>
+      request<any>("/real-time-bidding/evaluate-bid", { method: "POST", body: JSON.stringify({ request: bidReq, targetCPA }) }),
+    recordResult: (result: Record<string, unknown>) =>
+      request<any>("/real-time-bidding/record-result", { method: "POST", body: JSON.stringify({ result }) }),
+    simulateAuction: (bids: { bidderId: string; bidAmount: number }[], secondPrice?: boolean) =>
+      request<any>("/real-time-bidding/simulate-auction", { method: "POST", body: JSON.stringify({ bids, secondPrice }) }),
+    publisherScore: (publisherId: string) => request<any>(`/real-time-bidding/publisher-score/${publisherId}`),
+    winRateModel: () => request<any>("/real-time-bidding/win-rate-model"),
+    sampleRequest: () => request<any>("/real-time-bidding/sample-request"),
+  },
 };

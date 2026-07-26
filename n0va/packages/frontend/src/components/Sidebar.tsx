@@ -185,6 +185,9 @@ const navItems = [
   { to: "/predictive-bidding", icon: TrendingUp, label: "Predictive Bidding" },
   { to: "/customer-lifetime-value", icon: DollarSign, label: "Customer LTV" },
   { to: "/ad-copy-optimizer", icon: FileText, label: "Ad Copy Optimizer" },
+  { to: "/marketing-mix-model", icon: BarChart3, label: "MMM Analysis" },
+  { to: "/campaign-simulation", icon: Layers, label: "Campaign Sim" },
+  { to: "/real-time-bidding", icon: Zap, label: "RTB Engine" },
   { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
 

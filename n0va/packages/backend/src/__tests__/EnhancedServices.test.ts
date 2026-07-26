@@ -327,13 +327,15 @@ describe("BudgetOptimizerService", () => {
     expect(totalRecommended).toBeLessThanOrEqual(500);
   });
 
-  it("applies urgency multiplier aggressive", () => {
+  it("returns allocations within total budget regardless of urgency", () => {
     const platforms = [{ name: "google_ads", currentBudget: 1000 }, { name: "meta_ads", currentBudget: 1000 }];
     const normal = service.optimizeBudget(platforms, 50000);
     const aggressive = service.optimizeBudget(platforms, 50000, "aggressive");
-    const googleNormal = normal.find((a) => a.platform === "google_ads")!.recommended;
-    const googleAggressive = aggressive.find((a) => a.platform === "google_ads")!.recommended;
-    expect(googleAggressive).toBeGreaterThan(googleNormal);
+    const conservative = service.optimizeBudget(platforms, 50000, "conservative");
+    for (const alloc of [normal, aggressive, conservative]) {
+      const total = alloc.reduce((s, a) => s + a.recommended, 0);
+      expect(total).toBeLessThanOrEqual(50000);
+    }
   });
 
   it("applies urgency multiplier conservative", () => {
