@@ -363,7 +363,7 @@ export class IncrementalityTestingService {
     };
   }
 
-  generateSamplePrePeriodData(regions: string[], days: number): { date: string; region: string; value: number }[] {
+  generateSamplePrePeriodData(regions: string[] = ["us_east", "us_west", "eu_west", "ap_southeast"], days: number = 30): { date: string; region: string; value: number }[] {
     const data: { date: string; region: string; value: number }[] = [];
     const baseValues: Record<string, number> = {};
     for (const r of regions) baseValues[r] = 80 + Math.random() * 40;
@@ -379,7 +379,7 @@ export class IncrementalityTestingService {
     return data;
   }
 
-  generateSamplePostPeriodData(regions: string[], treatmentRegions: string[], days: number, treatmentEffect: number = 15): { date: string; region: string; value: number }[] {
+  generateSamplePostPeriodData(regions: string[] = ["us_east", "us_west", "eu_west", "ap_southeast"], treatmentRegions: string[] = ["us_east", "us_west"], days: number = 30, treatmentEffect: number = 15): { date: string; region: string; value: number }[] {
     const data: { date: string; region: string; value: number }[] = [];
     const baseValues: Record<string, number> = {};
     for (const r of regions) baseValues[r] = 80 + Math.random() * 40;
