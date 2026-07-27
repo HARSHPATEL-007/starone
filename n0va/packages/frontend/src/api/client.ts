@@ -1846,7 +1846,80 @@ export const api = {
       request<any>("/ds-algorithms/deeper/mcmc-sampling", { method: "POST", body: JSON.stringify(data) }),
     expectationMaximization: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/deeper/em-algorithm", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 11: Number Theory, Numerical Methods & Advanced Analytics
+    sieveOfEratosthenes: (limit: number) =>
+      request<any>("/ds-algorithms/depth11/sieve-of-eratosthenes", { method: "POST", body: JSON.stringify({ limit }) }),
+    extendedEuclidean: (a: number, b: number) =>
+      request<any>("/ds-algorithms/depth11/extended-euclidean", { method: "POST", body: JSON.stringify({ a, b }) }),
+    chineseRemainder: (remainders: number[], moduli: number[]) =>
+      request<any>("/ds-algorithms/depth11/chinese-remainder", { method: "POST", body: JSON.stringify({ remainders, moduli }) }),
+    binomialCoefficient: (n: number, k: number) =>
+      request<any>("/ds-algorithms/depth11/binomial-coefficient", { method: "POST", body: JSON.stringify({ n, k }) }),
+    catalanNumber: (n: number) =>
+      request<any>("/ds-algorithms/depth11/catalan-number", { method: "POST", body: JSON.stringify({ n }) }),
+    stirlingSecond: (n: number, k: number) =>
+      request<any>("/ds-algorithms/depth11/stirling-second", { method: "POST", body: JSON.stringify({ n, k }) }),
+    integerPartitions: (n: number) =>
+      request<any>("/ds-algorithms/depth11/integer-partitions", { method: "POST", body: JSON.stringify({ n }) }),
+    bisectionMethod: (a: number, b: number, tolerance?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/bisection-method", { method: "POST", body: JSON.stringify({ a, b, tolerance, maxIter }) }),
+    newtonRaphson: (guess: number, tolerance?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/newton-raphson", { method: "POST", body: JSON.stringify({ guess, tolerance, maxIter }) }),
+    secantMethod: (x0: number, x1: number, tolerance?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/secant-method", { method: "POST", body: JSON.stringify({ x0, x1, tolerance, maxIter }) }),
+    simulatedAnnealing: (bounds: number[], initialTemp?: number, coolingRate?: number, steps?: number) =>
+      request<any>("/ds-algorithms/depth11/simulated-annealing", { method: "POST", body: JSON.stringify({ bounds, initialTemp, coolingRate, steps }) }),
+    geneticAlgorithm: (bounds: number[], populationSize?: number, generations?: number, mutationRate?: number, crossoverRate?: number) =>
+      request<any>("/ds-algorithms/depth11/genetic-algorithm", { method: "POST", body: JSON.stringify({ bounds, populationSize, generations, mutationRate, crossoverRate }) }),
+    particleSwarm: (bounds: number[], swarmSize?: number, iterations?: number) =>
+      request<any>("/ds-algorithms/depth11/particle-swarm", { method: "POST", body: JSON.stringify({ bounds, swarmSize, iterations }) }),
+    hillClimbing: (bounds: number[], maxIter?: number, stepSize?: number) =>
+      request<any>("/ds-algorithms/depth11/hill-climbing", { method: "POST", body: JSON.stringify({ bounds, maxIter, stepSize }) }),
+    smithWaterman: (seqA: string, seqB: string, matchScore?: number, mismatchPenalty?: number, gapPenalty?: number) =>
+      request<any>("/ds-algorithms/depth11/smith-waterman", { method: "POST", body: JSON.stringify({ seqA, seqB, matchScore, mismatchPenalty, gapPenalty }) }),
+    needlemanWunsch: (seqA: string, seqB: string, matchScore?: number, mismatchPenalty?: number, gapPenalty?: number) =>
+      request<any>("/ds-algorithms/depth11/needleman-wunsch", { method: "POST", body: JSON.stringify({ seqA, seqB, matchScore, mismatchPenalty, gapPenalty }) }),
+    damerauLevenshtein: (a: string, b: string) =>
+      request<any>("/ds-algorithms/depth11/damerau-levenshtein", { method: "POST", body: JSON.stringify({ a, b }) }),
+    nGramModel: (text: string, n: number) =>
+      request<any>("/ds-algorithms/depth11/ngram-model", { method: "POST", body: JSON.stringify({ text, n }) }),
+    tfidfVectorize: (documents: string[]) =>
+      request<any>("/ds-algorithms/depth11/tfidf-vectorize", { method: "POST", body: JSON.stringify({ documents }) }),
+    aprioriItemsets: (transactions: string[][], minSupport: number) =>
+      request<any>("/ds-algorithms/depth11/apriori-itemsets", { method: "POST", body: JSON.stringify({ transactions, minSupport }) }),
+    kernalDensityEstimate: (data: number[], points: number[], bandwidth?: number) =>
+      request<any>("/ds-algorithms/depth11/kde", { method: "POST", body: JSON.stringify({ data, points, bandwidth }) }),
+    isolationForest: (data: number[][], nTrees?: number, sampleSize?: number) =>
+      request<any>("/ds-algorithms/depth11/isolation-forest", { method: "POST", body: JSON.stringify({ data, nTrees, sampleSize }) }),
+    localOutlierFactor: (data: number[][], k?: number) =>
+      request<any>("/ds-algorithms/depth11/local-outlier-factor", { method: "POST", body: JSON.stringify({ data, k }) }),
+    zScoreAnomaly: (data: number[], threshold?: number) =>
+      request<any>("/ds-algorithms/depth11/zscore-anomaly", { method: "POST", body: JSON.stringify({ data, threshold }) }),
+    jackknifeResample: (data: number[]) =>
+      request<any>("/ds-algorithms/depth11/jackknife-resample", { method: "POST", body: JSON.stringify({ data }) }),
+    welchTtest: (sampleA: number[], sampleB: number[]) =>
+      request<any>("/ds-algorithms/depth11/welch-ttest", { method: "POST", body: JSON.stringify({ sampleA, sampleB }) }),
+    truncatedNormalSample: (mean: number, std: number, lower: number, upper: number, n?: number) =>
+      request<any>("/ds-algorithms/depth11/truncated-normal-sample", { method: "POST", body: JSON.stringify({ mean, std, lower, upper, n }) }),
+    multivariateNormalSample: (mean: number[], cov: number[][], n?: number) =>
+      request<any>("/ds-algorithms/depth11/multivariate-normal-sample", { method: "POST", body: JSON.stringify({ mean, cov, n }) }),
+    meanShiftCluster: (data: number[][], bandwidth?: number) =>
+      request<any>("/ds-algorithms/depth11/mean-shift-cluster", { method: "POST", body: JSON.stringify({ data, bandwidth }) }),
+    affinityPropagation: (data: number[][], damping?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/affinity-propagation", { method: "POST", body: JSON.stringify({ data, damping, maxIter }) }),
+    opticsCluster: (data: number[][], eps?: number, minPts?: number) =>
+      request<any>("/ds-algorithms/depth11/optics-cluster", { method: "POST", body: JSON.stringify({ data, eps, minPts }) }),
+    spectralCluster: (data: number[][], nClusters?: number, sigma?: number) =>
+      request<any>("/ds-algorithms/depth11/spectral-cluster", { method: "POST", body: JSON.stringify({ data, nClusters, sigma }) }),
+    gaussianMixtureCluster: (data: number[][], nComponents?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/gaussian-mixture-cluster", { method: "POST", body: JSON.stringify({ data, nComponents, maxIter }) }),
+    fuzzyCMeans: (data: number[][], nClusters?: number, m?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/fuzzy-cmeans", { method: "POST", body: JSON.stringify({ data, nClusters, m, maxIter }) }),
+    miniBatchKMeans: (data: number[][], k?: number, batchSize?: number, maxIter?: number) =>
+      request<any>("/ds-algorithms/depth11/mini-batch-kmeans", { method: "POST", body: JSON.stringify({ data, k, batchSize, maxIter }) }),
   },
+
 
   autonomousCampaignManager: {
     analyze: (campaignId: string) => request<any>(`/autonomous-campaign-manager/analyze/${campaignId}`),

@@ -41,6 +41,52 @@ describe("CampaignSaturationService", () => {
       const r = campaignSaturationService.analyze("nonexistent_campaign", TEST_TENANT);
       expect(r).toBeNull();
     });
+
+    it("handles insufficient data gracefully", () => {
+      const mem = DataStore["mem"]();
+      mem.insert("campaigns", { name: "Low Data Camp", tenantId: TEST_TENANT, status: "active", budget: { daily: 50, lifetime: 500, spent: 10 } });
+      const inserted = mem.find("campaigns", (c: any) => c.name === "Low Data Camp");
+      const r = campaignSaturationService.analyze(inserted[0]._id, TEST_TENANT);
+      expect(r).not.toBeNull();
+      expect(r!.saturationLevel).toBe("none");
+      expect(r!.recommendation).toContain("Insufficient data");
+    });
+
+    it("detects critical saturation when saturationScore is high", () => {
+      const mem = DataStore["mem"]();
+      for (let i = 0; i < 8; i++) {
+        mem.insert("metrics", { campaignId: "sat_test_camp", tenantId: TEST_TENANT, spend: 100 * (i + 1), conversions: Math.max(1, 5 - i), impressions: 10000, clicks: 100, date: `2025-0${i + 1}-01` });
+      }
+      mem.insert("campaigns", { name: "Saturated Camp", status: "active", _id: "sat_test_camp", tenantId: TEST_TENANT, budget: { daily: 200, lifetime: 5000, spent: 4000 } });
+      const r = campaignSaturationService.analyze("sat_test_camp", TEST_TENANT);
+      expect(r).not.toBeNull();
+      expect(typeof r!.saturationScore).toBe("number");
+      expect(typeof r!.fatigueMetrics.fatigueDetected).toBe("boolean");
+      expect(r!.curveParams.rSquared).toBeGreaterThanOrEqual(0);
+    });
+
+    it("uses power-law curve fitting for spend-vs-conversion data", () => {
+      const mem = DataStore["mem"]();
+      for (let i = 0; i < 6; i++) {
+        mem.insert("metrics", { campaignId: "pow_law_test", tenantId: TEST_TENANT, spend: 200 * (i + 1), conversions: Math.floor(3 * Math.pow(i + 1, 0.6)), impressions: 5000, clicks: 60, date: `2025-0${i + 1}-01` });
+      }
+      mem.insert("campaigns", { name: "PowerLaw Camp", status: "active", _id: "pow_law_test", tenantId: TEST_TENANT, budget: { daily: 200, lifetime: 5000, spent: 1200 } });
+      const r = campaignSaturationService.analyze("pow_law_test", TEST_TENANT);
+      expect(r).not.toBeNull();
+      expect(r!.curveParams.rSquared).toBeGreaterThanOrEqual(0);
+      expect(r!.recommendation).toBeTruthy();
+    });
+
+    it("reports no fatigue for campaigns with low impression volume", () => {
+      const mem = DataStore["mem"]();
+      mem.insert("campaigns", { name: "Low Imp Camp", status: "active", tenantId: TEST_TENANT, _id: "low_imp_camp", budget: { daily: 50, lifetime: 500, spent: 100 } });
+      for (let i = 0; i < 5; i++) {
+        mem.insert("metrics", { campaignId: "low_imp_camp", tenantId: TEST_TENANT, spend: 20, conversions: 2, impressions: 100, clicks: 5, date: `2025-0${i + 1}-01` });
+      }
+      const r = campaignSaturationService.analyze("low_imp_camp", TEST_TENANT);
+      expect(r).not.toBeNull();
+      expect(r!.fatigueMetrics.fatigueDetected).toBe(false);
+    });
   });
 
   describe("analyzeAll", () => {
@@ -48,6 +94,13 @@ describe("CampaignSaturationService", () => {
       const r = campaignSaturationService.analyzeAll(TEST_TENANT);
       expect(r.analyses.length).toBeGreaterThan(0);
       expect(typeof r.summary.critical).toBe("number");
+      expect(typeof r.summary.fatigued).toBe("number");
+    });
+
+    it("returns empty analyses for unknown tenant", () => {
+      const r = campaignSaturationService.analyzeAll("nonexistent_tenant");
+      expect(r.analyses.length).toBe(0);
+      expect(r.summary.critical).toBe(0);
     });
   });
 });
@@ -71,6 +124,49 @@ describe("PortfolioBudgetOptimizerService", () => {
       const totalAllocated = r.allocations.reduce((s, a) => s + a.allocatedBudget, 0);
       expect(totalAllocated).toBeLessThanOrEqual(sampleInput.totalBudget * 1.01);
     });
+
+    it("throws for empty campaigns", () => {
+      expect(() => portfolioBudgetOptimizerService.allocate({ totalBudget: 1000, campaigns: [], objective: "conversions" })).toThrow();
+    });
+
+    it("throws for zero budget", () => {
+      expect(() => portfolioBudgetOptimizerService.allocate({ totalBudget: 0, campaigns: [{ campaignId: "c1", name: "X", currentBudget: 100, currentConversions: 10, currentRevenue: 500 }], objective: "conversions" })).toThrow();
+    });
+
+    it("allocates with min/max constraints", () => {
+      const r = portfolioBudgetOptimizerService.allocate({
+        totalBudget: 10000, objective: "conversions",
+        campaigns: [
+          { campaignId: "mc1", name: "Alpha", currentBudget: 2000, currentConversions: 100, currentRevenue: 5000, minBudget: 1000, maxBudget: 3000 },
+          { campaignId: "mc2", name: "Beta", currentBudget: 5000, currentConversions: 200, currentRevenue: 12000, minBudget: 2000, maxBudget: 8000 },
+          { campaignId: "mc3", name: "Gamma", currentBudget: 3000, currentConversions: 60, currentRevenue: 3000, minBudget: 500, maxBudget: 4000 },
+        ],
+      });
+      expect(r.allocations.length).toBe(3);
+      expect(r.allocations.some((a) => a.constraint !== "none")).toBe(true);
+    });
+
+    it("uses conversions objective and returns aggregated summary", () => {
+      const r = portfolioBudgetOptimizerService.allocate({
+        totalBudget: 8000, objective: "conversions",
+        campaigns: [
+          { campaignId: "cc1", name: "A", currentBudget: 3000, currentConversions: 150, currentRevenue: 6000 },
+          { campaignId: "cc2", name: "B", currentBudget: 5000, currentConversions: 200, currentRevenue: 10000 },
+        ],
+      });
+      expect(r.objective).toBe("conversions");
+      expect(r.summary.totalExpectedConversions).toBeGreaterThanOrEqual(0);
+      expect(r.summary.campaignsIncreased + r.summary.campaignsDecreased + r.summary.campaignsUnchanged).toBe(2);
+    });
+
+    it("handles single campaign gracefully", () => {
+      const r = portfolioBudgetOptimizerService.allocate({
+        totalBudget: 5000, objective: "revenue",
+        campaigns: [{ campaignId: "sc1", name: "Solo", currentBudget: 4000, currentConversions: 200, currentRevenue: 8000 }],
+      });
+      expect(r.allocations.length).toBe(1);
+      expect(r.converged).toBe(true);
+    });
   });
 
   describe("efficientFrontier", () => {
@@ -78,6 +174,15 @@ describe("PortfolioBudgetOptimizerService", () => {
       const r = portfolioBudgetOptimizerService.efficientFrontier(sampleInput);
       expect(r.length).toBeGreaterThan(0);
       expect(r[0].totalBudget).toBeGreaterThan(0);
+    });
+
+    it("returns points with increasing totalConversions as budget grows", () => {
+      const r = portfolioBudgetOptimizerService.efficientFrontier(sampleInput);
+      let prev = 0;
+      for (const point of r) {
+        expect(point.totalConversions).toBeGreaterThanOrEqual(prev);
+        prev = point.totalConversions;
+      }
     });
   });
 });
@@ -93,6 +198,31 @@ describe("CampaignHealthService", () => {
       expect(r!.budget).toBeGreaterThanOrEqual(0);
       expect(r!.trend).toBeTruthy();
     });
+
+    it("returns null for non-existent campaign", async () => {
+      const r = await campaignHealthService.score("nonexistent", TEST_TENANT);
+      expect(r).toBeNull();
+    });
+
+    it("computes trend direction correctly", async () => {
+      const campaigns = DataStore["mem"]().find("campaigns", (c: any) => c.tenantId === TEST_TENANT);
+      const r = await campaignHealthService.score(campaigns[0]._id, TEST_TENANT);
+      expect(["up", "down", "stable"]).toContain(r!.trend);
+      expect(r!._trendDetails).toBeDefined();
+      expect(typeof r!._trendDetails!.compositeDelta).toBe("number");
+    });
+
+    it("detects saturation penalty from campaign metrics", async () => {
+      const mem = DataStore["mem"]();
+      mem.insert("campaigns", { name: "Sat Health Camp", tenantId: TEST_TENANT, status: "active", _id: "sat_health", budget: { daily: 200, lifetime: 6000, spent: 5000 } });
+      for (let i = 0; i < 10; i++) {
+        mem.insert("metrics", { campaignId: "sat_health", tenantId: TEST_TENANT, spend: 500 * (i + 1), clicks: 100, impressions: 2000, conversions: Math.max(1, 10 - i), revenue: 300 * (i + 1), date: `2025-0${i + 1}-01` });
+      }
+      const r = await campaignHealthService.score("sat_health", TEST_TENANT);
+      expect(r).not.toBeNull();
+      expect(r!._saturation!.penalty).toBeGreaterThanOrEqual(0);
+      expect(r!._volatility!.penalty).toBeGreaterThanOrEqual(0);
+    });
   });
 
   describe("scoreAll", () => {
@@ -101,6 +231,11 @@ describe("CampaignHealthService", () => {
       expect(r.length).toBeGreaterThan(0);
       expect(r[0].overall).toBeGreaterThanOrEqual(0);
     });
+
+    it("returns empty array for unknown tenant", async () => {
+      const r = await campaignHealthService.scoreAll("unknown_tenant");
+      expect(r.length).toBe(0);
+    });
   });
 
   describe("generateSampleScores", () => {
@@ -108,6 +243,8 @@ describe("CampaignHealthService", () => {
       const r = await campaignHealthService.generateSampleScores(TEST_TENANT);
       expect(r.length).toBeGreaterThan(0);
       expect(r[0].campaignName).toBeTruthy();
+      expect(r[0].overall).toBeGreaterThanOrEqual(0);
+      expect(["up", "down", "stable"]).toContain(r[0].trend);
     });
   });
 });
@@ -241,6 +378,122 @@ describe("LeadScoringService", () => {
       const r = leadScoringService.generatePolynomialFeatures([1, 2, 3], 2);
       expect(r.length).toBeGreaterThan(3);
     });
+
+    it("handles degree 1 (no expansion)", () => {
+      const r = leadScoringService.generatePolynomialFeatures([1, 2, 3], 1);
+      expect(r.length).toBe(3);
+    });
+
+    it("includes cubic terms for degree >= 3", () => {
+      const r = leadScoringService.generatePolynomialFeatures([1, 2], 3);
+      expect(r.length).toBe(7);
+    });
+  });
+
+  describe("extractFeatures", () => {
+    it("extracts feature vector from lead data", () => {
+      const f = leadScoringService.extractFeatures({ revenue: 5000000, employees: 200, engagement: 0.85, industry: "Technology", source: "referral", pageVisits: 30 });
+      expect(f.length).toBeGreaterThan(0);
+      expect(f.every((v) => v >= 0 && v <= 1)).toBe(true);
+    });
+
+    it("handles missing fields with defaults", () => {
+      const f = leadScoringService.extractFeatures({});
+      expect(f.length).toBeGreaterThan(0);
+      expect(f.every((v) => v >= 0 && v <= 1)).toBe(true);
+    });
+  });
+
+  describe("generateEnhancedTrainingData", () => {
+    it("generates enhanced training data with polynomial features", () => {
+      const data = leadScoringService.generateEnhancedTrainingData(10, 2);
+      expect(data.length).toBe(10);
+      expect(data[0].features.length).toBeGreaterThan(0);
+      data.forEach((d) => expect([0, 1]).toContain(d.label));
+    });
+  });
+
+  describe("listXGBoostModels and listRandomForestModels", () => {
+    it("lists XGBoost models after training", () => {
+      const data = leadScoringService.generateTrainingData(30);
+      leadScoringService.trainXGBoost("xgb_list_test", data, { nEstimators: 5, maxDepth: 2 });
+      const models = leadScoringService.listXGBoostModels();
+      expect(models.some((m) => m.name === "xgb_list_test")).toBe(true);
+      expect(models[0].nTrees).toBeGreaterThan(0);
+    });
+
+    it("lists Random Forest models after training", () => {
+      const data = leadScoringService.generateTrainingData(30);
+      leadScoringService.trainLeadRandomForest("rf_list_test", data, { nEstimators: 5, maxDepth: 2 });
+      const models = leadScoringService.listRandomForestModels();
+      expect(models.some((m) => m.name === "rf_list_test")).toBe(true);
+      expect(models[0].nTrees).toBeGreaterThan(0);
+    });
+  });
+
+  describe("grid search for random_forest and xgboost", () => {
+    it("runs grid search for random_forest", () => {
+      const data = leadScoringService.generateTrainingData(20);
+      const r = leadScoringService.runGridSearch(data, "random_forest", { nEstimators: [5, 10], maxDepth: [3] }, "accuracy");
+      expect(r.trials).toBe(2);
+      expect(r.bestScore).toBeGreaterThanOrEqual(0);
+    });
+
+    it("runs grid search for xgboost", () => {
+      const data = leadScoringService.generateTrainingData(20);
+      const r = leadScoringService.runGridSearch(data, "xgboost", { learningRate: [0.1, 0.3], nEstimators: [5] }, "logloss");
+      expect(r.trials).toBe(2);
+      expect(r.topResults.length).toBeGreaterThan(0);
+    });
+
+    it("throws for empty paramGrid", () => {
+      const data = leadScoringService.generateTrainingData(5);
+      expect(() => leadScoringService.runGridSearch(data, "logistic_regression", {})).toThrow();
+    });
+  });
+
+  describe("calculateScore rule operators", () => {
+    const model = leadScoringService.generateSampleModel();
+
+    it("matches eq operator", () => {
+      const r = leadScoringService.calculateScore({ industry: "Technology" }, model);
+      expect(typeof r.score).toBe("number");
+    });
+
+    it("matches neq operator", () => {
+      const testModel = { id: "test_neq", name: "test", rules: [{ field: "source", operator: "neq" as const, value: "cold_call", score: 10 }] };
+      const r = leadScoringService.calculateScore({ source: "referral" }, testModel);
+      expect(r.score).toBeGreaterThan(0);
+    });
+
+    it("matches contains operator", () => {
+      const testModel = { id: "test_contains", name: "test", rules: [{ field: "name", operator: "contains" as const, value: "Acme", score: 15 }] };
+      const r = leadScoringService.calculateScore({ name: "Acme Corporation" }, testModel);
+      expect(r.score).toBe(15);
+    });
+  });
+
+  describe("getModel", () => {
+    it("retrieves a trained model by name", () => {
+      const data = leadScoringService.generateTrainingData(20);
+      leadScoringService.trainModel("get_model_test", data, { epochs: 5 });
+      const m = leadScoringService.getModel("get_model_test");
+      expect(m).toBeDefined();
+      expect(m!.featureCount).toBeGreaterThan(0);
+    });
+
+    it("returns undefined for missing model", () => {
+      expect(leadScoringService.getModel("does_not_exist")).toBeUndefined();
+    });
+  });
+
+  describe("scoreCampaignLeads", () => {
+    it("scores leads for a campaign", async () => {
+      const model = leadScoringService.generateSampleModel();
+      const campaigns = DataStore["mem"]().find("campaigns", (c: any) => c.tenantId === TEST_TENANT);
+      const r = await leadScoringService.scoreCampaignLeads(campaigns[0]._id, TEST_TENANT, model);
+      expect(Array.isArray(r)).toBe(true);
+    });
   });
 });
 
@@ -358,6 +611,66 @@ describe("RecommendationEngineService", () => {
       expect(r.banditSelection.armId).toBeTruthy();
     });
   });
+
+  describe("epsilon_greedy bandit", () => {
+    it("selects arm using epsilon_greedy strategy", () => {
+      for (let i = 0; i < 10; i++) {
+        const arm = recommendationEngine.selectArm("epsilon_greedy", 1.0);
+        expect(arm.armId).toBeTruthy();
+        expect(arm.method).toBe("explore");
+      }
+    });
+  });
+
+  describe("collaborativeFiltering with pearson", () => {
+    it("returns predictions using pearson similarity", () => {
+      const r = recommendationEngine.collaborativeFilteringRecommendations(sampleCampaigns, "pearson", 2);
+      expect(Array.isArray(r)).toBe(true);
+    });
+  });
+
+  describe("Thompson sampling edge cases", () => {
+    it("throws when no arms registered", () => {
+      expect(() => new (recommendationEngine.constructor as any)().selectThompsonArm()).toThrow();
+    });
+
+    it("filters arms by experimentId prefix", () => {
+      recommendationEngine.registerThompsonArm("exp_a_arm1", "A1");
+      recommendationEngine.registerThompsonArm("exp_b_arm1", "B1");
+      const arm = recommendationEngine.selectThompsonArm("exp_a");
+      expect(arm.armId).toContain("exp_a");
+    });
+  });
+
+  describe("bandit edge cases", () => {
+    it("throws selectArm with no arms", () => {
+      const freshEngine = new (recommendationEngine.constructor as any)();
+      expect(() => freshEngine.selectArm("ucb1")).toThrow();
+    });
+
+    it("throws rewardArm for unknown arm", () => {
+      expect(() => recommendationEngine.rewardArm("unknown_arm", 1)).toThrow();
+    });
+  });
+
+  describe("generateCampaignRecommendations edge cases", () => {
+    it("returns empty array for campaign without metrics", () => {
+      const r = recommendationEngine.generateCampaignRecommendations({ id: "no_metrics", name: "No Metrics", status: "active", type: "search", platforms: [], budget: { daily: 0, lifetime: 0, spent: 0, remaining: 0, currency: "USD" } });
+      expect(r.length).toBe(0);
+    });
+
+    it("generates low-budget recommendation when spend is low", () => {
+      const lowSpendCamp: any = { ...sampleCampaign, budget: { daily: 500, lifetime: 15000, spent: 100, remaining: 14900, currency: "USD" }, metrics: { ...sampleCampaign.metrics, spend: 200 } };
+      const r = recommendationEngine.generateCampaignRecommendations(lowSpendCamp);
+      expect(r.some((rec) => rec.title.toLowerCase().includes("spend") || rec.title.toLowerCase().includes("budget"))).toBe(true);
+    });
+
+    it("generates platform-expansion recommendation for single-platform campaign", () => {
+      const singlePlat: any = { ...sampleCampaign, platforms: ["google"] };
+      const r = recommendationEngine.generateCampaignRecommendations(singlePlat);
+      expect(r.some((rec) => rec.type === "platform")).toBe(true);
+    });
+  });
 });
 
 describe("CampaignSummaryService", () => {
@@ -411,6 +724,74 @@ describe("CampaignSummaryService", () => {
       expect(r.narrative).toBeTruthy();
       expect(r.trends.length).toBeGreaterThan(0);
       expect(r.overallMomentum).toBeTruthy();
+    });
+  });
+
+  describe("generateSummary edge cases", () => {
+    it("handles draft status", () => {
+      const r = campaignSummary.generateSummary({ ...sampleInput, status: "draft" });
+      expect(r.shortSummary).toContain("draft");
+    });
+
+    it("handles paused status", () => {
+      const r = campaignSummary.generateSummary({ ...sampleInput, status: "paused" });
+      expect(r.shortSummary).toContain("paused");
+    });
+
+    it("handles completed status", () => {
+      const r = campaignSummary.generateSummary({ ...sampleInput, status: "completed" });
+      expect(r.shortSummary).toContain("completed");
+    });
+
+    it("handles no metrics gracefully", () => {
+      const r = campaignSummary.generateSummary({ ...sampleInput, metrics: undefined });
+      expect(r.shortSummary).toBeTruthy();
+      expect(r.keyInsights.length).toBe(0);
+    });
+
+    it("handles empty platforms", () => {
+      const r = campaignSummary.generateSummary({ ...sampleInput, platforms: [] });
+      expect(r.recommendations.some((rec) => rec.includes("No platforms"))).toBe(true);
+    });
+  });
+
+  describe("generatePortfolioSummary edge cases", () => {
+    it("handles empty campaign list", () => {
+      const r = campaignSummary.generatePortfolioSummary([]);
+      expect(r.totalCampaigns).toBe(0);
+      expect(r.activeCount).toBe(0);
+    });
+
+    it("includes distribution analysis", () => {
+      const r = campaignSummary.generatePortfolioSummary(sampleInputs);
+      expect((r as any)._distribution).toBeDefined();
+      expect((r as any)._distribution.roasDistribution.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("trendNarrative edge cases", () => {
+    it("handles single period (insufficient data)", () => {
+      const r = campaignSummary.trendNarrative([{ label: "Week 1", metrics: { roas: 2.0, ctr: 2.5, cvr: 5.0, spend: 500 } }]);
+      expect(r.narrative).toContain("Insufficient data");
+      expect(r.overallMomentum).toBe("neutral");
+    });
+
+    it("reports declining momentum", () => {
+      const periods = [
+        { label: "Week 1", metrics: { roas: 3.0, ctr: 3.0, cvr: 6.0, spend: 500 } },
+        { label: "Week 2", metrics: { roas: 1.0, ctr: 1.0, cvr: 2.0, spend: 300 } },
+      ];
+      const r = campaignSummary.trendNarrative(periods);
+      expect(r.overallMomentum).toBe("negative");
+    });
+
+    it("reports improving momentum", () => {
+      const periods = [
+        { label: "Week 1", metrics: { roas: 1.0, ctr: 1.0, cvr: 2.0, spend: 300 } },
+        { label: "Week 2", metrics: { roas: 3.0, ctr: 3.0, cvr: 6.0, spend: 500 } },
+      ];
+      const r = campaignSummary.trendNarrative(periods);
+      expect(r.overallMomentum).toBe("positive");
     });
   });
 

@@ -2513,4 +2513,197 @@ router.post("/deeper/em-algorithm", asyncHandler(async (req, res) => {
   sendSuccess(res, dsAlgorithmService.expectationMaximization(data, nComponents, maxIter));
 }));
 
+// ── Depth 11: Number Theory & Combinatorics ──
+router.post("/depth11/sieve-of-eratosthenes", asyncHandler(async (req, res) => {
+  const { limit } = req.body;
+  if (limit === undefined) return res.status(400).json({ error: "limit required" });
+  sendSuccess(res, dsAlgorithmService.sieveOfEratosthenes(limit));
+}));
+router.post("/depth11/extended-euclidean", asyncHandler(async (req, res) => {
+  const { a, b } = req.body;
+  if (a === undefined || b === undefined) return res.status(400).json({ error: "a and b required" });
+  sendSuccess(res, dsAlgorithmService.extendedEuclidean(a, b));
+}));
+router.post("/depth11/chinese-remainder", asyncHandler(async (req, res) => {
+  const { remainders, moduli } = req.body;
+  if (!remainders || !moduli) return res.status(400).json({ error: "remainders and moduli required" });
+  sendSuccess(res, dsAlgorithmService.chineseRemainderTheorem(remainders, moduli));
+}));
+router.post("/depth11/binomial-coefficient", asyncHandler(async (req, res) => {
+  const { n, k } = req.body;
+  if (n === undefined || k === undefined) return res.status(400).json({ error: "n and k required" });
+  sendSuccess(res, dsAlgorithmService.binomialCoefficient(n, k));
+}));
+router.post("/depth11/catalan-number", asyncHandler(async (req, res) => {
+  const { n } = req.body;
+  if (n === undefined) return res.status(400).json({ error: "n required" });
+  sendSuccess(res, dsAlgorithmService.catalanNumber(n));
+}));
+router.post("/depth11/stirling-second", asyncHandler(async (req, res) => {
+  const { n, k } = req.body;
+  if (n === undefined || k === undefined) return res.status(400).json({ error: "n and k required" });
+  sendSuccess(res, dsAlgorithmService.stirlingSecond(n, k));
+}));
+router.post("/depth11/integer-partitions", asyncHandler(async (req, res) => {
+  const { n } = req.body;
+  if (n === undefined) return res.status(400).json({ error: "n required" });
+  sendSuccess(res, dsAlgorithmService.integerPartitions(n));
+}));
+
+// ── Depth 11: Root Finding & Optimization ──
+router.post("/depth11/bisection-method", asyncHandler(async (req, res) => {
+  const { a, b, tolerance, maxIter } = req.body;
+  if (a === undefined || b === undefined) return res.status(400).json({ error: "a and b required" });
+  const f = (x: number) => x * x - 4;
+  sendSuccess(res, dsAlgorithmService.bisectionMethod(f, a, b, tolerance || 1e-7, maxIter || 100));
+}));
+router.post("/depth11/newton-raphson", asyncHandler(async (req, res) => {
+  const { guess, tolerance, maxIter } = req.body;
+  if (guess === undefined) return res.status(400).json({ error: "guess required" });
+  const f = (x: number) => x * x - 4;
+  const fprime = (x: number) => 2 * x;
+  sendSuccess(res, dsAlgorithmService.newtonRaphson(f, fprime, guess, tolerance || 1e-7, maxIter || 100));
+}));
+router.post("/depth11/secant-method", asyncHandler(async (req, res) => {
+  const { x0, x1, tolerance, maxIter } = req.body;
+  if (x0 === undefined || x1 === undefined) return res.status(400).json({ error: "x0 and x1 required" });
+  const f = (x: number) => x * x - 4;
+  sendSuccess(res, dsAlgorithmService.secantMethod(f, x0, x1, tolerance || 1e-7, maxIter || 100));
+}));
+router.post("/depth11/simulated-annealing", asyncHandler(async (req, res) => {
+  const { bounds, initialTemp, coolingRate, steps } = req.body;
+  if (!bounds) return res.status(400).json({ error: "bounds required" });
+  const f = (x: number[]) => x.reduce((s, v) => s + v * v, 0);
+  sendSuccess(res, dsAlgorithmService.depth11SimulatedAnnealing(f, bounds, initialTemp || 100, coolingRate || 0.95, steps || 1000));
+}));
+router.post("/depth11/genetic-algorithm", asyncHandler(async (req, res) => {
+  const { bounds, populationSize, generations, mutationRate, crossoverRate } = req.body;
+  if (!bounds) return res.status(400).json({ error: "bounds required" });
+  const f = (x: number[]) => x.reduce((s, v) => s + v * v, 0);
+  sendSuccess(res, dsAlgorithmService.depth11GeneticAlgorithm(f, bounds, populationSize || 50, generations || 100, mutationRate || 0.01, crossoverRate || 0.8));
+}));
+router.post("/depth11/particle-swarm", asyncHandler(async (req, res) => {
+  const { bounds, swarmSize, iterations } = req.body;
+  if (!bounds) return res.status(400).json({ error: "bounds required" });
+  const f = (x: number[]) => x.reduce((s, v) => s + v * v, 0);
+  sendSuccess(res, dsAlgorithmService.depth11ParticleSwarm(f, bounds, swarmSize || 30, iterations || 100));
+}));
+router.post("/depth11/hill-climbing", asyncHandler(async (req, res) => {
+  const { bounds, maxIter, stepSize } = req.body;
+  if (!bounds) return res.status(400).json({ error: "bounds required" });
+  const f = (x: number[]) => x.reduce((s, v) => s + v * v, 0);
+  sendSuccess(res, dsAlgorithmService.depth11HillClimbing(f, bounds, maxIter || 100, stepSize || 0.1));
+}));
+
+// ── Depth 11: Sequence & Text ──
+router.post("/depth11/smith-waterman", asyncHandler(async (req, res) => {
+  const { seqA, seqB, matchScore, mismatchPenalty, gapPenalty } = req.body;
+  if (!seqA || !seqB) return res.status(400).json({ error: "seqA and seqB required" });
+  sendSuccess(res, dsAlgorithmService.smithWatermanAlignment(seqA, seqB, matchScore || 2, mismatchPenalty || -1, gapPenalty || -1));
+}));
+router.post("/depth11/needleman-wunsch", asyncHandler(async (req, res) => {
+  const { seqA, seqB, matchScore, mismatchPenalty, gapPenalty } = req.body;
+  if (!seqA || !seqB) return res.status(400).json({ error: "seqA and seqB required" });
+  sendSuccess(res, dsAlgorithmService.depth11NeedlemanWunsch(seqA, seqB, matchScore || 2, mismatchPenalty || -1, gapPenalty || -1));
+}));
+router.post("/depth11/damerau-levenshtein", asyncHandler(async (req, res) => {
+  const { a, b } = req.body;
+  if (a === undefined || b === undefined) return res.status(400).json({ error: "a and b required" });
+  sendSuccess(res, dsAlgorithmService.depth11DamerauLevenshtein(a, b));
+}));
+router.post("/depth11/ngram-model", asyncHandler(async (req, res) => {
+  const { text, n } = req.body;
+  if (text === undefined || n === undefined) return res.status(400).json({ error: "text and n required" });
+  sendSuccess(res, dsAlgorithmService.ngramModel(text, n));
+}));
+router.post("/depth11/tfidf-vectorize", asyncHandler(async (req, res) => {
+  const { documents } = req.body;
+  if (!documents || !Array.isArray(documents)) return res.status(400).json({ error: "documents array required" });
+  sendSuccess(res, dsAlgorithmService.tfidfVectorize(documents));
+}));
+router.post("/depth11/apriori-itemsets", asyncHandler(async (req, res) => {
+  const { transactions, minSupport } = req.body;
+  if (!transactions || !Array.isArray(transactions)) return res.status(400).json({ error: "transactions array required" });
+  sendSuccess(res, dsAlgorithmService.aprioriItemsets(transactions, minSupport));
+}));
+router.post("/depth11/kde", asyncHandler(async (req, res) => {
+  const { data, points, bandwidth } = req.body;
+  if (!data || !Array.isArray(data) || !points || !Array.isArray(points)) return res.status(400).json({ error: "data and points arrays required" });
+  sendSuccess(res, dsAlgorithmService.depth11Kde(data, points, bandwidth || 1));
+}));
+
+// ── Depth 11: Anomaly Detection & Advanced Stats ──
+router.post("/depth11/isolation-forest", asyncHandler(async (req, res) => {
+  const { data, nTrees, sampleSize } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.isolationForest(data, nTrees || 100, sampleSize || 256));
+}));
+router.post("/depth11/local-outlier-factor", asyncHandler(async (req, res) => {
+  const { data, k } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.localOutlierFactor(data, k || 5));
+}));
+router.post("/depth11/zscore-anomaly", asyncHandler(async (req, res) => {
+  const { data, threshold } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.zscoreAnomaly(data, threshold || 2));
+}));
+router.post("/depth11/jackknife-resample", asyncHandler(async (req, res) => {
+  const { data } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.jackknifeResample(data));
+}));
+router.post("/depth11/welch-ttest", asyncHandler(async (req, res) => {
+  const { sampleA, sampleB } = req.body;
+  if (!sampleA || !sampleB) return res.status(400).json({ error: "sampleA and sampleB required" });
+  sendSuccess(res, dsAlgorithmService.welchTtest(sampleA, sampleB));
+}));
+router.post("/depth11/truncated-normal-sample", asyncHandler(async (req, res) => {
+  const { mean, std, lower, upper, n } = req.body;
+  if (mean === undefined || std === undefined || lower === undefined || upper === undefined) return res.status(400).json({ error: "mean, std, lower, upper required" });
+  sendSuccess(res, dsAlgorithmService.truncatedNormalSample(mean, std, lower, upper, n || 1000));
+}));
+router.post("/depth11/multivariate-normal-sample", asyncHandler(async (req, res) => {
+  const { mean, cov, n } = req.body;
+  if (!mean || !Array.isArray(mean) || !cov || !Array.isArray(cov)) return res.status(400).json({ error: "mean and cov arrays required" });
+  sendSuccess(res, dsAlgorithmService.multivariateNormalSample(mean, cov, n || 1000));
+}));
+
+// ── Depth 11: Clustering & Dimensionality ──
+router.post("/depth11/mean-shift-cluster", asyncHandler(async (req, res) => {
+  const { data, bandwidth } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.meanShiftCluster(data, bandwidth || 1));
+}));
+router.post("/depth11/affinity-propagation", asyncHandler(async (req, res) => {
+  const { data, damping, maxIter } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.affinityPropagation(data, damping || 0.5, maxIter || 200));
+}));
+router.post("/depth11/optics-cluster", asyncHandler(async (req, res) => {
+  const { data, eps, minPts } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.opticsCluster(data, eps || 0.5, minPts || 5));
+}));
+router.post("/depth11/spectral-cluster", asyncHandler(async (req, res) => {
+  const { data, nClusters, sigma } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.spectralCluster(data, nClusters || 2, sigma || 1));
+}));
+router.post("/depth11/gaussian-mixture-cluster", asyncHandler(async (req, res) => {
+  const { data, nComponents, maxIter } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.gaussianMixtureCluster(data, nComponents || 3, maxIter || 100));
+}));
+router.post("/depth11/fuzzy-cmeans", asyncHandler(async (req, res) => {
+  const { data, nClusters, m, maxIter } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.fuzzyCMeans(data, nClusters || 2, m || 2, maxIter || 100));
+}));
+router.post("/depth11/mini-batch-kmeans", asyncHandler(async (req, res) => {
+  const { data, k, batchSize, maxIter } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.miniBatchKmeans(data, k || 3, batchSize || 10, maxIter || 100));
+}));
+
 export default router;

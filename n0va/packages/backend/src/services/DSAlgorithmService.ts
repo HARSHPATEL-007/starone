@@ -9456,6 +9456,1278 @@ export class DSAlgorithmService {
   private _treapInorder(root: { key: number; prio: number; left: any; right: any }[]): { key: number; prio: number; left: any; right: any }[] {
     return [...root].sort((a, b) => a.key - b.key);
   }
+
+  private _normalCdf(x: number): number {
+    const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+    const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+    const absX = Math.abs(x);
+    const t = 1 / (1 + p * absX);
+    const erf = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+    return 0.5 * (1 + (x < 0 ? -1 : 1) * erf);
+  }
+
+  private _tCdf(x: number, df: number): number {
+    const z = x * (1 - 1 / (4 * df)) / Math.sqrt(1 + x * x / (2 * df));
+    return this._normalCdf(z);
+  }
+
+  // ── Group 1: Number Theory & Combinatorics ──
+
+  sieveOfEratosthenes(limit: number): { algorithm: string; limit: number; primeCount: number; primes: number[] } {
+    const isPrime = new Array(limit + 1).fill(true);
+    isPrime[0] = isPrime[1] = false;
+    for (let i = 2; i * i <= limit; i++) {
+      if (isPrime[i]) {
+        for (let j = i * i; j <= limit; j += i) isPrime[j] = false;
+      }
+    }
+    const primes: number[] = [];
+    for (let i = 2; i <= limit; i++) { if (isPrime[i]) primes.push(i); }
+    return { algorithm: "sieveOfEratosthenes", limit, primeCount: primes.length, primes };
+  }
+
+  extendedEuclidean(a: number, b: number): { algorithm: string; a: number; b: number; gcd: number; x: number; y: number } {
+    let oldR = a, r = b;
+    let oldS = 1, s = 0;
+    let oldT = 0, t = 1;
+    while (r !== 0) {
+      const q = Math.floor(oldR / r);
+      [oldR, r] = [r, oldR - q * r];
+      [oldS, s] = [s, oldS - q * s];
+      [oldT, t] = [t, oldT - q * t];
+    }
+    return { algorithm: "extendedEuclidean", a, b, gcd: oldR, x: oldS, y: oldT };
+  }
+
+  chineseRemainderTheorem(remainders: number[], moduli: number[]): { algorithm: string; x: number; moduli: number[]; remainders: number[] } {
+    const egcd = (aa: number, bb: number): { gcd: number; x: number; y: number } => {
+      if (bb === 0) return { gcd: aa, x: 1, y: 0 };
+      const { gcd, x, y } = egcd(bb, aa % bb);
+      return { gcd, x: y, y: x - Math.floor(aa / bb) * y };
+    };
+    let M = 1;
+    for (const m of moduli) M *= m;
+    let x = 0;
+    for (let i = 0; i < remainders.length; i++) {
+      const Mi = M / moduli[i];
+      const { x: inv } = egcd(Mi, moduli[i]);
+      x += remainders[i] * Mi * ((inv % moduli[i] + moduli[i]) % moduli[i]);
+    }
+    x = ((x % M) + M) % M;
+    return { algorithm: "chineseRemainderTheorem", x, moduli, remainders };
+  }
+
+  binomialCoefficient(n: number, k: number): { algorithm: string; n: number; k: number; value: number } {
+    if (k < 0 || k > n) return { algorithm: "binomialCoefficient", n, k, value: 0 };
+    if (k === 0 || k === n) return { algorithm: "binomialCoefficient", n, k, value: 1 };
+    const kk = Math.min(k, n - k);
+    let result = 1;
+    for (let i = 1; i <= kk; i++) {
+      result = result * (n - kk + i) / i;
+    }
+    return { algorithm: "binomialCoefficient", n, k, value: Math.round(result) };
+  }
+
+  catalanNumber(n: number): { algorithm: string; n: number; value: number } {
+    let result = 1;
+    for (let k = 2; k <= n; k++) {
+      result = result * (n + k) / k;
+    }
+    return { algorithm: "catalanNumber", n, value: Math.round(result) };
+  }
+
+  stirlingSecond(n: number, k: number): { algorithm: string; n: number; k: number; value: number } {
+    if (k < 0 || k > n) return { algorithm: "stirlingSecond", n, k, value: 0 };
+    if (k === 0 || k === n) return { algorithm: "stirlingSecond", n, k, value: 1 };
+    const dp: number[][] = [];
+    for (let i = 0; i <= n; i++) {
+      dp.push(new Array(k + 1).fill(0));
+    }
+    dp[0][0] = 1;
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= Math.min(i, k); j++) {
+        dp[i][j] = j * dp[i - 1][j] + dp[i - 1][j - 1];
+      }
+    }
+    return { algorithm: "stirlingSecond", n, k, value: dp[n][k] };
+  }
+
+  integerPartitions(n: number): { algorithm: string; n: number; count: number } {
+    const p: number[] = [1];
+    for (let i = 1; i <= n; i++) {
+      let total = 0;
+      for (let k = 1; ; k++) {
+        const g1 = k * (3 * k - 1) / 2;
+        const g2 = k * (3 * k + 1) / 2;
+        if (g1 > i && g2 > i) break;
+        const sign = k % 2 === 1 ? 1 : -1;
+        if (g1 <= i) total += sign * p[i - g1];
+        if (g2 <= i) total += sign * p[i - g2];
+      }
+      p.push(total);
+    }
+    return { algorithm: "integerPartitions", n, count: p[n] };
+  }
+
+  // ── Group 2: Root Finding & Optimization ──
+
+  bisectionMethod(f: (x: number) => number, a: number, b: number, tolerance: number = 1e-7, maxIter: number = 1000): { algorithm: string; root: number; iterations: number; converged: boolean } {
+    let lo = a, hi = b;
+    let fLo = f(lo), fHi = f(hi);
+    if (fLo * fHi > 0) {
+      for (let i = 0; i < 100; i++) {
+        const mid = (lo + hi) / 2;
+        const fMid = f(mid);
+        if (fLo * fMid <= 0) { hi = mid; fHi = fMid; break; }
+        if (fHi * fMid <= 0) { lo = mid; fLo = fMid; break; }
+        const expand = (hi - lo) * 0.5;
+        lo = lo - expand;
+        hi = hi + expand;
+        fLo = f(lo); fHi = f(hi);
+      }
+    }
+    for (let iter = 0; iter < maxIter; iter++) {
+      const mid = (lo + hi) / 2;
+      const fMid = f(mid);
+      if (Math.abs(fMid) < tolerance || (hi - lo) / 2 < tolerance) {
+        return { algorithm: "bisectionMethod", root: mid, iterations: iter + 1, converged: true };
+      }
+      if (fLo * fMid < 0) { hi = mid; fHi = fMid; } else { lo = mid; fLo = fMid; }
+    }
+    return { algorithm: "bisectionMethod", root: (lo + hi) / 2, iterations: maxIter, converged: false };
+  }
+
+  newtonRaphson(f: (x: number) => number, fPrime: (x: number) => number, guess: number, tolerance: number = 1e-7, maxIter: number = 1000): { algorithm: string; root: number; iterations: number; converged: boolean } {
+    let x = guess;
+    for (let i = 0; i < maxIter; i++) {
+      const fx = f(x);
+      if (Math.abs(fx) < tolerance) return { algorithm: "newtonRaphson", root: x, iterations: i + 1, converged: true };
+      const fp = fPrime(x);
+      if (Math.abs(fp) < 1e-15) break;
+      x = x - fx / fp;
+    }
+    return { algorithm: "newtonRaphson", root: x, iterations: maxIter, converged: false };
+  }
+
+  secantMethod(f: (x: number) => number, x0: number, x1: number, tolerance: number = 1e-7, maxIter: number = 1000): { algorithm: string; root: number; iterations: number; converged: boolean } {
+    let xPrev = x0, xCurr = x1;
+    let fPrev = f(xPrev), fCurr = f(xCurr);
+    for (let i = 0; i < maxIter; i++) {
+      if (Math.abs(fCurr) < tolerance) return { algorithm: "secantMethod", root: xCurr, iterations: i + 1, converged: true };
+      const denom = fCurr - fPrev;
+      if (Math.abs(denom) < 1e-15) break;
+      const xNext = xCurr - fCurr * (xCurr - xPrev) / denom;
+      xPrev = xCurr; fPrev = fCurr;
+      xCurr = xNext; fCurr = f(xCurr);
+    }
+    return { algorithm: "secantMethod", root: xCurr, iterations: maxIter, converged: false };
+  }
+
+  simulatedAnnealingOpt(objective: (x: number[]) => number, bounds: number[][], initialTemp: number = 100, coolingRate: number = 0.95, steps: number = 1000): { algorithm: string; bestSolution: number[]; bestValue: number; finalTemp: number; steps: number } {
+    const dim = bounds.length;
+    let current: number[] = [];
+    for (let i = 0; i < dim; i++) current.push(bounds[i][0] + Math.random() * (bounds[i][1] - bounds[i][0]));
+    let currentVal = objective(current);
+    let best = [...current];
+    let bestVal = currentVal;
+    let temp = initialTemp;
+    for (let step = 0; step < steps; step++) {
+      const neighbor: number[] = [...current];
+      const idx = Math.floor(Math.random() * dim);
+      const perturbation = (Math.random() - 0.5) * (bounds[idx][1] - bounds[idx][0]) * 0.1;
+      neighbor[idx] = Math.max(bounds[idx][0], Math.min(bounds[idx][1], neighbor[idx] + perturbation));
+      const neighborVal = objective(neighbor);
+      const delta = neighborVal - currentVal;
+      if (delta < 0 || Math.random() < Math.exp(-delta / temp)) {
+        current = neighbor;
+        currentVal = neighborVal;
+        if (currentVal < bestVal) { best = [...current]; bestVal = currentVal; }
+      }
+      temp *= coolingRate;
+    }
+    return { algorithm: "simulatedAnnealingOpt", bestSolution: best, bestValue: bestVal, finalTemp: temp, steps };
+  }
+
+  geneticAlgorithmOpt(objective: (x: number[]) => number, bounds: number[][], populationSize: number = 100, generations: number = 100, mutationRate: number = 0.1, crossoverRate: number = 0.8): { algorithm: string; bestSolution: number[]; bestValue: number; generations: number; populationSize: number } {
+    const dim = bounds.length;
+    const pop: number[][] = [];
+    for (let i = 0; i < populationSize; i++) {
+      const ind: number[] = [];
+      for (let d = 0; d < dim; d++) ind.push(bounds[d][0] + Math.random() * (bounds[d][1] - bounds[d][0]));
+      pop.push(ind);
+    }
+    const fitness = (x: number[]) => objective(x);
+    let best = [...pop[0]];
+    let bestVal = fitness(best);
+    for (let gen = 0; gen < generations; gen++) {
+      const scores = pop.map(x => fitness(x));
+      for (let i = 0; i < populationSize; i++) {
+        if (scores[i] < bestVal) { best = [...pop[i]]; bestVal = scores[i]; }
+      }
+      const newPop: number[][] = [];
+      for (let i = 0; i < populationSize; i++) {
+        const t1 = Math.floor(Math.random() * populationSize);
+        const t2 = Math.floor(Math.random() * populationSize);
+        const parent1 = scores[t1] < scores[t2] ? pop[t1] : pop[t2];
+        const t3 = Math.floor(Math.random() * populationSize);
+        const t4 = Math.floor(Math.random() * populationSize);
+        const parent2 = scores[t3] < scores[t4] ? pop[t3] : pop[t4];
+        let child: number[];
+        if (Math.random() < crossoverRate) {
+          const pt = Math.floor(Math.random() * dim);
+          child = [...parent1.slice(0, pt), ...parent2.slice(pt)];
+        } else {
+          child = [...parent1];
+        }
+        for (let d = 0; d < dim; d++) {
+          if (Math.random() < mutationRate) {
+            child[d] += (Math.random() - 0.5) * (bounds[d][1] - bounds[d][0]) * 0.2;
+            child[d] = Math.max(bounds[d][0], Math.min(bounds[d][1], child[d]));
+          }
+        }
+        newPop.push(child);
+      }
+      newPop[0] = [...best];
+      pop.length = 0;
+      pop.push(...newPop);
+    }
+    return { algorithm: "geneticAlgorithmOpt", bestSolution: best, bestValue: bestVal, generations, populationSize };
+  }
+
+  particleSwarm(objective: (x: number[]) => number, bounds: number[][], swarmSize: number = 30, iterations: number = 100): { algorithm: string; bestPosition: number[]; bestValue: number; iterations: number } {
+    const dim = bounds.length;
+    const positions: number[][] = [];
+    const velocities: number[][] = [];
+    const pBest: number[][] = [];
+    const pBestVals: number[] = [];
+    let gBest: number[] = [];
+    let gBestVal = Infinity;
+    for (let i = 0; i < swarmSize; i++) {
+      const pos: number[] = [];
+      const vel: number[] = [];
+      for (let d = 0; d < dim; d++) {
+        const range = bounds[d][1] - bounds[d][0];
+        pos.push(bounds[d][0] + Math.random() * range);
+        vel.push((Math.random() - 0.5) * range * 0.1);
+      }
+      positions.push(pos);
+      velocities.push(vel);
+      const val = objective(pos);
+      pBest.push([...pos]);
+      pBestVals.push(val);
+      if (val < gBestVal) { gBest = [...pos]; gBestVal = val; }
+    }
+    const w = 0.7, c1 = 1.5, c2 = 1.5;
+    for (let iter = 0; iter < iterations; iter++) {
+      for (let i = 0; i < swarmSize; i++) {
+        for (let d = 0; d < dim; d++) {
+          const r1 = Math.random(), r2 = Math.random();
+          velocities[i][d] = w * velocities[i][d] + c1 * r1 * (pBest[i][d] - positions[i][d]) + c2 * r2 * (gBest[d] - positions[i][d]);
+          positions[i][d] += velocities[i][d];
+          positions[i][d] = Math.max(bounds[d][0], Math.min(bounds[d][1], positions[i][d]));
+        }
+        const val = objective(positions[i]);
+        if (val < pBestVals[i]) { pBest[i] = [...positions[i]]; pBestVals[i] = val; }
+        if (val < gBestVal) { gBest = [...positions[i]]; gBestVal = val; }
+      }
+    }
+    return { algorithm: "particleSwarm", bestPosition: gBest, bestValue: gBestVal, iterations };
+  }
+
+  hillClimbing(objective: (x: number[]) => number, bounds: number[][], maxIter: number = 1000, stepSize: number = 0.1): { algorithm: string; bestSolution: number[]; bestValue: number; iterations: number } {
+    const dim = bounds.length;
+    let current: number[] = [];
+    for (let i = 0; i < dim; i++) current.push(bounds[i][0] + Math.random() * (bounds[i][1] - bounds[i][0]));
+    let currentVal = objective(current);
+    for (let iter = 0; iter < maxIter; iter++) {
+      const neighbor: number[] = [...current];
+      const idx = Math.floor(Math.random() * dim);
+      neighbor[idx] += (Math.random() - 0.5) * 2 * stepSize * (bounds[idx][1] - bounds[idx][0]);
+      neighbor[idx] = Math.max(bounds[idx][0], Math.min(bounds[idx][1], neighbor[idx]));
+      const neighborVal = objective(neighbor);
+      if (neighborVal < currentVal) { current = neighbor; currentVal = neighborVal; }
+    }
+    return { algorithm: "hillClimbing", bestSolution: current, bestValue: currentVal, iterations: maxIter };
+  }
+
+  // ── Group 3: Sequence & Text ──
+
+  smithWaterman(seqA: string, seqB: string, matchScore: number = 2, mismatchPenalty: number = -1, gapPenalty: number = -1): { algorithm: string; score: number; alignmentA: string; alignmentB: string; scoreMatrix: number[][] } {
+    const m = seqA.length, n = seqB.length;
+    const dp: number[][] = [];
+    for (let i = 0; i <= m; i++) dp.push(new Array(n + 1).fill(0));
+    let maxScore = 0, maxI = 0, maxJ = 0;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const match = dp[i - 1][j - 1] + (seqA[i - 1] === seqB[j - 1] ? matchScore : mismatchPenalty);
+        const del = dp[i - 1][j] + gapPenalty;
+        const ins = dp[i][j - 1] + gapPenalty;
+        dp[i][j] = Math.max(0, match, del, ins);
+        if (dp[i][j] > maxScore) { maxScore = dp[i][j]; maxI = i; maxJ = j; }
+      }
+    }
+    let i = maxI, j = maxJ;
+    let aAlign = "", bAlign = "";
+    while (i > 0 && j > 0 && dp[i][j] > 0) {
+      if (dp[i][j] === dp[i - 1][j - 1] + (seqA[i - 1] === seqB[j - 1] ? matchScore : mismatchPenalty)) {
+        aAlign = seqA[i - 1] + aAlign;
+        bAlign = seqB[j - 1] + bAlign;
+        i--; j--;
+      } else if (dp[i][j] === dp[i - 1][j] + gapPenalty) {
+        aAlign = seqA[i - 1] + aAlign;
+        bAlign = "-" + bAlign;
+        i--;
+      } else {
+        aAlign = "-" + aAlign;
+        bAlign = seqB[j - 1] + bAlign;
+        j--;
+      }
+    }
+    return { algorithm: "smithWaterman", score: maxScore, alignmentA: aAlign, alignmentB: bAlign, scoreMatrix: dp };
+  }
+
+  needlemanWunsch(seqA: string, seqB: string, matchScore: number = 2, mismatchPenalty: number = -1, gapPenalty: number = -1): { algorithm: string; score: number; alignmentA: string; alignmentB: string; scoreMatrix: number[][] } {
+    const m = seqA.length, n = seqB.length;
+    const dp: number[][] = [];
+    for (let i = 0; i <= m; i++) dp.push(new Array(n + 1).fill(0));
+    for (let i = 1; i <= m; i++) dp[i][0] = dp[i - 1][0] + gapPenalty;
+    for (let j = 1; j <= n; j++) dp[0][j] = dp[0][j - 1] + gapPenalty;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const match = dp[i - 1][j - 1] + (seqA[i - 1] === seqB[j - 1] ? matchScore : mismatchPenalty);
+        const del = dp[i - 1][j] + gapPenalty;
+        const ins = dp[i][j - 1] + gapPenalty;
+        dp[i][j] = Math.max(match, del, ins);
+      }
+    }
+    let i = m, j = n;
+    let aAlign = "", bAlign = "";
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + (seqA[i - 1] === seqB[j - 1] ? matchScore : mismatchPenalty)) {
+        aAlign = seqA[i - 1] + aAlign;
+        bAlign = seqB[j - 1] + bAlign;
+        i--; j--;
+      } else if (i > 0 && dp[i][j] === dp[i - 1][j] + gapPenalty) {
+        aAlign = seqA[i - 1] + aAlign;
+        bAlign = "-" + bAlign;
+        i--;
+      } else {
+        aAlign = "-" + aAlign;
+        bAlign = seqB[j - 1] + bAlign;
+        j--;
+      }
+    }
+    return { algorithm: "needlemanWunsch", score: dp[m][n], alignmentA: aAlign, alignmentB: bAlign, scoreMatrix: dp };
+  }
+
+  damerauLevenshteinDist(a: string, b: string): { algorithm: string; distance: number; a: string; b: string } {
+    const m = a.length, n = b.length;
+    const dp: number[][] = [];
+    for (let i = 0; i <= m; i++) dp.push(new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+        }
+      }
+    }
+    return { algorithm: "damerauLevenshteinDist", distance: dp[m][n], a, b };
+  }
+
+  nGramModel(text: string, n: number): { algorithm: string; n: number; ngramCounts: Record<string, number>; totalNgrams: number; uniqueNgrams: number; probabilities: Record<string, number> } {
+    const ngramCounts: Record<string, number> = {};
+    let totalNgrams = 0;
+    for (let i = 0; i <= text.length - n; i++) {
+      const ngram = text.substring(i, i + n);
+      ngramCounts[ngram] = (ngramCounts[ngram] || 0) + 1;
+      totalNgrams++;
+    }
+    const probabilities: Record<string, number> = {};
+    for (const ngram of Object.keys(ngramCounts)) {
+      probabilities[ngram] = ngramCounts[ngram] / totalNgrams;
+    }
+    return { algorithm: "nGramModel", n, ngramCounts, totalNgrams, uniqueNgrams: Object.keys(ngramCounts).length, probabilities };
+  }
+
+  tfidfVectorize(documents: string[]): { algorithm: string; documentCount: number; vocabulary: string[]; tfidfMatrix: number[][] } {
+    const n = documents.length;
+    const tokenized: string[][] = documents.map(d => d.toLowerCase().split(/\s+/).filter(t => t.length > 0));
+    const vocabSet = new Set<string>();
+    for (const tokens of tokenized) for (const t of tokens) vocabSet.add(t);
+    const vocabulary = Array.from(vocabSet).sort();
+    const vocabIndex = new Map<string, number>();
+    vocabulary.forEach((v, i) => vocabIndex.set(v, i));
+    const df: number[] = new Array(vocabulary.length).fill(0);
+    for (const tokens of tokenized) {
+      const seen = new Set<string>();
+      for (const t of tokens) {
+        if (!seen.has(t) && vocabIndex.has(t)) {
+          df[vocabIndex.get(t)!]++;
+          seen.add(t);
+        }
+      }
+    }
+    const tfidfMatrix: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const vec: number[] = new Array(vocabulary.length).fill(0);
+      for (const t of tokenized[i]) {
+        const idx = vocabIndex.get(t);
+        if (idx !== undefined) vec[idx]++;
+      }
+      for (let j = 0; j < vocabulary.length; j++) {
+        if (vec[j] > 0) {
+          const idf = Math.log((n + 1) / (df[j] + 1)) + 1;
+          vec[j] = vec[j] * idf;
+        }
+      }
+      tfidfMatrix.push(vec);
+    }
+    return { algorithm: "tfidfVectorize", documentCount: n, vocabulary, tfidfMatrix };
+  }
+
+  aprioriItemsets(transactions: string[][], minSupport: number): { algorithm: string; minSupport: number; frequentItemsets: { itemset: string[]; support: number }[]; totalTransactions: number } {
+    const n = transactions.length;
+    const minCount = Math.ceil(minSupport * n);
+    const freqItemsets: { itemset: string[]; support: number }[] = [];
+    const itemCounts = new Map<string, number>();
+    for (const tx of transactions) {
+      const seen = new Set<string>();
+      for (const item of tx) {
+        if (!seen.has(item)) {
+          itemCounts.set(item, (itemCounts.get(item) || 0) + 1);
+          seen.add(item);
+        }
+      }
+    }
+    let currentItemsets: string[][] = [];
+    for (const [item, count] of itemCounts) {
+      if (count >= minCount) {
+        currentItemsets.push([item]);
+        freqItemsets.push({ itemset: [item], support: count / n });
+      }
+    }
+    let k = 2;
+    while (currentItemsets.length > 0) {
+      const candidateMap = new Map<string, string[]>();
+      for (let i = 0; i < currentItemsets.length; i++) {
+        for (let j = i + 1; j < currentItemsets.length; j++) {
+          const merged = [...new Set([...currentItemsets[i], ...currentItemsets[j]])].sort();
+          if (merged.length === k) {
+            const key = merged.join(",");
+            if (!candidateMap.has(key)) candidateMap.set(key, merged);
+          }
+        }
+      }
+      if (candidateMap.size === 0) break;
+      const supportMap = new Map<string, number>();
+      const candidates = Array.from(candidateMap.values());
+      for (const cand of candidates) {
+        const candSet = new Set(cand);
+        let count = 0;
+        for (const tx of transactions) {
+          if (cand.every(item => tx.indexOf(item) >= 0)) count++;
+        }
+        if (count >= minCount) {
+          supportMap.set(cand.join(","), count / n);
+        }
+      }
+      currentItemsets = [];
+      for (const cand of candidates) {
+        const key = cand.join(",");
+        if (supportMap.has(key)) {
+          currentItemsets.push(cand);
+          freqItemsets.push({ itemset: cand, support: supportMap.get(key)! });
+        }
+      }
+      k++;
+    }
+    return { algorithm: "aprioriItemsets", minSupport, frequentItemsets: freqItemsets, totalTransactions: n };
+  }
+
+  kernalDensityEstimate(data: number[], points: number[], bandwidth: number = 1): { algorithm: string; n: number; bandwidth: number; estimates: { x: number; density: number }[] } {
+    const n = data.length;
+    const h = bandwidth;
+    const sqrt2pi = Math.sqrt(2 * Math.PI);
+    const estimates: { x: number; density: number }[] = [];
+    for (const x of points) {
+      let sum = 0;
+      for (const xi of data) {
+        const u = (x - xi) / h;
+        sum += Math.exp(-0.5 * u * u);
+      }
+      estimates.push({ x, density: sum / (n * h * sqrt2pi) });
+    }
+    return { algorithm: "kernalDensityEstimate", n, bandwidth: h, estimates };
+  }
+
+  // ── Group 4: Anomaly Detection & Advanced Stats ──
+
+  isolationForest(data: number[][], nTrees: number = 100, sampleSize: number = 256): { algorithm: string; nSamples: number; anomalyScores: number[]; predictions: (1 | -1)[]; threshold: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const ss = Math.min(sampleSize, n);
+    const cFactor = (s: number): number => {
+      if (s <= 1) return 0;
+      if (s === 2) return 1;
+      const h = Math.log(s - 1) + 0.5772156649;
+      return 2 * h - 2 * (s - 1) / s;
+    };
+    const c = cFactor(ss);
+    const pathLength = (indices: number[], depth: number): number => {
+      if (depth >= 100 || indices.length <= 1) return depth;
+      let minVals = new Array(dim).fill(Infinity);
+      let maxVals = new Array(dim).fill(-Infinity);
+      for (const idx of indices) {
+        for (let d = 0; d < dim; d++) {
+          if (data[idx][d] < minVals[d]) minVals[d] = data[idx][d];
+          if (data[idx][d] > maxVals[d]) maxVals[d] = data[idx][d];
+        }
+      }
+      const validDims: number[] = [];
+      for (let d = 0; d < dim; d++) if (maxVals[d] > minVals[d]) validDims.push(d);
+      if (validDims.length === 0) return depth;
+      const splitDim = validDims[Math.floor(Math.random() * validDims.length)];
+      const splitVal = minVals[splitDim] + Math.random() * (maxVals[splitDim] - minVals[splitDim]);
+      const left: number[] = [], right: number[] = [];
+      for (const idx of indices) {
+        if (data[idx][splitDim] < splitVal) left.push(idx); else right.push(idx);
+      }
+      if (left.length === 0 || right.length === 0) return depth;
+      return Math.max(pathLength(left, depth + 1), pathLength(right, depth + 1));
+    };
+    const pathLengths: number[] = new Array(n).fill(0);
+    for (let t = 0; t < nTrees; t++) {
+      const sample: number[] = [];
+      const used = new Set<number>();
+      for (let i = 0; i < ss; i++) {
+        let idx: number;
+        do { idx = Math.floor(Math.random() * n); } while (used.has(idx));
+        used.add(idx);
+        sample.push(idx);
+      }
+      for (const idx of sample) pathLengths[idx] += pathLength([idx], 0);
+    }
+    const anomalyScores: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const h = pathLengths[i] / nTrees;
+      anomalyScores.push(Math.pow(2, -h / c));
+    }
+    const sortedScores = [...anomalyScores].sort((a, b) => b - a);
+    const threshold = sortedScores[Math.max(0, Math.min(Math.floor(n * 0.1), sortedScores.length - 1))] || 0.5;
+    const predictions: (1 | -1)[] = anomalyScores.map(s => s > threshold ? -1 : 1);
+    return { algorithm: "isolationForest", nSamples: n, anomalyScores, predictions, threshold };
+  }
+
+  localOutlierFactor(data: number[][], k: number = 5): { algorithm: string; nSamples: number; lofScores: number[]; predictions: (1 | -1)[]; threshold: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const euclidean = (a: number[], b: number[]): number => {
+      let d = 0;
+      for (let i = 0; i < dim; i++) d += (a[i] - b[i]) * (a[i] - b[i]);
+      return Math.sqrt(d);
+    };
+    const kDist: number[] = [];
+    const kNeighbors: { idx: number; dist: number }[][] = [];
+    for (let i = 0; i < n; i++) {
+      const distances: { idx: number; dist: number }[] = [];
+      for (let j = 0; j < n; j++) {
+        if (i !== j) distances.push({ idx: j, dist: euclidean(data[i], data[j]) });
+      }
+      distances.sort((a, b) => a.dist - b.dist);
+      const neighbors = distances.slice(0, k);
+      kDist.push(neighbors.length > 0 ? neighbors[neighbors.length - 1].dist : 0);
+      kNeighbors.push(neighbors);
+    }
+    const lrd: number[] = [];
+    for (let i = 0; i < n; i++) {
+      let sumReachDist = 0;
+      for (const nb of kNeighbors[i]) {
+        const reachDist = Math.max(kDist[nb.idx], nb.dist);
+        sumReachDist += reachDist;
+      }
+      lrd.push(kNeighbors[i].length > 0 ? kNeighbors[i].length / sumReachDist : 0);
+    }
+    const lofScores: number[] = [];
+    for (let i = 0; i < n; i++) {
+      let sumLrd = 0;
+      for (const nb of kNeighbors[i]) sumLrd += lrd[nb.idx];
+      lofScores.push(kNeighbors[i].length > 0 && lrd[i] > 0 ? sumLrd / (kNeighbors[i].length * lrd[i]) : 1);
+    }
+    const sorted = [...lofScores].sort((a, b) => b - a);
+    const threshold = sorted[Math.max(0, Math.min(Math.floor(n * 0.1), sorted.length - 1))] || 1.5;
+    const predictions: (1 | -1)[] = lofScores.map(s => s > threshold ? -1 : 1);
+    return { algorithm: "localOutlierFactor", nSamples: n, lofScores, predictions, threshold };
+  }
+
+  zScoreAnomaly(data: number[], threshold: number = 2): { algorithm: string; mean: number; stdDev: number; threshold: number; anomalies: { index: number; value: number; zScore: number }[]; nAnomalies: number } {
+    const n = data.length;
+    const mean = data.reduce((s, v) => s + v, 0) / n;
+    let variance = 0;
+    for (const v of data) variance += (v - mean) * (v - mean);
+    variance /= n;
+    const stdDev = Math.sqrt(variance);
+    const anomalies: { index: number; value: number; zScore: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const z = stdDev === 0 ? 0 : (data[i] - mean) / stdDev;
+      if (Math.abs(z) > threshold) anomalies.push({ index: i, value: data[i], zScore: z });
+    }
+    return { algorithm: "zScoreAnomaly", mean, stdDev, threshold, anomalies, nAnomalies: anomalies.length };
+  }
+
+  jackknifeResample(data: number[], estimator: (sample: number[]) => number): { algorithm: string; n: number; estimate: number; jackknifeEstimates: number[]; bias: number; standardError: number } {
+    const n = data.length;
+    const estimate = estimator([...data]);
+    const jackknifeEstimates: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const sample = data.filter((_, idx) => idx !== i);
+      jackknifeEstimates.push(estimator(sample));
+    }
+    const meanJack = jackknifeEstimates.reduce((s, v) => s + v, 0) / n;
+    const bias = (n - 1) * (meanJack - estimate);
+    let variance = 0;
+    for (const v of jackknifeEstimates) variance += (v - meanJack) * (v - meanJack);
+    variance = variance * (n - 1) / n;
+    const standardError = Math.sqrt(variance);
+    return { algorithm: "jackknifeResample", n, estimate, jackknifeEstimates, bias, standardError };
+  }
+
+  welchTtest(sampleA: number[], sampleB: number[]): { algorithm: string; tStatistic: number; degreesOfFreedom: number; pValue: number; meanA: number; meanB: number; varA: number; varB: number } {
+    const nA = sampleA.length, nB = sampleB.length;
+    const meanA = sampleA.reduce((s, v) => s + v, 0) / nA;
+    const meanB = sampleB.reduce((s, v) => s + v, 0) / nB;
+    const varA = sampleA.reduce((s, v) => s + (v - meanA) * (v - meanA), 0) / (nA - 1);
+    const varB = sampleB.reduce((s, v) => s + (v - meanB) * (v - meanB), 0) / (nB - 1);
+    const se = Math.sqrt(varA / nA + varB / nB);
+    const tStatistic = se === 0 ? 0 : (meanA - meanB) / se;
+    const num = varA / nA + varB / nB;
+    const denom = (varA / nA) * (varA / nA) / (nA - 1) + (varB / nB) * (varB / nB) / (nB - 1);
+    const df = denom === 0 ? 0 : num * num / denom;
+    let pValue = 1;
+    if (df > 0 && tStatistic !== 0) {
+      const absT = Math.abs(tStatistic);
+      pValue = 2 * (1 - this._tCdf(absT, df));
+    }
+    return { algorithm: "welchTtest", tStatistic, degreesOfFreedom: df, pValue, meanA, meanB, varA, varB };
+  }
+
+  truncatedNormalSample(mean: number, std: number, lower: number, upper: number, n: number = 1000): { algorithm: string; samples: number[]; mean: number; std: number; lower: number; upper: number; actualMean: number; actualStd: number } {
+    const normalQuantile = (p: number): number => {
+      if (p <= 0) return -Infinity;
+      if (p >= 1) return Infinity;
+      const a = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.383577518672690e2, -3.066479806614716e1, 2.506628277459239];
+      const b = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+      const c = [-7.784894002430293e-1, -3.223964580411365e-1, -2.400758277161838e-1, -2.549732539343734e-2, 4.374664141464968e-2, -2.938163982698783e-2];
+      const d = [7.784695709041462e-1, 3.224671290700398e-1, 2.445134137142996e-1, 3.754408661907416e-2];
+      if (p < 0.02425) {
+        const q = Math.sqrt(-2 * Math.log(p));
+        return (((((c[5] * q + c[4]) * q + c[3]) * q + c[2]) * q + c[1]) * q + c[0]) / ((((d[3] * q + d[2]) * q + d[1]) * q + d[0]) * q + 1);
+      }
+      if (p > 0.97575) {
+        const q = Math.sqrt(-2 * Math.log(1 - p));
+        return -(((((c[5] * q + c[4]) * q + c[3]) * q + c[2]) * q + c[1]) * q + c[0]) / ((((d[3] * q + d[2]) * q + d[1]) * q + d[0]) * q + 1);
+      }
+      const q = p - 0.5;
+      const r = q * q;
+      return (((((a[5] * r + a[4]) * r + a[3]) * r + a[2]) * r + a[1]) * r + a[0]) * q / (((((b[4] * r + b[3]) * r + b[2]) * r + b[1]) * r + b[0]) * r + 1);
+    };
+    const lowerP = this._normalCdf((lower - mean) / std);
+    const upperP = this._normalCdf((upper - mean) / std);
+    const samples: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const u = lowerP + Math.random() * (upperP - lowerP);
+      const x = normalQuantile(Math.max(1e-15, Math.min(1 - 1e-15, u)));
+      samples.push(mean + x * std);
+    }
+    const actualMean = samples.reduce((s, v) => s + v, 0) / n;
+    let actualVar = 0;
+    for (const v of samples) actualVar += (v - actualMean) * (v - actualMean);
+    actualVar /= n;
+    return { algorithm: "truncatedNormalSample", samples, mean, std, lower, upper, actualMean, actualStd: Math.sqrt(actualVar) };
+  }
+
+  multivariateNormalSample(mean: number[], cov: number[][], n: number = 1000): { algorithm: string; dimension: number; n: number; samples: number[][]; mean: number[]; cov: number[][] } {
+    const dim = mean.length;
+    const L: number[][] = [];
+    for (let i = 0; i < dim; i++) L.push(new Array(dim).fill(0));
+    for (let i = 0; i < dim; i++) {
+      for (let j = 0; j <= i; j++) {
+        let sum = 0;
+        for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
+        if (i === j) {
+          const val = cov[i][i] - sum;
+          L[i][j] = val > 0 ? Math.sqrt(val) : 0;
+        } else {
+          L[i][j] = L[j][j] !== 0 ? (cov[i][j] - sum) / L[j][j] : 0;
+        }
+      }
+    }
+    const randn = (): number => {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    };
+    const samples: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const z: number[] = [];
+      for (let d = 0; d < dim; d++) z.push(randn());
+      const sample: number[] = new Array(dim).fill(0);
+      for (let d = 0; d < dim; d++) {
+        let val = mean[d];
+        for (let j = 0; j <= d; j++) val += L[d][j] * z[j];
+        sample[d] = val;
+      }
+      samples.push(sample);
+    }
+    return { algorithm: "multivariateNormalSample", dimension: dim, n, samples, mean, cov };
+  }
+
+  // ── Group 5: Clustering & Dimensionality ──
+
+  meanShiftCluster(data: number[][], bandwidth: number = 1): { algorithm: string; nClusters: number; labels: number[]; clusterCenters: number[][] } {
+    const n = data.length;
+    const dim = data[0].length;
+    const points: number[][] = data.map(p => [...p]);
+    const shift = (point: number[]): number[] => {
+      let num = new Array(dim).fill(0);
+      let denom = 0;
+      for (const p of data) {
+        let distSq = 0;
+        for (let d = 0; d < dim; d++) {
+          const diff = point[d] - p[d];
+          distSq += diff * diff;
+        }
+        const w = Math.exp(-distSq / (2 * bandwidth * bandwidth));
+        for (let d = 0; d < dim; d++) num[d] += w * p[d];
+        denom += w;
+      }
+      return denom > 0 ? num.map(v => v / denom) : [...point];
+    };
+    const converged: boolean[] = new Array(n).fill(false);
+    for (let iter = 0; iter < 50; iter++) {
+      for (let i = 0; i < n; i++) {
+        if (converged[i]) continue;
+        const newPoint = shift(points[i]);
+        let diffSq = 0;
+        for (let d = 0; d < dim; d++) diffSq += (newPoint[d] - points[i][d]) * (newPoint[d] - points[i][d]);
+        points[i] = newPoint;
+        if (Math.sqrt(diffSq) < bandwidth * 0.01) converged[i] = true;
+      }
+      if (converged.every(Boolean)) break;
+    }
+    const centers: number[][] = [];
+    const labels: number[] = new Array(n).fill(-1);
+    const eps = bandwidth * 0.1;
+    for (let i = 0; i < n; i++) {
+      let found = false;
+      for (let c = 0; c < centers.length; c++) {
+        let distSq = 0;
+        for (let d = 0; d < dim; d++) distSq += (points[i][d] - centers[c][d]) * (points[i][d] - centers[c][d]);
+        if (Math.sqrt(distSq) < eps) { labels[i] = c; found = true; break; }
+      }
+      if (!found) { labels[i] = centers.length; centers.push([...points[i]]); }
+    }
+    return { algorithm: "meanShiftCluster", nClusters: centers.length, labels, clusterCenters: centers };
+  }
+
+  affinityPropagation(data: number[][], damping: number = 0.5, maxIter: number = 200): { algorithm: string; nClusters: number; labels: number[]; exemplars: number[][]; iterations: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const S: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      S.push(new Array(n).fill(0));
+      for (let j = 0; j < n; j++) {
+        let d = 0;
+        for (let k = 0; k < dim; k++) d += (data[i][k] - data[j][k]) * (data[i][k] - data[j][k]);
+        S[i][j] = -Math.sqrt(d);
+      }
+    }
+    let pref = 0;
+    for (let i = 0; i < n; i++) {
+      const vals = S[i].filter((_, j) => j !== i);
+      vals.sort((a, b) => a - b);
+      pref += vals.length > 0 ? vals[Math.floor(vals.length / 2)] : 0;
+    }
+    pref = n > 0 ? pref / n : 0;
+    const R: number[][] = [];
+    const A: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      R.push(new Array(n).fill(0));
+      A.push(new Array(n).fill(0));
+    }
+    let iter = 0;
+    for (; iter < maxIter; iter++) {
+      const oldR = R.map(r => [...r]);
+      for (let i = 0; i < n; i++) {
+        let max1 = -Infinity, max2 = -Infinity;
+        let maxIdx = -1;
+        for (let j = 0; j < n; j++) {
+          const val = S[i][j] + A[i][j];
+          if (val > max1) { max2 = max1; max1 = val; maxIdx = j; }
+          else if (val > max2) max2 = val;
+        }
+        for (let j = 0; j < n; j++) {
+          const as = j === maxIdx ? max2 : max1;
+          R[i][j] = (1 - damping) * (S[i][j] - as) + damping * oldR[i][j];
+        }
+      }
+      const oldA = A.map(a => [...a]);
+      for (let j = 0; j < n; j++) {
+        let sumPosR = 0;
+        for (let i = 0; i < n; i++) if (i !== j && R[i][j] > 0) sumPosR += R[i][j];
+        for (let i = 0; i < n; i++) {
+          if (i === j) {
+            A[i][j] = (1 - damping) * sumPosR + damping * oldA[i][j];
+          } else {
+            const val = R[j][j] + sumPosR - Math.max(0, R[i][j]);
+            A[i][j] = (1 - damping) * Math.min(0, val) + damping * oldA[i][j];
+          }
+        }
+      }
+    }
+    const exemplarIndices: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (R[i][i] + A[i][i] > 0) exemplarIndices.push(i);
+    }
+    if (exemplarIndices.length === 0) exemplarIndices.push(0);
+    const labels: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      let bestDist = Infinity;
+      let bestIdx = 0;
+      for (let e = 0; e < exemplarIndices.length; e++) {
+        let d = 0;
+        for (let k = 0; k < dim; k++) d += (data[i][k] - data[exemplarIndices[e]][k]) * (data[i][k] - data[exemplarIndices[e]][k]);
+        if (d < bestDist) { bestDist = d; bestIdx = e; }
+      }
+      labels[i] = bestIdx;
+    }
+    const exemplars = exemplarIndices.map(idx => [...data[idx]]);
+    return { algorithm: "affinityPropagation", nClusters: exemplars.length, labels, exemplars, iterations: iter };
+  }
+
+  opticsCluster(data: number[][], eps: number = 0.5, minPts: number = 5): { algorithm: string; n: number; reachabilityDistances: (number | null)[]; coreDistances: number[]; ordering: number[] } {
+    const n = data.length;
+    const dim = data[0].length;
+    const euclidean = (a: number[], b: number[]): number => {
+      let d = 0;
+      for (let i = 0; i < dim; i++) d += (a[i] - b[i]) * (a[i] - b[i]);
+      return Math.sqrt(d);
+    };
+    const coreDistances: number[] = new Array(n).fill(Infinity);
+    for (let i = 0; i < n; i++) {
+      const ds: number[] = [];
+      for (let j = 0; j < n; j++) if (i !== j) ds.push(euclidean(data[i], data[j]));
+      ds.sort((a, b) => a - b);
+      if (ds.length >= minPts) coreDistances[i] = ds[minPts - 1];
+    }
+    const reachabilityDistances: (number | null)[] = new Array(n).fill(null);
+    const processed: boolean[] = new Array(n).fill(false);
+    const ordering: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (processed[i]) continue;
+      processed[i] = true;
+      ordering.push(i);
+      if (coreDistances[i] <= eps) {
+        for (let j = 0; j < n; j++) {
+          if (processed[j]) continue;
+          const d = euclidean(data[i], data[j]);
+          if (d <= eps) {
+            const newReach = Math.max(coreDistances[i], d);
+            if (reachabilityDistances[j] === null || newReach < reachabilityDistances[j]!) {
+              reachabilityDistances[j] = newReach;
+            }
+          }
+        }
+        let nextIdx = -1;
+        let minReach = Infinity;
+        for (let j = 0; j < n; j++) {
+          if (!processed[j] && reachabilityDistances[j] !== null && reachabilityDistances[j]! < minReach) {
+            minReach = reachabilityDistances[j]!;
+            nextIdx = j;
+          }
+        }
+        if (nextIdx >= 0) {
+          i = nextIdx - 1;
+          continue;
+        }
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      if (!processed[i]) { processed[i] = true; ordering.push(i); }
+    }
+    return { algorithm: "opticsCluster", n, reachabilityDistances, coreDistances, ordering };
+  }
+
+  spectralCluster(data: number[][], nClusters: number = 2, sigma: number = 1): { algorithm: string; nClusters: number; labels: number[]; eigenvalues: number[] } {
+    const n = data.length;
+    const dim = data[0].length;
+    const W: number[][] = [];
+    for (let i = 0; i < n; i++) W.push(new Array(n).fill(0));
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        let d = 0;
+        for (let k = 0; k < dim; k++) d += (data[i][k] - data[j][k]) * (data[i][k] - data[j][k]);
+        const w = Math.exp(-d / (2 * sigma * sigma));
+        W[i][j] = w;
+        W[j][i] = w;
+      }
+    }
+    const D: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) D[i] += W[i][j];
+    }
+    const L: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      L.push(new Array(n).fill(0));
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          L[i][j] = D[i] > 0 ? 1 - W[i][j] / D[i] : 1;
+        } else {
+          L[i][j] = D[i] > 0 && D[j] > 0 ? -W[i][j] / Math.sqrt(D[i] * D[j]) : 0;
+        }
+      }
+    }
+    const B: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      B.push(new Array(n).fill(0));
+      for (let j = 0; j < n; j++) B[i][j] = (i === j ? 1 : 0) - L[i][j];
+    }
+    const k = Math.min(nClusters, n);
+    const eigenvalues: number[] = [];
+    const eigvecs: number[][] = [];
+    let M = B.map(row => [...row]);
+    for (let c = 0; c < k; c++) {
+      let v: number[] = new Array(n).fill(1 / Math.sqrt(n));
+      let prevEig = 0;
+      for (let iter = 0; iter < 100; iter++) {
+        const Av: number[] = new Array(n).fill(0);
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) Av[i] += M[i][j] * v[j];
+        }
+        let norm = 0;
+        for (let i = 0; i < n; i++) norm += Av[i] * Av[i];
+        norm = Math.sqrt(norm);
+        if (norm > 0) for (let i = 0; i < n; i++) v[i] = Av[i] / norm;
+        const eig = v.reduce((s, val, i) => s + val * Av[i], 0);
+        if (Math.abs(eig - prevEig) < 1e-10) { prevEig = eig; break; }
+        prevEig = eig;
+      }
+      eigenvalues.push(1 - prevEig);
+      eigvecs.push([...v]);
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          M[i][j] -= prevEig * v[i] * v[j];
+        }
+      }
+    }
+    const features: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const feat: number[] = [];
+      for (let c = 0; c < eigvecs.length; c++) feat.push(eigvecs[c][i]);
+      features.push(feat);
+    }
+    const labels: number[] = new Array(n).fill(0);
+    const nFeat = eigvecs.length;
+    let centroids: number[][] = [];
+    for (let c = 0; c < k; c++) centroids.push([...features[Math.floor(Math.random() * n)]]);
+    while (centroids.length < k) centroids.push(new Array(nFeat).fill(0));
+    for (let iter = 0; iter < 50; iter++) {
+      for (let i = 0; i < n; i++) {
+        let best = 0, bestDist = Infinity;
+        for (let c = 0; c < k; c++) {
+          let d = 0;
+          for (let j = 0; j < nFeat; j++) d += (features[i][j] - centroids[c][j]) * (features[i][j] - centroids[c][j]);
+          if (d < bestDist) { bestDist = d; best = c; }
+        }
+        labels[i] = best;
+      }
+      const sums: number[][] = [];
+      const counts: number[] = new Array(k).fill(0);
+      for (let c = 0; c < k; c++) sums.push(new Array(nFeat).fill(0));
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < nFeat; j++) sums[labels[i]][j] += features[i][j];
+        counts[labels[i]]++;
+      }
+      for (let c = 0; c < k; c++) {
+        if (counts[c] > 0) for (let j = 0; j < nFeat; j++) centroids[c][j] = sums[c][j] / counts[c];
+      }
+    }
+    return { algorithm: "spectralCluster", nClusters: k, labels, eigenvalues };
+  }
+
+  gaussianMixtureCluster(data: number[][], nComponents: number = 2, maxIter: number = 100): { algorithm: string; nComponents: number; labels: number[]; means: number[][]; covariances: number[][][]; weights: number[]; logLikelihood: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const k = Math.min(nComponents, n);
+    const means: number[][] = [];
+    means.push([...data[Math.floor(Math.random() * n)]]);
+    for (let c = 1; c < k; c++) {
+      const dists: number[] = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) {
+        let minD = Infinity;
+        for (const m of means) {
+          let d = 0;
+          for (let j = 0; j < dim; j++) d += (data[i][j] - m[j]) * (data[i][j] - m[j]);
+          if (d < minD) minD = d;
+        }
+        dists[i] = minD;
+      }
+      const total = dists.reduce((s, v) => s + v, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < n; i++) { r -= dists[i]; if (r <= 0) { means.push([...data[i]]); break; } }
+    }
+    while (means.length < k) means.push([...data[Math.floor(Math.random() * n)]]);
+    const covariances: number[][][] = [];
+    for (let c = 0; c < k; c++) {
+      const cov: number[][] = [];
+      for (let i = 0; i < dim; i++) {
+        cov.push(new Array(dim).fill(0));
+        cov[i][i] = 1;
+      }
+      covariances.push(cov);
+    }
+    const weights: number[] = new Array(k).fill(1 / k);
+    let logLikelihood = -Infinity;
+    const mvnLogPdf = (x: number[], mean: number[], cov: number[][]): number => {
+      const d = x.length;
+      const L: number[][] = [];
+      for (let i = 0; i < d; i++) L.push(new Array(d).fill(0));
+      for (let i = 0; i < d; i++) {
+        for (let j = 0; j <= i; j++) {
+          let sum = 0;
+          for (let t = 0; t < j; t++) sum += L[i][t] * L[j][t];
+          if (i === j) {
+            const val = cov[i][i] - sum;
+            L[i][j] = val > 0 ? Math.sqrt(val) : 1e-10;
+          } else {
+            L[i][j] = L[j][j] !== 0 ? (cov[i][j] - sum) / L[j][j] : 0;
+          }
+        }
+      }
+      let logDet = 0;
+      for (let i = 0; i < d; i++) logDet += 2 * Math.log(L[i][i]);
+      const diff: number[] = [];
+      for (let i = 0; i < d; i++) diff.push(x[i] - mean[i]);
+      const y: number[] = new Array(d).fill(0);
+      for (let i = 0; i < d; i++) {
+        let sum = diff[i];
+        for (let j = 0; j < i; j++) sum -= L[i][j] * y[j];
+        y[i] = L[i][i] > 0 ? sum / L[i][i] : 0;
+      }
+      let mahal = 0;
+      for (let i = 0; i < d; i++) mahal += y[i] * y[i];
+      return -0.5 * (d * Math.log(2 * Math.PI) + logDet + mahal);
+    };
+    const responsibilities: number[][] = [];
+    for (let i = 0; i < n; i++) responsibilities.push(new Array(k).fill(0));
+    for (let iter = 0; iter < maxIter; iter++) {
+      for (let i = 0; i < n; i++) {
+        let maxLog = -Infinity;
+        for (let c = 0; c < k; c++) {
+          responsibilities[i][c] = Math.log(weights[c]) + mvnLogPdf(data[i], means[c], covariances[c]);
+          if (responsibilities[i][c] > maxLog) maxLog = responsibilities[i][c];
+        }
+        let sumResp = 0;
+        for (let c = 0; c < k; c++) {
+          responsibilities[i][c] = Math.exp(responsibilities[i][c] - maxLog);
+          sumResp += responsibilities[i][c];
+        }
+        if (sumResp > 0) for (let c = 0; c < k; c++) responsibilities[i][c] /= sumResp;
+      }
+      const nSoft: number[] = new Array(k).fill(0);
+      for (let i = 0; i < n; i++) {
+        for (let c = 0; c < k; c++) nSoft[c] += responsibilities[i][c];
+      }
+      for (let c = 0; c < k; c++) {
+        for (let d = 0; d < dim; d++) {
+          let s = 0;
+          for (let i = 0; i < n; i++) s += responsibilities[i][c] * data[i][d];
+          means[c][d] = nSoft[c] > 0 ? s / nSoft[c] : means[c][d];
+        }
+      }
+      for (let c = 0; c < k; c++) {
+        const newCov: number[][] = [];
+        for (let i = 0; i < dim; i++) newCov.push(new Array(dim).fill(0));
+        for (let i = 0; i < n; i++) {
+          const diff: number[] = [];
+          for (let d = 0; d < dim; d++) diff.push(data[i][d] - means[c][d]);
+          for (let d1 = 0; d1 < dim; d1++) {
+            for (let d2 = 0; d2 < dim; d2++) {
+              newCov[d1][d2] += responsibilities[i][c] * diff[d1] * diff[d2];
+            }
+          }
+        }
+        if (nSoft[c] > 0) {
+          for (let d1 = 0; d1 < dim; d1++) {
+            for (let d2 = 0; d2 < dim; d2++) {
+              covariances[c][d1][d2] = newCov[d1][d2] / nSoft[c];
+            }
+          }
+        }
+        weights[c] = nSoft[c] / n;
+      }
+      let newLL = 0;
+      for (let i = 0; i < n; i++) {
+        let maxLog = -Infinity;
+        const logs: number[] = [];
+        for (let c = 0; c < k; c++) {
+          logs.push(Math.log(weights[c]) + mvnLogPdf(data[i], means[c], covariances[c]));
+          if (logs[c] > maxLog) maxLog = logs[c];
+        }
+        let sumExp = 0;
+        for (let c = 0; c < k; c++) sumExp += Math.exp(logs[c] - maxLog);
+        newLL += maxLog + Math.log(sumExp);
+      }
+      if (Math.abs(newLL - logLikelihood) < 1e-6) { logLikelihood = newLL; break; }
+      logLikelihood = newLL;
+    }
+    const labels: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      let best = 0;
+      for (let c = 1; c < k; c++) {
+        if (responsibilities[i][c] > responsibilities[i][best]) best = c;
+      }
+      labels[i] = best;
+    }
+    return { algorithm: "gaussianMixtureCluster", nComponents: k, labels, means, covariances, weights, logLikelihood };
+  }
+
+  fuzzyCMeans(data: number[][], nClusters: number = 2, m: number = 2, maxIter: number = 100): { algorithm: string; nClusters: number; labels: number[]; centers: number[][]; membershipMatrix: number[][]; iterations: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const k = Math.min(nClusters, n);
+    const u: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const row: number[] = [];
+      let sum = 0;
+      for (let c = 0; c < k; c++) { const v = Math.random(); row.push(v); sum += v; }
+      if (sum > 0) for (let c = 0; c < k; c++) row[c] /= sum; else row[0] = 1;
+      u.push(row);
+    }
+    let centers: number[][] = [];
+    let iter = 0;
+    for (; iter < maxIter; iter++) {
+      centers = [];
+      for (let c = 0; c < k; c++) centers.push(new Array(dim).fill(0));
+      const weights: number[] = new Array(k).fill(0);
+      for (let i = 0; i < n; i++) {
+        for (let c = 0; c < k; c++) {
+          const um = Math.pow(u[i][c], m);
+          for (let d = 0; d < dim; d++) centers[c][d] += um * data[i][d];
+          weights[c] += um;
+        }
+      }
+      for (let c = 0; c < k; c++) {
+        if (weights[c] > 0) for (let d = 0; d < dim; d++) centers[c][d] /= weights[c];
+      }
+      const newU: number[][] = [];
+      for (let i = 0; i < n; i++) {
+        const dists: number[] = [];
+        for (let c = 0; c < k; c++) {
+          let d = 0;
+          for (let j = 0; j < dim; j++) d += (data[i][j] - centers[c][j]) * (data[i][j] - centers[c][j]);
+          dists.push(d);
+        }
+        let allNonZero = true;
+        for (let c = 0; c < k; c++) {
+          if (dists[c] < 1e-15) {
+            const row: number[] = new Array(k).fill(0);
+            row[c] = 1;
+            newU.push(row);
+            allNonZero = false;
+            break;
+          }
+        }
+        if (allNonZero) {
+          const row: number[] = [];
+          for (let c = 0; c < k; c++) {
+            let sum = 0;
+            const exp = 2 / (m - 1);
+            for (let j = 0; j < k; j++) sum += Math.pow(dists[c] / dists[j], exp);
+            row.push(sum > 0 ? 1 / sum : 1 / k);
+          }
+          newU.push(row);
+        }
+      }
+      let maxDiff = 0;
+      for (let i = 0; i < n; i++) {
+        for (let c = 0; c < k; c++) {
+          maxDiff = Math.max(maxDiff, Math.abs(newU[i][c] - u[i][c]));
+          u[i][c] = newU[i][c];
+        }
+      }
+      if (maxDiff < 1e-5) break;
+    }
+    const labels: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      let best = 0;
+      for (let c = 1; c < k; c++) { if (u[i][c] > u[i][best]) best = c; }
+      labels[i] = best;
+    }
+    return { algorithm: "fuzzyCMeans", nClusters: k, labels, centers, membershipMatrix: u, iterations: iter + 1 };
+  }
+
+  miniBatchKMeans(data: number[][], k: number = 3, batchSize: number = 20, maxIter: number = 100): { algorithm: string; k: number; labels: number[]; centroids: number[][]; iterations: number; inertia: number } {
+    const n = data.length;
+    const dim = data[0].length;
+    const kk = Math.min(k, n);
+    const centroids: number[][] = [];
+    centroids.push([...data[Math.floor(Math.random() * n)]]);
+    for (let c = 1; c < kk; c++) {
+      const dists: number[] = new Array(n).fill(Infinity);
+      for (let i = 0; i < n; i++) {
+        for (let c2 = 0; c2 < centroids.length; c2++) {
+          let d = 0;
+          for (let j = 0; j < dim; j++) d += (data[i][j] - centroids[c2][j]) * (data[i][j] - centroids[c2][j]);
+          if (d < dists[i]) dists[i] = d;
+        }
+      }
+      const total = dists.reduce((s, v) => s + v, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < n; i++) { r -= dists[i]; if (r <= 0) { centroids.push([...data[i]]); break; } }
+    }
+    while (centroids.length < kk) centroids.push([...data[Math.floor(Math.random() * n)]]);
+    const counts: number[] = new Array(kk).fill(0);
+    for (let iter = 0; iter < maxIter; iter++) {
+      const batch: number[] = [];
+      const bs = Math.min(batchSize, n);
+      for (let i = 0; i < bs; i++) batch.push(Math.floor(Math.random() * n));
+      const assignments: { idx: number; centroid: number }[] = [];
+      for (const idx of batch) {
+        let best = 0, bestDist = Infinity;
+        for (let c = 0; c < kk; c++) {
+          let d = 0;
+          for (let j = 0; j < dim; j++) d += (data[idx][j] - centroids[c][j]) * (data[idx][j] - centroids[c][j]);
+          if (d < bestDist) { bestDist = d; best = c; }
+        }
+        assignments.push({ idx, centroid: best });
+      }
+      for (const { idx, centroid } of assignments) {
+        counts[centroid]++;
+        const eta = 1 / counts[centroid];
+        for (let j = 0; j < dim; j++) {
+          centroids[centroid][j] = (1 - eta) * centroids[centroid][j] + eta * data[idx][j];
+        }
+      }
+    }
+    const labels: number[] = new Array(n).fill(0);
+    let inertia = 0;
+    for (let i = 0; i < n; i++) {
+      let best = 0, bestDist = Infinity;
+      for (let c = 0; c < kk; c++) {
+        let d = 0;
+        for (let j = 0; j < dim; j++) d += (data[i][j] - centroids[c][j]) * (data[i][j] - centroids[c][j]);
+        if (d < bestDist) { bestDist = d; best = c; }
+      }
+      labels[i] = best;
+      inertia += bestDist;
+    }
+    return { algorithm: "miniBatchKMeans", k: kk, labels, centroids, iterations: maxIter, inertia };
+  }
 }
 
 function sampleBeta(alpha: number, beta: number): number {

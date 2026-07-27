@@ -205,6 +205,8 @@ const navItems = [
   { to: "/forecasting-dashboard", icon: TrendingUp, label: "Forecasting Dashboard" },
   { to: "/marketing-roi", icon: DollarSign, label: "Marketing ROI" },
   { to: "/ds-algorithms", icon: Binary, label: "DSA Playground" },
+  { to: "/autonomous-campaign-manager", icon: Bot, label: "Auto Campaign Mgr" },
+  { to: "/unified-ads-pipeline", icon: Layers, label: "Ads Pipeline" },
   { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
 

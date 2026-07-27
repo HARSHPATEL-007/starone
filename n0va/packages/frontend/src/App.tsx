@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { ToastProvider } from "./components/Toast";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import AutonomousCampaignManager from "./pages/AutonomousCampaignManager";
+import UnifiedAdsPipeline from "./pages/UnifiedAdsPipeline";
 import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
 import Creatives from "./pages/Creatives";
@@ -290,6 +292,8 @@ export default function App() {
                 <Route path="/incrementality-testing" element={<IncrementalityTesting />} />
                 <Route path="/search-intelligence" element={<SearchIntelligence />} />
                 <Route path="/anomaly-detection-enhanced" element={<AnomalyDetectionEnhanced />} />
+                <Route path="/autonomous-campaign-manager" element={<AutonomousCampaignManager />} />
+                <Route path="/unified-ads-pipeline" element={<UnifiedAdsPipeline />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
