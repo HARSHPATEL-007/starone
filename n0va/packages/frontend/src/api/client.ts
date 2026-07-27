@@ -1780,6 +1780,72 @@ export const api = {
       request<any>("/ds-algorithms/ml/quantile-regression", { method: "POST", body: JSON.stringify(data) }),
     gaussianProcess: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/ml/gaussian-process", { method: "POST", body: JSON.stringify(data) }),
+    // Deeper Enhancements: Data Structures
+    splayTreeOps: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/splay-tree", { method: "POST", body: JSON.stringify(data) }),
+    huffmanCoding: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/huffman-coding", { method: "POST", body: JSON.stringify(data) }),
+    lzwCompression: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/lzw-compression", { method: "POST", body: JSON.stringify(data) }),
+    // Deeper Enhancements: Regression & Classification
+    linearRegressionGD: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/linear-regression-gd", { method: "POST", body: JSON.stringify(data) }),
+    logisticRegressionGD: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/logistic-regression-gd", { method: "POST", body: JSON.stringify(data) }),
+    naiveBayesClassifier: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/naive-bayes", { method: "POST", body: JSON.stringify(data) }),
+    randomForestRegressor: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/random-forest", { method: "POST", body: JSON.stringify(data) }),
+    knnClassifier: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/knn-classifier", { method: "POST", body: JSON.stringify(data) }),
+    // Deeper Enhancements: Time Series & Statistics
+    timeSeriesDecompose: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/time-series-decompose", { method: "POST", body: JSON.stringify(data) }),
+    bootstrapCI: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/bootstrap-ci", { method: "POST", body: JSON.stringify(data) }),
+    kolmogorovSmirnovTest: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/ks-test", { method: "POST", body: JSON.stringify(data) }),
+    pearsonCorrelation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/pearson-correlation", { method: "POST", body: JSON.stringify(data) }),
+    spearmanRankCorrelation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/spearman-correlation", { method: "POST", body: JSON.stringify(data) }),
+    // Deeper Enhancements: Dimensionality & Clustering
+    pcaDecomposition: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/pca-decomposition", { method: "POST", body: JSON.stringify(data) }),
+    factorAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/factor-analysis", { method: "POST", body: JSON.stringify(data) }),
+    kMedoidsClustering: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/k-medoids", { method: "POST", body: JSON.stringify(data) }),
+    dbscanCluster: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/dbscan", { method: "POST", body: JSON.stringify(data) }),
+    hierarchicalCluster: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/hierarchical-cluster", { method: "POST", body: JSON.stringify(data) }),
+    // Deeper Enhancements: Ensemble & Advanced ML
+    gaussianNaiveBayes: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/gaussian-naive-bayes", { method: "POST", body: JSON.stringify(data) }),
+    adaboostClassify: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/adaboost", { method: "POST", body: JSON.stringify(data) }),
+    gradientBoostRegress: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/gradient-boost", { method: "POST", body: JSON.stringify(data) }),
+    markovChainSim: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/markov-chain-sim", { method: "POST", body: JSON.stringify(data) }),
+    monteCarloOption: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/monte-carlo-option", { method: "POST", body: JSON.stringify(data) }),
+    baggingEnsemble: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/bagging-ensemble", { method: "POST", body: JSON.stringify(data) }),
+    crossValidationKFold: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/cross-validation", { method: "POST", body: JSON.stringify(data) }),
+    // Deeper Enhancements: Regularized Regression
+    ridgeRegression: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/ridge-regression", { method: "POST", body: JSON.stringify(data) }),
+    lassoRegression: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/lasso-regression", { method: "POST", body: JSON.stringify(data) }),
+    elasticNetRegression: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/elastic-net", { method: "POST", body: JSON.stringify(data) }),
+    mcmcSamplingMetropolis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/mcmc-sampling", { method: "POST", body: JSON.stringify(data) }),
+    expectationMaximization: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/deeper/em-algorithm", { method: "POST", body: JSON.stringify(data) }),
   },
 
   autonomousCampaignManager: {

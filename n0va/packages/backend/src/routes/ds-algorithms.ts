@@ -2351,4 +2351,166 @@ router.post("/ml/gaussian-process", asyncHandler(async (req, res) => {
   sendSuccess(res, dsAlgorithmService.gaussianProcess(trainX, trainY, testX, lengthScale, signalVar, noiseVar));
 }));
 
+// ── Deeper Enhancements: Data Structures ──
+router.post("/deeper/splay-tree", asyncHandler(async (req, res) => {
+  const { ops } = req.body;
+  if (!ops || !Array.isArray(ops)) return res.status(400).json({ error: "ops array required" });
+  sendSuccess(res, dsAlgorithmService.splayTreeOps(ops));
+}));
+router.post("/deeper/huffman-coding", asyncHandler(async (req, res) => {
+  const { text } = req.body;
+  if (text === undefined) return res.status(400).json({ error: "text required" });
+  sendSuccess(res, dsAlgorithmService.huffmanCoding(text));
+}));
+router.post("/deeper/lzw-compression", asyncHandler(async (req, res) => {
+  const { text } = req.body;
+  if (text === undefined) return res.status(400).json({ error: "text required" });
+  sendSuccess(res, dsAlgorithmService.lzwCompression(text));
+}));
+
+// ── Deeper Enhancements: Regression & Classification ──
+router.post("/deeper/linear-regression-gd", asyncHandler(async (req, res) => {
+  const { features, targets, learningRate, epochs } = req.body;
+  if (!features || !targets) return res.status(400).json({ error: "features and targets required" });
+  sendSuccess(res, dsAlgorithmService.linearRegressionGD(features, targets, learningRate, epochs));
+}));
+router.post("/deeper/logistic-regression-gd", asyncHandler(async (req, res) => {
+  const { features, targets, learningRate, epochs } = req.body;
+  if (!features || !targets) return res.status(400).json({ error: "features and targets required" });
+  sendSuccess(res, dsAlgorithmService.logisticRegressionGD(features, targets, learningRate, epochs));
+}));
+router.post("/deeper/naive-bayes", asyncHandler(async (req, res) => {
+  const { features, labels, testFeatures } = req.body;
+  if (!features || !labels || !testFeatures) return res.status(400).json({ error: "features, labels, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.naiveBayesClassifier(features, labels, testFeatures));
+}));
+router.post("/deeper/random-forest", asyncHandler(async (req, res) => {
+  const { features, targets, testFeatures, nTrees, maxDepth } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.randomForestRegressor(features, targets, testFeatures, nTrees, maxDepth));
+}));
+router.post("/deeper/knn-classifier", asyncHandler(async (req, res) => {
+  const { trainX, trainY, testX, k } = req.body;
+  if (!trainX || !trainY || !testX) return res.status(400).json({ error: "trainX, trainY, testX required" });
+  sendSuccess(res, dsAlgorithmService.knnClassifier(trainX, trainY, testX, k));
+}));
+
+// ── Deeper Enhancements: Time Series & Statistics ──
+router.post("/deeper/time-series-decompose", asyncHandler(async (req, res) => {
+  const { series, period } = req.body;
+  if (!series || !Array.isArray(series)) return res.status(400).json({ error: "series array required" });
+  sendSuccess(res, dsAlgorithmService.timeSeriesDecompose(series, period));
+}));
+router.post("/deeper/bootstrap-ci", asyncHandler(async (req, res) => {
+  const { samples, nResamples, confidence } = req.body;
+  if (!samples || !Array.isArray(samples)) return res.status(400).json({ error: "samples array required" });
+  sendSuccess(res, dsAlgorithmService.bootstrapCI(samples, nResamples, confidence));
+}));
+router.post("/deeper/ks-test", asyncHandler(async (req, res) => {
+  const { sample1, sample2 } = req.body;
+  if (!sample1 || !sample2) return res.status(400).json({ error: "sample1 and sample2 required" });
+  sendSuccess(res, dsAlgorithmService.kolmogorovSmirnovTest(sample1, sample2));
+}));
+router.post("/deeper/pearson-correlation", asyncHandler(async (req, res) => {
+  const { x, y } = req.body;
+  if (!x || !y) return res.status(400).json({ error: "x and y required" });
+  sendSuccess(res, dsAlgorithmService.pearsonCorrelation(x, y));
+}));
+router.post("/deeper/spearman-correlation", asyncHandler(async (req, res) => {
+  const { x, y } = req.body;
+  if (!x || !y) return res.status(400).json({ error: "x and y required" });
+  sendSuccess(res, dsAlgorithmService.spearmanRankCorrelation(x, y));
+}));
+
+// ── Deeper Enhancements: Dimensionality & Clustering ──
+router.post("/deeper/pca-decomposition", asyncHandler(async (req, res) => {
+  const { data, nComponents } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.pcaDecomposition(data, nComponents));
+}));
+router.post("/deeper/factor-analysis", asyncHandler(async (req, res) => {
+  const { data, nFactors } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.factorAnalysis(data, nFactors));
+}));
+router.post("/deeper/k-medoids", asyncHandler(async (req, res) => {
+  const { data, k, maxIter } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.kMedoidsClustering(data, k, maxIter));
+}));
+router.post("/deeper/dbscan", asyncHandler(async (req, res) => {
+  const { data, epsilon, minPts } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.dbscanCluster(data, epsilon, minPts));
+}));
+router.post("/deeper/hierarchical-cluster", asyncHandler(async (req, res) => {
+  const { data, nClusters } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.hierarchicalCluster(data, nClusters));
+}));
+
+// ── Deeper Enhancements: Ensemble & Advanced ML ──
+router.post("/deeper/gaussian-naive-bayes", asyncHandler(async (req, res) => {
+  const { features, labels, testFeatures } = req.body;
+  if (!features || !labels || !testFeatures) return res.status(400).json({ error: "features, labels, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.gaussianNaiveBayes(features, labels, testFeatures));
+}));
+router.post("/deeper/adaboost", asyncHandler(async (req, res) => {
+  const { features, labels, testFeatures, nEstimators } = req.body;
+  if (!features || !labels || !testFeatures) return res.status(400).json({ error: "features, labels, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.adaboostClassify(features, labels, testFeatures, nEstimators));
+}));
+router.post("/deeper/gradient-boost", asyncHandler(async (req, res) => {
+  const { features, targets, testFeatures, nEstimators, learningRate } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.gradientBoostRegress(features, targets, testFeatures, nEstimators, learningRate));
+}));
+router.post("/deeper/markov-chain-sim", asyncHandler(async (req, res) => {
+  const { transitionMatrix, steps, startState } = req.body;
+  if (!transitionMatrix || !Array.isArray(transitionMatrix)) return res.status(400).json({ error: "transitionMatrix required" });
+  sendSuccess(res, dsAlgorithmService.markovChainSim(transitionMatrix, steps, startState));
+}));
+router.post("/deeper/monte-carlo-option", asyncHandler(async (req, res) => {
+  const { spot, strike, maturity, volatility, rate, nSims } = req.body;
+  if (spot === undefined || strike === undefined || maturity === undefined || volatility === undefined || rate === undefined) return res.status(400).json({ error: "spot, strike, maturity, volatility, rate required" });
+  sendSuccess(res, dsAlgorithmService.monteCarloOption(spot, strike, maturity, volatility, rate, nSims));
+}));
+router.post("/deeper/bagging-ensemble", asyncHandler(async (req, res) => {
+  const { features, targets, testFeatures, nModels } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.baggingEnsemble(features, targets, testFeatures, nModels));
+}));
+router.post("/deeper/cross-validation", asyncHandler(async (req, res) => {
+  const { features, targets, k } = req.body;
+  if (!features || !targets) return res.status(400).json({ error: "features and targets required" });
+  sendSuccess(res, dsAlgorithmService.crossValidationKFold(features, targets, k));
+}));
+
+// ── Deeper Enhancements: Regularized Regression ──
+router.post("/deeper/ridge-regression", asyncHandler(async (req, res) => {
+  const { features, targets, lambda, testFeatures } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.ridgeRegression(features, targets, lambda, testFeatures));
+}));
+router.post("/deeper/lasso-regression", asyncHandler(async (req, res) => {
+  const { features, targets, lambda, testFeatures } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.lassoRegression(features, targets, lambda, testFeatures));
+}));
+router.post("/deeper/elastic-net", asyncHandler(async (req, res) => {
+  const { features, targets, lambda, l1Ratio, testFeatures } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.elasticNetRegression(features, targets, lambda, l1Ratio, testFeatures));
+}));
+router.post("/deeper/mcmc-sampling", asyncHandler(async (req, res) => {
+  const { target, nSamples, proposalStd } = req.body;
+  if (!target) return res.status(400).json({ error: "target required" });
+  sendSuccess(res, dsAlgorithmService.mcmcSamplingMetropolis(target, nSamples, proposalStd));
+}));
+router.post("/deeper/em-algorithm", asyncHandler(async (req, res) => {
+  const { data, nComponents, maxIter } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.expectationMaximization(data, nComponents, maxIter));
+}));
+
 export default router;

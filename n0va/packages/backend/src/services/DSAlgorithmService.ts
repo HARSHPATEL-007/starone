@@ -8622,6 +8622,805 @@ export class DSAlgorithmService {
     return { algorithm: "gaussianProcess", trainSize: n, testSize: m, mean, variance };
   }
 
+  // ── Deeper Enhancements: Data Structures ──
+
+  splayTreeOps(ops: { action: "insert" | "search" | "delete"; key: number }[]): { algorithm: string; operations: { action: string; key: number; found?: boolean; treeHeight?: number }[]; finalTree: number[] } {
+    const tree: number[] = [];
+    const opsOut: { action: string; key: number; found?: boolean; treeHeight?: number }[] = [];
+    const splay = (keys: number[], k: number): number[] => {
+      if (keys.length === 0) return [];
+      if (keys[keys.length - 1] === k) return keys;
+      const idx = keys.indexOf(k);
+      if (idx >= 0) {
+        const arr = [...keys];
+        arr.splice(idx, 1);
+        arr.push(k);
+        return arr;
+      }
+      return keys;
+    };
+    for (const op of ops) {
+      if (op.action === "insert") {
+        if (!tree.includes(op.key)) tree.push(op.key);
+        tree.sort((a, b) => a - b);
+        opsOut.push({ action: "insert", key: op.key, found: tree.includes(op.key), treeHeight: tree.length });
+      } else if (op.action === "search") {
+        const found = tree.includes(op.key);
+        opsOut.push({ action: "search", key: op.key, found, treeHeight: tree.length });
+        if (found) splay(tree, op.key);
+      } else if (op.action === "delete") {
+        const idx = tree.indexOf(op.key);
+        const found = idx >= 0;
+        if (found) tree.splice(idx, 1);
+        opsOut.push({ action: "delete", key: op.key, found, treeHeight: tree.length });
+      }
+    }
+    return { algorithm: "splayTreeOps", operations: opsOut, finalTree: tree };
+  }
+
+  huffmanCoding(text: string): { algorithm: string; text: string; codes: Record<string, string>; encoded: string; decoded: string; compressionRatio: number } {
+    const freq: Record<string, number> = {};
+    for (const ch of text) freq[ch] = (freq[ch] || 0) + 1;
+    const chars = Object.keys(freq);
+    if (chars.length === 0) return { algorithm: "huffmanCoding", text, codes: {}, encoded: "", decoded: "", compressionRatio: 0 };
+    if (chars.length === 1) {
+      const ch = chars[0];
+      const codes = { [ch]: "0" };
+      const encoded = "0".repeat(text.length);
+      return { algorithm: "huffmanCoding", text, codes, encoded, decoded: text, compressionRatio: text.length * 8 / encoded.length };
+    }
+    const nodes = chars.map(ch => ({ ch, freq: freq[ch], left: null as any, right: null as any }));
+    while (nodes.length > 1) {
+      nodes.sort((a, b) => a.freq - b.freq);
+      const l = nodes.shift()!;
+      const r = nodes.shift()!;
+      nodes.push({ ch: "", freq: l.freq + r.freq, left: l, right: r });
+    }
+    const root = nodes[0];
+    const codes: Record<string, string> = {};
+    const traverse = (node: any, code: string) => {
+      if (node.ch) codes[node.ch] = code;
+      if (node.left) traverse(node.left, code + "0");
+      if (node.right) traverse(node.right, code + "1");
+    };
+    traverse(root, "");
+    const encoded = text.split("").map(ch => codes[ch]).join("");
+    const decode = (enc: string): string => {
+      let res = "", node = root;
+      for (const bit of enc) {
+        node = bit === "0" ? node.left : node.right;
+        if (node.ch) { res += node.ch; node = root; }
+      }
+      return res;
+    };
+    return { algorithm: "huffmanCoding", text, codes, encoded, decoded: decode(encoded), compressionRatio: text.length * 8 / encoded.length };
+  }
+
+  lzwCompression(text: string): { algorithm: string; text: string; compressed: number[]; decompressed: string; compressionRatio: number } {
+    const dict: Record<string, number> = {};
+    let nextCode = 0;
+    for (let i = 0; i < 256; i++) { dict[String.fromCharCode(i)] = nextCode++; }
+    let w = "", result: number[] = [];
+    for (const ch of text) {
+      const wc = w + ch;
+      if (dict[wc] !== undefined) { w = wc; }
+      else { result.push(dict[w]); dict[wc] = nextCode++; w = ch; }
+    }
+    if (w) result.push(dict[w]);
+    const revDict: Record<number, string> = {};
+    for (const [k, v] of Object.entries(dict)) revDict[v] = k;
+    let decompressed = "", entry = "", prevCode = result[0];
+    decompressed += revDict[prevCode];
+    for (let i = 1; i < result.length; i++) {
+      const code = result[i];
+      if (revDict[code] !== undefined) entry = revDict[code];
+      else entry = revDict[prevCode] + revDict[prevCode][0];
+      decompressed += entry;
+      revDict[nextCode] = revDict[prevCode] + entry[0];
+      nextCode++;
+      prevCode = code;
+    }
+    const ratio = text.length > 0 ? text.length * 8 / (result.length * 16) : 0;
+    return { algorithm: "lzwCompression", text, compressed: result, decompressed, compressionRatio: Math.round(ratio * 100) / 100 };
+  }
+
+  // ── Deeper Enhancements: Regression & Classification ──
+
+  linearRegressionGD(features: number[][], targets: number[], learningRate: number = 0.01, epochs: number = 100): { algorithm: string; coefficients: number[]; intercept: number; predictions: number[]; mse: number } {
+    const n = features.length, d = features[0]?.length || 1;
+    let w = new Array(d).fill(0), b = 0;
+    for (let ep = 0; ep < epochs; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const err = pred - targets[i];
+        for (let j = 0; j < d; j++) dw[j] += err * features[i][j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= learningRate * dw[j] / n;
+      b -= learningRate * db / n;
+    }
+    const predictions = features.map(f => Math.round((f.reduce((s, v, j) => s + v * w[j], 0) + b) * 10000) / 10000);
+    const mseSum = predictions.reduce((s, p, i) => s + (p - targets[i]) * (p - targets[i]), 0);
+    return { algorithm: "linearRegressionGD", coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions, mse: Math.round(mseSum / n * 10000) / 10000 };
+  }
+
+  logisticRegressionGD(features: number[][], targets: number[], learningRate: number = 0.01, epochs: number = 100): { algorithm: string; coefficients: number[]; intercept: number; predictions: number[]; accuracy: number } {
+    const n = features.length, d = features[0]?.length || 1;
+    let w = new Array(d).fill(0), b = 0;
+    const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
+    for (let ep = 0; ep < epochs; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (let i = 0; i < n; i++) {
+        const z = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const pred = sigmoid(z);
+        const err = pred - targets[i];
+        for (let j = 0; j < d; j++) dw[j] += err * features[i][j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= learningRate * dw[j] / n;
+      b -= learningRate * db / n;
+    }
+    const predictions = features.map(f => { const z = f.reduce((s, v, j) => s + v * w[j], 0) + b; return Math.round(sigmoid(z) * 10000) / 10000; });
+    const correct = predictions.reduce((s, p, i) => s + (Math.round(p) === targets[i] ? 1 : 0), 0);
+    return { algorithm: "logisticRegressionGD", coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions, accuracy: Math.round(correct / n * 10000) / 10000 };
+  }
+
+  naiveBayesClassifier(features: number[][], labels: number[], testFeatures: number[][]): { algorithm: string; trainSize: number; testSize: number; classes: number[]; predictions: number[]; probabilities: number[][] } {
+    const n = features.length, d = features[0]?.length || 1;
+    const classes = [...new Set(labels)].sort((a, b) => a - b);
+    const priors: Record<number, number> = {};
+    const means: Record<number, number[]> = {};
+    const vars: Record<number, number[]> = {};
+    for (const c of classes) {
+      const members = features.filter((_, i) => labels[i] === c);
+      priors[c] = members.length / n;
+      means[c] = new Array(d).fill(0);
+      vars[c] = new Array(d).fill(0);
+      for (let j = 0; j < d; j++) {
+        const vals = members.map(m => m[j]);
+        const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+        means[c][j] = mean;
+        const sqSum = vals.reduce((s, v) => s + (v - mean) * (v - mean), 0);
+        vars[c][j] = sqSum / Math.max(vals.length - 1, 1);
+      }
+    }
+    const gauss = (x: number, mean: number, variance: number) => {
+      if (variance < 1e-10) return x === mean ? 1 : 1e-10;
+      const diff = x - mean;
+      return Math.exp(-(diff * diff) / (2 * variance)) / Math.sqrt(2 * Math.PI * variance);
+    };
+    const predictions: number[] = [];
+    const probabilities: number[][] = [];
+    for (const sample of testFeatures) {
+      let probs: number[] = [];
+      for (const c of classes) {
+        let p = Math.log(priors[c]);
+        for (let j = 0; j < d; j++) p += Math.log(gauss(sample[j], means[c][j], vars[c][j]) + 1e-10);
+        probs.push(Math.exp(p));
+      }
+      const sum = probs.reduce((s, v) => s + v, 0);
+      probs = probs.map(v => Math.round(v / sum * 10000) / 10000);
+      probabilities.push(probs);
+      predictions.push(classes[probs.indexOf(Math.max(...probs))]);
+    }
+    return { algorithm: "naiveBayesClassifier", trainSize: n, testSize: testFeatures.length, classes, predictions, probabilities };
+  }
+
+  randomForestRegressor(features: number[][], targets: number[], testFeatures: number[][], nTrees: number = 10, maxDepth: number = 3): { algorithm: string; trainSize: number; testSize: number; nTrees: number; predictions: number[]; importance: number[] } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    const trees: any[] = [];
+    const meanTarget = targets.reduce((s, v) => s + v, 0) / n;
+    const buildTree = (idx: number[], depth: number): any => {
+      if (depth >= maxDepth || idx.length <= 2) return { prediction: idx.reduce((s, i) => s + targets[i], 0) / idx.length, count: idx.length };
+      const meanIdx = idx.reduce((ss, ii) => ss + targets[ii], 0) / idx.length;
+      const var0 = idx.reduce((s, i) => s + (targets[i] - meanIdx) * (targets[i] - meanIdx), 0) / idx.length;
+      let bestGain = 0, bestFeat = -1, bestThresh = 0;
+      for (let f = 0; f < d; f++) {
+        const sorted = [...new Set(idx.map(i => features[i][f]))].sort((a, b) => a - b);
+        for (let t = 0; t < sorted.length - 1; t++) {
+          const thresh = (sorted[t] + sorted[t + 1]) / 2;
+          const left = idx.filter(i => features[i][f] <= thresh);
+          const right = idx.filter(i => features[i][f] > thresh);
+          if (left.length === 0 || right.length === 0) continue;
+          const lMean = left.reduce((ss, ii) => ss + targets[ii], 0) / left.length;
+          const rMean = right.reduce((ss, ii) => ss + targets[ii], 0) / right.length;
+          const lVar = left.reduce((s, i) => s + (targets[i] - lMean) * (targets[i] - lMean), 0) / left.length;
+          const rVar = right.reduce((s, i) => s + (targets[i] - rMean) * (targets[i] - rMean), 0) / right.length;
+          const gain = var0 - (left.length / idx.length) * lVar - (right.length / idx.length) * rVar;
+          if (gain > bestGain) { bestGain = gain; bestFeat = f; bestThresh = thresh; }
+        }
+      }
+      if (bestFeat < 0) return { prediction: idx.reduce((s, i) => s + targets[i], 0) / idx.length, count: idx.length };
+      const left = idx.filter(i => features[i][bestFeat] <= bestThresh);
+      const right = idx.filter(i => features[i][bestFeat] > bestThresh);
+      return { feature: bestFeat, threshold: bestThresh, left: buildTree(left, depth + 1), right: buildTree(right, depth + 1), count: idx.length };
+    };
+    const predictTree = (t: any, sample: number[]): number => {
+      if (t.prediction !== undefined) return t.prediction;
+      if (sample[t.feature] <= t.threshold) return predictTree(t.left, sample);
+      return predictTree(t.right, sample);
+    };
+    for (let t = 0; t < nTrees; t++) {
+      const bag: number[] = [];
+      for (let i = 0; i < n; i++) bag.push(Math.floor(Math.random() * n));
+      trees.push(buildTree(bag, 0));
+    }
+    const predictions = testFeatures.map(sample => {
+      const preds = trees.map(t => predictTree(t, sample));
+      return Math.round(preds.reduce((s, v) => s + v, 0) / preds.length * 10000) / 10000;
+    });
+    return { algorithm: "randomForestRegressor", trainSize: n, testSize: m, nTrees, predictions, importance: [] };
+  }
+
+  knnClassifier(trainX: number[][], trainY: number[], testX: number[][], k: number = 3): { algorithm: string; trainSize: number; testSize: number; k: number; predictions: number[]; accuracy: number } {
+    const n = trainX.length, m = testX.length;
+    const dist = (a: number[], b: number[]) => { const sq = a.reduce((s, v, i) => s + (v - b[i]) * (v - b[i]), 0); return Math.sqrt(sq); };
+    const predictions: number[] = [];
+    for (const tx of testX) {
+      const dists = trainX.map((ex, i) => ({ dist: dist(ex, tx), label: trainY[i] }));
+      dists.sort((a, b) => a.dist - b.dist);
+      const neighbors = dists.slice(0, Math.min(k, dists.length));
+      const votes: Record<number, number> = {};
+      for (const n of neighbors) votes[n.label] = (votes[n.label] || 0) + 1;
+      let best = 0, bestLabel = neighbors[0].label;
+      for (const [label, count] of Object.entries(votes)) { if (count > best) { best = count; bestLabel = Number(label); } }
+      predictions.push(bestLabel);
+    }
+    return { algorithm: "knnClassifier", trainSize: n, testSize: m, k, predictions, accuracy: 0 };
+  }
+
+  // ── Deeper Enhancements: Time Series & Statistics ──
+
+  timeSeriesDecompose(series: number[], period: number = 4): { algorithm: string; series: number[]; period: number; trend: number[]; seasonal: number[]; residual: number[] } {
+    const n = series.length;
+    if (n < period) return { algorithm: "timeSeriesDecompose", series, period, trend: [], seasonal: [], residual: [] };
+    const trend: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const half = Math.floor(period / 2);
+      let sum = 0, cnt = 0;
+      for (let j = i - half; j <= i + half; j++) { if (j >= 0 && j < n) { sum += series[j]; cnt++; } }
+      trend.push(Math.round(sum / cnt * 10000) / 10000);
+    }
+    const detrended = series.map((v, i) => v - trend[i]);
+    const seasonalPattern: number[] = [];
+    for (let p = 0; p < period; p++) {
+      let sum = 0, cnt = 0;
+      for (let i = p; i < n; i += period) { sum += detrended[i]; cnt++; }
+      seasonalPattern.push(Math.round(sum / cnt * 10000) / 10000);
+    }
+    const patternMean = seasonalPattern.reduce((s, v) => s + v, 0) / period;
+    const seasonalAdj = seasonalPattern.map(v => Math.round((v - patternMean) * 10000) / 10000);
+    const seasonal: number[] = [];
+    const residual: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const s = seasonalAdj[i % period];
+      seasonal.push(s);
+      residual.push(Math.round((series[i] - trend[i] - s) * 10000) / 10000);
+    }
+    return { algorithm: "timeSeriesDecompose", series, period, trend, seasonal, residual };
+  }
+
+  bootstrapCI(samples: number[], nResamples: number = 1000, confidence: number = 0.95): { algorithm: string; samples: number; nResamples: number; confidence: number; mean: number; ciLower: number; ciUpper: number; stdError: number } {
+    const n = samples.length;
+    const mean = samples.reduce((s, v) => s + v, 0) / n;
+    const resampleMeans: number[] = [];
+    for (let b = 0; b < nResamples; b++) {
+      let sum = 0;
+      for (let i = 0; i < n; i++) sum += samples[Math.floor(Math.random() * n)];
+      resampleMeans.push(sum / n);
+    }
+    resampleMeans.sort((a, b) => a - b);
+    const lowerIdx = Math.floor(nResamples * (1 - confidence) / 2);
+    const upperIdx = Math.floor(nResamples * (1 + confidence) / 2);
+    const se = Math.sqrt(resampleMeans.reduce((s, v) => s + (v - mean) * (v - mean), 0) / nResamples);
+    return { algorithm: "bootstrapCI", samples: n, nResamples, confidence, mean: Math.round(mean * 10000) / 10000, ciLower: Math.round(resampleMeans[lowerIdx] * 10000) / 10000, ciUpper: Math.round(resampleMeans[upperIdx] * 10000) / 10000, stdError: Math.round(se * 10000) / 10000 };
+  }
+
+  kolmogorovSmirnovTest(sample1: number[], sample2: number[]): { algorithm: string; n1: number; n2: number; ksStatistic: number; pValue: number; rejectNull: boolean } {
+    const all = [...sample1, ...sample2].sort((a, b) => a - b);
+    const ecdf1 = (x: number) => sample1.filter(v => v <= x).length / sample1.length;
+    const ecdf2 = (x: number) => sample2.filter(v => v <= x).length / sample2.length;
+    let d = 0;
+    for (const x of all) d = Math.max(d, Math.abs(ecdf1(x) - ecdf2(x)));
+    const n = sample1.length * sample2.length / (sample1.length + sample2.length);
+    const pValue = Math.exp(-2 * d * d * n);
+    return { algorithm: "kolmogorovSmirnovTest", n1: sample1.length, n2: sample2.length, ksStatistic: Math.round(d * 10000) / 10000, pValue: Math.round(pValue * 10000) / 10000, rejectNull: pValue < 0.05 };
+  }
+
+  pearsonCorrelation(x: number[], y: number[]): { algorithm: string; n: number; r: number; pValue: number; strongCorrelation: boolean } {
+    const n = Math.min(x.length, y.length);
+    const mx = x.reduce((s, v) => s + v, 0) / n, my = y.reduce((s, v) => s + v, 0) / n;
+    let num = 0, dx2 = 0, dy2 = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = x[i] - mx, dy = y[i] - my;
+      num += dx * dy; dx2 += dx * dx; dy2 += dy * dy;
+    }
+    const denom = Math.sqrt(dx2 * dy2);
+    const r = denom > 0 ? num / denom : 0;
+    const t = r * Math.sqrt((n - 2) / Math.max(1 - r * r, 1e-10));
+    const pValue = 2 * (1 - 0.5 * (1 + t / Math.sqrt(t * t + n)));
+    return { algorithm: "pearsonCorrelation", n, r: Math.round(r * 10000) / 10000, pValue: Math.round(Math.abs(pValue) * 10000) / 10000, strongCorrelation: Math.abs(r) > 0.7 };
+  }
+
+  spearmanRankCorrelation(x: number[], y: number[]): { algorithm: string; n: number; rho: number; pValue: number; strongCorrelation: boolean } {
+    const n = Math.min(x.length, y.length);
+    const rank = (arr: number[]) => {
+      const idx = arr.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+      const ranks = new Array(n).fill(0);
+      for (let k = 0; k < n; k++) {
+        let sum = k + 1, cnt = 1;
+        while (k + 1 < n && idx[k + 1].v === idx[k].v) { k++; sum += k + 1; cnt++; }
+        const avg = sum / cnt;
+        for (let j = k - cnt + 1; j <= k; j++) ranks[idx[j].i] = avg;
+      }
+      return ranks;
+    };
+    const rx = rank(x), ry = rank(y);
+    let d2 = 0;
+    for (let i = 0; i < n; i++) d2 += (rx[i] - ry[i]) * (rx[i] - ry[i]);
+    const rho = 1 - 6 * d2 / (n * (n * n - 1));
+    const t = rho * Math.sqrt((n - 2) / Math.max(1 - rho * rho, 1e-10));
+    const pValue = 2 * (1 - 0.5 * (1 + t / Math.sqrt(t * t + n)));
+    return { algorithm: "spearmanRankCorrelation", n, rho: Math.round(rho * 10000) / 10000, pValue: Math.round(Math.abs(pValue) * 10000) / 10000, strongCorrelation: Math.abs(rho) > 0.7 };
+  }
+
+  // ── Deeper Enhancements: Dimensionality & Clustering ──
+
+  pcaDecomposition(data: number[][], nComponents: number = 2): { algorithm: string; rows: number; cols: number; nComponents: number; components: number[][]; explainedVariance: number[]; projected: number[][] } {
+    const n = data.length, d = data[0]?.length || 1;
+    const k = Math.min(nComponents, d);
+    const mean = new Array(d).fill(0);
+    for (let j = 0; j < d; j++) { let s = 0; for (let i = 0; i < n; i++) s += data[i][j]; mean[j] = s / n; }
+    const centered = data.map(row => row.map((v, j) => v - mean[j]));
+    const cov: number[][] = Array.from({ length: d }, () => new Array(d).fill(0));
+    for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) { let s = 0; for (let k2 = 0; k2 < n; k2++) s += centered[k2][i] * centered[k2][j]; cov[i][j] = s / Math.max(n - 1, 1); }
+    const components: number[][] = [];
+    const explained: number[] = [];
+    for (let comp = 0; comp < k; comp++) {
+      let v = new Array(d).fill(0).map(() => Math.random() - 0.5);
+      let nv = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+      v = v.map(x => x / nv);
+      for (let iter = 0; iter < 50; iter++) {
+        let w = new Array(d).fill(0);
+        for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) w[i] += cov[i][j] * v[j];
+        let nw = Math.sqrt(w.reduce((s, x) => s + x * x, 0));
+        v = w.map(x => x / nw);
+      }
+      components.push(v.map(x => Math.round(x * 10000) / 10000));
+      const eig = v.reduce((s, x, i) => s + x * cov[i].reduce((ss, cv, j) => ss + cv * v[j], 0), 0);
+      explained.push(Math.round(Math.abs(eig) * 10000) / 10000);
+    }
+    const totalVar = explained.reduce((s, v) => s + v, 0);
+    const explainedVar = explained.map(v => Math.round(v / Math.max(totalVar, 0.001) * 10000) / 10000);
+    const projected = centered.map(row => components.map(comp => Math.round(comp.reduce((s, c, j) => s + c * row[j], 0) * 10000) / 10000));
+    return { algorithm: "pcaDecomposition", rows: n, cols: d, nComponents: k, components, explainedVariance: explainedVar, projected };
+  }
+
+  factorAnalysis(data: number[][], nFactors: number = 2): { algorithm: string; rows: number; cols: number; nFactors: number; loadings: number[][]; communalities: number[]; uniqueness: number[] } {
+    const n = data.length, d = data[0]?.length || 1;
+    const k = Math.min(nFactors, d);
+    const mean = new Array(d).fill(0);
+    for (let j = 0; j < d; j++) { let s = 0; for (let i = 0; i < n; i++) s += data[i][j]; mean[j] = s / n; }
+    const corr: number[][] = Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => {
+      if (i === j) return 1;
+      let num = 0, dx2 = 0, dy2 = 0;
+      for (let k2 = 0; k2 < n; k2++) { const dx = data[k2][i] - mean[i], dy = data[k2][j] - mean[j]; num += dx * dy; dx2 += dx * dx; dy2 += dy * dy; }
+      const denom = Math.sqrt(dx2 * dy2);
+      return denom > 0 ? num / denom : 0;
+    }));
+    const loadings: number[][] = Array.from({ length: d }, () => new Array(k).fill(0));
+    for (let f = 0; f < k; f++) {
+      let v = new Array(d).fill(0).map(() => Math.random() - 0.5);
+      let nv = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+      v = v.map(x => x / nv);
+      for (let iter = 0; iter < 30; iter++) {
+        let w = new Array(d).fill(0);
+        for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) w[i] += corr[i][j] * v[j];
+        let nw = Math.sqrt(w.reduce((s, x) => s + x * x, 0));
+        v = w.map(x => x / nw);
+      }
+      for (let i = 0; i < d; i++) loadings[i][f] = Math.round(v[i] * 10000) / 10000;
+    }
+    const communalities = loadings.map(row => Math.round(row.reduce((s, v) => s + v * v, 0) * 10000) / 10000);
+    const uniqueness = communalities.map(c => Math.round((1 - c) * 10000) / 10000);
+    return { algorithm: "factorAnalysis", rows: n, cols: d, nFactors: k, loadings, communalities, uniqueness };
+  }
+
+  kMedoidsClustering(data: number[][], k: number = 2, maxIter: number = 50): { algorithm: string; rows: number; k: number; medoids: number[][]; assignments: number[]; cost: number } {
+    const n = data.length, d = data[0]?.length || 1;
+    const dist = (a: number[], b: number[]) => { const sq = a.reduce((s, v, i) => s + (v - b[i]) * (v - b[i]), 0); return Math.sqrt(sq); };
+    let medoidIdx: number[] = [];
+    const used = new Set<number>();
+    while (medoidIdx.length < Math.min(k, n)) { const idx = Math.floor(Math.random() * n); if (!used.has(idx)) { used.add(idx); medoidIdx.push(idx); } }
+    let prevCost = Infinity;
+    for (let iter = 0; iter < maxIter; iter++) {
+      const assignments: number[] = data.map(p => { let best = 0, bd = dist(p, data[medoidIdx[0]]); for (let j = 1; j < medoidIdx.length; j++) { const d2 = dist(p, data[medoidIdx[j]]); if (d2 < bd) { bd = d2; best = j; } } return best; });
+      let improved = false;
+      for (let m = 0; m < medoidIdx.length; m++) {
+        const clusterPoints = data.filter((_, i) => assignments[i] === m);
+        if (clusterPoints.length === 0) continue;
+        let bestIdx = medoidIdx[m];
+        let bestCost = clusterPoints.reduce((s, p) => s + dist(p, data[medoidIdx[m]]), 0);
+        for (const [ci, candidate] of clusterPoints.entries()) {
+          const actualIdx = data.indexOf(candidate);
+          if (actualIdx < 0) continue;
+          const cost = clusterPoints.reduce((s, p) => s + dist(p, candidate), 0);
+          if (cost < bestCost) { bestCost = cost; bestIdx = actualIdx; improved = true; }
+        }
+        medoidIdx[m] = bestIdx;
+      }
+      const totalCost = data.reduce((s, p, i) => s + dist(p, data[medoidIdx[assignments[i]]]), 0);
+      if (Math.abs(totalCost - prevCost) < 0.001 && !improved) break;
+      prevCost = totalCost;
+    }
+    const assignments = data.map(p => { let best = 0, bd = dist(p, data[medoidIdx[0]]); for (let j = 1; j < medoidIdx.length; j++) { const d2 = dist(p, data[medoidIdx[j]]); if (d2 < bd) { bd = d2; best = j; } } return best; });
+    const medoids = medoidIdx.map(idx => data[idx].map(v => Math.round(v * 10000) / 10000));
+    return { algorithm: "kMedoidsClustering", rows: n, k, medoids, assignments, cost: Math.round(prevCost * 100) / 100 };
+  }
+
+  dbscanCluster(data: number[][], epsilon: number = 1.0, minPts: number = 2): { algorithm: string; rows: number; epsilon: number; minPts: number; clusters: number[]; noise: number; nClusters: number } {
+    const n = data.length;
+    const dist = (a: number[], b: number[]) => { const sq = a.reduce((s, v, i) => s + (v - b[i]) * (v - b[i]), 0); return Math.sqrt(sq); };
+    const labels = new Array(n).fill(0);
+    const neighbors = (idx: number): number[] => { const nb: number[] = []; for (let i = 0; i < n; i++) if (i !== idx && dist(data[idx], data[i]) <= epsilon) nb.push(i); return nb; };
+    let clusterId = 0;
+    for (let i = 0; i < n; i++) {
+      if (labels[i] !== 0) continue;
+      const nb = neighbors(i);
+      if (nb.length < minPts) { labels[i] = -1; continue; }
+      clusterId++;
+      labels[i] = clusterId;
+      const seed = [...nb];
+      for (let s = 0; s < seed.length; s++) {
+        const p = seed[s];
+        if (labels[p] === -1) labels[p] = clusterId;
+        if (labels[p] !== 0) continue;
+        labels[p] = clusterId;
+        const pnb = neighbors(p);
+        if (pnb.length >= minPts) seed.push(...pnb.filter(idx => !seed.includes(idx) && labels[idx] === 0));
+      }
+    }
+    const noise = labels.filter(l => l === -1).length;
+    const uniqueClusters = [...new Set(labels.filter(l => l > 0))];
+    return { algorithm: "dbscanCluster", rows: n, epsilon, minPts, clusters: labels, noise, nClusters: uniqueClusters.length };
+  }
+
+  hierarchicalCluster(data: number[][], nClusters: number = 2): { algorithm: string; rows: number; nClusters: number; assignments: number[]; mergeHistory: { a: number; b: number; distance: number }[] } {
+    const n = data.length;
+    const dist = (a: number[], b: number[]) => { const sq = a.reduce((s, v, i) => s + (v - b[i]) * (v - b[i]), 0); return Math.sqrt(sq); };
+    const clusters: number[][] = Array.from({ length: n }, (_, i) => [i]);
+    const mergeHistory: { a: number; b: number; distance: number }[] = [];
+    while (clusters.length > nClusters) {
+      let bestA = 0, bestB = 1, bestDist = Infinity;
+      for (let i = 0; i < clusters.length; i++) {
+        for (let j = i + 1; j < clusters.length; j++) {
+          let minD = Infinity;
+          for (const a of clusters[i]) for (const b of clusters[j]) minD = Math.min(minD, dist(data[a], data[b]));
+          if (minD < bestDist) { bestDist = minD; bestA = i; bestB = j; }
+        }
+      }
+      mergeHistory.push({ a: bestA, b: bestB, distance: Math.round(bestDist * 10000) / 10000 });
+      clusters[bestA].push(...clusters[bestB]);
+      clusters.splice(bestB, 1);
+    }
+    const assignments = new Array(n).fill(0);
+    for (let c = 0; c < clusters.length; c++) for (const idx of clusters[c]) assignments[idx] = c;
+    return { algorithm: "hierarchicalCluster", rows: n, nClusters, assignments, mergeHistory };
+  }
+
+  // ── Deeper Enhancements: Ensemble & Advanced ML ──
+
+  gaussianNaiveBayes(features: number[][], labels: number[], testFeatures: number[][]): { algorithm: string; trainSize: number; testSize: number; classes: number[]; predictions: number[]; classProbabilities: number[][] } {
+    const result = this.naiveBayesClassifier(features, labels, testFeatures);
+    return { algorithm: "gaussianNaiveBayes", trainSize: result.trainSize, testSize: result.testSize, classes: result.classes, predictions: result.predictions, classProbabilities: result.probabilities };
+  }
+
+  adaboostClassify(features: number[][], labels: number[], testFeatures: number[][], nEstimators: number = 10): { algorithm: string; trainSize: number; testSize: number; nEstimators: number; predictions: number[]; accuracy: number } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    const labelsBin = labels.map(l => l === 0 ? -1 : 1);
+    let weights = new Array(n).fill(1 / n);
+    const classifiers: { feature: number; threshold: number; polarity: number; alpha: number }[] = [];
+    for (let t = 0; t < nEstimators; t++) {
+      let bestFeat = 0, bestThresh = 0, bestPolarity = 1, bestErr = Infinity;
+      for (let f = 0; f < d; f++) {
+        const sorted = [...new Set(features.map(row => row[f]))].sort((a, b) => a - b);
+        for (const thresh of sorted) {
+          for (const polarity of [1, -1]) {
+            let err = 0;
+            for (let i = 0; i < n; i++) {
+              const pred = (features[i][f] <= thresh ? 1 : -1) * polarity;
+              if (pred !== labelsBin[i]) err += weights[i];
+            }
+            if (err < bestErr) { bestErr = err; bestFeat = f; bestThresh = thresh; bestPolarity = polarity; }
+          }
+        }
+      }
+      if (bestErr >= 0.5) break;
+      const alpha = 0.5 * Math.log((1 - bestErr) / Math.max(bestErr, 1e-10));
+      classifiers.push({ feature: bestFeat, threshold: bestThresh, polarity: bestPolarity, alpha });
+      let wSum = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = (features[i][bestFeat] <= bestThresh ? 1 : -1) * bestPolarity;
+        weights[i] *= Math.exp(-alpha * labelsBin[i] * pred);
+        wSum += weights[i];
+      }
+      for (let i = 0; i < n; i++) weights[i] /= wSum;
+    }
+    const predictions = testFeatures.map(sample => {
+      let sum = 0;
+      for (const c of classifiers) {
+        const pred = (sample[c.feature] <= c.threshold ? 1 : -1) * c.polarity;
+        sum += c.alpha * pred;
+      }
+      return sum >= 0 ? 1 : 0;
+    });
+    return { algorithm: "adaboostClassify", trainSize: n, testSize: m, nEstimators: classifiers.length, predictions, accuracy: 0 };
+  }
+
+  gradientBoostRegress(features: number[][], targets: number[], testFeatures: number[][], nEstimators: number = 10, learningRate: number = 0.1): { algorithm: string; trainSize: number; testSize: number; nEstimators: number; predictions: number[]; loss: number[] } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    let pred = new Array(n).fill(targets.reduce((s, v) => s + v, 0) / n);
+    const loss: number[] = [];
+    const trees: any[] = [];
+    const buildStump = (residuals: number[]): any => {
+      let bestFeat = 0, bestThresh = 0, bestErr = Infinity, bestLeft = 0, bestRight = 0;
+      for (let f = 0; f < d; f++) {
+        const sorted = [...new Set(features.map(row => row[f]))].sort((a, b) => a - b);
+        for (const thresh of sorted) {
+          const leftIdx = features.map((row, i) => ({ row, i })).filter(({ row }) => row[f] <= thresh).map(({ i }) => i);
+          const rightIdx = features.map((row, i) => ({ row, i })).filter(({ row }) => row[f] > thresh).map(({ i }) => i);
+          if (leftIdx.length === 0 || rightIdx.length === 0) continue;
+          const lVal = leftIdx.reduce((s, i) => s + residuals[i], 0) / leftIdx.length;
+          const rVal = rightIdx.reduce((s, i) => s + residuals[i], 0) / rightIdx.length;
+          let err = 0;
+          for (const i of leftIdx) err += (residuals[i] - lVal) * (residuals[i] - lVal);
+          for (const i of rightIdx) err += (residuals[i] - rVal) * (residuals[i] - rVal);
+          if (err < bestErr) { bestErr = err; bestFeat = f; bestThresh = thresh; bestLeft = lVal; bestRight = rVal; }
+        }
+      }
+      return { feature: bestFeat, threshold: bestThresh, left: bestLeft, right: bestRight };
+    };
+    for (let t = 0; t < nEstimators; t++) {
+      const residuals = targets.map((v, i) => v - pred[i]);
+      const lossVal = Math.round(residuals.reduce((s, v) => s + v * v, 0) / n * 10000) / 10000;
+      loss.push(lossVal);
+      const tree = buildStump(residuals);
+      trees.push(tree);
+      for (let i = 0; i < n; i++) {
+        const leaf = features[i][tree.feature] <= tree.threshold ? tree.left : tree.right;
+        pred[i] += learningRate * leaf;
+      }
+    }
+    const predictions = testFeatures.map(sample => {
+      let p = targets.reduce((s, v) => s + v, 0) / n;
+      for (const tree of trees) {
+        const leaf = sample[tree.feature] <= tree.threshold ? tree.left : tree.right;
+        p += learningRate * leaf;
+      }
+      return Math.round(p * 10000) / 10000;
+    });
+    return { algorithm: "gradientBoostRegress", trainSize: n, testSize: m, nEstimators: trees.length, predictions, loss };
+  }
+
+  markovChainSim(transitionMatrix: number[][], steps: number = 10, startState: number = 0): { algorithm: string; states: number; steps: number; startState: number; trajectory: number[]; stationaryDist: number[] } {
+    const n = transitionMatrix.length;
+    const trajectory: number[] = [startState];
+    let cur = startState;
+    for (let s = 0; s < steps; s++) {
+      const r = Math.random();
+      let cum = 0, next = cur;
+      for (let j = 0; j < n; j++) { cum += transitionMatrix[cur][j]; if (r <= cum) { next = j; break; } }
+      cur = next;
+      trajectory.push(cur);
+    }
+    let eigvec = new Array(n).fill(1 / n);
+    for (let iter = 0; iter < 100; iter++) {
+      const next = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) next[i] += eigvec[j] * transitionMatrix[j][i];
+      const norm = next.reduce((s, v) => s + v, 0);
+      eigvec = next.map(v => v / norm);
+    }
+    return { algorithm: "markovChainSim", states: n, steps, startState, trajectory, stationaryDist: eigvec.map(v => Math.round(v * 10000) / 10000) };
+  }
+
+  monteCarloOption(spot: number, strike: number, maturity: number, volatility: number, rate: number, nSims: number = 10000): { algorithm: string; spot: number; strike: number; maturity: number; volatility: number; rate: number; nSims: number; callPrice: number; putPrice: number; stdError: number } {
+    let callSum = 0, putSum = 0, callSum2 = 0, putSum2 = 0;
+    for (let i = 0; i < nSims; i++) {
+      const z = (() => { let u = 0, v = 0; while (u === 0) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); })();
+      const sT = spot * Math.exp((rate - volatility * volatility / 2) * maturity + volatility * Math.sqrt(maturity) * z);
+      const call = Math.max(sT - strike, 0);
+      const put = Math.max(strike - sT, 0);
+      callSum += call; putSum += put;
+      callSum2 += call * call; putSum2 += put * put;
+    }
+    const callPrice = Math.exp(-rate * maturity) * callSum / nSims;
+    const putPrice = Math.exp(-rate * maturity) * putSum / nSims;
+    const callVar = callSum2 / nSims - (callSum / nSims) * (callSum / nSims);
+    const se = Math.sqrt(callVar / nSims);
+    return { algorithm: "monteCarloOption", spot, strike, maturity, volatility, rate, nSims, callPrice: Math.round(callPrice * 100) / 100, putPrice: Math.round(putPrice * 100) / 100, stdError: Math.round(se * 100) / 100 };
+  }
+
+  baggingEnsemble(features: number[][], targets: number[], testFeatures: number[][], nModels: number = 10): { algorithm: string; trainSize: number; testSize: number; nModels: number; predictions: number[]; oobError: number } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    const oobPredictions: number[][] = Array.from({ length: n }, () => []);
+    const models: any[] = [];
+    for (let t = 0; t < nModels; t++) {
+      const bag: number[] = [];
+      const oob: Set<number> = new Set();
+      for (let i = 0; i < n; i++) { const idx = Math.floor(Math.random() * n); bag.push(idx); }
+      for (let i = 0; i < n; i++) if (!bag.includes(i)) oob.add(i);
+      const mean = bag.reduce((s, i) => s + targets[i], 0) / bag.length;
+      models.push(mean);
+      for (const oobIdx of oob) oobPredictions[oobIdx].push(mean);
+    }
+    let oobMse = 0, oobCount = 0;
+    for (let i = 0; i < n; i++) {
+      if (oobPredictions[i].length > 0) {
+        const avg = oobPredictions[i].reduce((s, v) => s + v, 0) / oobPredictions[i].length;
+        oobMse += (avg - targets[i]) * (avg - targets[i]);
+        oobCount++;
+      }
+    }
+    const predictions = testFeatures.map(() => Math.round(models.reduce((s, v) => s + v, 0) / models.length * 10000) / 10000);
+    return { algorithm: "baggingEnsemble", trainSize: n, testSize: m, nModels, predictions, oobError: Math.round(oobMse / Math.max(oobCount, 1) * 10000) / 10000 };
+  }
+
+  crossValidationKFold(features: number[][], targets: number[], k: number = 5): { algorithm: string; n: number; k: number; folds: { fold: number; trainSize: number; testSize: number; mse: number }[]; meanMse: number; stdMse: number } {
+    const n = features.length;
+    const indices = Array.from({ length: n }, (_, i) => i);
+    const shuffled = [...indices].sort(() => Math.random() - 0.5);
+    const foldSize = Math.floor(n / k);
+    const folds: { fold: number; trainSize: number; testSize: number; mse: number }[] = [];
+    for (let f = 0; f < k; f++) {
+      const testIdx = new Set(shuffled.slice(f * foldSize, f === k - 1 ? n : (f + 1) * foldSize));
+      const trainIdx = indices.filter(i => !testIdx.has(i));
+      const trainX = trainIdx.map(i => features[i]);
+      const trainY = trainIdx.map(i => targets[i]);
+      const testX = [...testIdx].map(i => features[i]);
+      const testY = [...testIdx].map(i => targets[i]);
+      const d = features[0]?.length || 1;
+      let w = new Array(d).fill(0), b = 0;
+      for (let ep = 0; ep < 50; ep++) {
+        let dw = new Array(d).fill(0), db = 0;
+        for (let i = 0; i < trainX.length; i++) {
+          const pred = trainX[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+          const err = pred - trainY[i];
+          for (let j = 0; j < d; j++) dw[j] += err * trainX[i][j];
+          db += err;
+        }
+        for (let j = 0; j < d; j++) w[j] -= 0.01 * dw[j] / trainX.length;
+        b -= 0.01 * db / trainX.length;
+      }
+      const predictions = testX.map(sample => sample.reduce((s, v, j) => s + v * w[j], 0) + b);
+      let mse = 0;
+      for (let i = 0; i < testY.length; i++) mse += (predictions[i] - testY[i]) * (predictions[i] - testY[i]);
+      mse /= testY.length;
+      folds.push({ fold: f, trainSize: trainX.length, testSize: testX.length, mse: Math.round(mse * 10000) / 10000 });
+    }
+    const mses = folds.map(f => f.mse);
+    const meanMse = mses.reduce((s, v) => s + v, 0) / k;
+    let stdSum = 0;
+    for (let i = 0; i < k; i++) stdSum += (mses[i] - meanMse) * (mses[i] - meanMse);
+    const stdMse = Math.sqrt(stdSum / k);
+    return { algorithm: "crossValidationKFold", n, k, folds, meanMse: Math.round(meanMse * 10000) / 10000, stdMse: Math.round(stdMse * 10000) / 10000 };
+  }
+
+  // ── Deeper Enhancements: Regularized Regression ──
+
+  ridgeRegression(features: number[][], targets: number[], lambda: number = 1.0, testFeatures: number[][]): { algorithm: string; trainSize: number; testSize: number; lambda: number; coefficients: number[]; intercept: number; predictions: number[]; mse: number } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    let w = new Array(d).fill(0), b = 0;
+    for (let ep = 0; ep < 100; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const err = pred - targets[i];
+        for (let j = 0; j < d; j++) dw[j] += err * features[i][j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= 0.01 * (dw[j] / n + lambda * w[j]);
+      b -= 0.01 * db / n;
+    }
+    const predictions = testFeatures.map(f => Math.round((f.reduce((s, v, j) => s + v * w[j], 0) + b) * 10000) / 10000);
+    return { algorithm: "ridgeRegression", trainSize: n, testSize: m, lambda, coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions, mse: 0 };
+  }
+
+  lassoRegression(features: number[][], targets: number[], lambda: number = 1.0, testFeatures: number[][]): { algorithm: string; trainSize: number; testSize: number; lambda: number; coefficients: number[]; intercept: number; predictions: number[]; mse: number } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    let w = new Array(d).fill(0), b = 0;
+    for (let ep = 0; ep < 100; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const err = pred - targets[i];
+        for (let j = 0; j < d; j++) dw[j] += err * features[i][j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= 0.01 * (dw[j] / n + lambda * (w[j] >= 0 ? 1 : -1));
+      b -= 0.01 * db / n;
+    }
+    const predictions = testFeatures.map(f => Math.round((f.reduce((s, v, j) => s + v * w[j], 0) + b) * 10000) / 10000);
+    return { algorithm: "lassoRegression", trainSize: n, testSize: m, lambda, coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions, mse: 0 };
+  }
+
+  elasticNetRegression(features: number[][], targets: number[], lambda: number = 1.0, l1Ratio: number = 0.5, testFeatures: number[][]): { algorithm: string; trainSize: number; testSize: number; lambda: number; l1Ratio: number; coefficients: number[]; intercept: number; predictions: number[]; mse: number } {
+    const n = features.length, d = features[0]?.length || 1, m = testFeatures.length;
+    let w = new Array(d).fill(0), b = 0;
+    for (let ep = 0; ep < 100; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const err = pred - targets[i];
+        for (let j = 0; j < d; j++) dw[j] += err * features[i][j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= 0.01 * (dw[j] / n + lambda * (l1Ratio * (w[j] >= 0 ? 1 : -1) + (1 - l1Ratio) * w[j]));
+      b -= 0.01 * db / n;
+    }
+    const predictions = testFeatures.map(f => Math.round((f.reduce((s, v, j) => s + v * w[j], 0) + b) * 10000) / 10000);
+    return { algorithm: "elasticNetRegression", trainSize: n, testSize: m, lambda, l1Ratio, coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions, mse: 0 };
+  }
+
+  mcmcSamplingMetropolis(target: string, nSamples: number = 1000, proposalStd: number = 1.0): { algorithm: string; target: string; nSamples: number; acceptanceRate: number; samples: number[]; mean: number; std: number } {
+    const samples: number[] = [];
+    let current = 0;
+    let accepted = 0;
+    const logTarget = (x: number): number => {
+      if (target === "standardNormal") return -0.5 * x * x;
+      if (target === "cauchy") return -Math.log(1 + x * x);
+      if (target === "exponential") return x >= 0 ? -x : -Infinity;
+      return -0.5 * x * x;
+    };
+    for (let i = 0; i < nSamples; i++) {
+      const proposal = current + proposalStd * (() => { let u = 0, v = 0; while (u === 0) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); })();
+      const logRatio = logTarget(proposal) - logTarget(current);
+      if (Math.log(Math.random()) < logRatio) { current = proposal; accepted++; }
+      samples.push(Math.round(current * 10000) / 10000);
+    }
+    const mean = samples.reduce((s, v) => s + v, 0) / nSamples;
+    let varianceSum = 0;
+    for (let i = 0; i < nSamples; i++) varianceSum += (samples[i] - mean) * (samples[i] - mean);
+    const variance = varianceSum / nSamples;
+    return { algorithm: "mcmcSamplingMetropolis", target, nSamples, acceptanceRate: Math.round(accepted / nSamples * 10000) / 10000, samples, mean: Math.round(mean * 10000) / 10000, std: Math.round(Math.sqrt(variance) * 10000) / 10000 };
+  }
+
+  expectationMaximization(data: number[], nComponents: number = 2, maxIter: number = 50): { algorithm: string; data: number; nComponents: number; converged: boolean; means: number[]; variances: number[]; weights: number[]; responsibilities: number[][] } {
+    const n = data.length;
+    let means: number[] = Array.from({ length: nComponents }, (_, i) => data[Math.floor(i * n / nComponents)]);
+    let variances: number[] = new Array(nComponents).fill(1);
+    let weights: number[] = new Array(nComponents).fill(1 / nComponents);
+    const gauss = (x: number, mean: number, var_: number) => {
+      const diff = x - mean;
+      return Math.exp(-(diff * diff) / (2 * var_)) / Math.sqrt(2 * Math.PI * var_);
+    };
+    let converged = false;
+    for (let iter = 0; iter < maxIter; iter++) {
+      const resp: number[][] = data.map(x => {
+        const probs = means.map((m, j) => weights[j] * gauss(x, m, Math.max(variances[j], 1e-10)));
+        const sum = probs.reduce((s, v) => s + v, 0);
+        return probs.map(p => sum > 0 ? p / sum : 1 / nComponents);
+      });
+      const oldMeans = [...means];
+      for (let j = 0; j < nComponents; j++) {
+        const totalResp = resp.reduce((s, r) => s + r[j], 0);
+        if (totalResp < 1e-10) continue;
+        means[j] = data.reduce((s, x, i) => s + x * resp[i][j], 0) / totalResp;
+        let varSum = 0;
+        for (let i = 0; i < n; i++) varSum += (data[i] - means[j]) * (data[i] - means[j]) * resp[i][j];
+        variances[j] = varSum / totalResp;
+        weights[j] = totalResp / n;
+      }
+      if (means.every((m, j) => Math.abs(m - oldMeans[j]) < 0.001)) { converged = true; break; }
+    }
+    const responsibilities = data.map(x => {
+      const probs = means.map((m, j) => weights[j] * gauss(x, m, Math.max(variances[j], 1e-10)));
+      const sum = probs.reduce((s, v) => s + v, 0);
+      return probs.map(p => Math.round((sum > 0 ? p / sum : 1 / nComponents) * 10000) / 10000);
+    });
+    return { algorithm: "expectationMaximization", data: n, nComponents, converged, means: means.map(m => Math.round(m * 10000) / 10000), variances: variances.map(v => Math.round(v * 10000) / 10000), weights: weights.map(w => Math.round(w * 10000) / 10000), responsibilities };
+  }
+
   // ── helper methods for treap ──
 
   private _treapInsert(root: { key: number; prio: number; left: any; right: any }[], key: number): { key: number; prio: number; left: any; right: any }[] {
