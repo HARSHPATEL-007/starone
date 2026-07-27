@@ -1052,4 +1052,60 @@ export const api = {
       request<any>("/campaign-health-predictor/report", { method: "POST", body: JSON.stringify({ campaignId, metrics }) }),
     sampleMetrics: (days?: number) => request<any>(`/campaign-health-predictor/sample-metrics?days=${days || 30}`),
   },
+  dsAlgorithms: {
+    trie: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/trie", { method: "POST", body: JSON.stringify(data) }),
+    fenwick: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/fenwick", { method: "POST", body: JSON.stringify(data) }),
+    segmentTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/segment-tree", { method: "POST", body: JSON.stringify(data) }),
+    unionFind: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/union-find", { method: "POST", body: JSON.stringify(data) }),
+    bloomFilter: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/bloom-filter", { method: "POST", body: JSON.stringify(data) }),
+    minHeap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/min-heap", { method: "POST", body: JSON.stringify(data) }),
+    lruCache: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/lru-cache", { method: "POST", body: JSON.stringify(data) }),
+    sort: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/sort", { method: "POST", body: JSON.stringify(data) }),
+    quickSelect: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/quick-select", { method: "POST", body: JSON.stringify(data) }),
+    binarySearch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/binary-search", { method: "POST", body: JSON.stringify(data) }),
+    ternarySearch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ternary-search", { method: "POST", body: JSON.stringify(data) }),
+    bfs: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/bfs", { method: "POST", body: JSON.stringify(data) }),
+    dfs: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/dfs", { method: "POST", body: JSON.stringify(data) }),
+    dijkstra: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/dijkstra", { method: "POST", body: JSON.stringify(data) }),
+    topologicalSort: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/topological-sort", { method: "POST", body: JSON.stringify(data) }),
+    detectCycle: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/detect-cycle", { method: "POST", body: JSON.stringify(data) }),
+    kmp: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/kmp", { method: "POST", body: JSON.stringify(data) }),
+    rabinKarp: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/rabin-karp", { method: "POST", body: JSON.stringify(data) }),
+    levenshtein: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/levenshtein", { method: "POST", body: JSON.stringify(data) }),
+    zAlgorithm: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/z-algorithm", { method: "POST", body: JSON.stringify(data) }),
+    knapSack: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/knapsack", { method: "POST", body: JSON.stringify(data) }),
+    lcs: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/lcs", { method: "POST", body: JSON.stringify(data) }),
+    lis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/lis", { method: "POST", body: JSON.stringify(data) }),
+    coinChange: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/coin-change", { method: "POST", body: JSON.stringify(data) }),
+    maxSubarray: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/max-subarray", { method: "POST", body: JSON.stringify(data) }),
+    convexHull: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/convex-hull", { method: "POST", body: JSON.stringify(data) }),
+    kClosest: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/k-closest", { method: "POST", body: JSON.stringify(data) }),
+  },
 };

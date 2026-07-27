@@ -129,6 +129,7 @@ import CreativeAIEnhanced from "./pages/CreativeAIEnhanced";
 import AudienceInsightsEnhanced from "./pages/AudienceInsightsEnhanced";
 import AdCopyPersonalization from "./pages/AdCopyPersonalization";
 import CampaignHealthPredictor from "./pages/CampaignHealthPredictor";
+import DSAlgorithms from "./pages/DSAlgorithms";
 import PredictiveForecastingEnhanced from "./pages/PredictiveForecastingEnhanced";
 import IncrementalityTesting from "./pages/IncrementalityTesting";
 import SearchIntelligence from "./pages/SearchIntelligence";
@@ -278,6 +279,7 @@ export default function App() {
                 <Route path="/audience-insights-enhanced" element={<AudienceInsightsEnhanced />} />
                 <Route path="/ad-copy-personalization" element={<AdCopyPersonalization />} />
                 <Route path="/campaign-health-predictor" element={<CampaignHealthPredictor />} />
+                <Route path="/ds-algorithms" element={<DSAlgorithms />} />
                 <Route path="/predictive-forecasting-enhanced" element={<PredictiveForecastingEnhanced />} />
                 <Route path="/incrementality-testing" element={<IncrementalityTesting />} />
                 <Route path="/search-intelligence" element={<SearchIntelligence />} />
