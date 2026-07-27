@@ -1475,5 +1475,85 @@ export const api = {
       request<any>("/ds-algorithms/marketing/media-saturation", { method: "POST", body: JSON.stringify(data) }),
     timeDecayAttr: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/time-decay-attr", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 7 - Advanced DS
+    cuckooFilter: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/cuckoo-filter", { method: "POST", body: JSON.stringify(data) }),
+    suffixTreeSim: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/suffix-tree-sim", { method: "POST", body: JSON.stringify(data) }),
+    rTreeSpatial: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/r-tree", { method: "POST", body: JSON.stringify(data) }),
+    persistentArray: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/persistent-array", { method: "POST", body: JSON.stringify(data) }),
+    minMaxStack: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/min-max-stack", { method: "POST", body: JSON.stringify(data) }),
+    dAryHeap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/d-ary-heap", { method: "POST", body: JSON.stringify(data) }),
+    intervalTreeDynamic: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/interval-tree-dynamic", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 7 - Advanced Algorithms
+    longestPathDag: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/longest-path-dag", { method: "POST", body: JSON.stringify(data) }),
+    graphColoring: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/graph-coloring", { method: "POST", body: JSON.stringify(data) }),
+    vertexCover: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/vertex-cover", { method: "POST", body: JSON.stringify(data) }),
+    hamiltonianPath: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/hamiltonian-path", { method: "POST", body: JSON.stringify(data) }),
+    baumWelch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/baum-welch", { method: "POST", body: JSON.stringify(data) }),
+    fordFulkerson: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/ford-fulkerson", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 7 - String / DP
+    kmp2d: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/kmp-2d", { method: "POST", body: JSON.stringify(data) }),
+    longestRepeatedSubstring: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/longest-repeated", { method: "POST", body: JSON.stringify(data) }),
+    textJustify: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/text-justify", { method: "POST", body: JSON.stringify(data) }),
+    affineEdit: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/affine-edit", { method: "POST", body: JSON.stringify(data) }),
+    boxStacking: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/box-stacking", { method: "POST", body: JSON.stringify(data) }),
+    longestChain: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/longest-chain", { method: "POST", body: JSON.stringify(data) }),
+    maxSumRectangle: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/max-sum-rectangle", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 7 - Enhanced Existing
+    segmentTreePersistent: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/segment-tree-persistent", { method: "POST", body: JSON.stringify(data) }),
+    dsuPersistent: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/dsu-persistent", { method: "POST", body: JSON.stringify(data) }),
+    scalableBloom: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/scalable-bloom", { method: "POST", body: JSON.stringify(data) }),
+    lfuAdvanced: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/lfu-advanced", { method: "POST", body: JSON.stringify(data) }),
+    treapOrderStats: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/treap-order-stats", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 7 - Marketing Depth
+    doublyRobust: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/doubly-robust", { method: "POST", body: JSON.stringify(data) }),
+    linucbBandit: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/linucb", { method: "POST", body: JSON.stringify(data) }),
+    bidShading: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/bid-shading", { method: "POST", body: JSON.stringify(data) }),
+    markovComplete: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/markov-complete", { method: "POST", body: JSON.stringify(data) }),
+    roasPortfolio: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/roas-portfolio", { method: "POST", body: JSON.stringify(data) }),
+    causalImpact: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/causal-impact", { method: "POST", body: JSON.stringify(data) }),
+    multiPeriodBudget: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/multi-period-budget", { method: "POST", body: JSON.stringify(data) }),
+    lookalikeEnsemble: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/lookalike-ensemble", { method: "POST", body: JSON.stringify(data) }),
+    churnLogistic: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/churn-logistic", { method: "POST", body: JSON.stringify(data) }),
+    keywordPortfolio: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/keyword-portfolio", { method: "POST", body: JSON.stringify(data) }),
   },
 };

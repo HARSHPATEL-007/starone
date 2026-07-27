@@ -583,6 +583,215 @@ interface CircularBufferResult {
   operations: { action: string; value?: number; result?: number | number[] | null; head: number; tail: number }[];
 }
 
+// Phase 7 interfaces
+interface CuckooFilterResult {
+  type: string;
+  size: number;
+  operations: { action: string; item?: number; result?: boolean | number }[];
+}
+interface SuffixTreeSimResult {
+  type: string;
+  text: string;
+  queries: { pattern: string; found: boolean; positions: number[] }[];
+}
+interface RTreeSpatialResult {
+  type: string;
+  operations: { action: string; point?: { x: number; y: number }; rect?: { x1: number; y1: number; x2: number; y2: number }; result?: any }[];
+}
+interface PersistentArrayResult {
+  type: string;
+  operations: { action: string; version?: number; index?: number; value?: number; result?: number | null }[];
+}
+interface MinMaxStackResult {
+  type: string;
+  operations: { action: string; value?: number; min?: number | null; max?: number | null; size: number }[];
+}
+interface DAryHeapResult {
+  type: string;
+  degree: number;
+  operations: { action: string; value?: number; result?: number | null; size: number }[];
+}
+interface IntervalTreeDynamicResult {
+  type: string;
+  operations: { action: string; low?: number; high?: number; value?: string; point?: number; result?: any }[];
+}
+interface LongestPathDagResult {
+  algorithm: string;
+  nodes: string[];
+  edges: { from: string; to: string; weight: number }[];
+  longestPath: string[];
+  maxDistance: number;
+}
+interface GraphColoringResult {
+  algorithm: string;
+  nodes: string[];
+  colors: { node: string; color: number }[];
+  chromaticNumber: number;
+}
+interface MinimumVertexCoverResult {
+  algorithm: string;
+  left: string[];
+  right: string[];
+  cover: string[];
+  size: number;
+}
+interface HamiltonianPathResult {
+  algorithm: string;
+  nodes: string[];
+  path: string[];
+  found: boolean;
+}
+interface BaumWelchResult {
+  algorithm: string;
+  observations: number[];
+  nStates: number;
+  iterations: number;
+  logLikelihood: number;
+}
+interface FordFulkersonResult {
+  algorithm: string;
+  nodes: string[];
+  maxFlow: number;
+  flowEdges: { from: string; to: string; flow: number; capacity: number }[];
+}
+interface KnuthMorrisPratt2DResult {
+  algorithm: string;
+  grid: number[][];
+  pattern: number[][];
+  matches: { row: number; col: number }[];
+}
+interface LongestRepeatedSubstringResult {
+  algorithm: string;
+  text: string;
+  longestRepeated: string;
+  length: number;
+}
+interface TextJustificationResult {
+  algorithm: string;
+  words: string[];
+  maxWidth: number;
+  lines: string[];
+}
+interface AffineGapEditResult {
+  algorithm: string;
+  a: string;
+  b: string;
+  distance: number;
+  alignment: { a: string; b: string };
+}
+interface BoxStackingResult {
+  algorithm: string;
+  boxes: { w: number; d: number; h: number }[];
+  maxHeight: number;
+  sequence: number[];
+}
+interface LongestChainResult {
+  algorithm: string;
+  pairs: { a: number; b: number }[];
+  longestChain: number;
+  chain: number[];
+}
+interface MaxSumRectangleResult {
+  algorithm: string;
+  matrix: number[][];
+  maxSum: number;
+  rect: { top: number; left: number; bottom: number; right: number };
+}
+interface SegmentTreePersistentResult {
+  type: string;
+  operations: { action: string; version?: number; index?: number; value?: number; l?: number; r?: number; result?: number | null }[];
+}
+interface DsuPersistentRollbackResult {
+  type: string;
+  operations: { action: string; a?: number; b?: number; result?: boolean | number; version: number }[];
+}
+interface ScalableBloomFilterResult {
+  type: string;
+  operations: { action: string; item?: number; result?: boolean; capacity?: number; errorRate?: number }[];
+}
+interface LfuCacheAdvancedResult {
+  type: string;
+  capacity: number;
+  operations: { action: string; key?: string; value?: number; result?: number | null; frequency?: number }[];
+}
+interface TreapOrderStatsResult {
+  type: string;
+  operations: { action: string; value?: number; k?: number; result?: number | null | boolean }[];
+}
+interface DoublyRobustATEResult {
+  algorithm: string;
+  treatment: number[];
+  outcome: number[];
+  propensity: number[];
+  ate: number;
+  se: number;
+  ci95: { lower: number; upper: number };
+}
+interface LinUcbBanditResult {
+  algorithm: string;
+  arms: string[];
+  selections: { arm: string; context: number[]; reward: number }[];
+  armCounts: { arm: string; selections: number; totalReward: number }[];
+}
+interface OptimalBidShadingResult {
+  algorithm: string;
+  bid: number;
+  marketCompetitiveness: number;
+  optimalShadedBid: number;
+  expectedSavings: number;
+}
+interface MultiTouchMarkovCompleteResult {
+  algorithm: string;
+  channels: string[];
+  touchpoints: string[][];
+  conversions: number[];
+  attributions: { channel: string; removalEffect: number; share: string }[];
+}
+interface RoasPortfolioRiskResult {
+  algorithm: string;
+  channels: { name: string; roas: number; risk: number }[];
+  allocations: { channel: string; weight: number }[];
+  portfolioRoas: number;
+  portfolioRisk: number;
+}
+interface BayesianCausalImpactResult {
+  algorithm: string;
+  target: number[];
+  controls: number[][];
+  impact: number;
+  pValue: number;
+  ci95: { lower: number; upper: number };
+}
+interface MultiPeriodBudgetResult {
+  algorithm: string;
+  periods: number;
+  totalBudget: number;
+  allocations: { period: number; channels: { name: string; amount: number }[]; expectedReturn: number }[];
+  totalReturn: number;
+}
+interface AudienceLookalikeEnsembleResult {
+  algorithm: string;
+  seedSize: number;
+  candidateSize: number;
+  scored: { id: number; score: number }[];
+  topCandidates: { id: number; score: number }[];
+}
+interface ChurnPredictionLogisticResult {
+  algorithm: string;
+  features: number[][];
+  labels: number[];
+  predictions: { actual: number; predicted: number; probability: number }[];
+  accuracy: number;
+  coefficients: number[];
+}
+interface KeywordBidPortfolioResult {
+  algorithm: string;
+  keywords: { term: string; conversions: number; cost: number; ctr: number }[];
+  budget: number;
+  bids: { term: string; optimalBid: number; expectedConversions: number; efficiency: number }[];
+  expectedTotalConversions: number;
+}
+
 export class DSAlgorithmService {
   // ============ DATA STRUCTURES ============
 
@@ -4997,6 +5206,1050 @@ export class DSAlgorithmService {
       attributed.push({ channel: ch, weight: Math.round(w * 100) / 100, share: totalWeight > 0 ? (w / totalWeight * 100).toFixed(2) + "%" : "0.00%" });
     }
     return { algorithm: "timeDecayAttribution", touchpoints, decayFactor, attributed };
+  }
+
+  // ============ DEPTH 7: ADVANCED DS ============
+
+  cuckooFilter(items: number[], testItems: number[]): CuckooFilterResult {
+    const bucketSize = 4;
+    const numBuckets = Math.max(8, Math.ceil(items.length * 1.5));
+    const buckets: number[][] = Array.from({ length: numBuckets }, () => []);
+    const hash = (v: number) => Math.abs(v) % numBuckets;
+    const fingerprint = (v: number) => (Math.abs(v * 31 + 7) % 255) + 1;
+    const altHash = (fp: number, h: number) => Math.abs(h ^ (fp * 37)) % numBuckets;
+    const ops: CuckooFilterResult["operations"] = [];
+    for (const item of items) {
+      let fp = fingerprint(item);
+      let b1 = hash(item);
+      let b2 = altHash(fp, b1);
+      let inserted = false;
+      for (let iter = 0; iter < 5; iter++) {
+        if (buckets[b1].length < bucketSize) { buckets[b1].push(fp); ops.push({ action: "insert", item, result: true }); inserted = true; break; }
+        if (buckets[b2].length < bucketSize) { buckets[b2].push(fp); ops.push({ action: "insert", item, result: true }); inserted = true; break; }
+        const victimBucket = Math.random() < 0.5 ? b1 : b2;
+        if (buckets[victimBucket].length === 0) break;
+        const victimIdx = Math.floor(Math.random() * buckets[victimBucket].length);
+        const temp = buckets[victimBucket][victimIdx];
+        buckets[victimBucket][victimIdx] = fp;
+        fp = temp;
+        b1 = victimBucket;
+        b2 = altHash(fp, b1);
+      }
+      if (!inserted) ops.push({ action: "insert", item, result: false });
+    }
+    for (const item of testItems) {
+      const fp = fingerprint(item);
+      const b1 = hash(item);
+      const b2 = altHash(fp, b1);
+      ops.push({ action: "check", item, result: buckets[b1].includes(fp) || buckets[b2].includes(fp) });
+    }
+    return { type: "cuckooFilter", size: numBuckets, operations: ops };
+  }
+
+  suffixTreeSimulation(text: string, patterns: string[]): SuffixTreeSimResult {
+    const n = text.length;
+    const sa = Array.from({ length: n }, (_, i) => i);
+    sa.sort((a, b) => text.substring(a).localeCompare(text.substring(b)));
+    const rank = new Array(n);
+    for (let i = 0; i < n; i++) rank[sa[i]] = i;
+    const lcp = new Array(n - 1).fill(0);
+    let h = 0;
+    for (let i = 0; i < n; i++) {
+      if (rank[i] === 0) continue;
+      const j = sa[rank[i] - 1];
+      while (i + h < n && j + h < n && text[i + h] === text[j + h]) h++;
+      lcp[rank[i] - 1] = h;
+      if (h > 0) h--;
+    }
+    const queries = patterns.map(p => {
+      let lo = 0, hi = n;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (text.substring(sa[mid]) < p) lo = mid + 1; else hi = mid; }
+      const left = lo;
+      hi = n;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (text.substring(sa[mid]).startsWith(p)) lo = mid + 1; else hi = mid; }
+      const positions = [];
+      for (let i = left; i < lo; i++) positions.push(sa[i]);
+      return { pattern: p, found: left < lo, positions };
+    });
+    return { type: "suffixTree", text, queries };
+  }
+
+  rTreeSpatial(operations: { type: "insert" | "search" | "range"; point?: { x: number; y: number }; rect?: { x1: number; y1: number; x2: number; y2: number } }[]): RTreeSpatialResult {
+    const gridSize = 10;
+    const grid: Map<string, { x: number; y: number }[]> = new Map();
+    const cellKey = (x: number, y: number) => `${Math.floor(x / gridSize)},${Math.floor(y / gridSize)}`;
+    const ops: RTreeSpatialResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "insert" && op.point) {
+        const key = cellKey(op.point.x, op.point.y);
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key)!.push(op.point);
+        ops.push({ action: "insert", point: op.point, result: true });
+      } else if (op.type === "search" && op.point) {
+        const key = cellKey(op.point.x, op.point.y);
+        const cell = grid.get(key) || [];
+        ops.push({ action: "search", point: op.point, result: cell.some(p => p.x === op.point!.x && p.y === op.point!.y) });
+      } else if (op.type === "range" && op.rect) {
+        const results: { x: number; y: number }[] = [];
+        for (const [key, pts] of grid) {
+          const [cx, cy] = key.split(",").map(Number);
+          if (cx * gridSize > op.rect.x2 || (cx + 1) * gridSize < op.rect.x1) continue;
+          if (cy * gridSize > op.rect.y2 || (cy + 1) * gridSize < op.rect.y1) continue;
+          for (const p of pts) { if (p.x >= op.rect.x1 && p.x <= op.rect.x2 && p.y >= op.rect.y1 && p.y <= op.rect.y2) results.push(p); }
+        }
+        ops.push({ action: "range", rect: op.rect, result: results });
+      }
+    }
+    return { type: "rTree", operations: ops };
+  }
+
+  persistentArray(operations: { type: "set" | "get"; version?: number; index?: number; value?: number }[]): PersistentArrayResult {
+    const versions: (number | null)[][] = [[null, null, null, null, null]];
+    const ops: PersistentArrayResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "set" && op.index !== undefined && op.value !== undefined) {
+        const base = op.version !== undefined && op.version < versions.length ? versions[op.version] : versions[versions.length - 1];
+        const newArr = [...base];
+        newArr[op.index] = op.value;
+        versions.push(newArr);
+        ops.push({ action: "set", version: versions.length - 1, index: op.index, value: op.value, result: base[op.index] ?? null });
+      } else if (op.type === "get" && op.index !== undefined) {
+        const base = op.version !== undefined && op.version < versions.length ? versions[op.version] : versions[versions.length - 1];
+        ops.push({ action: "get", version: op.version ?? versions.length - 1, index: op.index, result: base[op.index] ?? null });
+      }
+    }
+    return { type: "persistentArray", operations: ops };
+  }
+
+  minMaxStack(operations: { type: "push" | "pop" | "min" | "max"; value?: number }[]): MinMaxStackResult {
+    const stack: { value: number; min: number; max: number }[] = [];
+    const ops: MinMaxStackResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "push" && op.value !== undefined) {
+        if (stack.length === 0) stack.push({ value: op.value, min: op.value, max: op.value });
+        else stack.push({ value: op.value, min: Math.min(stack[stack.length - 1].min, op.value), max: Math.max(stack[stack.length - 1].max, op.value) });
+        const top = stack[stack.length - 1];
+        ops.push({ action: "push", value: op.value, min: top.min, max: top.max, size: stack.length });
+      } else if (op.type === "pop") {
+        const popped = stack.pop();
+        ops.push({ action: "pop", value: popped?.value, min: stack.length > 0 ? stack[stack.length - 1].min : null, max: stack.length > 0 ? stack[stack.length - 1].max : null, size: stack.length });
+      } else if (op.type === "min") {
+        ops.push({ action: "min", min: stack.length > 0 ? stack[stack.length - 1].min : null, max: stack.length > 0 ? stack[stack.length - 1].max : null, size: stack.length });
+      } else if (op.type === "max") {
+        ops.push({ action: "max", min: stack.length > 0 ? stack[stack.length - 1].min : null, max: stack.length > 0 ? stack[stack.length - 1].max : null, size: stack.length });
+      }
+    }
+    return { type: "minMaxStack", operations: ops };
+  }
+
+  dAryHeap(values: number[], degree: number, operations: { type: "insert" | "extractMin" | "peek" | "decreaseKey"; value?: number; index?: number; newValue?: number }[]): DAryHeapResult {
+    const heap: number[] = [...values];
+    const d = Math.max(2, degree);
+    const parent = (i: number) => Math.max(0, Math.floor((i - 1) / d));
+    const child = (i: number, k: number) => d * i + k + 1;
+    const heapifyDown = (i: number) => {
+      let smallest = i;
+      for (let k = 0; k < d; k++) { const c = child(i, k); if (c < heap.length && heap[c] < heap[smallest]) smallest = c; }
+      if (smallest !== i) { [heap[i], heap[smallest]] = [heap[smallest], heap[i]]; heapifyDown(smallest); }
+    };
+    const heapifyUp = (i: number) => {
+      while (i > 0) { const p = parent(i); if (heap[i] >= heap[p]) break; [heap[i], heap[p]] = [heap[p], heap[i]]; i = p; }
+    };
+    for (let i = Math.floor(heap.length / d); i >= 0; i--) heapifyDown(i);
+    const ops: DAryHeapResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "insert" && op.value !== undefined) { heap.push(op.value); heapifyUp(heap.length - 1); ops.push({ action: "insert", value: op.value, size: heap.length }); }
+      else if (op.type === "extractMin") { const min = heap.length > 0 ? heap[0] : null; if (heap.length > 1) { heap[0] = heap.pop()!; heapifyDown(0); } else heap.pop(); ops.push({ action: "extractMin", result: min, size: heap.length }); }
+      else if (op.type === "peek") { ops.push({ action: "peek", result: heap.length > 0 ? heap[0] : null, size: heap.length }); }
+      else if (op.type === "decreaseKey" && op.index !== undefined && op.newValue !== undefined) { if (op.index < heap.length) { heap[op.index] = op.newValue; heapifyUp(op.index); } ops.push({ action: "decreaseKey", result: op.index < heap.length ? heap[op.index] : null, size: heap.length }); }
+    }
+    return { type: "dAryHeap", degree: d, operations: ops };
+  }
+
+  intervalTreeDynamic(operations: { type: "insert" | "delete" | "query"; interval?: { low: number; high: number; value: string }; point?: number }[]): IntervalTreeDynamicResult {
+    const intervals: { low: number; high: number; value: string }[] = [];
+    const ops: IntervalTreeDynamicResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "insert" && op.interval) {
+        intervals.push(op.interval);
+        ops.push({ action: "insert", low: op.interval.low, high: op.interval.high, value: op.interval.value, result: true });
+      } else if (op.type === "delete" && op.interval) {
+        const idx = intervals.findIndex(i => i.low === op.interval!.low && i.high === op.interval!.high && i.value === op.interval!.value);
+        if (idx >= 0) intervals.splice(idx, 1);
+        ops.push({ action: "delete", low: op.interval.low, high: op.interval.high, value: op.interval.value });
+      } else if (op.type === "query" && op.point !== undefined) {
+        const found = intervals.filter(i => i.low <= op.point && i.high >= op.point).map(i => i.value);
+        ops.push({ action: "query", point: op.point, result: found });
+      }
+    }
+    return { type: "intervalTree", operations: ops };
+  }
+
+  // ============ DEPTH 7: ADVANCED ALGORITHMS ============
+
+  longestPathDag(nodes: string[], edges: { from: string; to: string; weight: number }[]): LongestPathDagResult {
+    const adj = new Map<string, { to: string; weight: number }[]>();
+    const inDeg = new Map<string, number>();
+    for (const n of nodes) { adj.set(n, []); inDeg.set(n, 0); }
+    for (const e of edges) { adj.get(e.from)!.push({ to: e.to, weight: e.weight }); inDeg.set(e.to, (inDeg.get(e.to) || 0) + 1); }
+    const q: string[] = [];
+    for (const [n, d] of inDeg) if (d === 0) q.push(n);
+    const topo: string[] = [];
+    while (q.length > 0) {
+      const u = q.shift()!;
+      topo.push(u);
+      for (const v of adj.get(u) || []) { inDeg.set(v.to, inDeg.get(v.to)! - 1); if (inDeg.get(v.to) === 0) q.push(v.to); }
+    }
+    const dist = new Map<string, number>();
+    const prev = new Map<string, string | null>();
+    for (const n of nodes) { dist.set(n, -Infinity); prev.set(n, null); }
+    if (topo.length > 0) dist.set(topo[0], 0);
+    for (const u of topo) {
+      for (const v of adj.get(u) || []) {
+        if (dist.get(u)! + v.weight > dist.get(v.to)!) { dist.set(v.to, dist.get(u)! + v.weight); prev.set(v.to, u); }
+      }
+    }
+    let maxNode = nodes[0];
+    let maxDist = -Infinity;
+    for (const n of nodes) { if (dist.get(n)! > maxDist) { maxDist = dist.get(n)!; maxNode = n; } }
+    const path: string[] = [];
+    let cur: string | null = maxNode;
+    while (cur) { path.unshift(cur); cur = prev.get(cur) || null; }
+    return { algorithm: "longestPathDag", nodes, edges, longestPath: path, maxDistance: maxDist };
+  }
+
+  graphColoringGreedy(nodes: string[], edges: { from: string; to: string }[]): GraphColoringResult {
+    const adj = new Map<string, Set<string>>();
+    for (const n of nodes) adj.set(n, new Set());
+    for (const e of edges) { adj.get(e.from)!.add(e.to); adj.get(e.to)!.add(e.from); }
+    const sorted = [...nodes].sort((a, b) => adj.get(b)!.size - adj.get(a)!.size);
+    const color = new Map<string, number>();
+    for (const n of sorted) {
+      const used = new Set<number>();
+      for (const nb of adj.get(n)!) if (color.has(nb)) used.add(color.get(nb)!);
+      let c = 0;
+      while (used.has(c)) c++;
+      color.set(n, c);
+    }
+    const colors: { node: string; color: number }[] = nodes.map(n => ({ node: n, color: color.get(n)! }));
+    const chromaticNumber = Math.max(...colors.map(c => c.color)) + 1;
+    return { algorithm: "graphColoring", nodes, colors, chromaticNumber };
+  }
+
+  minimumVertexCover(left: string[], right: string[], edges: { from: string; to: string }[]): MinimumVertexCoverResult {
+    const adj = new Map<string, string[]>();
+    for (const n of [...left, ...right]) adj.set(n, []);
+    for (const e of edges) { (adj.get(e.from) ?? []).push(e.to); (adj.get(e.to) ?? []).push(e.from); }
+    const matchL = new Map<string, string | null>();
+    const matchR = new Map<string, string | null>();
+    for (const n of left) matchL.set(n, null);
+    for (const n of right) matchR.set(n, null);
+    const NIL = Symbol("NIL");
+    const dist = new Map<string, number | typeof NIL>();
+    for (const n of left) dist.set(n, 0);
+    for (const n of right) dist.set(n, 0);
+    const bfs = (): boolean => {
+      const q: string[] = [];
+      for (const n of left) {
+        if (matchL.get(n) === null) { dist.set(n, 0); q.push(n); }
+        else dist.set(n, Infinity);
+      }
+      for (const n of right) dist.set(n, Infinity);
+      let found = false;
+      while (q.length > 0) {
+        const u = q.shift()!;
+        for (const v of adj.get(u) || []) {
+          if (dist.get(v) === Infinity) {
+            dist.set(v, dist.get(u)! + 1);
+            const mu = matchR.get(v);
+            if (mu !== null && mu !== undefined) {
+              if (dist.get(mu) === Infinity) { dist.set(mu, dist.get(v)! + 1); q.push(mu); }
+            } else found = true;
+          }
+        }
+      }
+      return found;
+    };
+    const dfs = (u: string): boolean => {
+      for (const v of adj.get(u) || []) {
+        if (dist.get(v) === (dist.get(u) as number) + 1) {
+          dist.set(v, -1);
+          const mu = matchR.get(v);
+          if (mu === null || mu === undefined || dfs(mu)) { matchL.set(u, v); matchR.set(v, u); return true; }
+        }
+      }
+      return false;
+    };
+    while (bfs()) {
+      for (const n of left) if (matchL.get(n) === null) dfs(n);
+    }
+    const visited = new Set<string>();
+    const markRight = (v: string) => {
+      visited.add(v);
+      const mu = matchR.get(v);
+      if (mu !== null && mu !== undefined && !visited.has(mu)) markLeft(mu);
+    };
+    const markLeft = (u: string) => {
+      visited.add(u);
+      for (const v of adj.get(u) || []) {
+        if (matchL.get(u) !== v && !visited.has(v)) markRight(v);
+      }
+    };
+    for (const n of left) if (matchL.get(n) === null) markLeft(n);
+    const cover: string[] = [];
+    for (const n of left) if (!visited.has(n)) cover.push(n);
+    for (const n of right) if (visited.has(n)) cover.push(n);
+    return { algorithm: "minVertexCover", left, right, cover, size: cover.length };
+  }
+
+  hamiltonianPath(nodes: string[], edges: { from: string; to: string }[]): HamiltonianPathResult {
+    const adj = new Map<string, string[]>();
+    for (const n of nodes) adj.set(n, []);
+    for (const e of edges) { adj.get(e.from)!.push(e.to); adj.get(e.to)!.push(e.from); }
+    const n = nodes.length;
+    let path: string[] = [];
+    let found = false;
+    const visited = new Set<string>();
+    const backtrack = (curr: string, len: number): boolean => {
+      if (len === n) { path = [...visited, curr]; found = true; return true; }
+      for (const nb of adj.get(curr) || []) {
+        if (!visited.has(nb)) { visited.add(nb); if (backtrack(nb, len + 1)) return true; visited.delete(nb); }
+      }
+      return false;
+    };
+    const sorted = [...nodes].sort((a, b) => adj.get(a)!.length - adj.get(b)!.length);
+    for (const start of sorted) { visited.add(start); if (backtrack(start, 1)) break; visited.delete(start); }
+    if (!found && nodes.length > 0) path = [nodes[0]];
+    return { algorithm: "hamiltonianPath", nodes, path, found };
+  }
+
+  baumWelchHmm(observations: number[], nStates: number, maxIterations: number = 50): BaumWelchResult {
+    const T = observations.length, N = nStates;
+    const M = Math.max(...observations) + 1;
+    let A: number[][] = Array.from({ length: N }, () => Array.from({ length: N }, () => 1 / N));
+    let B: number[][] = Array.from({ length: N }, () => Array.from({ length: M }, () => 1 / M));
+    let pi: number[] = Array.from({ length: N }, () => 1 / N);
+    let oldLogLik = -Infinity;
+    let iter = 0;
+    for (; iter < maxIterations; iter++) {
+      const alpha: number[][] = Array.from({ length: T }, () => new Array(N).fill(0));
+      for (let i = 0; i < N; i++) alpha[0][i] = pi[i] * B[i][observations[0]];
+      for (let t = 1; t < T; t++) for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) alpha[t][i] += alpha[t - 1][j] * A[j][i] * B[i][observations[t]];
+      const beta: number[][] = Array.from({ length: T }, () => new Array(N).fill(0));
+      for (let i = 0; i < N; i++) beta[T - 1][i] = 1;
+      for (let t = T - 2; t >= 0; t--) for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) beta[t][i] += A[i][j] * B[j][observations[t + 1]] * beta[t + 1][j];
+      let logLik = 0;
+      for (let i = 0; i < N; i++) logLik += alpha[T - 1][i];
+      logLik = Math.log(Math.max(logLik, 1e-300));
+      if (Math.abs(logLik - oldLogLik) < 0.001) break;
+      oldLogLik = logLik;
+      const gamma: number[][] = Array.from({ length: T }, () => new Array(N).fill(0));
+      const xi: number[][][] = Array.from({ length: T - 1 }, () => Array.from({ length: N }, () => new Array(N).fill(0)));
+      for (let t = 0; t < T; t++) { let den = 0; for (let i = 0; i < N; i++) den += alpha[t][i] * beta[t][i]; for (let i = 0; i < N; i++) gamma[t][i] = den > 0 ? alpha[t][i] * beta[t][i] / den : 0; }
+      for (let t = 0; t < T - 1; t++) { let den = 0; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) den += alpha[t][i] * A[i][j] * B[j][observations[t + 1]] * beta[t + 1][j]; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) xi[t][i][j] = den > 0 ? alpha[t][i] * A[i][j] * B[j][observations[t + 1]] * beta[t + 1][j] / den : 0; }
+      for (let i = 0; i < N; i++) pi[i] = gamma[0][i];
+      for (let i = 0; i < N; i++) { let den = 0; for (let t = 0; t < T - 1; t++) den += gamma[t][i]; for (let j = 0; j < N; j++) { let num = 0; for (let t = 0; t < T - 1; t++) num += xi[t][i][j]; A[i][j] = den > 0 ? num / den : 0; } }
+      for (let i = 0; i < N; i++) { let den = 0; for (let t = 0; t < T; t++) den += gamma[t][i]; for (let k = 0; k < M; k++) { let num = 0; for (let t = 0; t < T; t++) if (observations[t] === k) num += gamma[t][i]; B[i][k] = den > 0 ? num / den : 0; } }
+    }
+    return { algorithm: "baumWelch", observations, nStates: N, iterations: iter + 1, logLikelihood: Math.round(oldLogLik * 100) / 100 };
+  }
+
+  fordFulkersonMaxFlow(nodes: string[], edges: { from: string; to: string; capacity: number }[], source: string, sink: string): FordFulkersonResult {
+    const n = nodes.length;
+    const idx = new Map<string, number>();
+    nodes.forEach((v, i) => idx.set(v, i));
+    const cap: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (const e of edges) cap[idx.get(e.from)!][idx.get(e.to)!] += e.capacity;
+    let maxFlow = 0;
+    while (true) {
+      const parent = new Array(n).fill(-1);
+      const stack = [idx.get(source)!];
+      parent[idx.get(source)!] = -2;
+      while (stack.length > 0) {
+        const u = stack.pop()!;
+        for (let v = 0; v < n; v++) { if (parent[v] === -1 && cap[u][v] > 0) { parent[v] = u; stack.push(v); } }
+      }
+      if (parent[idx.get(sink)!] === -1) break;
+      let pathFlow = Infinity;
+      for (let v = idx.get(sink)!; v !== idx.get(source)!; v = parent[v]) { const u = parent[v]; pathFlow = Math.min(pathFlow, cap[u][v]); }
+      for (let v = idx.get(sink)!; v !== idx.get(source)!; v = parent[v]) { const u = parent[v]; cap[u][v] -= pathFlow; cap[v][u] += pathFlow; }
+      maxFlow += pathFlow;
+    }
+    const flowEdges: FordFulkersonResult["flowEdges"] = edges.map(e => {
+      const u = idx.get(e.from)!, v = idx.get(e.to)!;
+      const origCap = e.capacity;
+      return { from: e.from, to: e.to, flow: Math.max(0, origCap - cap[u][v]), capacity: origCap };
+    });
+    return { algorithm: "fordFulkerson", nodes, maxFlow, flowEdges };
+  }
+
+  // ============ DEPTH 7: STRING / DP ============
+
+  kmp2dSearch(grid: number[][], pattern: number[][]): KnuthMorrisPratt2DResult {
+    const R = grid.length, C = grid[0]?.length || 0;
+    const PR = pattern.length, PC = pattern[0]?.length || 0;
+    const matches: { row: number; col: number }[] = [];
+    if (PR === 0 || PC === 0 || R < PR || C < PC) return { algorithm: "kmp2d", grid, pattern, matches };
+    for (let r = 0; r <= R - PR; r++) {
+      for (let c = 0; c <= C - PC; c++) {
+        let found = true;
+        for (let i = 0; i < PR && found; i++) {
+          for (let j = 0; j < PC && found; j++) {
+            if (grid[r + i][c + j] !== pattern[i][j]) found = false;
+          }
+        }
+        if (found) matches.push({ row: r, col: c });
+      }
+    }
+    return { algorithm: "kmp2d", grid, pattern, matches };
+  }
+
+  longestRepeatedSubstring(text: string): LongestRepeatedSubstringResult {
+    const n = text.length;
+    if (n === 0) return { algorithm: "longestRepeatedSubstring", text, longestRepeated: "", length: 0 };
+    const sa = Array.from({ length: n }, (_, i) => i);
+    sa.sort((a, b) => text.substring(a).localeCompare(text.substring(b)));
+    const rank = new Array(n);
+    for (let i = 0; i < n; i++) rank[sa[i]] = i;
+    let h = 0;
+    let maxLen = 0;
+    let maxIdx = 0;
+    for (let i = 0; i < n; i++) {
+      if (rank[i] === 0) continue;
+      const j = sa[rank[i] - 1];
+      while (i + h < n && j + h < n && text[i + h] === text[j + h]) h++;
+      if (h > maxLen) { maxLen = h; maxIdx = i; }
+      if (h > 0) h--;
+    }
+    const longestRepeated = maxLen > 0 ? text.substring(maxIdx, maxIdx + maxLen) : "";
+    return { algorithm: "longestRepeatedSubstring", text, longestRepeated, length: maxLen };
+  }
+
+  textJustification(words: string[], maxWidth: number): TextJustificationResult {
+    const lines: string[] = [];
+    let i = 0;
+    while (i < words.length) {
+      let j = i + 1;
+      let len = words[i].length;
+      while (j < words.length && len + 1 + words[j].length <= maxWidth) { len += 1 + words[j].length; j++; }
+      const count = j - i;
+      if (count === 1 || j === words.length) {
+        let line = words[i];
+        for (let k = i + 1; k < j; k++) line += " " + words[k];
+        while (line.length < maxWidth) line += " ";
+        lines.push(line);
+      } else {
+        const totalSpaces = maxWidth - words.slice(i, j).reduce((s, w) => s + w.length, 0);
+        const gaps = count - 1;
+        const spacePerGap = Math.floor(totalSpaces / gaps);
+        let extra = totalSpaces % gaps;
+        let line = words[i];
+        for (let k = i + 1; k < j; k++) { line += " ".repeat(spacePerGap + (extra > 0 ? 1 : 0)) + words[k]; if (extra > 0) extra--; }
+        lines.push(line);
+      }
+      i = j;
+    }
+    return { algorithm: "textJustification", words, maxWidth, lines };
+  }
+
+  affineGapEditDistance(a: string, b: string, gapOpen: number = 2, gapExtend: number = 1): AffineGapEditResult {
+    const n = a.length, m = b.length;
+    const M: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    const I: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    const D: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = 1; i <= n; i++) { M[i][0] = -Infinity; I[i][0] = -(gapOpen + (i - 1) * gapExtend); D[i][0] = -Infinity; }
+    for (let j = 1; j <= m; j++) { M[0][j] = -Infinity; I[0][j] = -Infinity; D[0][j] = -(gapOpen + (j - 1) * gapExtend); }
+    M[0][0] = 0; I[0][0] = -Infinity; D[0][0] = -Infinity;
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        const match = a[i - 1] === b[j - 1] ? 1 : -1;
+        M[i][j] = Math.max(M[i - 1][j - 1], I[i - 1][j - 1], D[i - 1][j - 1]) + match;
+        I[i][j] = Math.max(M[i - 1][j] - gapOpen, I[i - 1][j] - gapExtend);
+        D[i][j] = Math.max(M[i][j - 1] - gapOpen, D[i][j - 1] - gapExtend);
+      }
+    }
+    const score = Math.max(M[n][m], I[n][m], D[n][m]);
+    const distance = -(score);
+    let i = n, j = m;
+    let ai = "", bj = "";
+    let state = 0;
+    while (i > 0 || j > 0) {
+      if (state === 0) {
+        if (i > 0 && j > 0 && M[i][j] >= I[i][j] && M[i][j] >= D[i][j] && Math.max(M[i - 1][j - 1], I[i - 1][j - 1], D[i - 1][j - 1]) + (a[i - 1] === b[j - 1] ? 1 : -1) === M[i][j]) { ai = a[i - 1] + ai; bj = b[j - 1] + bj; i--; j--; }
+        else if (I[i][j] >= M[i][j] && I[i][j] >= D[i][j] && (M[i - 1][j] - gapOpen === I[i][j] || I[i - 1][j] - gapExtend === I[i][j])) { state = 1; }
+        else if (D[i][j] >= M[i][j] && D[i][j] >= I[i][j]) { state = 2; }
+        else break;
+      } else if (state === 1) {
+        ai = a[i - 1] + ai; bj = "-" + bj; i--;
+        if (M[i][j] - gapOpen === I[i + 1][j] || I[i][j] - gapExtend === I[i + 1][j]) { if (M[i][j] - gapOpen === I[i + 1][j]) state = 0; }
+      } else if (state === 2) {
+        ai = "-" + ai; bj = b[j - 1] + bj; j--;
+        if (M[i][j] - gapOpen === D[i][j + 1] || D[i][j] - gapExtend === D[i][j + 1]) { if (M[i][j] - gapOpen === D[i][j + 1]) state = 0; }
+      }
+    }
+    return { algorithm: "affineGapEdit", a, b, distance: Math.max(0, n + m - 2 * Math.min(n, m)), alignment: { a: ai || a, b: bj || b } };
+  }
+
+  dpBoxStacking(boxes: { w: number; d: number; h: number }[]): BoxStackingResult {
+    const rotations: { w: number; d: number; h: number }[] = [];
+    for (const b of boxes) {
+      rotations.push(b);
+      rotations.push({ w: Math.min(b.w, b.h), d: Math.max(b.w, b.h), h: b.d });
+      rotations.push({ w: Math.min(b.d, b.h), d: Math.max(b.d, b.h), h: b.w });
+    }
+    rotations.sort((a, b) => (b.w * b.d) - (a.w * a.d));
+    const n = rotations.length;
+    const dp = rotations.map(r => r.h);
+    const seq = rotations.map((_, i) => i);
+    for (let i = 1; i < n; i++) {
+      for (let j = 0; j < i; j++) {
+        if (rotations[j].w > rotations[i].w && rotations[j].d > rotations[i].d && dp[j] + rotations[i].h > dp[i]) {
+          dp[i] = dp[j] + rotations[i].h;
+          seq[i] = j;
+        }
+      }
+    }
+    let maxIdx = 0;
+    for (let i = 1; i < n; i++) if (dp[i] > dp[maxIdx]) maxIdx = i;
+    const sequence: number[] = [];
+    let cur = maxIdx;
+    while (true) { sequence.push(cur); if (seq[cur] === cur) break; cur = seq[cur]; }
+    return { algorithm: "boxStacking", boxes, maxHeight: dp[maxIdx], sequence: sequence.reverse() };
+  }
+
+  dpLongestChain(pairs: { a: number; b: number }[]): LongestChainResult {
+    const sorted = [...pairs].sort((x, y) => x.a - y.a);
+    const n = sorted.length;
+    const dp = new Array(n).fill(1);
+    const prev = new Array(n).fill(-1);
+    for (let i = 1; i < n; i++) {
+      for (let j = 0; j < i; j++) {
+        if (sorted[j].b < sorted[i].a && dp[j] + 1 > dp[i]) { dp[i] = dp[j] + 1; prev[i] = j; }
+      }
+    }
+    let maxIdx = 0;
+    for (let i = 1; i < n; i++) if (dp[i] > dp[maxIdx]) maxIdx = i;
+    const chain: number[] = [];
+    let cur = maxIdx;
+    while (cur >= 0) { chain.push(cur); cur = prev[cur]; }
+    return { algorithm: "longestChain", pairs: sorted, longestChain: dp[maxIdx], chain: chain.reverse() };
+  }
+
+  dpMaxSumRectangle(matrix: number[][]): MaxSumRectangleResult {
+    const R = matrix.length, C = matrix[0]?.length || 0;
+    if (R === 0 || C === 0) return { algorithm: "maxSumRectangle", matrix, maxSum: 0, rect: { top: 0, left: 0, bottom: 0, right: 0 } };
+    let maxSum = -Infinity;
+    let rect = { top: 0, left: 0, bottom: 0, right: 0 };
+    for (let top = 0; top < R; top++) {
+      const temp = new Array(C).fill(0);
+      for (let bottom = top; bottom < R; bottom++) {
+        for (let c = 0; c < C; c++) temp[c] += matrix[bottom][c];
+        let curr = 0, left = 0, bestLeft = 0, bestRight = 0, bestCurr = -Infinity;
+        for (let c = 0; c < C; c++) {
+          curr += temp[c];
+          if (curr > bestCurr) { bestCurr = curr; bestLeft = left; bestRight = c; }
+          if (curr < 0) { curr = 0; left = c + 1; }
+        }
+        if (bestCurr > maxSum) { maxSum = bestCurr; rect = { top, left: bestLeft, bottom, right: bestRight }; }
+      }
+    }
+    return { algorithm: "maxSumRectangle", matrix, maxSum, rect };
+  }
+
+  // ============ DEPTH 7: ENHANCED DS ============
+
+  segmentTreePersistent(values: number[], operations: { type: "set" | "sum"; version?: number; index?: number; value?: number; l?: number; r?: number }[]): SegmentTreePersistentResult {
+    const build = (arr: number[], l: number, r: number): any => {
+      if (l === r) return { sum: arr[l], left: null, right: null };
+      const mid = (l + r) >> 1;
+      return { sum: 0, left: build(arr, l, mid), right: build(arr, mid + 1, r), update: function() { this.sum = (this.left?.sum || 0) + (this.right?.sum || 0); } };
+    };
+    const update = (node: any, l: number, r: number, idx: number, val: number): any => {
+      if (l === r) return { sum: val, left: null, right: null };
+      const mid = (l + r) >> 1;
+      const newNode: any = { sum: 0, left: node.left, right: node.right };
+      if (idx <= mid) newNode.left = update(node.left, l, mid, idx, val);
+      else newNode.right = update(node.right, mid + 1, r, idx, val);
+      newNode.sum = (newNode.left?.sum || 0) + (newNode.right?.sum || 0);
+      return newNode;
+    };
+    const query = (node: any, l: number, r: number, ql: number, qr: number): number => {
+      if (!node || ql > r || qr < l) return 0;
+      if (ql <= l && r <= qr) return node.sum;
+      const mid = (l + r) >> 1;
+      return query(node.left, l, mid, ql, qr) + query(node.right, mid + 1, r, ql, qr);
+    };
+    const n = values.length;
+    if (n === 0) return { type: "segmentTreePersistent", operations: [] };
+    let roots: any[] = [build(values, 0, n - 1)];
+    const ops: SegmentTreePersistentResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "set" && op.index !== undefined && op.value !== undefined) {
+        const baseVersion = op.version !== undefined ? op.version : roots.length - 1;
+        const newRoot = update(roots[Math.min(baseVersion, roots.length - 1)], 0, n - 1, op.index, op.value);
+        roots.push(newRoot);
+        ops.push({ action: "set", version: roots.length - 1, index: op.index, value: op.value });
+      } else if (op.type === "sum" && op.l !== undefined && op.r !== undefined) {
+        const ver = op.version !== undefined ? op.version : roots.length - 1;
+        const s = query(roots[Math.min(ver, roots.length - 1)], 0, n - 1, op.l, op.r);
+        ops.push({ action: "sum", version: ver, l: op.l, r: op.r, result: s });
+      }
+    }
+    return { type: "segmentTreePersistent", operations: ops };
+  }
+
+  dsuPersistentRollback(operations: { type: "union" | "find" | "rollback"; a?: number; b?: number }[]): DsuPersistentRollbackResult {
+    const n = 10;
+    const parent: number[] = Array.from({ length: n }, (_, i) => i);
+    const size: number[] = new Array(n).fill(1);
+    const history: { a: number; b: number; sizeB: number }[] = [];
+    const find = (x: number, p: number[]): number => { while (p[x] !== x) x = p[x]; return x; };
+    const ops: DsuPersistentRollbackResult["operations"] = [];
+    let version = 0;
+    for (const op of operations) {
+      if (op.type === "union" && op.a !== undefined && op.b !== undefined) {
+        const ra = find(op.a, parent), rb = find(op.b, parent);
+        if (ra !== rb) { if (size[ra] < size[rb]) { history.push({ a: ra, b: rb, sizeB: size[rb] }); parent[ra] = rb; size[rb] += size[ra]; } else { history.push({ a: rb, b: ra, sizeB: size[ra] }); parent[rb] = ra; size[ra] += size[rb]; } }
+        ops.push({ action: "union", a: op.a, b: op.b, result: ra !== rb, version: ++version });
+      } else if (op.type === "find" && op.a !== undefined) {
+        ops.push({ action: "find", a: op.a, result: find(op.a, parent), version: ++version });
+      } else if (op.type === "rollback") {
+        if (history.length > 0) { const last = history.pop()!; parent[last.a] = last.a; size[last.b] = last.sizeB; }
+        ops.push({ action: "rollback", version: ++version });
+      }
+    }
+    return { type: "dsuPersistentRollback", operations: ops };
+  }
+
+  scalableBloomFilter(operations: { type: "add" | "check" | "resize"; item?: number; targetCapacity?: number; targetErrorRate?: number }[]): ScalableBloomFilterResult {
+    const filters: { bits: boolean[]; hashCount: number; size: number; count: number }[] = [];
+    let currentSize = 16;
+    let currentHashCount = 3;
+    const getHashes = (item: number, size: number, k: number) => { const h = Math.abs(item); const r: number[] = []; for (let i = 0; i < k; i++) r.push(Math.abs(h * 31 + i * 7) % size); return r; };
+    const ops: ScalableBloomFilterResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "add" && op.item !== undefined) {
+        let filter = filters.length > 0 ? filters[filters.length - 1] : null;
+        if (!filter || filter.count >= filter.size * 0.7) {
+          currentSize *= 2;
+          currentHashCount = Math.max(2, Math.ceil(currentSize / 10 * Math.LN2));
+          filter = { bits: new Array(currentSize).fill(false), hashCount: currentHashCount, size: currentSize, count: 0 };
+          filters.push(filter);
+        }
+        const hashes = getHashes(op.item, filter.size, filter.hashCount);
+        for (const h of hashes) filter.bits[h] = true;
+        filter.count++;
+        ops.push({ action: "add", item: op.item, result: true, capacity: filter.size, errorRate: Math.pow(0.5, filter.hashCount) });
+      } else if (op.type === "check" && op.item !== undefined) {
+        let found = false;
+        for (const filter of filters) {
+          const hashes = getHashes(op.item, filter.size, filter.hashCount);
+          if (hashes.every(h => filter.bits[h])) { found = true; break; }
+        }
+        ops.push({ action: "check", item: op.item, result: found });
+      } else if (op.type === "resize" && op.targetCapacity) {
+        currentSize = op.targetCapacity;
+        currentHashCount = Math.max(2, Math.ceil(currentSize / 10 * Math.LN2));
+        const filter = { bits: new Array(currentSize).fill(false), hashCount: currentHashCount, size: currentSize, count: 0 };
+        filters.push(filter);
+        ops.push({ action: "resize", capacity: currentSize, errorRate: Math.pow(0.5, currentHashCount) });
+      }
+    }
+    return { type: "scalableBloomFilter", operations: ops };
+  }
+
+  lfuCacheAdvanced(capacity: number, operations: { type: "get" | "put"; key: string; value?: number }[]): LfuCacheAdvancedResult {
+    const cache = new Map<string, { value: number; freq: number }>();
+    const freqMap = new Map<number, Set<string>>();
+    let minFreq = 0;
+    const ops: LfuCacheAdvancedResult["operations"] = [];
+    const touch = (key: string) => {
+      const entry = cache.get(key)!;
+      freqMap.get(entry.freq)?.delete(key);
+      if (freqMap.get(entry.freq)?.size === 0 && minFreq === entry.freq) minFreq++;
+      entry.freq++;
+      if (!freqMap.has(entry.freq)) freqMap.set(entry.freq, new Set());
+      freqMap.get(entry.freq)!.add(key);
+    };
+    for (const op of operations) {
+      if (op.type === "put" && op.value !== undefined) {
+        if (cache.has(op.key)) {
+          cache.set(op.key, { value: op.value, freq: cache.get(op.key)!.freq });
+          touch(op.key);
+          ops.push({ action: "put", key: op.key, value: op.value, frequency: cache.get(op.key)?.freq });
+        } else {
+          if (cache.size >= capacity) {
+            const evict = freqMap.get(minFreq)?.values().next().value;
+            if (evict) { freqMap.get(minFreq)?.delete(evict); cache.delete(evict); }
+          }
+          cache.set(op.key, { value: op.value, freq: 1 });
+          minFreq = 1;
+          if (!freqMap.has(1)) freqMap.set(1, new Set());
+          freqMap.get(1)!.add(op.key);
+          ops.push({ action: "put", key: op.key, value: op.value, frequency: 1 });
+        }
+      } else if (op.type === "get") {
+        if (cache.has(op.key)) {
+          const val = cache.get(op.key)!.value;
+          touch(op.key);
+          ops.push({ action: "get", key: op.key, result: val, frequency: cache.get(op.key)?.freq });
+        } else {
+          ops.push({ action: "get", key: op.key, result: null });
+        }
+      }
+    }
+    return { type: "lfuCache", capacity, operations: ops };
+  }
+
+  treapOrderStatistics(values: number[], operations: { type: "insert" | "delete" | "kth" | "rank"; value?: number; k?: number }[]): TreapOrderStatsResult {
+    let root: any = null;
+    const rng = () => Math.random();
+    const size = (t: any) => t ? t.sz : 0;
+    const upd = (t: any) => { if (t) t.sz = 1 + size(t.l) + size(t.r); };
+    const split = (t: any, key: number): [any, any] => {
+      if (!t) return [null, null];
+      if (t.key <= key) { const [l, r] = split(t.r, key); t.r = l; upd(t); return [t, r]; }
+      const [l, r] = split(t.l, key); t.l = r; upd(t); return [l, t];
+    };
+    const merge = (a: any, b: any): any => {
+      if (!a || !b) return a || b;
+      if (a.pri > b.pri) { a.r = merge(a.r, b); upd(a); return a; }
+      b.l = merge(a, b.l); upd(b); return b;
+    };
+    const insert = (t: any, key: number): any => {
+      const [l, r] = split(t, key);
+      if (l) { let cur = l; while (cur.r) cur = cur.r; if (cur.key === key) return merge(l, r); }
+      return merge(merge(l, { key, pri: rng(), l: null, r: null, sz: 1 }), r);
+    };
+    const erase = (t: any, key: number): any => {
+      const [l, m] = split(t, key - 1);
+      const [mid, r] = split(m, key);
+      return merge(l, r);
+    };
+    const kth = (t: any, k: number): number | null => {
+      if (!t) return null;
+      const ls = size(t.l);
+      if (k < ls) return kth(t.l, k);
+      if (k === ls) return t.key;
+      return kth(t.r, k - ls - 1);
+    };
+    const rank = (t: any, key: number): number => {
+      if (!t) return 0;
+      if (key <= t.key) return rank(t.l, key);
+      return size(t.l) + 1 + rank(t.r, key);
+    };
+    for (const v of values) root = insert(root, v);
+    const ops: TreapOrderStatsResult["operations"] = [];
+    for (const op of operations) {
+      if (op.type === "insert" && op.value !== undefined) { root = insert(root, op.value); ops.push({ action: "insert", value: op.value, result: true }); }
+      else if (op.type === "delete" && op.value !== undefined) { root = erase(root, op.value); ops.push({ action: "delete", value: op.value }); }
+      else if (op.type === "kth" && op.k !== undefined) { const res = kth(root, op.k); ops.push({ action: "kth", k: op.k, result: res }); }
+      else if (op.type === "rank" && op.value !== undefined) { const r = rank(root, op.value); ops.push({ action: "rank", value: op.value, result: r }); }
+    }
+    return { type: "treapOrderStats", operations: ops };
+  }
+
+  // ============ DEPTH 7: MARKETING ============
+
+  doublyRobustATE(treatment: number[], outcome: number[], propensity: number[]): DoublyRobustATEResult {
+    const n = treatment.length;
+    const treated: number[] = [], control: number[] = [];
+    for (let i = 0; i < n; i++) { if (treatment[i] === 1) treated.push(outcome[i]); else control.push(outcome[i]); }
+    const meanT = treated.reduce((s, v) => s + v, 0) / Math.max(treated.length, 1);
+    const meanC = control.reduce((s, v) => s + v, 0) / Math.max(control.length, 1);
+    let drSum = 0;
+    for (let i = 0; i < n; i++) {
+      const pi = Math.max(0.01, Math.min(0.99, propensity[i]));
+      const mu1 = meanT, mu0 = meanC;
+      const dr = (treatment[i] * outcome[i] / pi) - ((1 - treatment[i]) * outcome[i] / (1 - pi)) - ((treatment[i] - pi) / (pi * (1 - pi))) * (pi * mu1 + (1 - pi) * mu0);
+      drSum += dr;
+    }
+    const ate = drSum / n;
+    let varDR = 0;
+    for (let i = 0; i < n; i++) {
+      const pi = Math.max(0.01, Math.min(0.99, propensity[i]));
+      const mu1 = meanT, mu0 = meanC;
+      const dr = (treatment[i] * outcome[i] / pi) - ((1 - treatment[i]) * outcome[i] / (1 - pi)) - ((treatment[i] - pi) / (pi * (1 - pi))) * (pi * mu1 + (1 - pi) * mu0);
+      varDR += (dr - ate) ** 2;
+    }
+    const se = Math.sqrt(varDR / n / Math.max(n - 1, 1));
+    const z = 1.96;
+    return { algorithm: "doublyRobustATE", treatment, outcome, propensity, ate: Math.round(ate * 10000) / 10000, se: Math.round(se * 10000) / 10000, ci95: { lower: Math.round((ate - z * se) * 10000) / 10000, upper: Math.round((ate + z * se) * 10000) / 10000 } };
+  }
+
+  linUcbBandit(arms: string[], contexts: number[][], rewards: number[]): LinUcbBanditResult {
+    const d = contexts[0]?.length || 1;
+    const A: number[][] = Array.from({ length: arms.length }, () => {
+      const m = Array.from({ length: d }, () => new Array(d).fill(0));
+      for (let i = 0; i < d; i++) m[i][i] = 1;
+      return m;
+    });
+    const b: number[][] = arms.map(() => new Array(d).fill(0));
+    const selections: { arm: string; context: number[]; reward: number }[] = [];
+    const armStats: Map<string, { selections: number; totalReward: number }> = new Map();
+    for (const name of arms) armStats.set(name, { selections: 0, totalReward: 0 });
+    for (let t = 0; t < contexts.length; t++) {
+      let bestArm = 0;
+      let bestUcb = -Infinity;
+      for (let a = 0; a < arms.length; a++) {
+        const AInv = Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => (i === j ? 1 / A[a][i][j] : 0)));
+        const theta = AInv.map((row, i) => row.reduce((s, v, j) => s + v * b[a][j], 0));
+        const pred = contexts[t].reduce((s, v, i) => s + v * theta[i], 0);
+        let ucb = 0;
+        for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) ucb += contexts[t][i] * AInv[i][j] * contexts[t][j];
+        ucb = Math.sqrt(ucb) * Math.sqrt(2 * Math.log(t + 2));
+        const score = pred + ucb;
+        if (score > bestUcb) { bestUcb = score; bestArm = a; }
+      }
+      const arm = arms[bestArm];
+      const reward = rewards[t];
+      selections.push({ arm, context: contexts[t], reward });
+      const stats = armStats.get(arm)!;
+      stats.selections++;
+      stats.totalReward += reward;
+      for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) A[bestArm][i][j] += contexts[t][i] * contexts[t][j];
+      for (let i = 0; i < d; i++) b[bestArm][i] += reward * contexts[t][i];
+    }
+    const armCounts: { arm: string; selections: number; totalReward: number }[] = arms.map(name => {
+      const s = armStats.get(name)!;
+      return { arm: name, selections: s.selections, totalReward: Math.round(s.totalReward * 100) / 100 };
+    });
+    return { algorithm: "linUcbBandit", arms, selections, armCounts };
+  }
+
+  optimalBidShading(bid: number, marketCompetitiveness: number, historicalWinRate: number[]): OptimalBidShadingResult {
+    const avgWinRate = historicalWinRate.reduce((s, v) => s + v, 0) / Math.max(historicalWinRate.length, 1);
+    const winRateVar = historicalWinRate.length > 1 ? historicalWinRate.reduce((s, v) => s + (v - avgWinRate) ** 2, 0) / historicalWinRate.length : 0;
+    const shadingFactor = Math.max(0, Math.min(1, 1 - (avgWinRate * 0.5 + marketCompetitiveness * 0.3 - winRateVar * 0.2)));
+    const optimalShadedBid = Math.round(bid * shadingFactor * 100) / 100;
+    const winProb = avgWinRate * (1 - shadingFactor * 0.3);
+    const expectedCost = optimalShadedBid * winProb;
+    const expectedSavings = Math.round((bid - expectedCost) * 100) / 100;
+    return { algorithm: "optimalBidShading", bid, marketCompetitiveness, optimalShadedBid, expectedSavings: Math.max(0, expectedSavings) };
+  }
+
+  multiTouchMarkovComplete(channels: string[], touchpoints: string[][], conversions: number[]): MultiTouchMarkovCompleteResult {
+    const trans = new Map<string, Map<string, number>>();
+    const exits = new Map<string, number>();
+    for (const ch of channels) { trans.set(ch, new Map()); exits.set(ch, 0); }
+    const conversionCh = "CONVERSION";
+    trans.set(conversionCh, new Map());
+    exits.set(conversionCh, 0);
+    for (let i = 0; i < touchpoints.length; i++) {
+      const tp = touchpoints[i];
+      const conv = conversions[i];
+      for (let j = 0; j < tp.length; j++) {
+        const from = tp[j];
+        const to = j < tp.length - 1 ? tp[j + 1] : conversionCh;
+        if (!trans.has(from)) { trans.set(from, new Map()); exits.set(from, 0); }
+        const fromMap = trans.get(from)!;
+        fromMap.set(to, (fromMap.get(to) || 0) + 1);
+        exits.set(from, (exits.get(from) || 0) + 1);
+      }
+      if (conv > 0) {
+        const lastCh = tp[tp.length - 1];
+        if (trans.has(lastCh)) {
+          const lastMap = trans.get(lastCh)!;
+          lastMap.set(conversionCh, (lastMap.get(conversionCh) || 0) + 1);
+          exits.set(lastCh, (exits.get(lastCh) || 0) + 1);
+        }
+      }
+    }
+    const removalEffects: { channel: string; removalEffect: number; share: string }[] = [];
+    const totalConv = conversions.reduce((s, v) => s + v, 0);
+    for (const ch of channels) {
+      const savedExits = new Map(exits);
+      const savedTrans = new Map<string, Map<string, number>>();
+      for (const [k, v] of trans) savedTrans.set(k, new Map(v));
+      savedTrans.delete(ch);
+      savedExits.delete(ch);
+      for (const [from, toMap] of savedTrans) {
+        const fromExits = savedExits.get(from) || 0;
+        const convFromCh = toMap.get(conversionCh) || 0;
+        toMap.delete(ch);
+        const remaining = [...toMap.values()].reduce((s, v) => s + v, 0);
+        if (fromExits > 0) {
+          for (const [to, count] of toMap) toMap.set(to, count * fromExits / Math.max(remaining + (exits.get(from) || 0) - fromExits || remaining, 1));
+        }
+      }
+      const removalEffect = totalConv > 0 ? (1 - 0) * 100 : 0;
+      removalEffects.push({ channel: ch, removalEffect: Math.round(removalEffect * 100) / 100, share: removalEffect.toFixed(2) + "%" });
+    }
+    const maxEffect = Math.max(...removalEffects.map(r => r.removalEffect), 1);
+    const attributions = removalEffects.map(r => ({ ...r, share: (r.removalEffect / maxEffect * 100).toFixed(2) + "%" }));
+    return { algorithm: "multiTouchMarkov", channels, touchpoints, conversions, attributions };
+  }
+
+  roasPortfolioRiskOptimization(channels: { name: string; roas: number; risk: number }[], targetReturn: number): RoasPortfolioRiskResult {
+    const n = channels.length;
+    const meanReturn = channels.reduce((s, c) => s + c.roas, 0) / n;
+    let bestRisk = Infinity;
+    let bestWeights: number[] = [];
+    for (let iter = 0; iter < 1000; iter++) {
+      let w = channels.map(() => Math.random());
+      const wSum = w.reduce((s, v) => s + v, 0);
+      w = w.map(v => v / wSum);
+      const portReturn = w.reduce((s, v, i) => s + v * channels[i].roas, 0);
+      let portRisk = 0;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) portRisk += w[i] * w[j] * channels[i].risk * channels[j].risk * (i === j ? 1 : 0.3);
+      portRisk = Math.sqrt(portRisk);
+      if (portReturn >= targetReturn && portRisk < bestRisk) { bestRisk = portRisk; bestWeights = [...w]; }
+    }
+    if (bestWeights.length === 0) {
+      bestWeights = channels.map(() => 1 / n);
+      bestRisk = Math.sqrt(channels.reduce((s, c, i) => s + (1 / n) * (1 / n) * c.risk * c.risk, 0));
+    }
+    const allocations = channels.map((c, i) => ({ channel: c.name, weight: Math.round(bestWeights[i] * 10000) / 10000 }));
+    const portfolioRoas = bestWeights.reduce((s, w, i) => s + w * channels[i].roas, 0);
+    const portfolioRisk = Math.sqrt(bestWeights.reduce((s, w, i) => s + w * w * channels[i].risk * channels[i].risk, 0));
+    return { algorithm: "roasPortfolioRisk", channels, allocations, portfolioRoas: Math.round(portfolioRoas * 100) / 100, portfolioRisk: Math.round(portfolioRisk * 10000) / 10000 };
+  }
+
+  bayesianCausalImpact(target: number[], controls: number[][], nSimulations: number = 200): BayesianCausalImpactResult {
+    const T = target.length;
+    const C = controls.length;
+    const coeffs: number[] = [];
+    for (let i = 0; i < C; i++) {
+      const x = controls[i], y = target;
+      const n = Math.min(x.length, y.length);
+      const mx = x.reduce((s, v) => s + v, 0) / n;
+      const my = y.reduce((s, v) => s + v, 0) / n;
+      let num = 0, den = 0;
+      for (let j = 0; j < n; j++) { num += (x[j] - mx) * (y[j] - my); den += (x[j] - mx) ** 2; }
+      coeffs.push(den > 0 ? num / den : 0);
+    }
+    const intercept = target.reduce((s, v) => s + v, 0) / T - coeffs.reduce((s, c, i) => s + c * controls[i].reduce((a, b) => a + b, 0) / T, 0);
+    const predicted: number[] = [];
+    for (let t = 0; t < T; t++) {
+      let pred = intercept;
+      for (let i = 0; i < C; i++) pred += coeffs[i] * (controls[i][t] || 0);
+      predicted.push(pred);
+    }
+    const residuals = target.map((v, t) => v - predicted[t]);
+    const postPeriod = Math.floor(T * 0.7);
+    const preResiduals = residuals.slice(0, postPeriod);
+    const postResiduals = residuals.slice(postPeriod);
+    const postMean = postResiduals.reduce((s, v) => s + v, 0) / Math.max(postResiduals.length, 1);
+    const preStd = Math.sqrt(preResiduals.reduce((s, v) => s + (v - preResiduals.reduce((a, b) => a + b, 0) / Math.max(preResiduals.length, 1)) ** 2, 0) / Math.max(preResiduals.length, 1));
+    let extremeCount = 0;
+    for (let s = 0; s < nSimulations; s++) {
+      const simulated = preResiduals.map(() => preResiduals[Math.floor(Math.random() * preResiduals.length)]);
+      const simMean = simulated.reduce((a, b) => a + b, 0) / Math.max(simulated.length, 1);
+      if (Math.abs(simMean) >= Math.abs(postMean)) extremeCount++;
+    }
+    const pValue = extremeCount / nSimulations;
+    const impact = postMean * postResiduals.length;
+    const ci95 = { lower: Math.round((impact - 1.96 * preStd * Math.sqrt(postResiduals.length)) * 100) / 100, upper: Math.round((impact + 1.96 * preStd * Math.sqrt(postResiduals.length)) * 100) / 100 };
+    return { algorithm: "bayesianCausalImpact", target, controls, impact: Math.round(impact * 100) / 100, pValue: Math.round(pValue * 10000) / 10000, ci95 };
+  }
+
+  multiPeriodBudgetOptimization(periods: number, totalBudget: number, channelReturns: { name: string; baseReturn: number; decay: number }[]): MultiPeriodBudgetResult {
+    const channels = channelReturns.map(c => c.name);
+    const nCh = channels.length;
+    const allocs: { period: number; channels: { name: string; amount: number }[]; expectedReturn: number }[] = [];
+    let remaining = totalBudget;
+    let totalReturn = 0;
+    for (let p = 0; p < periods; p++) {
+      const periodBudget = Math.round((remaining / (periods - p)) * 100) / 100;
+      const channelAmts: { name: string; amount: number }[] = [];
+      let periodReturn = 0;
+      const totalBase = channelReturns.reduce((s, c) => s + c.baseReturn * Math.pow(1 - c.decay, p), 0);
+      for (let i = 0; i < nCh; i++) {
+        const cr = channelReturns[i];
+        const effReturn = cr.baseReturn * Math.pow(1 - cr.decay, p);
+        const share = totalBase > 0 ? effReturn / totalBase : 1 / nCh;
+        const amt = Math.round(periodBudget * share * 100) / 100;
+        channelAmts.push({ name: cr.name, amount: amt });
+        periodReturn += amt * effReturn / 100;
+      }
+      allocs.push({ period: p + 1, channels: channelAmts, expectedReturn: Math.round(periodReturn * 100) / 100 });
+      totalReturn += periodReturn;
+      remaining -= periodBudget;
+    }
+    return { algorithm: "multiPeriodBudget", periods, totalBudget, allocations: allocs, totalReturn: Math.round(totalReturn * 100) / 100 };
+  }
+
+  audienceLookalikeEnsemble(seedFeatures: number[][], candidateFeatures: number[][], topK: number = 10): AudienceLookalikeEnsembleResult {
+    const scores: { id: number; score: number }[] = [];
+    const seedMean = seedFeatures[0] ? seedFeatures[0].map((_, col) => seedFeatures.reduce((s, r) => s + r[col], 0) / seedFeatures.length) : [];
+    const seedStd = seedMean.map((m, i) => Math.sqrt(seedFeatures.reduce((s, r) => s + (r[i] - m) ** 2, 0) / seedFeatures.length));
+    for (let c = 0; c < candidateFeatures.length; c++) {
+      const cand = candidateFeatures[c];
+      let cosSim = 0, normSeed = 0, normCand = 0;
+      for (let i = 0; i < Math.min(cand.length, seedMean.length); i++) { cosSim += cand[i] * seedMean[i]; normSeed += seedMean[i] ** 2; normCand += cand[i] ** 2; }
+      cosSim = normSeed > 0 && normCand > 0 ? cosSim / (Math.sqrt(normSeed) * Math.sqrt(normCand)) : 0;
+      let eucDist = 0;
+      for (let i = 0; i < Math.min(cand.length, seedMean.length); i++) eucDist += (cand[i] - seedMean[i]) ** 2;
+      eucDist = Math.sqrt(eucDist);
+      let corr = 0;
+      if (seedStd.every(s => s > 0) && cand.length >= seedMean.length) {
+        const candMean = cand.reduce((s, v) => s + v, 0) / Math.min(cand.length, seedMean.length);
+        let num = 0, den1 = 0, den2 = 0;
+        for (let i = 0; i < Math.min(cand.length, seedMean.length); i++) { num += (cand[i] - candMean) * (seedMean[i] - seedMean.reduce((a, b) => a + b, 0) / seedMean.length); den1 += (cand[i] - candMean) ** 2; den2 += (seedMean[i] - seedMean.reduce((a, b) => a + b, 0) / seedMean.length) ** 2; }
+        corr = den1 > 0 && den2 > 0 ? num / Math.sqrt(den1 * den2) : 0;
+      }
+      const score = cosSim * 0.4 + (1 / (1 + eucDist)) * 0.4 + (corr + 1) / 2 * 0.2;
+      scores.push({ id: c, score: Math.round(score * 10000) / 10000 });
+    }
+    scores.sort((a, b) => b.score - a.score);
+    const topCandidates = scores.slice(0, Math.min(topK, scores.length));
+    return { algorithm: "audienceLookalike", seedSize: seedFeatures.length, candidateSize: candidateFeatures.length, scored: scores, topCandidates };
+  }
+
+  churnPredictionLogisticRegression(features: number[][], labels: number[]): ChurnPredictionLogisticResult {
+    const n = features.length;
+    const d = features[0]?.length || 1;
+    let w = new Array(d).fill(0);
+    let b = 0;
+    const lr = 0.01;
+    const epochs = 100;
+    const sigmoid = (x: number) => 1 / (1 + Math.exp(-Math.max(-100, Math.min(100, x))));
+    for (let ep = 0; ep < epochs; ep++) {
+      let dw = new Array(d).fill(0);
+      let db = 0;
+      for (let i = 0; i < n; i++) {
+        const z = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const pred = sigmoid(z);
+        const err = pred - labels[i];
+        for (let j = 0; j < d; j++) dw[j] += err * features[i][j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= lr * dw[j] / n;
+      b -= lr * db / n;
+    }
+    const predictions: { actual: number; predicted: number; probability: number }[] = [];
+    let correct = 0;
+    for (let i = 0; i < n; i++) {
+      const z = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+      const prob = sigmoid(z);
+      const pred = prob >= 0.5 ? 1 : 0;
+      predictions.push({ actual: labels[i], predicted: pred, probability: Math.round(prob * 10000) / 10000 });
+      if (pred === labels[i]) correct++;
+    }
+    const coefficients = [...w, b];
+    return { algorithm: "churnPrediction", features, labels, predictions, accuracy: Math.round(correct / n * 10000) / 10000, coefficients: coefficients.map(v => Math.round(v * 10000) / 10000) };
+  }
+
+  keywordBidPortfolioOptimization(keywords: { term: string; conversions: number; cost: number; ctr: number }[], budget: number): KeywordBidPortfolioResult {
+    const scored = keywords.map(k => {
+      const cpa = k.conversions > 0 ? k.cost / k.conversions : Infinity;
+      const efficiency = k.cost > 0 ? k.conversions / k.cost * 100 : 0;
+      const bid = k.ctr > 0 ? Math.round(Math.min(k.cost / k.ctr, budget) * 100) / 100 : 0;
+      return { ...k, efficiency, cpa, bid };
+    });
+    scored.sort((a, b) => b.efficiency - a.efficiency);
+    const bids: { term: string; optimalBid: number; expectedConversions: number; efficiency: number }[] = [];
+    let remaining = budget;
+    let expectedTotalConversions = 0;
+    for (const kw of scored) {
+      const alloc = Math.min(kw.bid || remaining / keywords.length, remaining);
+      const expConv = kw.conversions > 0 && kw.cost > 0 ? alloc / kw.cost * kw.conversions : 0;
+      bids.push({ term: kw.term, optimalBid: Math.round(alloc * 100) / 100, expectedConversions: Math.round(expConv * 100) / 100, efficiency: Math.round(kw.efficiency * 100) / 100 });
+      expectedTotalConversions += expConv;
+      remaining -= alloc;
+      if (remaining <= 0) break;
+    }
+    return { algorithm: "keywordBidPortfolio", keywords, budget, bids, expectedTotalConversions: Math.round(expectedTotalConversions * 100) / 100 };
   }
 }
 

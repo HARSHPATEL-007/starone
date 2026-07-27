@@ -1621,4 +1621,188 @@ router.post("/marketing/time-decay-attr", asyncHandler(async (req, res) => {
   sendSuccess(res, dsAlgorithmService.timeDecayAttribution(touchpoints, decayFactor || 0.5));
 }));
 
+// ============ DEPTH 7 Routes ============
+
+router.post("/ds/cuckoo-filter", asyncHandler(async (req, res) => {
+  const { items, testItems } = req.body;
+  if (!items) return res.status(400).json({ error: "items required" });
+  sendSuccess(res, dsAlgorithmService.cuckooFilter(items, testItems || []));
+}));
+router.post("/ds/suffix-tree-sim", asyncHandler(async (req, res) => {
+  const { text, patterns } = req.body;
+  if (!text || !patterns) return res.status(400).json({ error: "text and patterns required" });
+  sendSuccess(res, dsAlgorithmService.suffixTreeSimulation(text, patterns));
+}));
+router.post("/ds/r-tree", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.rTreeSpatial(operations));
+}));
+router.post("/ds/persistent-array", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.persistentArray(operations));
+}));
+router.post("/ds/min-max-stack", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.minMaxStack(operations));
+}));
+router.post("/ds/d-ary-heap", asyncHandler(async (req, res) => {
+  const { values, degree, operations } = req.body;
+  if (!values || !operations) return res.status(400).json({ error: "values, degree, operations required" });
+  sendSuccess(res, dsAlgorithmService.dAryHeap(values, degree || 3, operations));
+}));
+router.post("/ds/interval-tree-dynamic", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.intervalTreeDynamic(operations));
+}));
+
+router.post("/algo/longest-path-dag", asyncHandler(async (req, res) => {
+  const { nodes, edges } = req.body;
+  if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+  sendSuccess(res, dsAlgorithmService.longestPathDag(nodes, edges));
+}));
+router.post("/algo/graph-coloring", asyncHandler(async (req, res) => {
+  const { nodes, edges } = req.body;
+  if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+  sendSuccess(res, dsAlgorithmService.graphColoringGreedy(nodes, edges));
+}));
+router.post("/algo/vertex-cover", asyncHandler(async (req, res) => {
+  const { left, right, edges } = req.body;
+  if (!left || !right || !edges) return res.status(400).json({ error: "left, right, edges required" });
+  sendSuccess(res, dsAlgorithmService.minimumVertexCover(left, right, edges));
+}));
+router.post("/algo/hamiltonian-path", asyncHandler(async (req, res) => {
+  const { nodes, edges } = req.body;
+  if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+  sendSuccess(res, dsAlgorithmService.hamiltonianPath(nodes, edges));
+}));
+router.post("/algo/baum-welch", asyncHandler(async (req, res) => {
+  const { observations, nStates, maxIterations } = req.body;
+  if (!observations || nStates === undefined) return res.status(400).json({ error: "observations and nStates required" });
+  sendSuccess(res, dsAlgorithmService.baumWelchHmm(observations, nStates, maxIterations || 50));
+}));
+router.post("/graph/ford-fulkerson", asyncHandler(async (req, res) => {
+  const { nodes, edges, source, sink } = req.body;
+  if (!nodes || !edges || !source || !sink) return res.status(400).json({ error: "nodes, edges, source, sink required" });
+  sendSuccess(res, dsAlgorithmService.fordFulkersonMaxFlow(nodes, edges, source, sink));
+}));
+
+router.post("/string/kmp-2d", asyncHandler(async (req, res) => {
+  const { grid, pattern } = req.body;
+  if (!grid || !pattern) return res.status(400).json({ error: "grid and pattern required" });
+  sendSuccess(res, dsAlgorithmService.kmp2dSearch(grid, pattern));
+}));
+router.post("/string/longest-repeated", asyncHandler(async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: "text required" });
+  sendSuccess(res, dsAlgorithmService.longestRepeatedSubstring(text));
+}));
+router.post("/string/text-justify", asyncHandler(async (req, res) => {
+  const { words, maxWidth } = req.body;
+  if (!words || maxWidth === undefined) return res.status(400).json({ error: "words and maxWidth required" });
+  sendSuccess(res, dsAlgorithmService.textJustification(words, maxWidth));
+}));
+router.post("/string/affine-edit", asyncHandler(async (req, res) => {
+  const { a, b, gapOpen, gapExtend } = req.body;
+  if (!a || !b) return res.status(400).json({ error: "strings a and b required" });
+  sendSuccess(res, dsAlgorithmService.affineGapEditDistance(a, b, gapOpen || 2, gapExtend || 1));
+}));
+router.post("/dp/box-stacking", asyncHandler(async (req, res) => {
+  const { boxes } = req.body;
+  if (!boxes) return res.status(400).json({ error: "boxes required" });
+  sendSuccess(res, dsAlgorithmService.dpBoxStacking(boxes));
+}));
+router.post("/dp/longest-chain", asyncHandler(async (req, res) => {
+  const { pairs } = req.body;
+  if (!pairs) return res.status(400).json({ error: "pairs required" });
+  sendSuccess(res, dsAlgorithmService.dpLongestChain(pairs));
+}));
+router.post("/dp/max-sum-rectangle", asyncHandler(async (req, res) => {
+  const { matrix } = req.body;
+  if (!matrix) return res.status(400).json({ error: "matrix required" });
+  sendSuccess(res, dsAlgorithmService.dpMaxSumRectangle(matrix));
+}));
+
+router.post("/ds/segment-tree-persistent", asyncHandler(async (req, res) => {
+  const { values, operations } = req.body;
+  if (!values || !operations) return res.status(400).json({ error: "values and operations required" });
+  sendSuccess(res, dsAlgorithmService.segmentTreePersistent(values, operations));
+}));
+router.post("/ds/dsu-persistent", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.dsuPersistentRollback(operations));
+}));
+router.post("/ds/scalable-bloom", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.scalableBloomFilter(operations));
+}));
+router.post("/ds/lfu-advanced", asyncHandler(async (req, res) => {
+  const { capacity, operations } = req.body;
+  if (capacity === undefined || !operations) return res.status(400).json({ error: "capacity and operations required" });
+  sendSuccess(res, dsAlgorithmService.lfuCacheAdvanced(capacity, operations));
+}));
+router.post("/ds/treap-order-stats", asyncHandler(async (req, res) => {
+  const { values, operations } = req.body;
+  if (!values || !operations) return res.status(400).json({ error: "values and operations required" });
+  sendSuccess(res, dsAlgorithmService.treapOrderStatistics(values, operations));
+}));
+
+router.post("/marketing/doubly-robust", asyncHandler(async (req, res) => {
+  const { treatment, outcome, propensity } = req.body;
+  if (!treatment || !outcome || !propensity) return res.status(400).json({ error: "treatment, outcome, propensity required" });
+  sendSuccess(res, dsAlgorithmService.doublyRobustATE(treatment, outcome, propensity));
+}));
+router.post("/marketing/linucb", asyncHandler(async (req, res) => {
+  const { arms, contexts, rewards } = req.body;
+  if (!arms || !contexts || !rewards) return res.status(400).json({ error: "arms, contexts, rewards required" });
+  sendSuccess(res, dsAlgorithmService.linUcbBandit(arms, contexts, rewards));
+}));
+router.post("/marketing/bid-shading", asyncHandler(async (req, res) => {
+  const { bid, marketCompetitiveness, historicalWinRate } = req.body;
+  if (bid === undefined || marketCompetitiveness === undefined || !historicalWinRate)
+    return res.status(400).json({ error: "bid, marketCompetitiveness, historicalWinRate required" });
+  sendSuccess(res, dsAlgorithmService.optimalBidShading(bid, marketCompetitiveness, historicalWinRate));
+}));
+router.post("/marketing/markov-complete", asyncHandler(async (req, res) => {
+  const { channels, touchpoints, conversions } = req.body;
+  if (!channels || !touchpoints || !conversions) return res.status(400).json({ error: "channels, touchpoints, conversions required" });
+  sendSuccess(res, dsAlgorithmService.multiTouchMarkovComplete(channels, touchpoints, conversions));
+}));
+router.post("/marketing/roas-portfolio", asyncHandler(async (req, res) => {
+  const { channels, targetReturn } = req.body;
+  if (!channels || targetReturn === undefined) return res.status(400).json({ error: "channels and targetReturn required" });
+  sendSuccess(res, dsAlgorithmService.roasPortfolioRiskOptimization(channels, targetReturn));
+}));
+router.post("/marketing/causal-impact", asyncHandler(async (req, res) => {
+  const { target, controls, nSimulations } = req.body;
+  if (!target || !controls) return res.status(400).json({ error: "target and controls required" });
+  sendSuccess(res, dsAlgorithmService.bayesianCausalImpact(target, controls, nSimulations || 200));
+}));
+router.post("/marketing/multi-period-budget", asyncHandler(async (req, res) => {
+  const { periods, totalBudget, channelReturns } = req.body;
+  if (periods === undefined || totalBudget === undefined || !channelReturns)
+    return res.status(400).json({ error: "periods, totalBudget, channelReturns required" });
+  sendSuccess(res, dsAlgorithmService.multiPeriodBudgetOptimization(periods, totalBudget, channelReturns));
+}));
+router.post("/marketing/lookalike-ensemble", asyncHandler(async (req, res) => {
+  const { seedFeatures, candidateFeatures, topK } = req.body;
+  if (!seedFeatures || !candidateFeatures) return res.status(400).json({ error: "seedFeatures and candidateFeatures required" });
+  sendSuccess(res, dsAlgorithmService.audienceLookalikeEnsemble(seedFeatures, candidateFeatures, topK || 10));
+}));
+router.post("/marketing/churn-logistic", asyncHandler(async (req, res) => {
+  const { features, labels } = req.body;
+  if (!features || !labels) return res.status(400).json({ error: "features and labels required" });
+  sendSuccess(res, dsAlgorithmService.churnPredictionLogisticRegression(features, labels));
+}));
+router.post("/marketing/keyword-portfolio", asyncHandler(async (req, res) => {
+  const { keywords, budget } = req.body;
+  if (!keywords || budget === undefined) return res.status(400).json({ error: "keywords and budget required" });
+  sendSuccess(res, dsAlgorithmService.keywordBidPortfolioOptimization(keywords, budget));
+}));
+
 export default router;
