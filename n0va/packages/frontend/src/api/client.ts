@@ -1556,4 +1556,54 @@ export const api = {
     keywordPortfolio: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/keyword-portfolio", { method: "POST", body: JSON.stringify(data) }),
   },
+
+  autonomousCampaignManager: {
+    analyze: (campaignId: string) => request<any>(`/autonomous-campaign-manager/analyze/${campaignId}`),
+    portfolio: () => request<any>("/autonomous-campaign-manager/portfolio"),
+    optimize: (campaignId: string) => request<any>(`/autonomous-campaign-manager/optimize/${campaignId}`, { method: "POST" }),
+    autoAdjustBudget: (campaignId: string) => request<any>("/autonomous-campaign-manager/auto-adjust-budget", { method: "POST", body: JSON.stringify({ campaignId }) }),
+    autoAdjustBids: (campaignId: string) => request<any>("/autonomous-campaign-manager/auto-adjust-bids", { method: "POST", body: JSON.stringify({ campaignId }) }),
+    scheduleChange: (campaignId: string, type: string, action: string, rationale: string) =>
+      request<any>("/autonomous-campaign-manager/schedule-change", { method: "POST", body: JSON.stringify({ campaignId, type, action, rationale }) }),
+    scheduledChanges: (campaignId?: string) =>
+      request<any>(`/autonomous-campaign-manager/scheduled-changes${campaignId ? `?campaignId=${campaignId}` : ""}`),
+    executeScheduled: (campaignId?: string) =>
+      request<any>("/autonomous-campaign-manager/execute-scheduled", { method: "POST", body: JSON.stringify({ campaignId }) }),
+    anomalies: (campaignId: string) => request<any>(`/autonomous-campaign-manager/anomalies/${campaignId}`),
+    executiveReport: () => request<any>("/autonomous-campaign-manager/executive-report"),
+    forecast: (campaignId: string, days?: number) =>
+      request<any>(`/autonomous-campaign-manager/forecast/${campaignId}${days ? `?days=${days}` : ""}`),
+    budgetAllocation: () => request<any>("/autonomous-campaign-manager/budget-allocation"),
+    pacingTargets: () => request<any>("/autonomous-campaign-manager/pacing-targets"),
+    scheduleOptimization: (campaignId: string) => request<any>(`/autonomous-campaign-manager/schedule-optimization/${campaignId}`),
+    abTestRecommendation: (campaignId: string) => request<any>(`/autonomous-campaign-manager/ab-test-recommendation/${campaignId}`),
+    competitiveLandscape: (campaignId: string) => request<any>(`/autonomous-campaign-manager/competitive-landscape/${campaignId}`),
+    actionItems: () => request<any>("/autonomous-campaign-manager/action-items"),
+    simulate: (campaignId: string, scenario: string, adjustments: Record<string, unknown>) =>
+      request<any>(`/autonomous-campaign-manager/simulate/${campaignId}`, { method: "POST", body: JSON.stringify({ scenario, adjustments }) }),
+    healthTrend: (campaignId: string) => request<any>(`/autonomous-campaign-manager/health-trend/${campaignId}`),
+    autoPause: () => request<any>("/autonomous-campaign-manager/auto-pause", { method: "POST" }),
+    weeklyReport: (weekStart?: string) =>
+      request<any>(`/autonomous-campaign-manager/weekly-report${weekStart ? `?weekStart=${weekStart}` : ""}`),
+    actionItemsList: () => request<any>("/autonomous-campaign-manager/action-items/list"),
+    actionItemsClear: () => request<any>("/autonomous-campaign-manager/action-items/clear", { method: "POST" }),
+  },
+
+  unifiedAdsPipeline: {
+    initialize: (campaignId: string) => request<any>("/unified-ads-pipeline/initialize", { method: "POST", body: JSON.stringify({ campaignId }) }),
+    get: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}`),
+    list: (campaignId?: string) => request<any>(`/unified-ads-pipeline${campaignId ? `?campaignId=${campaignId}` : ""}`),
+    advance: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/advance`, { method: "POST" }),
+    configure: (pipelineId: string, config: Record<string, unknown>) =>
+      request<any>(`/unified-ads-pipeline/${pipelineId}/configure`, { method: "POST", body: JSON.stringify({ config }) }),
+    activate: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/activate`, { method: "POST" }),
+    monitor: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/monitor`),
+    optimize: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/optimize`, { method: "POST" }),
+    report: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/report`),
+    timeline: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/timeline`),
+    archive: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/archive`, { method: "POST" }),
+    health: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/health`),
+    validate: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/validate`),
+    rollback: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/rollback`, { method: "POST" }),
+  },
 };

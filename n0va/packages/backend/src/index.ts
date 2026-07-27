@@ -89,6 +89,7 @@ import abTestStatisticsRoutes from "./routes/ab-test-statistics";
 import anomalyDetectionRoutes from "./routes/anomaly-detection";
 import portfolioBudgetOptimizerRoutes from "./routes/portfolio-budget-optimizer";
 import campaignSaturationRoutes from "./routes/campaign-saturation";
+import autonomousCampaignManagerRoutes from "./routes/autonomous-campaign-manager";
 import channelMixOptimizerRoutes from "./routes/channel-mix-optimizer";
 import keywordInsightsRoutes from "./routes/keyword-insights";
 import portfolioRoutes from "./routes/portfolio";
@@ -113,6 +114,7 @@ import predictiveForecastingEnhancedRoutes from "./routes/predictive-forecasting
 import incrementalityTestingRoutes from "./routes/incrementality-testing";
 import searchIntelligenceRoutes from "./routes/search-intelligence";
 import anomalyDetectionEnhancedRoutes from "./routes/anomaly-detection-enhanced";
+import unifiedAdsPipelineRoutes from "./routes/unified-ads-pipeline";
 
 const app = express();
 const httpServer = createServer(app);
@@ -216,6 +218,7 @@ app.use("/api/v1/ab-test-statistics", authMiddleware, tenantMiddleware, abTestSt
 app.use("/api/v1/anomaly-detection", authMiddleware, tenantMiddleware, anomalyDetectionRoutes);
 app.use("/api/v1/portfolio-budget-optimizer", authMiddleware, tenantMiddleware, portfolioBudgetOptimizerRoutes);
 app.use("/api/v1/campaign-saturation", authMiddleware, tenantMiddleware, campaignSaturationRoutes);
+app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);
 app.use("/api/v1/form-analytics", authMiddleware, tenantMiddleware, formAnalyticsRoutes);
@@ -239,6 +242,7 @@ app.use("/api/v1/predictive-forecasting/enhanced", authMiddleware, tenantMiddlew
 app.use("/api/v1/incrementality-testing", authMiddleware, tenantMiddleware, incrementalityTestingRoutes);
 app.use("/api/v1/search-intelligence", authMiddleware, tenantMiddleware, searchIntelligenceRoutes);
 app.use("/api/v1/anomaly-detection/enhanced", authMiddleware, tenantMiddleware, anomalyDetectionEnhancedRoutes);
+app.use("/api/v1/unified-ads-pipeline", authMiddleware, tenantMiddleware, unifiedAdsPipelineRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
