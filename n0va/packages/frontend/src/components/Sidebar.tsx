@@ -201,6 +201,9 @@ const navItems = [
   { to: "/audience-insights-enhanced", icon: Users, label: "Audience Insights+" },
   { to: "/ad-copy-personalization", icon: Sparkles, label: "Ad Personalization" },
   { to: "/campaign-health-predictor", icon: HeartPulse, label: "Health Predictor" },
+  { to: "/attribution-analytics", icon: GitCompare, label: "Attribution Analytics" },
+  { to: "/forecasting-dashboard", icon: TrendingUp, label: "Forecasting Dashboard" },
+  { to: "/marketing-roi", icon: DollarSign, label: "Marketing ROI" },
   { to: "/ds-algorithms", icon: Binary, label: "DSA Playground" },
   { to: "/delivery", icon: Mail, label: "Delivery Status" },
 ];
