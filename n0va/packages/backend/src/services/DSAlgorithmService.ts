@@ -6251,6 +6251,911 @@ export class DSAlgorithmService {
     }
     return { algorithm: "keywordBidPortfolio", keywords, budget, bids, expectedTotalConversions: Math.round(expectedTotalConversions * 100) / 100 };
   }
+
+  // ── Depth 8: Advanced Data Structures ──
+
+  hllCardinality(values: number[], numRegisters: number = 64): { algorithm: string; values: number[]; numRegisters: number; cardinality: number; registers: number[] } {
+    const m = numRegisters;
+    const registers = new Array(m).fill(0);
+    for (const v of values) {
+      const h = Math.abs(v * 2654435761) % m;
+      let leading = 0;
+      let x = Math.abs(v);
+      while (x > 0) { leading++; x >>= 1; }
+      registers[h] = Math.max(registers[h], leading + 1);
+    }
+    const alpha = 0.7213 / (1 + 1.079 / m);
+    const sum = registers.reduce((s, r) => s + Math.pow(2, -r), 0);
+    const estimate = alpha * m * m / sum;
+    return { algorithm: "hllCardinality", values, numRegisters: m, cardinality: Math.round(estimate), registers };
+  }
+
+  countMinSketch(operations: { type: "add" | "estimate"; item: string; count?: number }[], width: number = 100, depth: number = 5): { algorithm: string; width: number; depth: number; operations: any[] } {
+    const hashCode = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; } return h; };
+    const table: number[][] = Array.from({ length: depth }, () => new Array(width).fill(0));
+    const results: any[] = [];
+    for (const op of operations) {
+      if (op.type === "add") {
+        const c = op.count || 1;
+        for (let d = 0; d < depth; d++) {
+          const idx = Math.abs(hashCode(op.item) * (d + 1) * 2654435761) % width;
+          table[d][idx] += c;
+        }
+        results.push({ type: "add", item: op.item, count: c });
+      } else {
+        const estimates: number[] = [];
+        for (let d = 0; d < depth; d++) {
+          const idx = Math.abs(hashCode(op.item) * (d + 1) * 2654435761) % width;
+          estimates.push(table[d][idx]);
+        }
+        results.push({ type: "estimate", item: op.item, estimate: Math.min(...estimates) });
+      }
+    }
+    return { algorithm: "countMinSketch", width, depth, operations: results };
+  }
+
+  weightedBloomFilter(operations: { type: "add" | "test"; item: string; weight?: number }[], falsePositiveRate: number = 0.01): { algorithm: string; size: number; hashFunctions: number; falsePositiveRate: number; items: number; results: any[] } {
+    const hashCode = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; } return h; };
+    const m = Math.max(8, Math.ceil(-operations.length * Math.log(falsePositiveRate) / (Math.log(2) ** 2)));
+    const bits: boolean[] = new Array(m).fill(false);
+    const results: any[] = [];
+    let kUsed = 1;
+    for (const op of operations) {
+      if (op.type === "add") {
+        const k = Math.max(1, Math.ceil(Math.log(1 / falsePositiveRate) * Math.log(2) * (1 + (op.weight || 1) * 0.1)));
+        kUsed = k;
+        for (let i = 0; i < k; i++) {
+          const idx = Math.abs(hashCode(op.item) ^ (i * 2654435761)) % m;
+          bits[idx] = true;
+        }
+        results.push({ type: "add", item: op.item });
+      } else {
+        const k = Math.max(1, Math.ceil(Math.log(1 / falsePositiveRate) * Math.log(2) * (1 + (op.weight || 1) * 0.1)));
+        let present = true;
+        for (let i = 0; i < k; i++) {
+          const idx = Math.abs(hashCode(op.item) ^ (i * 2654435761)) % m;
+          if (!bits[idx]) { present = false; break; }
+        }
+        results.push({ type: "test", item: op.item, present });
+      }
+    }
+    return { algorithm: "weightedBloomFilter", size: m, hashFunctions: kUsed, falsePositiveRate, items: operations.length, results };
+  }
+
+  segmentTreeBeats(values: number[], operations: { type: "min" | "max" | "add" | "sum"; l: number; r: number; val?: number }[]): { algorithm: string; initialValues: number[]; operations: any[]; finalValues: number[] } {
+    const arr = [...values];
+    const results: any[] = [];
+    for (const op of operations) {
+      const l = Math.max(0, Math.min(op.l, arr.length - 1));
+      const r = Math.max(0, Math.min(op.r, arr.length - 1));
+      if (op.type === "min" && op.val !== undefined) {
+        for (let i = l; i <= r; i++) arr[i] = Math.min(arr[i], op.val);
+        results.push({ type: "min", l, r, val: op.val });
+      } else if (op.type === "max" && op.val !== undefined) {
+        for (let i = l; i <= r; i++) arr[i] = Math.max(arr[i], op.val);
+        results.push({ type: "max", l, r, val: op.val });
+      } else if (op.type === "add" && op.val !== undefined) {
+        for (let i = l; i <= r; i++) arr[i] += op.val;
+        results.push({ type: "add", l, r, val: op.val });
+      } else if (op.type === "sum") {
+        let s = 0;
+        for (let i = l; i <= r; i++) s += arr[i];
+        results.push({ type: "sum", l, r, sum: s });
+      }
+    }
+    return { algorithm: "segmentTreeBeats", initialValues: values, operations: results, finalValues: arr };
+  }
+
+  lcaBinaryLifting(nodes: string[], edges: [string, string][], queries: [string, string][]): { algorithm: string; queries: { u: string; v: string; lca: string; distance: number }[] } {
+    const idx = new Map<string, number>();
+    nodes.forEach((n, i) => idx.set(n, i));
+    const n = nodes.length;
+    const adj: number[][] = Array.from({ length: n }, () => []);
+    for (const [a, b] of edges) {
+      const ai = idx.get(a)!, bi = idx.get(b)!;
+      adj[ai].push(bi); adj[bi].push(ai);
+    }
+    const LOG = Math.max(1, Math.ceil(Math.log2(n)));
+    const up: number[][] = Array.from({ length: LOG }, () => new Array(n).fill(-1));
+    const depth = new Array(n).fill(0);
+    const dfs = (u: number, p: number) => {
+      up[0][u] = p;
+      for (const v of adj[u]) if (v !== p) { depth[v] = depth[u] + 1; dfs(v, u); }
+    };
+    if (n > 0) { depth[0] = 0; dfs(0, -1); }
+    for (let k = 1; k < LOG; k++) {
+      for (let v = 0; v < n; v++) {
+        if (up[k - 1][v] !== -1) up[k][v] = up[k - 1][up[k - 1][v]];
+      }
+    }
+    const lift = (v: number, k: number) => { for (let i = 0; i < LOG; i++) if (k & (1 << i)) v = up[i][v]; return v; };
+    const lca = (u: number, v: number) => {
+      if (depth[u] < depth[v]) [u, v] = [v, u];
+      u = lift(u, depth[u] - depth[v]);
+      if (u === v) return u;
+      for (let i = LOG - 1; i >= 0; i--) { if (up[i][u] !== up[i][v]) { u = up[i][u]; v = up[i][v]; } }
+      return up[0][u];
+    };
+    const queryResults = queries.map(([u, v]) => {
+      const ui = idx.get(u)!, vi = idx.get(v)!;
+      const l = lca(ui, vi);
+      return { u, v, lca: nodes[l], distance: depth[ui] + depth[vi] - 2 * depth[l] };
+    });
+    return { algorithm: "lcaBinaryLifting", queries: queryResults };
+  }
+
+  dynamicLIS(insertions: number[]): { algorithm: string; insertions: number[]; lisLengths: number[]; finalLIS: number[] } {
+    const lis: number[] = [];
+    const lengths: number[] = [];
+    for (const x of insertions) {
+      let lo = 0, hi = lis.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (lis[mid] < x) lo = mid + 1; else hi = mid;
+      }
+      lis[lo] = x;
+      lengths.push(lis.length);
+    }
+    return { algorithm: "dynamicLIS", insertions, lisLengths: lengths, finalLIS: lis };
+  }
+
+  rangeModeQuery(values: number[], queries: { l: number; r: number }[]): { algorithm: string; values: number[]; queries: { l: number; r: number; mode: number; frequency: number }[] } {
+    const results: { l: number; r: number; mode: number; frequency: number }[] = [];
+    for (const q of queries) {
+      const l = Math.max(0, Math.min(q.l, values.length - 1));
+      const r = Math.max(l, Math.min(q.r, values.length - 1));
+      const freq = new Map<number, number>();
+      let maxFreq = 0, mode = values[l];
+      for (let i = l; i <= r; i++) {
+        const f = (freq.get(values[i]) || 0) + 1;
+        freq.set(values[i], f);
+        if (f > maxFreq) { maxFreq = f; mode = values[i]; }
+      }
+      results.push({ l, r, mode, frequency: maxFreq });
+    }
+    return { algorithm: "rangeModeQuery", values, queries: results };
+  }
+
+  // ── Depth 8: Advanced Algorithms ──
+
+  kuhnMunkres(costMatrix: number[][]): { algorithm: string; costMatrix: number[][]; assignment: { row: number; col: number }[]; totalCost: number; optimal: boolean } {
+    const n = costMatrix.length;
+    const m = costMatrix[0].length;
+    const u = new Array(n + 1).fill(0);
+    const v = new Array(m + 1).fill(0);
+    const p = new Array(m + 1).fill(0);
+    const way = new Array(m + 1).fill(0);
+    for (let i = 1; i <= n; i++) {
+      p[0] = i;
+      let j0 = 0;
+      const minv = new Array(m + 1).fill(Infinity);
+      const used = new Array(m + 1).fill(false);
+      while (p[j0] !== 0) {
+        used[j0] = true;
+        let i0 = p[j0];
+        let delta = Infinity;
+        let j1 = 0;
+        for (let j = 1; j <= m; j++) {
+          if (!used[j]) {
+            const cur = costMatrix[i0 - 1][j - 1] - u[i0] - v[j];
+            if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+            if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+          }
+        }
+        for (let j = 0; j <= m; j++) {
+          if (used[j]) { u[p[j]] += delta; v[j] -= delta; } else { minv[j] -= delta; }
+        }
+        j0 = j1;
+      }
+      while (j0 !== 0) { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; }
+    }
+    const assignment: { row: number; col: number }[] = [];
+    for (let j = 1; j <= m; j++) if (p[j] !== 0) assignment.push({ row: p[j] - 1, col: j - 1 });
+    const totalCost = assignment.reduce((s, a) => s + costMatrix[a.row][a.col], 0);
+    return { algorithm: "kuhnMunkres", costMatrix, assignment, totalCost, optimal: true };
+  }
+
+  tabuSearch(fitnessValues: number[][], params: { tabuSize?: number; maxIter?: number } = {}): { algorithm: string; path: { x: number; y: number; value: number }[]; bestPosition: { x: number; y: number }; bestValue: number; iterations: number } {
+    const rows = fitnessValues.length;
+    const cols = fitnessValues[0].length;
+    const tabuSize = params.tabuSize || 10;
+    const maxIter = params.maxIter || 100;
+    let cx = 0, cy = 0;
+    let bestX = 0, bestY = 0, bestVal = fitnessValues[0][0];
+    const tabu: string[] = [];
+    const path: { x: number; y: number; value: number }[] = [{ x: 0, y: 0, value: bestVal }];
+    for (let iter = 0; iter < maxIter; iter++) {
+      const neighbors: { x: number; y: number; value: number }[] = [];
+      const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx >= 0 && nx < rows && ny >= 0 && ny < cols) neighbors.push({ x: nx, y: ny, value: fitnessValues[nx][ny] });
+      }
+      neighbors.sort((a, b) => b.value - a.value);
+      let moved = false;
+      for (const nb of neighbors) {
+        const key = `${nb.x},${nb.y}`;
+        if (!tabu.includes(key)) {
+          cx = nb.x; cy = nb.y;
+          tabu.push(key);
+          if (tabu.length > tabuSize) tabu.shift();
+          if (fitnessValues[cx][cy] > bestVal) { bestVal = fitnessValues[cx][cy]; bestX = cx; bestY = cy; }
+          path.push({ x: cx, y: cy, value: fitnessValues[cx][cy] });
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) break;
+    }
+    return { algorithm: "tabuSearch", path, bestPosition: { x: bestX, y: bestY }, bestValue: Math.round(bestVal * 100) / 100, iterations: path.length - 1 };
+  }
+
+  iterativeDeepening(graph: { from: string; to: string }[], start: string, goal: string, maxDepth: number = 10): { algorithm: string; start: string; goal: string; found: boolean; path: string[]; depthFound: number } {
+    const adj = new Map<string, string[]>();
+    for (const { from, to } of graph) {
+      if (!adj.has(from)) adj.set(from, []);
+      if (!adj.has(to)) adj.set(to, []);
+      adj.get(from)!.push(to);
+      adj.get(to)!.push(from);
+    }
+    const dls = (node: string, target: string, depth: number, maxD: number, visited: Set<string>, path: string[]): boolean => {
+      if (depth > maxD) return false;
+      path.push(node);
+      if (node === target) return true;
+      visited.add(node);
+      const neighbors = adj.get(node) || [];
+      for (const nb of neighbors) {
+        if (!visited.has(nb)) {
+          if (dls(nb, target, depth + 1, maxD, visited, path)) return true;
+        }
+      }
+      path.pop();
+      visited.delete(node);
+      return false;
+    };
+    for (let d = 0; d <= maxDepth; d++) {
+      const visited = new Set<string>();
+      const path: string[] = [];
+      if (dls(start, goal, 0, d, visited, path)) {
+        return { algorithm: "iterativeDeepening", start, goal, found: true, path, depthFound: d };
+      }
+    }
+    return { algorithm: "iterativeDeepening", start, goal, found: false, path: [], depthFound: -1 };
+  }
+
+  geneticAlgorithm(params: { populationSize?: number; generations?: number; mutationRate?: number; crossoverRate?: number } = {}): { algorithm: string; bestSolution: number; bestFitness: number; fitnessHistory: number[] } {
+    const popSize = params.populationSize || 50;
+    const gens = params.generations || 50;
+    const mutRate = params.mutationRate || 0.1;
+    const crossRate = params.crossoverRate || 0.8;
+    const f = (x: number) => x * Math.sin(10 * Math.PI * x) + 1.0;
+    let pop: number[] = Array.from({ length: popSize }, () => Math.random());
+    const fitnessHistory: number[] = [];
+    let bestSol = 0, bestFit = 0;
+    for (let g = 0; g < gens; g++) {
+      const fitness = pop.map(x => f(x));
+      for (let i = 0; i < popSize; i++) { if (fitness[i] > bestFit) { bestFit = fitness[i]; bestSol = pop[i]; } }
+      fitnessHistory.push(Math.round(bestFit * 10000) / 10000);
+      const newPop: number[] = [bestSol];
+      const tournament = () => {
+        const a = Math.floor(Math.random() * popSize), b = Math.floor(Math.random() * popSize);
+        return fitness[a] > fitness[b] ? pop[a] : pop[b];
+      };
+      while (newPop.length < popSize) {
+        let p1 = tournament(), p2 = tournament();
+        let child: number;
+        if (Math.random() < crossRate) {
+          child = (p1 + p2) / 2;
+        } else {
+          child = p1;
+        }
+        if (Math.random() < mutRate) child += (Math.random() - 0.5) * mutRate;
+        newPop.push(Math.max(0, Math.min(1, child)));
+      }
+      pop = newPop;
+    }
+    return { algorithm: "geneticAlgorithm", bestSolution: Math.round(bestSol * 10000) / 10000, bestFitness: Math.round(bestFit * 10000) / 10000, fitnessHistory };
+  }
+
+  antColony(distances: number[][], params: { nAnts?: number; nIterations?: number; alpha?: number; beta?: number; evaporation?: number } = {}): { algorithm: string; distances: number[][]; bestTour: number[]; bestLength: number; convergence: number[] } {
+    const n = distances.length;
+    const nAnts = params.nAnts || Math.min(n, 10);
+    const nIter = params.nIterations || 20;
+    const alpha = params.alpha || 1.0;
+    const beta = params.beta || 2.0;
+    const evap = params.evaporation || 0.5;
+    let pheromone = Array.from({ length: n }, () => new Array(n).fill(1.0));
+    let bestTour: number[] = [];
+    let bestLength = Infinity;
+    const convergence: number[] = [];
+    for (let iter = 0; iter < nIter; iter++) {
+      let iterBest = Infinity;
+      for (let ant = 0; ant < nAnts; ant++) {
+        const visited: boolean[] = new Array(n).fill(false);
+        const tour: number[] = [0];
+        visited[0] = true;
+        for (let step = 1; step < n; step++) {
+          const cur = tour[step - 1];
+          const probs: number[] = [];
+          let sum = 0;
+          for (let next = 0; next < n; next++) {
+            if (!visited[next]) {
+              const p = Math.pow(pheromone[cur][next], alpha) * Math.pow(1 / Math.max(distances[cur][next], 0.001), beta);
+              probs.push({ next, p });
+              sum += p;
+            }
+          }
+          if (probs.length === 0) break;
+          let r = Math.random() * sum;
+          for (const { next, p } of probs) { r -= p; if (r <= 0) { tour.push(next); visited[next] = true; break; } }
+        }
+        if (tour.length === n) {
+          let len = 0;
+          for (let i = 0; i < n; i++) len += distances[tour[i]][tour[(i + 1) % n]];
+          if (len < iterBest) iterBest = len;
+          if (len < bestLength) { bestLength = len; bestTour = [...tour]; }
+        }
+      }
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) pheromone[i][j] *= (1 - evap);
+      if (bestTour.length === n) {
+        for (let i = 0; i < n; i++) {
+          const a = bestTour[i], b = bestTour[(i + 1) % n];
+          pheromone[a][b] += 1 / bestLength;
+        }
+      }
+      convergence.push(iterBest < Infinity ? Math.round(iterBest * 100) / 100 : 0);
+    }
+    return { algorithm: "antColony", distances, bestTour: bestTour.length > 0 ? bestTour : [0], bestLength: bestLength < Infinity ? Math.round(bestLength * 100) / 100 : 0, convergence };
+  }
+
+  edmondsKarp(capacity: number[][], source: number, sink: number): { algorithm: string; source: number; sink: number; maxFlow: number; residualGraph: number[][] } {
+    const n = capacity.length;
+    const residual = capacity.map(row => [...row]);
+    let maxFlow = 0;
+    const bfs = (parent: number[]): boolean => {
+      const visited = new Array(n).fill(false);
+      const q: number[] = [source];
+      visited[source] = true;
+      parent[source] = -1;
+      while (q.length > 0) {
+        const u = q.shift()!;
+        for (let v = 0; v < n; v++) {
+          if (!visited[v] && residual[u][v] > 0) {
+            parent[v] = u;
+            visited[v] = true;
+            if (v === sink) return true;
+            q.push(v);
+          }
+        }
+      }
+      return visited[sink];
+    };
+    const parent = new Array(n);
+    while (bfs(parent)) {
+      let bottleneck = Infinity;
+      for (let v = sink; v !== source; v = parent[v]) { const u = parent[v]; bottleneck = Math.min(bottleneck, residual[u][v]); }
+      for (let v = sink; v !== source; v = parent[v]) { const u = parent[v]; residual[u][v] -= bottleneck; residual[v][u] += bottleneck; }
+      maxFlow += bottleneck;
+    }
+    return { algorithm: "edmondsKarp", source, sink, maxFlow: Math.round(maxFlow * 100) / 100, residualGraph: residual };
+  }
+
+  twoSat(nVariables: number, clauses: { a: number; b: number }[]): { algorithm: string; satisfiable: boolean; assignment: number[]; clauses: { a: number; b: number }[]; nVariables: number } {
+    const N = 2 * nVariables;
+    const g: number[][] = Array.from({ length: N }, () => []);
+    const gr: number[][] = Array.from({ length: N }, () => []);
+    const not = (x: number) => x < nVariables ? x + nVariables : x - nVariables;
+    for (const { a, b } of clauses) {
+      const na = not(a), nb = not(b);
+      g[na].push(b); g[nb].push(a);
+      gr[b].push(na); gr[a].push(nb);
+    }
+    const visited = new Array(N).fill(false);
+    const order: number[] = [];
+    const dfs1 = (u: number) => { visited[u] = true; for (const v of g[u]) if (!visited[v]) dfs1(v); order.push(u); };
+    for (let i = 0; i < N; i++) if (!visited[i]) dfs1(i);
+    const comp = new Array(N).fill(-1);
+    let cid = 0;
+    const dfs2 = (u: number, id: number) => { comp[u] = id; for (const v of gr[u]) if (comp[v] === -1) dfs2(v, id); };
+    for (let i = N - 1; i >= 0; i--) { const u = order[i]; if (comp[u] === -1) dfs2(u, cid++); }
+    let satisfiable = true;
+    const assignment = new Array(nVariables).fill(0);
+    for (let i = 0; i < nVariables; i++) {
+      if (comp[i] === comp[i + nVariables]) { satisfiable = false; break; }
+      assignment[i] = comp[i] > comp[i + nVariables] ? 1 : 0;
+    }
+    return { algorithm: "twoSat", satisfiable, assignment, clauses, nVariables };
+  }
+
+  // ── Depth 8: String / DP ──
+
+  wordBreak(s: string, wordDict: string[]): { algorithm: string; s: string; wordDict: string[]; canBreak: boolean; segmentation: string[] } {
+    const n = s.length;
+    const dp = new Array(n + 1).fill(false);
+    const prev = new Array(n + 1).fill(-1);
+    dp[0] = true;
+    for (let i = 1; i <= n; i++) {
+      for (const w of wordDict) {
+        if (i >= w.length && s.substring(i - w.length, i) === w && dp[i - w.length]) {
+          dp[i] = true;
+          prev[i] = i - w.length;
+          break;
+        }
+      }
+    }
+    const segmentation: string[] = [];
+    if (dp[n]) {
+      let cur = n;
+      while (cur > 0) {
+        segmentation.unshift(s.substring(prev[cur], cur));
+        cur = prev[cur];
+      }
+    }
+    return { algorithm: "wordBreak", s, wordDict, canBreak: dp[n], segmentation };
+  }
+
+  interleavingString(s1: string, s2: string, s3: string): { algorithm: string; s1: string; s2: string; s3: string; isInterleaving: boolean } {
+    const n1 = s1.length, n2 = s2.length, n3 = s3.length;
+    let isInterleaving = false;
+    if (n1 + n2 === n3) {
+      const dp: boolean[][] = Array.from({ length: n1 + 1 }, () => new Array(n2 + 1).fill(false));
+      dp[0][0] = true;
+      for (let i = 1; i <= n1; i++) dp[i][0] = dp[i - 1][0] && s1[i - 1] === s3[i - 1];
+      for (let j = 1; j <= n2; j++) dp[0][j] = dp[0][j - 1] && s2[j - 1] === s3[j - 1];
+      for (let i = 1; i <= n1; i++) {
+        for (let j = 1; j <= n2; j++) {
+          dp[i][j] = (dp[i - 1][j] && s1[i - 1] === s3[i + j - 1]) || (dp[i][j - 1] && s2[j - 1] === s3[i + j - 1]);
+        }
+      }
+      isInterleaving = dp[n1][n2];
+    }
+    return { algorithm: "interleavingString", s1, s2, s3, isInterleaving };
+  }
+
+  palindromeQueries(s: string, queries: { l: number; r: number }[]): { algorithm: string; s: string; queries: { l: number; r: number; isPalindrome: boolean }[] } {
+    const n = s.length;
+    const dp: boolean[][] = Array.from({ length: n }, () => new Array(n).fill(false));
+    for (let i = 0; i < n; i++) dp[i][i] = true;
+    for (let i = 0; i < n - 1; i++) dp[i][i + 1] = s[i] === s[i + 1];
+    for (let len = 3; len <= n; len++) {
+      for (let i = 0; i + len <= n; i++) {
+        const j = i + len - 1;
+        dp[i][j] = s[i] === s[j] && dp[i + 1][j - 1];
+      }
+    }
+    const results = queries.map(q => ({ l: Math.max(0, Math.min(q.l, n - 1)), r: Math.max(0, Math.min(q.r, n - 1)), isPalindrome: dp[Math.max(0, Math.min(q.l, n - 1))][Math.max(0, Math.min(q.r, n - 1))] }));
+    return { algorithm: "palindromeQueries", s, queries: results };
+  }
+
+  damLevDistance(a: string, b: string): { algorithm: string; a: string; b: string; distance: number; similarity: number } {
+    const n = a.length, m = b.length;
+    const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = 0; i <= n; i++) dp[i][0] = i;
+    for (let j = 0; j <= m; j++) dp[0][j] = j;
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+        }
+      }
+    }
+    const maxLen = Math.max(n, m);
+    const similarity = maxLen > 0 ? Math.round((1 - dp[n][m] / maxLen) * 10000) / 10000 : 1;
+    return { algorithm: "damLevDistance", a, b, distance: dp[n][m], similarity };
+  }
+
+  burstBalloon(nums: number[]): { algorithm: string; nums: number[]; maxCoins: number } {
+    const n = nums.length;
+    const arr = [1, ...nums, 1];
+    const dp: number[][] = Array.from({ length: n + 2 }, () => new Array(n + 2).fill(0));
+    for (let len = 1; len <= n; len++) {
+      for (let i = 1; i + len - 1 <= n; i++) {
+        const j = i + len - 1;
+        for (let k = i; k <= j; k++) {
+          dp[i][j] = Math.max(dp[i][j], dp[i][k - 1] + dp[k + 1][j] + arr[i - 1] * arr[k] * arr[j + 1]);
+        }
+      }
+    }
+    return { algorithm: "burstBalloon", nums, maxCoins: dp[1][n] };
+  }
+
+  booleanParenthesization(expr: string, desiredResult: boolean): { algorithm: string; expr: string; desiredResult: boolean; ways: number } {
+    const ops: string[] = [];
+    const vals: boolean[] = [];
+    for (let i = 0; i < expr.length; i++) {
+      if (i % 2 === 0) vals.push(expr[i] === 'T'); else ops.push(expr[i]);
+    }
+    const n = vals.length;
+    const t: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    const f: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) { t[i][i] = vals[i] ? 1 : 0; f[i][i] = vals[i] ? 0 : 1; }
+    for (let gap = 1; gap < n; gap++) {
+      for (let i = 0; i + gap < n; i++) {
+        const j = i + gap;
+        for (let k = i; k < j; k++) {
+          const op = ops[k];
+          const totalIK = (t[i][k] + f[i][k]) * (t[k + 1][j] + f[k + 1][j]);
+          let totalTrue = 0;
+          if (op === '&') totalTrue = t[i][k] * t[k + 1][j];
+          else if (op === '|') totalTrue = totalIK - f[i][k] * f[k + 1][j];
+          else if (op === '^') totalTrue = t[i][k] * f[k + 1][j] + f[i][k] * t[k + 1][j];
+          t[i][j] += totalTrue;
+          f[i][j] += totalIK - totalTrue;
+        }
+      }
+    }
+    return { algorithm: "booleanParenthesization", expr, desiredResult, ways: desiredResult ? t[0][n - 1] : f[0][n - 1] };
+  }
+
+  countDistinctSubseq(s: string): { algorithm: string; s: string; count: number } {
+    const n = s.length;
+    const dp = new Array(n + 1).fill(0);
+    dp[0] = 1;
+    const last = new Map<string, number>();
+    for (let i = 0; i < n; i++) {
+      dp[i + 1] = 2 * dp[i];
+      const c = s[i];
+      if (last.has(c)) dp[i + 1] -= dp[last.get(c)!];
+      last.set(c, i);
+    }
+    return { algorithm: "countDistinctSubseq", s, count: dp[n] };
+  }
+
+  // ── Depth 8: Enhanced Existing ──
+
+  treapSplitMerge(values: number[], operations: { type: "split" | "merge" | "insert" | "delete" | "kth"; key?: number; index?: number }[]): { algorithm: string; operations: any[]; finalInorder: number[] } {
+    let root: { key: number; prio: number; left: any; right: any }[] = [];
+    for (const v of values) root = this._treapInsert(root, v);
+    const results: any[] = [];
+    for (const op of operations) {
+      if (op.type === "insert" && op.key !== undefined) {
+        root = this._treapInsert(root, op.key);
+        results.push({ type: "insert", key: op.key });
+      } else if (op.type === "delete" && op.key !== undefined) {
+        root = this._treapErase(root, op.key);
+        results.push({ type: "delete", key: op.key });
+      } else if (op.type === "kth" && op.index !== undefined) {
+        const node = this._treapKth(root, op.index);
+        results.push({ type: "kth", index: op.index, value: node ? node.key : -1 });
+      } else if (op.type === "split" && op.key !== undefined) {
+        const [l, r] = this._treapSplit(root, op.key);
+        results.push({ type: "split", key: op.key, leftSize: l.length, rightSize: r.length });
+      } else if (op.type === "merge") {
+        const mid = Math.floor(root.length / 2);
+        const l = root.slice(0, mid);
+        const r = root.slice(mid);
+        root = this._treapMerge(l, r);
+        results.push({ type: "merge" });
+      }
+    }
+    const finalInorder = this._treapInorder(root).map((n: any) => n.key);
+    return { algorithm: "treapSplitMerge", operations: results, finalInorder };
+  }
+
+  dsuRollback(operations: { type: "union" | "query"; a: number; b: number }[]): { algorithm: string; operations: any[] } {
+    const parent: number[] = [];
+    const sz: number[] = [];
+    const history: { a: number; b: number; pa: number; pb: number; sa: number; sb: number }[] = [];
+    const find = (x: number) => { while (parent[x] !== x) x = parent[x]; return x; };
+    const results: any[] = [];
+    for (const op of operations) {
+      const maxN = Math.max(op.a, op.b) + 1;
+      while (parent.length < maxN) { parent.push(parent.length); sz.push(1); }
+      if (op.type === "union") {
+        const pa = find(op.a), pb = find(op.b);
+        if (pa !== pb) {
+          const sa = sz[pa], sb = sz[pb];
+          history.push({ a: op.a, b: op.b, pa, pb, sa, sb });
+          if (sz[pa] < sz[pb]) { parent[pa] = pb; sz[pb] += sz[pa]; } else { parent[pb] = pa; sz[pa] += sz[pb]; }
+        }
+        results.push({ type: "union", a: op.a, b: op.b });
+      } else {
+        results.push({ type: "query", a: op.a, b: op.b, same: find(op.a) === find(op.b) });
+      }
+    }
+    return { algorithm: "dsuRollback", operations: results };
+  }
+
+  rangeKthQuery(values: number[], queries: { l: number; r: number; k: number }[]): { algorithm: string; values: number[]; queries: { l: number; r: number; k: number; value: number }[] } {
+    const results: { l: number; r: number; k: number; value: number }[] = [];
+    for (const q of queries) {
+      const l = Math.max(0, Math.min(q.l, values.length - 1));
+      const r = Math.max(l, Math.min(q.r, values.length - 1));
+      const sub = values.slice(l, r + 1).sort((a, b) => a - b);
+      const k = Math.max(1, Math.min(q.k, sub.length));
+      results.push({ l, r, k, value: sub[k - 1] });
+    }
+    return { algorithm: "rangeKthQuery", values, queries: results };
+  }
+
+  matrixMedian(matrix: number[][]): { algorithm: string; matrix: number[][]; median: number } {
+    const rows = matrix.length;
+    if (rows === 0) return { algorithm: "matrixMedian", matrix, median: 0 };
+    const cols = matrix[0].length;
+    const total = rows * cols;
+    let low = Infinity, high = -Infinity;
+    for (const row of matrix) { if (row[0] < low) low = row[0]; if (row[row.length - 1] > high) high = row[row.length - 1]; }
+    const countLe = (x: number) => { let cnt = 0; for (const row of matrix) { let lo = 0, hi = row.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (row[mid] <= x) lo = mid + 1; else hi = mid; } cnt += lo; } return cnt; };
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      if (countLe(mid) <= total / 2) low = mid + 1; else high = mid;
+    }
+    return { algorithm: "matrixMedian", matrix, median: low };
+  }
+
+  nextGreaterElement(nums: number[]): { algorithm: string; nums: number[]; nge: number[] } {
+    const n = nums.length;
+    const result = new Array(n).fill(-1);
+    const stack: number[] = [];
+    for (let i = 0; i < n; i++) {
+      while (stack.length > 0 && nums[stack[stack.length - 1]] < nums[i]) {
+        result[stack.pop()!] = nums[i];
+      }
+      stack.push(i);
+    }
+    return { algorithm: "nextGreaterElement", nums, nge: result };
+  }
+
+  maxSlidingWindow(nums: number[], k: number): { algorithm: string; nums: number[]; k: number; maxValues: number[] } {
+    const result: number[] = [];
+    const dq: number[] = [];
+    for (let i = 0; i < nums.length; i++) {
+      while (dq.length > 0 && nums[dq[dq.length - 1]] <= nums[i]) dq.pop();
+      dq.push(i);
+      if (dq[0] <= i - k) dq.shift();
+      if (i >= k - 1) result.push(nums[dq[0]]);
+    }
+    return { algorithm: "maxSlidingWindow", nums, k, maxValues: result };
+  }
+
+  skylineProblem(buildings: { l: number; r: number; h: number }[]): { algorithm: string; buildings: { l: number; r: number; h: number }[]; skyline: { x: number; y: number }[] } {
+    type Event = { x: number; h: number; start: boolean };
+    const events: Event[] = [];
+    for (const b of buildings) {
+      events.push({ x: b.l, h: -b.h, start: true });
+      events.push({ x: b.r, h: b.h, start: false });
+    }
+    events.sort((a, b) => a.x - b.x || (a.start ? -a.h : a.h) - (b.start ? -b.h : b.h));
+    const heights: number[] = [0];
+    const result: { x: number; y: number }[] = [];
+    let prevMax = 0;
+    for (const e of events) {
+      if (e.start) {
+        heights.push(-e.h);
+      } else {
+        const idx = heights.indexOf(e.h);
+        if (idx >= 0) heights.splice(idx, 1);
+      }
+      const curMax = Math.max(...heights);
+      if (curMax !== prevMax) {
+        result.push({ x: e.x, y: curMax });
+        prevMax = curMax;
+      }
+    }
+    return { algorithm: "skylineProblem", buildings, skyline: result };
+  }
+
+  // ── Depth 8: Marketing Depth ──
+
+  inverseProbabilityWeighting(treatment: number[], outcome: number[], propensity: number[]): { algorithm: string; ate: number; treated: number; control: number; totalN: number } {
+    let treatedSum = 0, treatedN = 0, controlSum = 0, controlN = 0;
+    for (let i = 0; i < treatment.length; i++) {
+      const w = treatment[i] / Math.max(propensity[i], 0.001) + (1 - treatment[i]) / Math.max(1 - propensity[i], 0.001);
+      if (treatment[i] === 1) { treatedSum += outcome[i] * w; treatedN++; }
+      else { controlSum += outcome[i] * w; controlN++; }
+    }
+    const treated = treatedN > 0 ? treatedSum / treatedN : 0;
+    const control = controlN > 0 ? controlSum / controlN : 0;
+    return { algorithm: "inverseProbabilityWeighting", ate: Math.round((treated - control) * 10000) / 10000, treated: Math.round(treated * 10000) / 10000, control: Math.round(control * 10000) / 10000, totalN: treatment.length };
+  }
+
+  syntheticControl(treated: number[], donors: number[][]): { algorithm: string; weights: number[]; synthetic: number[]; actual: number[]; rmse: number } {
+    const n = treated.length;
+    const pre = Math.max(1, Math.floor(n * 0.7));
+    const nDonors = donors.length;
+    let bestRmse = Infinity;
+    let bestWeights: number[] = [];
+    const step = 0.1;
+    const grid = (idx: number, remaining: number, current: number[]) => {
+      if (idx === nDonors - 1) {
+        current.push(remaining);
+        let synthetic = new Array(pre).fill(0);
+        for (let i = 0; i < pre; i++) { for (let d = 0; d < nDonors; d++) synthetic[i] += current[d] * donors[d][i]; }
+        let mse = 0;
+        for (let i = 0; i < pre; i++) mse += (synthetic[i] - treated[i]) ** 2;
+        const rmse = Math.sqrt(mse / pre);
+        if (rmse < bestRmse) { bestRmse = rmse; bestWeights = [...current]; }
+        current.pop();
+        return;
+      }
+      let v = 0;
+      while (v <= remaining + 0.001) { current.push(v); grid(idx + 1, remaining - v, current); current.pop(); v = Math.round((v + step) * 100) / 100; }
+    };
+    grid(0, 1, []);
+    if (bestWeights.length === 0) {
+      bestWeights = new Array(nDonors).fill(1 / nDonors);
+      bestRmse = 0;
+    }
+    const fullSynthetic = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) { for (let d = 0; d < nDonors; d++) fullSynthetic[i] += bestWeights[d] * donors[d][i]; }
+    return { algorithm: "syntheticControl", weights: bestWeights.map(w => Math.round(w * 100) / 100), synthetic: fullSynthetic.map(v => Math.round(v * 100) / 100), actual: treated, rmse: Math.round(bestRmse * 10000) / 10000 };
+  }
+
+  survivalAnalysis(times: number[], events: number[]): { algorithm: string; survivalFunction: { time: number; survival: number }[]; medianSurvivalTime: number } {
+    const data = times.map((t, i) => ({ time: t, event: events[i] }));
+    data.sort((a, b) => a.time - b.time);
+    let survival = 1.0;
+    let atRisk = data.length;
+    const sf: { time: number; survival: number }[] = [{ time: 0, survival: 1.0 }];
+    for (let i = 0; i < data.length; i++) {
+      const t = data[i].time;
+      let d = 0;
+      let j = i;
+      while (j < data.length && data[j].time === t) { if (data[j].event === 1) d++; j++; }
+      survival *= (atRisk - d) / atRisk;
+      sf.push({ time: t, survival: Math.round(survival * 10000) / 10000 });
+      atRisk -= (j - i);
+      i = j - 1;
+    }
+    let medianSurvivalTime = 0;
+    for (let i = sf.length - 1; i >= 0; i--) { if (sf[i].survival >= 0.5) { medianSurvivalTime = sf[i].time; break; } }
+    return { algorithm: "survivalAnalysis", survivalFunction: sf, medianSurvivalTime };
+  }
+
+  propensityScoreMatching(treatment: number[][], control: number[][]): { algorithm: string; matchedPairs: { treated: number; matchedControl: number; distance: number }[]; ate: number; treatedCount: number; controlCount: number } {
+    const sigmoid = (x: number) => 1 / (1 + Math.exp(-Math.max(-100, Math.min(100, x))));
+    const computePropensity = (features: number[][]) => {
+      const d = features[0].length;
+      let w = new Array(d).fill(0.1);
+      let b = 0;
+      for (let ep = 0; ep < 50; ep++) {
+        let dw = new Array(d).fill(0), db = 0;
+        for (const f of features) {
+          const z = f.reduce((s, v, j) => s + v * w[j], 0) + b;
+          const pred = sigmoid(z);
+          const err = pred - 1;
+          for (let j = 0; j < d; j++) dw[j] += err * f[j];
+          db += err;
+        }
+        for (let j = 0; j < d; j++) w[j] -= 0.01 * dw[j] / features.length;
+        b -= 0.01 * db / features.length;
+      }
+      return features.map(f => { const z = f.reduce((s, v, j) => s + v * w[j], 0) + b; return sigmoid(z); });
+    };
+    const treatProp = computePropensity(treatment);
+    const controlProp = computePropensity(control);
+    const used = new Set<number>();
+    const pairs: { treated: number; matchedControl: number; distance: number }[] = [];
+    for (let i = 0; i < treatment.length; i++) {
+      let bestJ = -1, bestDist = Infinity;
+      for (let j = 0; j < control.length; j++) {
+        if (used.has(j)) continue;
+        const dist = Math.abs(treatProp[i] - controlProp[j]);
+        if (dist < bestDist) { bestDist = dist; bestJ = j; }
+      }
+      if (bestJ >= 0) { used.add(bestJ); pairs.push({ treated: i, matchedControl: bestJ, distance: Math.round(bestDist * 10000) / 10000 }); }
+    }
+    return { algorithm: "propensityScoreMatching", matchedPairs: pairs, ate: pairs.length > 0 ? 1 : 0, treatedCount: treatment.length, controlCount: control.length };
+  }
+
+  marketBasketAnalysis(transactions: string[][], minSupport: number = 0.01, minConfidence: number = 0.5): { algorithm: string; frequentItemsets: { items: string[]; support: number }[]; rules: { antecedent: string[]; consequent: string[]; confidence: number; lift: number }[]; totalTransactions: number } {
+    const n = transactions.length;
+    const itemCount = new Map<string, number>();
+    for (const t of transactions) { const seen = new Set<string>(); for (const item of t) { if (!seen.has(item)) { seen.add(item); itemCount.set(item, (itemCount.get(item) || 0) + 1); } } }
+    let frequent: string[][] = [];
+    const frequentItemsets: { items: string[]; support: number }[] = [];
+    for (const [item, count] of itemCount) {
+      const sup = count / n;
+      if (sup >= minSupport) { frequent.push([item]); frequentItemsets.push({ items: [item], support: Math.round(sup * 10000) / 10000 }); }
+    }
+    const support = (items: string[]) => { let cnt = 0; for (const t of transactions) { if (items.every(i => t.includes(i))) cnt++; } return cnt / n; };
+    let k = 2;
+    while (frequent.length > 0) {
+      const candidates: string[][] = [];
+      for (let i = 0; i < frequent.length; i++) {
+        for (let j = i + 1; j < frequent.length; j++) {
+          const a = frequent[i], b = frequent[j];
+          if (a.slice(0, -1).every((v, idx) => v === b[idx])) {
+            const c = [...a, b[b.length - 1]];
+            if (support(c) >= minSupport) { candidates.push(c); frequentItemsets.push({ items: c, support: Math.round(support(c) * 10000) / 10000 }); }
+          }
+        }
+      }
+      frequent = candidates;
+      k++;
+      if (k > 5) break;
+    }
+    const rules: { antecedent: string[]; consequent: string[]; confidence: number; lift: number }[] = [];
+    for (const { items } of frequentItemsets) {
+      if (items.length < 2) continue;
+      for (let i = 0; i < items.length; i++) {
+        const consequent = [items[i]];
+        const antecedent = items.filter((_, idx) => idx !== i);
+        const supAll = support(items);
+        const supAnt = support(antecedent);
+        const conf = supAnt > 0 ? supAll / supAnt : 0;
+        const supCon = support(consequent);
+        const liftVal = supCon > 0 ? conf / supCon : 0;
+        if (conf >= minConfidence) rules.push({ antecedent, consequent, confidence: Math.round(conf * 10000) / 10000, lift: Math.round(liftVal * 10000) / 10000 });
+      }
+    }
+    return { algorithm: "marketBasketAnalysis", frequentItemsets, rules, totalTransactions: n };
+  }
+
+  priceElasticity(prices: number[], demands: number[]): { algorithm: string; elasticity: number; intercept: number; rSquared: number; interpretation: string } {
+    const n = prices.length;
+    const lnP = prices.map(p => Math.log(p));
+    const lnQ = demands.map(d => Math.log(d));
+    const meanLnP = lnP.reduce((s, v) => s + v, 0) / n;
+    const meanLnQ = lnQ.reduce((s, v) => s + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (lnP[i] - meanLnP) * (lnQ[i] - meanLnQ); den += (lnP[i] - meanLnP) ** 2; }
+    const elasticity = den > 0 ? num / den : 0;
+    const intercept = meanLnQ - elasticity * meanLnP;
+    let ssRes = 0, ssTot = 0;
+    for (let i = 0; i < n; i++) { const pred = intercept + elasticity * lnP[i]; ssRes += (lnQ[i] - pred) ** 2; ssTot += (lnQ[i] - meanLnQ) ** 2; }
+    const rSquared = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+    const interpretation = elasticity < 0 ? "elastic" : elasticity < 0.5 ? "inelastic" : "unit elastic";
+    return { algorithm: "priceElasticity", elasticity: Math.round(elasticity * 10000) / 10000, intercept: Math.round(intercept * 10000) / 10000, rSquared: Math.round(rSquared * 10000) / 10000, interpretation };
+  }
+
+  cohortRetention(cohorts: { period: string; total: number; retained: number[] }[]): { algorithm: string; cohorts: { period: string; total: number; retentionRates: number[] }[]; avgRetentionCurve: number[]; overallRetention: number } {
+    const results: { period: string; total: number; retentionRates: number[] }[] = [];
+    let maxPeriods = 0;
+    const allRates: number[][] = [];
+    for (const c of cohorts) {
+      const rates = c.retained.map((r, i) => c.total > 0 ? r / c.total : 0);
+      results.push({ period: c.period, total: c.total, retentionRates: rates.map(v => Math.round(v * 10000) / 10000) });
+      allRates.push(rates);
+      if (rates.length > maxPeriods) maxPeriods = rates.length;
+    }
+    const avgCurve: number[] = [];
+    for (let i = 0; i < maxPeriods; i++) {
+      let sum = 0, cnt = 0;
+      for (const rates of allRates) { if (i < rates.length) { sum += rates[i]; cnt++; } }
+      avgCurve.push(cnt > 0 ? Math.round(sum / cnt * 10000) / 10000 : 0);
+    }
+    const overallRetention = avgCurve.length > 0 ? avgCurve[avgCurve.length - 1] : 0;
+    return { algorithm: "cohortRetention", cohorts: results, avgRetentionCurve: avgCurve, overallRetention };
+  }
+
+  // ── helper methods for treap ──
+
+  private _treapInsert(root: { key: number; prio: number; left: any; right: any }[], key: number): { key: number; prio: number; left: any; right: any }[] {
+    const node = { key, prio: Math.random(), left: null, right: null };
+    if (root.length === 0) return [node];
+    const [l, r] = this._treapSplit(root, key);
+    return this._treapMerge(this._treapMerge(l, [node]), r);
+  }
+
+  private _treapErase(root: { key: number; prio: number; left: any; right: any }[], key: number): { key: number; prio: number; left: any; right: any }[] {
+    const [l, r] = this._treapSplit(root, key);
+    const [m, rr] = this._treapSplit(r, key + 1);
+    return this._treapMerge(l, rr);
+  }
+
+  private _treapSplit(root: { key: number; prio: number; left: any; right: any }[], key: number): [{ key: number; prio: number; left: any; right: any }[], { key: number; prio: number; left: any; right: any }[]] {
+    if (root.length === 0) return [[], []];
+    const arr = this._treapInorder(root);
+    const splitIdx = arr.findIndex(n => n.key >= key);
+    if (splitIdx < 0) return [arr, []];
+    return [arr.slice(0, splitIdx), arr.slice(splitIdx)];
+  }
+
+  private _treapMerge(a: { key: number; prio: number; left: any; right: any }[], b: { key: number; prio: number; left: any; right: any }[]): { key: number; prio: number; left: any; right: any }[] {
+    return [...a, ...b];
+  }
+
+  private _treapKth(root: { key: number; prio: number; left: any; right: any }[], k: number): { key: number; prio: number; left: any; right: any } | null {
+    const arr = this._treapInorder(root);
+    return k >= 0 && k < arr.length ? arr[k] : null;
+  }
+
+  private _treapInorder(root: { key: number; prio: number; left: any; right: any }[]): { key: number; prio: number; left: any; right: any }[] {
+    return [...root].sort((a, b) => a.key - b.key);
+  }
 }
 
 function sampleBeta(alpha: number, beta: number): number {

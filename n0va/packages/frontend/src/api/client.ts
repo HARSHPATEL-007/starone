@@ -1555,6 +1555,81 @@ export const api = {
       request<any>("/ds-algorithms/marketing/churn-logistic", { method: "POST", body: JSON.stringify(data) }),
     keywordPortfolio: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/keyword-portfolio", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 8: Advanced Data Structures
+    hllCardinality: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/hll-cardinality", { method: "POST", body: JSON.stringify(data) }),
+    countMinSketch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/count-min-sketch", { method: "POST", body: JSON.stringify(data) }),
+    weightedBloomFilter: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/weighted-bloom", { method: "POST", body: JSON.stringify(data) }),
+    segmentTreeBeats: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/segment-tree-beats", { method: "POST", body: JSON.stringify(data) }),
+    lcaBinaryLifting: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/lca-binary-lifting", { method: "POST", body: JSON.stringify(data) }),
+    dynamicLIS: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/dynamic-lis", { method: "POST", body: JSON.stringify(data) }),
+    rangeModeQuery: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/range-mode", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 8: Advanced Algorithms
+    kuhnMunkres: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/kuhn-munkres", { method: "POST", body: JSON.stringify(data) }),
+    tabuSearch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/tabu-search", { method: "POST", body: JSON.stringify(data) }),
+    iterativeDeepening: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/iterative-deepening", { method: "POST", body: JSON.stringify(data) }),
+    geneticAlgorithm: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/genetic", { method: "POST", body: JSON.stringify(data) }),
+    antColony: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/ant-colony", { method: "POST", body: JSON.stringify(data) }),
+    edmondsKarp: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/edmonds-karp", { method: "POST", body: JSON.stringify(data) }),
+    twoSat: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/2-sat", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 8: String / DP
+    wordBreak: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/word-break", { method: "POST", body: JSON.stringify(data) }),
+    interleavingString: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/interleaving-string", { method: "POST", body: JSON.stringify(data) }),
+    palindromeQueries: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/palindrome-queries", { method: "POST", body: JSON.stringify(data) }),
+    damLevDistance: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/damlev", { method: "POST", body: JSON.stringify(data) }),
+    burstBalloon: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/burst-balloon", { method: "POST", body: JSON.stringify(data) }),
+    booleanParenthesization: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/boolean-parenthesization", { method: "POST", body: JSON.stringify(data) }),
+    countDistinctSubseq: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/distinct-subseq", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 8: Enhanced Existing
+    treapSplitMerge: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/treap-split-merge", { method: "POST", body: JSON.stringify(data) }),
+    dsuRollback: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/dsu-rollback", { method: "POST", body: JSON.stringify(data) }),
+    rangeKthQuery: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/range-kth", { method: "POST", body: JSON.stringify(data) }),
+    matrixMedian: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/matrix-median", { method: "POST", body: JSON.stringify(data) }),
+    nextGreaterElement: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/nge", { method: "POST", body: JSON.stringify(data) }),
+    maxSlidingWindow: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/max-sliding-window", { method: "POST", body: JSON.stringify(data) }),
+    skylineProblem: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/skyline", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 8: Marketing Depth
+    inverseProbabilityWeighting: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/ipw", { method: "POST", body: JSON.stringify(data) }),
+    syntheticControl: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/synthetic-control", { method: "POST", body: JSON.stringify(data) }),
+    survivalAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/survival-analysis", { method: "POST", body: JSON.stringify(data) }),
+    propensityScoreMatching: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/propensity-score", { method: "POST", body: JSON.stringify(data) }),
+    marketBasketAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/market-basket", { method: "POST", body: JSON.stringify(data) }),
+    priceElasticity: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/price-elasticity", { method: "POST", body: JSON.stringify(data) }),
+    cohortRetention: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/cohort-retention", { method: "POST", body: JSON.stringify(data) }),
   },
 
   autonomousCampaignManager: {
