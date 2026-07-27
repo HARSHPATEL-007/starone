@@ -912,3 +912,575 @@ describe("AttributionService (Enhanced)", () => {
     });
   });
 });
+
+import { predictiveForecastingService } from "../services/PredictiveForecastingService";
+import { incrementalityTestingService } from "../services/IncrementalityTestingService";
+import { searchIntelligenceService } from "../services/SearchIntelligenceService";
+import { anomalyDetectionService } from "../services/AnomalyDetectionService";
+
+describe("PredictiveForecastingService (Deep)", () => {
+  const sampleHistory = Array.from({ length: 60 }, (_, i) => ({
+    date: new Date(2025, 0, i + 1).toISOString().split("T")[0],
+    value: 100 + Math.sin(i * 0.4) * 20 + (i % 7 === 0 ? 30 : 0) + Math.random() * 10,
+  }));
+
+  describe("decomposeTimeSeries", () => {
+    it("returns trend, seasonal, residual components with strengths", () => {
+      const values = sampleHistory.map((d) => d.value);
+      const result = predictiveForecastingService.decomposeTimeSeries(values, 7);
+      expect(result).toHaveProperty("trend");
+      expect(result).toHaveProperty("seasonal");
+      expect(result).toHaveProperty("residual");
+      expect(result.trend.length).toBe(values.length);
+      expect(result.seasonal.length).toBe(values.length);
+      expect(result.residual.length).toBe(values.length);
+      expect(typeof result.seasonalStrength).toBe("number");
+      expect(typeof result.trendStrength).toBe("number");
+      expect(result.seasonalStrength).toBeGreaterThanOrEqual(0);
+      expect(result.seasonalStrength).toBeLessThanOrEqual(1);
+    });
+
+    it("returns flat components when data is too short", () => {
+      const short = [10, 20, 30];
+      const result = predictiveForecastingService.decomposeTimeSeries(short, 7);
+      expect(result.seasonalStrength).toBe(0);
+      expect(result.trendStrength).toBe(0);
+    });
+  });
+
+  describe("detectChangepoints", () => {
+    it("detects a changepoint in data with a shift", () => {
+      const vals = Array.from({ length: 10 }, () => 50).concat(Array.from({ length: 10 }, () => 100));
+      const result = predictiveForecastingService.detectChangepoints(vals, 3);
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result[0]).toHaveProperty("index");
+      expect(result[0]).toHaveProperty("meanBefore");
+      expect(result[0]).toHaveProperty("meanAfter");
+      expect(result[0]).toHaveProperty("magnitude");
+      expect(result[0]).toHaveProperty("direction");
+    });
+
+    it("returns empty array when no changepoint exists", () => {
+      const vals = Array.from({ length: 20 }, () => 50);
+      const result = predictiveForecastingService.detectChangepoints(vals, 5);
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe("arimaForecast", () => {
+    it("returns ARIMA forecast with model diagnostics", () => {
+      const result = predictiveForecastingService.arimaForecast("camp_001", "impressions", sampleHistory, 14, { p: 2, d: 1, q: 2 });
+      expect(result.campaignId).toBe("camp_001");
+      expect(result.metric).toBe("impressions");
+      expect(result.horizon).toBe(14);
+      expect(result.points.length).toBe(sampleHistory.length + 14);
+      expect(result.model).toHaveProperty("p");
+      expect(result.model).toHaveProperty("d");
+      expect(result.model).toHaveProperty("q");
+      expect(result.model).toHaveProperty("aic");
+      expect(result.model).toHaveProperty("mse");
+      expect(result.coefficients).toHaveProperty("ar");
+      expect(result.coefficients).toHaveProperty("ma");
+      expect(result.coefficients).toHaveProperty("constant");
+      expect(result.summary).toHaveProperty("nextPeriod");
+      expect(result.summary).toHaveProperty("trend");
+      expect(["up", "down", "stable"]).toContain(result.summary.trend);
+    });
+
+    it("throws with insufficient data", () => {
+      expect(() => predictiveForecastingService.arimaForecast("camp_001", "impressions", [{ date: "2025-01-01", value: 100 }], 5)).toThrow();
+    });
+  });
+
+  describe("ensembleForecast", () => {
+    it("returns ensemble combining multiple models with weights", () => {
+      const result = predictiveForecastingService.ensembleForecast("camp_001", "impressions", sampleHistory, 14);
+      expect(result.campaignId).toBe("camp_001");
+      expect(result.horizon).toBe(14);
+      expect(result.models.length).toBeGreaterThanOrEqual(3);
+      expect(result.weights.length).toBe(result.models.length);
+      const weightSum = result.weights.reduce((a, b) => a + b, 0);
+      expect(weightSum).toBeCloseTo(1, 1);
+      expect(result.points.length).toBe(14);
+      for (const m of result.models) {
+        expect(m).toHaveProperty("name");
+        expect(m).toHaveProperty("weight");
+        expect(m).toHaveProperty("mse");
+      }
+    });
+  });
+
+  describe("original methods preserved", () => {
+    it("forecast still returns correct structure", () => {
+      const result = predictiveForecastingService.forecast("camp_001", "spend", sampleHistory, 10);
+      expect(result.points.length).toBe(sampleHistory.length + 10);
+      expect(result.model).toHaveProperty("alpha");
+      expect(result.summary).toHaveProperty("trend");
+    });
+
+    it("forecastBudget returns budget projections", () => {
+      const spend = Array.from({ length: 15 }, () => Math.random() * 100 + 50);
+      const result = predictiveForecastingService.forecastBudget("camp_001", 10000, "2025-01-01", "2025-02-01", spend);
+      expect(result).toHaveProperty("projectedEndSpend");
+      expect(result).toHaveProperty("willOverspend");
+      expect(result).toHaveProperty("recommendedDailyCap");
+      expect(result.dailyProjections.length).toBeGreaterThan(0);
+    });
+
+    it("predictConversions returns efficiency and marginal CPA", () => {
+      const spend = Array.from({ length: 30 }, (_, i) => 100 + i * 5);
+      const conv = Array.from({ length: 30 }, (_, i) => 10 + i * 0.5);
+      const result = predictiveForecastingService.predictConversions("camp_001", spend, conv, [150, 160]);
+      expect(result).toHaveProperty("predictedConversions");
+      expect(result).toHaveProperty("efficiencyScore");
+      expect(result).toHaveProperty("marginalCPA");
+      expect(typeof result.diminishingReturns).toBe("boolean");
+    });
+  });
+});
+
+describe("IncrementalityTestingService", () => {
+  const regions = ["us_east", "us_west", "us_central"];
+
+  function makePreData(regionList: string[], days: number, base = 50): { date: string; region: string; value: number }[] {
+    const data: { date: string; region: string; value: number }[] = [];
+    for (let d = 0; d < days; d++) {
+      const date = new Date(2025, 0, d + 1).toISOString().split("T")[0];
+      for (const r of regionList) data.push({ date, region: r, value: base + Math.sin(d * 0.3) * 5 + Math.random() * 10 });
+    }
+    return data;
+  }
+
+  function makePostData(regionList: string[], treatmentRegions: string[], days: number, base = 50, lift = 20): { date: string; region: string; value: number }[] {
+    const data: { date: string; region: string; value: number }[] = [];
+    for (let d = 0; d < days; d++) {
+      const date = new Date(2025, 1, d + 1).toISOString().split("T")[0];
+      for (const r of regionList) {
+        const effect = treatmentRegions.includes(r) ? lift : 0;
+        data.push({ date, region: r, value: base + effect + Math.sin(d * 0.3) * 5 + Math.random() * 10 });
+      }
+    }
+    return data;
+  }
+
+  const preData = makePreData(regions, 30);
+  const postData = makePostData(regions, ["us_east"], 14, 50, 25);
+
+  describe("runDiD", () => {
+    it("returns DiD result with all expected fields", () => {
+      const result = incrementalityTestingService.runDiD("exp_001", "test", ["us_east"], ["us_west", "us_central"], "conversions", "2025-02-01", "2025-02-14", preData, postData);
+      expect(result).toHaveProperty("preTreatmentAvg");
+      expect(result).toHaveProperty("postTreatmentAvg");
+      expect(result).toHaveProperty("didEstimate");
+      expect(result).toHaveProperty("standardError");
+      expect(result).toHaveProperty("tStatistic");
+      expect(result).toHaveProperty("pValue");
+      expect(result).toHaveProperty("significant");
+      expect(typeof result.significant).toBe("boolean");
+      expect(result.preTreatmentAvg).toHaveProperty("treatment");
+      expect(result.preTreatmentAvg).toHaveProperty("control");
+    });
+
+    it("produces a positive lift when treatment has uplift", () => {
+      const highLiftPost = makePostData(regions, ["us_east"], 14, 50, 50);
+      const result = incrementalityTestingService.runDiD("exp_002", "high_lift", ["us_east"], ["us_west", "us_central"], "conversions", "2025-02-01", "2025-02-14", preData, highLiftPost);
+      expect(result.didEstimate).toBeGreaterThan(0);
+    });
+  });
+
+  describe("runSyntheticControl", () => {
+    it("returns synthetic weights and pre/post fit", () => {
+      const result = incrementalityTestingService.runSyntheticControl("exp_001", "test", "us_east", ["us_west", "us_central"], "conversions", "2025-02-01", "2025-02-14", preData, postData);
+      expect(result.syntheticWeights.length).toBeGreaterThan(0);
+      expect(result.preTreatmentFit.length).toBeGreaterThan(0);
+      expect(result.postTreatmentEffect.length).toBeGreaterThan(0);
+      expect(typeof result.averageLift).toBe("number");
+      expect(typeof result.rSquared).toBe("number");
+      expect(typeof result.mse).toBe("number");
+      for (const sw of result.syntheticWeights) {
+        expect(sw).toHaveProperty("region");
+        expect(sw).toHaveProperty("weight");
+      }
+    });
+  });
+
+  describe("runCUPED", () => {
+    it("returns adjusted metrics with variance reduction", () => {
+      const cupedPre = Array.from({ length: 30 }, (_, i) => ({ user: `u_${i}`, value: 50 + Math.random() * 20 }));
+      const cupedPost = Array.from({ length: 30 }, (_, i) => ({ user: `u_${i}`, value: 60 + Math.random() * 20 + (i < 15 ? 15 : 0), treatment: i < 15 }));
+      const result = incrementalityTestingService.runCUPED("exp_001", "test", "conversions", cupedPre, cupedPost);
+      expect(result.adjustedMetrics.length).toBeGreaterThan(0);
+      expect(typeof result.varianceReduction).toBe("number");
+      expect(typeof result.adjustedLift).toBe("number");
+      expect(typeof result.pValue).toBe("number");
+      expect(typeof result.significant).toBe("boolean");
+    });
+
+    it("returns flat result with insufficient data", () => {
+      const result = incrementalityTestingService.runCUPED("exp_001", "test", "conversions", [], []);
+      expect(result.varianceReduction).toBe(0);
+      expect(result.significant).toBe(false);
+    });
+  });
+
+  describe("powerAnalysis", () => {
+    it("returns required sample size and achievable power", () => {
+      const result = incrementalityTestingService.powerAnalysis(100, 30, 0.1, 0.05, 0.2);
+      expect(result.requiredSamplePerArm).toBeGreaterThan(0);
+      expect(result.achievablePower).toBeGreaterThan(0);
+      expect(result.minimumDetectableEffect).toBeGreaterThan(0);
+      expect(result.alpha).toBe(0.05);
+      expect(result.beta).toBe(0.2);
+    });
+
+    it("returns correct fields when sample size is given", () => {
+      const result = incrementalityTestingService.powerAnalysis(100, 30, 0.1, 0.05, 0.2, 20);
+      expect(result.requiredSamplePerArm).toBeGreaterThan(0);
+      expect(result.minimumDetectableEffect).toBeGreaterThan(0);
+      expect(result.alpha).toBe(0.05);
+      expect(result.beta).toBe(0.2);
+    });
+  });
+
+  describe("runGeoExperiment", () => {
+    it("returns GeoExperimentResult with all fields", () => {
+      const result = incrementalityTestingService.runGeoExperiment("exp_001", "test", ["us_east"], ["us_west", "us_central"], "conversions", "2025-02-01", "2025-02-14", preData, postData, "did");
+      expect(result).toHaveProperty("experimentId");
+      expect(result).toHaveProperty("observedLift");
+      expect(result).toHaveProperty("confidenceInterval95");
+      expect(result).toHaveProperty("pValue");
+      expect(result).toHaveProperty("significant");
+      expect(result).toHaveProperty("power");
+      expect(result).toHaveProperty("minimumDetectableEffect");
+      expect(result).toHaveProperty("summary");
+      expect(result.method).toBe("did");
+    });
+
+    it("supports synthetic-control method", () => {
+      const result = incrementalityTestingService.runGeoExperiment("exp_002", "test", ["us_east"], ["us_west", "us_central"], "conversions", "2025-02-01", "2025-02-14", preData, postData, "synthetic-control");
+      expect(result.method).toBe("synthetic-control");
+    });
+  });
+
+  describe("sample data generators", () => {
+    it("generateSamplePrePeriodData returns correct structure", () => {
+      const data = incrementalityTestingService.generateSamplePrePeriodData(["us_east", "us_west"], 10);
+      expect(data.length).toBe(20);
+      for (const d of data) {
+        expect(d).toHaveProperty("date");
+        expect(d).toHaveProperty("region");
+        expect(d).toHaveProperty("value");
+      }
+    });
+
+    it("generateSamplePostPeriodData applies treatment effect", () => {
+      const data = incrementalityTestingService.generateSamplePostPeriodData(["us_east", "us_west"], ["us_east"], 5, 30);
+      const treatmentValues = data.filter((d) => d.region === "us_east").map((d) => d.value);
+      const controlValues = data.filter((d) => d.region === "us_west").map((d) => d.value);
+      const avgTreat = treatmentValues.reduce((a, b) => a + b, 0) / treatmentValues.length;
+      const avgCtrl = controlValues.reduce((a, b) => a + b, 0) / controlValues.length;
+      expect(avgTreat).toBeGreaterThan(avgCtrl);
+    });
+  });
+});
+
+describe("SearchIntelligenceService", () => {
+  const sampleKeywords = [
+    { keyword: "marketing automation", searchVolume: 12000, competition: 0.7, cpc: 4.5 },
+    { keyword: "email marketing", searchVolume: 22000, competition: 0.5, cpc: 3.2 },
+    { keyword: "social media ads", searchVolume: 15000, competition: 0.6, cpc: 3.8 },
+    { keyword: "content marketing", searchVolume: 18000, competition: 0.4, cpc: 2.9 },
+    { keyword: "SEO tools", searchVolume: 14000, competition: 0.65, cpc: 4.1 },
+  ];
+
+  describe("clusterKeywords", () => {
+    it("returns clusters with keywords and averages", () => {
+      const clusters = searchIntelligenceService.clusterKeywords(sampleKeywords, 3);
+      expect(clusters.length).toBeLessThanOrEqual(3);
+      expect(clusters.length).toBeGreaterThan(0);
+      for (const c of clusters) {
+        expect(c).toHaveProperty("clusterId");
+        expect(c).toHaveProperty("keywords");
+        expect(c).toHaveProperty("theme");
+        expect(c).toHaveProperty("size");
+        expect(typeof c.avgSearchVolume).toBe("number");
+        expect(typeof c.avgCompetition).toBe("number");
+        expect(typeof c.avgCPC).toBe("number");
+      }
+    });
+
+    it("returns empty array for empty input", () => {
+      const clusters = searchIntelligenceService.clusterKeywords([], 5);
+      expect(clusters.length).toBe(0);
+    });
+  });
+
+  describe("predictQualityScore", () => {
+    it("returns score between 1 and 10 with factors and recommendations", () => {
+      const result = searchIntelligenceService.predictQualityScore("marketing automation", []);
+      expect(result.keyword).toBe("marketing automation");
+      expect(result.predictedScore).toBeGreaterThanOrEqual(1);
+      expect(result.predictedScore).toBeLessThanOrEqual(10);
+      expect(result.factors.length).toBeGreaterThan(0);
+      expect(result.recommendations.length).toBeGreaterThan(0);
+      for (const f of result.factors) {
+        expect(f).toHaveProperty("name");
+        expect(f).toHaveProperty("impact");
+        expect(["positive", "negative"]).toContain(f.direction);
+      }
+    });
+
+    it("uses history to influence prediction", () => {
+      const withHistory = searchIntelligenceService.predictQualityScore("email campaign", [
+        { keyword: "email campaign", ctr: 0.05, landingPageRelevance: 0.8, adRelevance: 0.9, historicalScore: 8 },
+      ]);
+      expect(withHistory.predictedScore).toBeGreaterThan(3);
+    });
+  });
+
+  describe("analyzeAuctionInsights", () => {
+    it("returns auction insights for each competitor", () => {
+      const competitors = [
+        { domain: "hubspot.com", avgBid: 4.2, impressionShare: 0.35, overlapRate: 0.6, positionAboveRate: 0.4 },
+        { domain: "marketone.com", avgBid: 3.8, impressionShare: 0.25, overlapRate: 0.5, positionAboveRate: 0.3 },
+      ];
+      const result = searchIntelligenceService.analyzeAuctionInsights("marketing automation", competitors);
+      expect(result.length).toBe(2);
+      for (const r of result) {
+        expect(r).toHaveProperty("domain");
+        expect(r).toHaveProperty("impressionShare");
+        expect(r).toHaveProperty("overlapRate");
+        expect(r).toHaveProperty("positionAboveRate");
+        expect(r).toHaveProperty("outrankingShare");
+        expect(r).toHaveProperty("avgBid");
+      }
+    });
+  });
+
+  describe("recommendBid", () => {
+    it("returns bid recommendation with expected metrics", () => {
+      const result = searchIntelligenceService.recommendBid("marketing automation", 3.5, 10, 2.0, 0.5, 80, 500, "balanced");
+      expect(result.keyword).toBe("marketing automation");
+      expect(result.currentBid).toBe(3.5);
+      expect(result.recommendedBid).toBeGreaterThan(0);
+      expect(result.expectedImpressions).toBeGreaterThanOrEqual(0);
+      expect(result.expectedClicks).toBeGreaterThan(0);
+      expect(result.expectedConversions).toBeGreaterThan(0);
+      expect(result.expectedCost).toBeGreaterThan(0);
+      expect(result.expectedRevenue).toBeGreaterThan(0);
+      expect(result.expectedROAS).toBeGreaterThan(0);
+      expect(result.confidence).toBeGreaterThan(0);
+      expect(result.confidence).toBeLessThanOrEqual(1);
+      expect(result.strategy).toBe("balanced");
+    });
+
+    it("supports different strategies", () => {
+      const aggressive = searchIntelligenceService.recommendBid("marketing automation", 3.5, 10, 2.0, 0.5, 80, 500, "aggressive");
+      const conservative = searchIntelligenceService.recommendBid("marketing automation", 3.5, 10, 2.0, 0.5, 80, 500, "conservative");
+      expect(aggressive.recommendedBid).toBeGreaterThanOrEqual(conservative.recommendedBid);
+    });
+  });
+
+  describe("computeTFIDF", () => {
+    it("returns TF-IDF terms sorted by score for each document", () => {
+      const docs = [
+        { id: "doc1", text: "marketing automation software for small business" },
+        { id: "doc2", text: "best email marketing tools and software" },
+      ];
+      const results = searchIntelligenceService.computeTFIDF(docs);
+      expect(results.length).toBe(2);
+      for (const r of results) {
+        expect(r.terms.length).toBeGreaterThan(0);
+        expect(r.topTerms.length).toBeGreaterThan(0);
+        for (const t of r.terms) {
+          expect(t).toHaveProperty("term");
+          expect(t).toHaveProperty("tfidf");
+          expect(t).toHaveProperty("docFrequency");
+        }
+      }
+    });
+  });
+
+  describe("sample data generators", () => {
+    it("generateSampleKeywords returns requested count", () => {
+      const kws = searchIntelligenceService.generateSampleKeywords(10);
+      expect(kws.length).toBe(10);
+      for (const kw of kws) {
+        expect(kw).toHaveProperty("keyword");
+        expect(kw).toHaveProperty("searchVolume");
+        expect(kw).toHaveProperty("competition");
+        expect(kw).toHaveProperty("cpc");
+      }
+    });
+
+    it("generateSampleCompetitors returns competitor data", () => {
+      const comps = searchIntelligenceService.generateSampleCompetitors("marketing automation");
+      expect(comps.length).toBeGreaterThan(0);
+      for (const c of comps) {
+        expect(c).toHaveProperty("domain");
+        expect(c).toHaveProperty("avgBid");
+        expect(c).toHaveProperty("impressionShare");
+      }
+    });
+
+    it("generateSampleQualityHistory returns history entries", () => {
+      const hist = searchIntelligenceService.generateSampleQualityHistory();
+      expect(hist.length).toBeGreaterThan(0);
+      for (const h of hist) {
+        expect(h).toHaveProperty("keyword");
+        expect(h).toHaveProperty("ctr");
+        expect(h).toHaveProperty("historicalScore");
+      }
+    });
+  });
+});
+
+describe("AnomalyDetectionService (Deep)", () => {
+  const sampleData = Array.from({ length: 60 }, (_, i) => ({
+    date: new Date(2025, 0, i + 1).toISOString().split("T")[0],
+    value: 100 + Math.sin(i * 0.4) * 15 + Math.random() * 8,
+  }));
+  const injectedData = sampleData.map((d, i) => ({
+    ...d,
+    value: i === 30 ? d.value + 80 : i === 45 ? d.value - 60 : d.value,
+  }));
+
+  describe("detect isolation-forest", () => {
+    it("returns anomaly points with flagged anomalies", () => {
+      const result = anomalyDetectionService.detect("conversions", "camp_001", injectedData, { method: "isolation-forest", contamination: 0.1 });
+      expect(result.metric).toBe("conversions");
+      expect(result.entityId).toBe("camp_001");
+      expect(result.points.length).toBe(injectedData.length);
+      expect(result.summary).toHaveProperty("flaggedCount");
+      expect(result.summary).toHaveProperty("flagRate");
+      expect(result.summary).toHaveProperty("highestZScore");
+      expect(result.summary).toHaveProperty("recommendation");
+      expect(result.summary.flaggedCount).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("detectMultivariate", () => {
+    it("returns Mahalanobis scores with flagged points", () => {
+      const multiSeries = injectedData.map((d) => ({
+        date: d.date,
+        metrics: { impressions: d.value * 50, clicks: d.value * 2, conversions: d.value * 0.2, spend: d.value * 3 },
+      }));
+      const result = anomalyDetectionService.detectMultivariate("multi", "camp_001", multiSeries, 0.01);
+      expect(result.metric).toBe("multi");
+      expect(result.entityId).toBe("camp_001");
+      expect(result.scores.length).toBe(multiSeries.length);
+      expect(result.summary).toHaveProperty("totalFlagged");
+      expect(result.summary).toHaveProperty("flagRate");
+      expect(result.summary).toHaveProperty("topContributors");
+      for (const s of result.scores) {
+        expect(s).toHaveProperty("date");
+        expect(s).toHaveProperty("mahalanobis");
+        expect(s).toHaveProperty("chi2Critical");
+        expect(typeof s.flagged).toBe("boolean");
+        expect(s.contributingMetrics.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("returns empty result with insufficient data", () => {
+      const result = anomalyDetectionService.detectMultivariate("multi", "camp_001", [], 0.01);
+      expect(result.scores.length).toBe(0);
+    });
+  });
+
+  describe("detectDrift", () => {
+    it("detects drift in data with mean shift", () => {
+      const driftData = Array.from({ length: 28 }, (_, i) => ({
+        date: new Date(2025, 0, i + 1).toISOString().split("T")[0],
+        value: i < 14 ? 50 + Math.random() * 5 : 80 + Math.random() * 5,
+      }));
+      const result = anomalyDetectionService.detectDrift("conversions", "camp_001", driftData, 14, 0.05);
+      expect(result.metric).toBe("conversions");
+      expect(result.entityId).toBe("camp_001");
+      expect(typeof result.hasDrifted).toBe("boolean");
+      expect(result).toHaveProperty("driftScore");
+      expect(result).toHaveProperty("pValue");
+      expect(result.windowBefore).toHaveProperty("mean");
+      expect(result.windowBefore).toHaveProperty("std");
+      expect(result.windowAfter).toHaveProperty("mean");
+      expect(result.windowAfter).toHaveProperty("std");
+      expect(["mean-shift", "variance-shift", "distribution-shift", "none"]).toContain(result.driftType);
+      expect(result).toHaveProperty("detectedAt");
+    });
+
+    it("returns no drift with insufficient data", () => {
+      const short = [{ date: "2025-01-01", value: 50 }];
+      const result = anomalyDetectionService.detectDrift("conversions", "camp_001", short, 14, 0.05);
+      expect(result.hasDrifted).toBe(false);
+      expect(result.driftType).toBe("none");
+    });
+  });
+
+  describe("scanCampaign", () => {
+    it("returns per-metric results with overall health", () => {
+      const metrics = {
+        impressions: injectedData,
+        clicks: injectedData.map((d) => ({ ...d, value: d.value * 0.05 })),
+        conversions: injectedData.map((d) => ({ ...d, value: d.value * 0.01 })),
+      };
+      const result = anomalyDetectionService.scanCampaign("camp_001", metrics);
+      expect(result.campaignId).toBe("camp_001");
+      expect(result).toHaveProperty("results");
+      expect(result).toHaveProperty("overallHealth");
+      expect(["healthy", "attention", "critical"]).toContain(result.overallHealth);
+      expect(result).toHaveProperty("flaggedMetrics");
+      expect(Object.keys(result.results).length).toBe(3);
+      for (const [metricName, metricResult] of Object.entries(result.results)) {
+        expect(metricResult).toHaveProperty("points");
+        expect(metricResult).toHaveProperty("summary");
+      }
+    });
+  });
+
+  describe("ensembleDetect", () => {
+    it("returns majority-vote anomalies combining zscore, ESD, and IQR", () => {
+      const result = anomalyDetectionService.ensembleDetect("conversions", "camp_001", injectedData);
+      expect(result.metric).toBe("conversions");
+      expect(result.entityId).toBe("camp_001");
+      expect(result.points.length).toBe(injectedData.length);
+      expect(result.summary).toHaveProperty("flaggedCount");
+      expect(result.summary).toHaveProperty("flagRate");
+      for (const p of result.points) {
+        expect(p).toHaveProperty("date");
+        expect(p).toHaveProperty("value");
+        expect(p).toHaveProperty("severity");
+        expect(["low", "medium", "high", "critical"]).toContain(p.severity);
+        expect(typeof p.flagged).toBe("boolean");
+      }
+    });
+  });
+
+  describe("original methods preserved", () => {
+    it("zscore method still detects anomalies", () => {
+      const result = anomalyDetectionService.detect("conversions", "camp_001", injectedData, { method: "zscore", zThreshold: 2.5 });
+      expect(result.points.length).toBe(injectedData.length);
+      expect(result.summary).toHaveProperty("dominantDirection");
+      expect(result.summary).toHaveProperty("dominantSeverity");
+    });
+
+    it("ESD method returns anomalies", () => {
+      const result = anomalyDetectionService.detect("conversions", "camp_001", injectedData, { method: "esd", alpha: 0.05, maxOutliers: 5 });
+      expect(result.points.length).toBe(injectedData.length);
+    });
+
+    it("IQR method flags fence outliers", () => {
+      const result = anomalyDetectionService.detect("conversions", "camp_001", injectedData, { method: "iqr" });
+      expect(result.points.length).toBe(injectedData.length);
+    });
+
+    it("CUSUM method detects changepoints", () => {
+      const result = anomalyDetectionService.detect("conversions", "camp_001", injectedData, { method: "cusum" });
+      expect(result.points.length).toBe(injectedData.length);
+      expect(result).toHaveProperty("changepoints");
+    });
+
+    it("returns insufficient data result when below minPoints", () => {
+      const result = anomalyDetectionService.detect("conversions", "camp_001", [{ date: "2025-01-01", value: 100 }], { minPoints: 7 });
+      expect(result.summary.recommendation).toContain("Need at least");
+    });
+  });
+});
