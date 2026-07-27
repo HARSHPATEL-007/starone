@@ -93,9 +93,10 @@ export class StatisticalABTestService {
     });
     const achievedPower = this.calculatePower(controlRate, variantRate, cImp, vImp);
 
+    const clampedMde = Math.min(Math.abs(liftPercent / 100), 0.5);
     const requiredPerVariant = this.sampleSize({
       baselineRate,
-      minimumDetectableEffect: Math.abs(liftPercent / 100),
+      minimumDetectableEffect: clampedMde || 0.05,
       significanceLevel: 0.05,
       power: 0.8,
     });
@@ -180,38 +181,47 @@ export class StatisticalABTestService {
   }
 
   private regularizedGamma(a: number, x: number): number {
+    if (x <= 0) return 0;
     if (x < a + 1) return this.series(a, x);
     return 1 - this.continuedFraction(a, x);
   }
 
   private series(a: number, x: number): number {
-    if (x === 0) return 0;
     let sum = 1 / a;
     let term = 1 / a;
     for (let i = 1; i < 200; i++) {
       term *= x / (a + i);
       sum += term;
       if (Math.abs(term) < Math.abs(sum) * 1e-14) break;
+      if (!isFinite(term)) break;
     }
+    if (!isFinite(sum)) return 0;
     return sum * Math.exp(-x + a * Math.log(x) - this.logGamma(a));
   }
 
   private continuedFraction(a: number, x: number): number {
+    const tiny = 1e-30;
     const f = (n: number) => (2 * n + 1) - a + x;
     const c = (n: number) => n * (a - n);
-    let b = f(0);
-    let d = 1 / Math.max(b, 1e-30);
-    let h = d;
+    let f0 = f(0);
+    if (f0 === 0) f0 = tiny;
+    let C = f0;
+    let D = 0;
     for (let i = 1; i < 200; i++) {
-      const cVal = c(i);
-      b = f(i);
-      d = 1 / Math.max(b + cVal * d, 1e-30);
-      let delta = (b + cVal / Math.max(d, 1e-30)) * d;
-      if (delta < 0) delta = -delta;
-      h *= delta;
+      const aVal = c(i);
+      const bVal = f(i);
+      D = bVal + aVal * D;
+      if (D === 0) D = tiny;
+      C = bVal + aVal / C;
+      if (C === 0) C = tiny;
+      D = 1 / D;
+      const delta = C * D;
+      f0 *= delta;
       if (Math.abs(delta - 1) < 1e-14) break;
+      if (!isFinite(f0)) break;
     }
-    return Math.exp(-x + a * Math.log(x) - this.logGamma(a)) * h;
+    if (!isFinite(f0)) f0 = 1 / x;
+    return Math.exp(-x + a * Math.log(x) - this.logGamma(a)) * f0;
   }
 
   private logGamma(x: number): number {
