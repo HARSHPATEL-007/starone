@@ -213,6 +213,147 @@ interface JohnsonResult {
   hasNegativeCycle: boolean;
 }
 
+interface KDTreeResult {
+  type: string;
+  tree: { point: number[]; left: KDTreeResult["tree"] | null; right: KDTreeResult["tree"] | null } | null;
+  nearestNeighbor?: { point: number[]; distance: number };
+  rangeSearch?: { point: number[]; distance: number }[];
+  nodes: number;
+}
+
+interface XorLinkedListResult {
+  type: string;
+  elements: number[];
+  operations: { action: string; value?: number; result?: number[] }[];
+}
+
+interface BinaryIndexedTree2DResult {
+  type: string;
+  rows: number;
+  cols: number;
+  operations: { type: string; x: number; y: number; x2?: number; y2?: number; value?: number; result?: number }[];
+}
+
+interface CartesianTreeResult {
+  type: string;
+  root: number;
+  parent: number[];
+  leftChild: number[];
+  rightChild: number[];
+}
+
+interface MinCostMaxFlowResult {
+  algorithm: string;
+  maxFlow: number;
+  minCost: number;
+  flowEdges: { from: string; to: string; flow: number; capacity: number; cost: number }[];
+}
+
+interface BronKerboschResult {
+  algorithm: string;
+  cliques: string[][];
+  maxClique: string[];
+  cliqueCount: number;
+}
+
+interface MSTResult {
+  algorithm: string;
+  edges: { from: string; to: string; weight: number }[];
+  totalWeight: number;
+  nodes: number;
+}
+
+interface TopologicalSortResult {
+  algorithm: string;
+  order: string[];
+  hasCycle: boolean;
+}
+
+interface KosarajuResult {
+  algorithm: string;
+  components: string[][];
+  componentCount: number;
+}
+
+interface ArticulationResult {
+  algorithm: string;
+  articulationPoints: string[];
+  bridges: [string, string][];
+  nodes: number;
+}
+
+interface BipartiteMatchingResult {
+  algorithm: string;
+  matching: [string, string][];
+  cardinality: number;
+}
+
+interface ZAlgorithmResult {
+  algorithm: string;
+  text: string;
+  pattern: string;
+  matches: number[];
+  zArray: number[];
+  comparisons: number;
+}
+
+interface LevenshteinResult {
+  algorithm: string;
+  distance: number;
+  matrix: number[][];
+  operations: { type: string; chars: string }[];
+}
+
+interface LISResult {
+  algorithm: string;
+  sequence: number[];
+  length: number;
+  subsequence: number[];
+  comparisons: number;
+}
+
+interface BitmaskTSPResult {
+  algorithm: string;
+  distance: number;
+  path: number[];
+  nodes: number;
+  statesExplored: number;
+}
+
+interface RegexMatchingResult {
+  algorithm: string;
+  text: string;
+  pattern: string;
+  matches: boolean;
+  matchPositions: number[];
+}
+
+interface SegmentTreeLazyResult {
+  type: string;
+  size: number;
+  operations: { type: string; range: [number, number]; value?: number; result?: number }[];
+}
+
+interface PriorityQueueResult {
+  type: string;
+  initial: number[];
+  operations: { action: string; value?: number; result?: number; size: number }[];
+}
+
+interface HashMapChainingResult {
+  type: string;
+  capacity: number;
+  loadFactor: string;
+  operations: { action: string; key: string; value?: number; result?: number | null; collision?: boolean }[];
+}
+
+interface CircularBufferResult {
+  type: string;
+  capacity: number;
+  elements: number[];
+  operations: { action: string; value?: number; result?: number | number[] | null; head: number; tail: number }[];
+}
+
 export class DSAlgorithmService {
   // ============ DATA STRUCTURES ============
 
@@ -3141,6 +3282,850 @@ export class DSAlgorithmService {
     const privateCount = count + noise2;
     const privateMean = privateCount > 0 ? privateSum / privateCount : 0;
     return { algorithm: "differentialPrivacy", output: { trueMean: Math.round(trueMean * 100) / 100, privateSum: Math.round(privateSum * 100) / 100, privateCount: Math.round(privateCount), privateMean: Math.round(privateMean * 100) / 100, epsilon, addedNoise: Math.round(Math.abs(noise1) * 100) / 100 } };
+  }
+
+  // ============ DEPTH 5: ADVANCED DS ============
+
+  sparseTableRMQ(values: number[], queries: { l: number; r: number }[]): SparseTableResult {
+    const n = values.length;
+    const k = Math.floor(Math.log2(n)) + 1;
+    const st: number[][] = Array.from({ length: k }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) st[0][i] = i;
+    for (let j = 1; j < k; j++) {
+      for (let i = 0; i + (1 << j) <= n; i++) {
+        const left = st[j - 1][i];
+        const right = st[j - 1][i + (1 << (j - 1))];
+        st[j][i] = values[left] < values[right] ? left : right;
+      }
+    }
+    const query = (l: number, r: number) => {
+      const j = Math.floor(Math.log2(r - l + 1));
+      const left = st[j][l];
+      const right = st[j][r - (1 << j) + 1];
+      return values[left] < values[right] ? left : right;
+    };
+    const ops = queries.map(q => ({ l: q.l, r: q.r, minIndex: query(q.l, q.r), result: values[query(q.l, q.r)] }));
+    return { type: "sparseTableRMQ", size: n, operations: ops };
+  }
+
+  kDTreeNearestNeighbor(points: number[][], target: number[]): KDTreeResult {
+    const build = (pts: number[][], depth: number): KDTreeResult["tree"] => {
+      if (pts.length === 0) return null;
+      const axis = depth % target.length;
+      pts.sort((a, b) => a[axis] - b[axis]);
+      const mid = Math.floor(pts.length / 2);
+      return { point: pts[mid], left: build(pts.slice(0, mid), depth + 1), right: build(pts.slice(mid + 1), depth + 1) };
+    };
+    const tree = build([...points], 0);
+    let best: { point: number[]; dist: number } | null = null;
+    const search = (node: typeof tree, depth: number) => {
+      if (!node) return;
+      const axis = depth % target.length;
+      const dist = Math.sqrt(node.point.reduce((s, v, i) => s + (v - target[i]) ** 2, 0));
+      if (!best || dist < best.dist) best = { point: node.point, dist: Math.round(dist * 1000) / 1000 };
+      const diff = target[axis] - node.point[axis];
+      const near = diff <= 0 ? node.left : node.right;
+      const far = diff <= 0 ? node.right : node.left;
+      search(near, depth + 1);
+      if (!best || Math.abs(diff) < best.dist) search(far, depth + 1);
+    };
+    search(tree, 0);
+    const bestVal = best as unknown as { point: number[]; dist: number } | null;
+    const nn: { point: number[]; distance: number } | undefined = bestVal ? { point: bestVal.point, distance: bestVal.dist } : undefined;
+    return { type: "kDTree", tree, nearestNeighbor: nn, nodes: points.length };
+  }
+
+  xorLinkedListOps(values: number[]): XorLinkedListResult {
+    const ops: XorLinkedListResult["operations"] = [];
+    const n = values.length;
+    if (n === 0) return { type: "xorLinkedList", elements: [], operations: [] };
+    const list: { value: number; both: number }[] = [];
+    list.push({ value: values[0], both: -1 ^ (n > 1 ? 1 : -1) });
+    for (let i = 1; i < n; i++) list.push({ value: values[i], both: (i - 1) ^ (i < n - 1 ? i + 1 : -1) });
+    ops.push({ action: "build", result: [...values] });
+    const traverse: number[] = [];
+    let prev = -1, curr = 0;
+    while (curr >= 0 && curr < n) {
+      traverse.push(list[curr].value);
+      const next = prev ^ list[curr].both;
+      prev = curr;
+      curr = next;
+    }
+    ops.push({ action: "traverse", result: traverse });
+    return { type: "xorLinkedList", elements: traverse, operations: ops };
+  }
+
+  binaryIndexedTree2D(rows: number, cols: number, updates: { x: number; y: number; delta: number }[], queries: { x1: number; y1: number; x2: number; y2: number }[]): BinaryIndexedTree2DResult {
+    const bit: number[][] = Array.from({ length: rows + 1 }, () => new Array(cols + 1).fill(0));
+    const ops: BinaryIndexedTree2DResult["operations"] = [];
+    for (const u of updates) {
+      let i = u.x;
+      while (i <= rows) {
+        let j = u.y;
+        while (j <= cols) { bit[i][j] += u.delta; j += j & -j; }
+        i += i & -i;
+      }
+      ops.push({ type: "update", x: u.x, y: u.y, value: u.delta });
+    }
+    const sum = (x: number, y: number) => {
+      let s = 0; let i = x;
+      while (i > 0) { let j = y; while (j > 0) { s += bit[i][j]; j -= j & -j; } i -= i & -i; }
+      return s;
+    };
+    for (const q of queries) {
+      const result = sum(q.x2, q.y2) - sum(q.x1 - 1, q.y2) - sum(q.x2, q.y1 - 1) + sum(q.x1 - 1, q.y1 - 1);
+      ops.push({ type: "query", x: q.x1, y: q.y1, x2: q.x2, y2: q.y2, result });
+    }
+    return { type: "binaryIndexedTree2D", rows, cols, operations: ops };
+  }
+
+  cartesianTreeBuild(values: number[]): CartesianTreeResult {
+    const n = values.length;
+    if (n === 0) return { type: "cartesianTree", root: -1, parent: [], leftChild: [], rightChild: [] };
+    const parent = new Array(n).fill(-1);
+    const leftChild = new Array(n).fill(-1);
+    const rightChild = new Array(n).fill(-1);
+    const stack: number[] = [];
+    for (let i = 0; i < n; i++) {
+      let last = -1;
+      while (stack.length > 0 && values[stack[stack.length - 1]] > values[i]) { last = stack.pop()!; }
+      if (stack.length > 0) { rightChild[stack[stack.length - 1]] = i; parent[i] = stack[stack.length - 1]; }
+      if (last !== -1) { leftChild[i] = last; parent[last] = i; }
+      stack.push(i);
+    }
+    const root = stack.length > 0 ? stack[0] : -1;
+    return { type: "cartesianTree", root, parent, leftChild, rightChild };
+  }
+
+  disjointSetUnionAdvanced(ops: { type: "union" | "find" | "connected"; a: number; b?: number }[]): { type: string; operations: { action: string; a: number; b?: number; result?: boolean | number; parentState: number[] }[] } {
+    const n = 10;
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const rank = new Array(n).fill(0);
+    const find = (x: number): number => { if (parent[x] !== x) parent[x] = find(parent[x]); return parent[x]; };
+    const results: { action: string; a: number; b?: number; result?: boolean | number; parentState: number[] }[] = [];
+    for (const op of ops) {
+      if (op.type === "union" && op.b !== undefined) {
+        const ra = find(op.a), rb = find(op.b);
+        if (ra !== rb) { if (rank[ra] < rank[rb]) { parent[ra] = rb; } else if (rank[ra] > rank[rb]) { parent[rb] = ra; } else { parent[rb] = ra; rank[ra]++; } }
+        results.push({ action: "union", a: op.a, b: op.b, parentState: [...parent] });
+      } else if (op.type === "find") {
+        const r = find(op.a);
+        results.push({ action: "find", a: op.a, result: r, parentState: [...parent] });
+      } else if (op.type === "connected" && op.b !== undefined) {
+        const r = find(op.a) === find(op.b);
+        results.push({ action: "connected", a: op.a, b: op.b, result: r, parentState: [...parent] });
+      }
+    }
+    return { type: "disjointSetUnion", operations: results };
+  }
+
+  treapImplicit(values: number[], ops: { type: "insert" | "erase" | "sum" | "reverse"; pos?: number; value?: number; l?: number; r?: number }[]): { type: string; final: number[]; operations: { action: string; result?: number | number[] }[] } {
+    class TreapNode {     constructor(public val: number, public prio: number = Math.random(), public left: TreapNode | null = null, public right: TreapNode | null = null, public size: number = 1, public sum: number = val, public rev: boolean = false) {} }
+    const sz = (t: TreapNode | null) => t ? t.size : 0;
+    const sm = (t: TreapNode | null) => t ? t.sum : 0;
+    const upd = (t: TreapNode) => { t.size = 1 + sz(t.left) + sz(t.right); t.sum = t.val + sm(t.left) + sm(t.right); };
+    const push = (t: TreapNode | null) => { if (t && t.rev) { [t.left, t.right] = [t.right, t.left]; if (t.left) t.left.rev = !t.left.rev; if (t.right) t.right.rev = !t.right.rev; t.rev = false; } };
+    const merge = (l: TreapNode | null, r: TreapNode | null): TreapNode | null => {
+      if (!l || !r) return l || r;
+      if (l.prio > r.prio) { push(l); l.right = merge(l.right, r); upd(l); return l; }
+      else { push(r); r.left = merge(l, r.left); upd(r); return r; }
+    };
+    const split = (t: TreapNode | null, key: number): [TreapNode | null, TreapNode | null] => {
+      if (!t) return [null, null];
+      push(t);
+      if (sz(t.left) >= key) { const [l, r] = split(t.left, key); t.left = r; upd(t); return [l, t]; }
+      else { const [l, r] = split(t.right, key - sz(t.left) - 1); t.right = l; upd(t); return [t, r]; }
+    };
+    const toArr = (t: TreapNode | null): number[] => { if (!t) return []; push(t); return [...toArr(t.left), t.val, ...toArr(t.right)]; };
+    let root: TreapNode | null = null;
+    for (const v of values) root = merge(root, new TreapNode(v));
+    const opsResult: { action: string; result?: number | number[] }[] = [];
+    for (const op of ops) {
+      if (op.type === "insert" && op.pos !== undefined && op.value !== undefined) {
+        const [l, r] = split(root, op.pos);
+        root = merge(merge(l, new TreapNode(op.value)), r);
+        opsResult.push({ action: "insert", result: undefined });
+      } else if (op.type === "erase" && op.pos !== undefined) {
+        const [l, m] = split(root, op.pos);
+        const [m2, r] = split(m, 1);
+        root = merge(l, r);
+        opsResult.push({ action: "erase", result: undefined });
+      } else if (op.type === "sum" && op.l !== undefined && op.r !== undefined) {
+        const [l, m] = split(root, op.l);
+        const [m2, r] = split(m, op.r - op.l + 1);
+        opsResult.push({ action: "sum", result: m2 ? m2.sum : 0 });
+        root = merge(merge(l, m2), r);
+      } else if (op.type === "reverse" && op.l !== undefined && op.r !== undefined) {
+        const [l, m] = split(root, op.l);
+        const [m2, r] = split(m, op.r - op.l + 1);
+        if (m2) m2.rev = !m2.rev;
+        root = merge(merge(l, m2), r);
+        opsResult.push({ action: "reverse", result: undefined });
+      }
+    }
+    return { type: "implicitTreap", final: toArr(root), operations: opsResult };
+  }
+
+  // ============ DEPTH 5: ADVANCED ALGORITHMS ============
+
+  minCostMaxFlow(nodes: string[], edges: { from: string; to: string; capacity: number; cost: number }[], source: string, sink: string): MinCostMaxFlowResult {
+    const n = nodes.length;
+    const idx = new Map<string, number>();
+    nodes.forEach((v, i) => idx.set(v, i));
+    const si = idx.get(source)!, ti = idx.get(sink)!;
+    const cap: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    const cost: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (const e of edges) { const i = idx.get(e.from)!, j = idx.get(e.to)!; cap[i][j] += e.capacity; cost[i][j] += e.cost; cost[j][i] -= e.cost; }
+    let flow = 0, costTotal = 0;
+    const pot = new Array(n).fill(0);
+    const prevv = new Array(n).fill(0);
+    const preve = new Array(n).fill(0);
+    const INF = 1e9;
+    while (flow < INF) {
+      const dist = new Array(n).fill(INF);
+      dist[si] = 0;
+      const pq: [number, number][] = [[0, si]];
+      while (pq.length > 0) {
+        pq.sort((a, b) => a[0] - b[0]);
+        const [d, v] = pq.shift()!;
+        if (dist[v] < d) continue;
+        for (let u = 0; u < n; u++) {
+          if (cap[v][u] > 0 && dist[u] > dist[v] + cost[v][u] + pot[v] - pot[u]) {
+            dist[u] = dist[v] + cost[v][u] + pot[v] - pot[u];
+            prevv[u] = v; preve[u] = u;
+            pq.push([dist[u], u]);
+          }
+        }
+      }
+      if (dist[ti] >= INF / 2) break;
+      for (let v = 0; v < n; v++) pot[v] += dist[v];
+      let d = INF;
+      for (let v = ti; v !== si; v = prevv[v]) d = Math.min(d, cap[prevv[v]][v]);
+      flow += d;
+      costTotal += d * pot[ti];
+      for (let v = ti; v !== si; v = prevv[v]) { cap[prevv[v]][v] -= d; cap[v][prevv[v]] += d; }
+    }
+    const flowEdges = edges.map(e => {
+      const i = idx.get(e.from)!, j = idx.get(e.to)!;
+      const originalCap = e.capacity;
+      const used = originalCap - cap[i][j];
+      return { from: e.from, to: e.to, flow: Math.max(0, used), capacity: originalCap, cost: e.cost };
+    }).filter(e => e.flow > 0);
+    return { algorithm: "minCostMaxFlow", maxFlow: flow, minCost: costTotal, flowEdges };
+  }
+
+  bronKerboschMaxClique(adjacency: Record<string, string[]>): BronKerboschResult {
+    const nodes = Object.keys(adjacency);
+    const adjSet = new Map<string, Set<string>>();
+    for (const [k, vs] of Object.entries(adjacency)) adjSet.set(k, new Set(vs));
+    const cliques: string[][] = [];
+    const bronKerbosch = (r: Set<string>, p: Set<string>, x: Set<string>) => {
+      if (p.size === 0 && x.size === 0) { cliques.push([...r]); return; }
+      const pivot = [...p, ...x][0];
+      const candidates = new Set(p);
+      const pivotNeighbors = adjSet.get(pivot) || new Set();
+      for (const v of p) {
+        if (pivotNeighbors.has(v)) continue;
+        const vNeighbors = adjSet.get(v) || new Set();
+        r.add(v);
+        bronKerbosch(r, new Set([...candidates].filter(n => vNeighbors.has(n))), new Set([...x].filter(n => vNeighbors.has(n))));
+        r.delete(v);
+        candidates.delete(v);
+        x.add(v);
+      }
+    };
+    bronKerbosch(new Set(), new Set(nodes), new Set());
+    const maxClique = cliques.reduce((best, c) => c.length > best.length ? c : best, [] as string[]);
+    return { algorithm: "bronKerbosch", cliques, maxClique, cliqueCount: cliques.length };
+  }
+
+  minimumSpanningTree(nodes: string[], edges: { from: string; to: string; weight: number }[]): MSTResult {
+    const parent = new Map<string, string>();
+    const rank = new Map<string, number>();
+    const find = (x: string): string => { if (parent.get(x) !== x) parent.set(x, find(parent.get(x)!)); return parent.get(x)!; };
+    const union = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra === rb) return; if ((rank.get(ra) || 0) < (rank.get(rb) || 0)) { parent.set(ra, rb); } else if ((rank.get(ra) || 0) > (rank.get(rb) || 0)) { parent.set(rb, ra); } else { parent.set(rb, ra); rank.set(ra, (rank.get(ra) || 0) + 1); } };
+    for (const n of nodes) { parent.set(n, n); rank.set(n, 0); }
+    const sorted = [...edges].sort((a, b) => a.weight - b.weight);
+    const mst: { from: string; to: string; weight: number }[] = [];
+    let total = 0;
+    for (const e of sorted) { if (find(e.from) !== find(e.to)) { union(e.from, e.to); mst.push(e); total += e.weight; } }
+    return { algorithm: "minimumSpanningTree", edges: mst, totalWeight: Math.round(total * 100) / 100, nodes: nodes.length };
+  }
+
+  topologicalSortKahn(graph: Record<string, string[]>): TopologicalSortResult {
+    const inDeg: Record<string, number> = {};
+    for (const [k, vs] of Object.entries(graph)) { if (!(k in inDeg)) inDeg[k] = 0; for (const v of vs) inDeg[v] = (inDeg[v] || 0) + 1; }
+    const queue: string[] = Object.keys(inDeg).filter(k => inDeg[k] === 0);
+    const order: string[] = [];
+    while (queue.length > 0) { const u = queue.shift()!; order.push(u); for (const v of (graph[u] || [])) { inDeg[v]--; if (inDeg[v] === 0) queue.push(v); } }
+    const hasCycle = order.length !== Object.keys(inDeg).length;
+    return { algorithm: "topologicalSort", order, hasCycle };
+  }
+
+  kosarajuSCC(graph: Record<string, string[]>): KosarajuResult {
+    const nodes = Object.keys(graph);
+    const visited = new Set<string>();
+    const stack: string[] = [];
+    const dfs = (u: string) => { visited.add(u); for (const v of (graph[u] || [])) if (!visited.has(v)) dfs(v); stack.push(u); };
+    for (const n of nodes) if (!visited.has(n)) dfs(n);
+    const rev: Record<string, string[]> = {};
+    for (const [k, vs] of Object.entries(graph)) { if (!rev[k]) rev[k] = []; for (const v of vs) { if (!rev[v]) rev[v] = []; rev[v].push(k); } }
+    const components: string[][] = [];
+    const visited2 = new Set<string>();
+    const dfs2 = (u: string, comp: string[]) => { visited2.add(u); comp.push(u); for (const v of (rev[u] || [])) if (!visited2.has(v)) dfs2(v, comp); };
+    while (stack.length > 0) { const u = stack.pop()!; if (!visited2.has(u)) { const comp: string[] = []; dfs2(u, comp); components.push(comp); } }
+    return { algorithm: "kosaraju", components, componentCount: components.length };
+  }
+
+  articulationPointsAndBridges(nodes: string[], edges: [string, string][]): ArticulationResult {
+    const adj = new Map<string, string[]>();
+    for (const n of nodes) adj.set(n, []);
+    for (const [u, v] of edges) { adj.get(u)!.push(v); adj.get(v)!.push(u); }
+    const visited = new Set<string>();
+    const tin = new Map<string, number>();
+    const low = new Map<string, number>();
+    const parent = new Map<string, string | null>();
+    const ap = new Set<string>();
+    const bridges: [string, string][] = [];
+    let timer = 0;
+    const dfs = (u: string, p: string | null) => {
+      visited.add(u); parent.set(u, p); tin.set(u, timer); low.set(u, timer); timer++;
+      let children = 0;
+      for (const v of (adj.get(u) || [])) {
+        if (v === p) continue;
+        if (visited.has(v)) { low.set(u, Math.min(low.get(u)!, tin.get(v)!)); }
+        else { dfs(v, u); children++; low.set(u, Math.min(low.get(u)!, low.get(v)!)); if (low.get(v)! > tin.get(u)!) bridges.push([u, v]); if (p !== null && low.get(v)! >= tin.get(u)!) ap.add(u); }
+      }
+      if (p === null && children > 1) ap.add(u);
+    };
+    for (const n of nodes) if (!visited.has(n)) dfs(n, null);
+    return { algorithm: "articulationPoints", articulationPoints: [...ap], bridges, nodes: nodes.length };
+  }
+
+  bipartiteMatching(left: string[], right: string[], edges: [string, string][]): BipartiteMatchingResult {
+    const adj = new Map<string, string[]>();
+    for (const l of left) adj.set(l, []);
+    for (const [u, v] of edges) if (adj.has(u)) adj.get(u)!.push(v);
+    const matchR = new Map<string, string | null>();
+    for (const r of right) matchR.set(r, null);
+    const bpm = (u: string, seen: Set<string>): boolean => {
+      for (const v of (adj.get(u) || [])) {
+        if (seen.has(v)) continue; seen.add(v);
+        if (matchR.get(v) === null || bpm(matchR.get(v)!, seen)) { matchR.set(v, u); return true; }
+      }
+      return false;
+    };
+    let cardinality = 0;
+    for (const l of left) { const seen = new Set<string>(); if (bpm(l, seen)) cardinality++; }
+    const matching: [string, string][] = [];
+    for (const [r, l] of matchR) if (l !== null) matching.push([l, r]);
+    return { algorithm: "bipartiteMatching", matching, cardinality };
+  }
+
+  // ============ DEPTH 5: STRING / DP ============
+
+  manacherAlgorithm(text: string): ManacherResult {
+    const t = "^#" + text.split("").join("#") + "#$";
+    const n = t.length;
+    const p = new Array(n).fill(0);
+    let c = 0, r = 0;
+    for (let i = 1; i < n - 1; i++) {
+      const mirr = 2 * c - i;
+      if (i < r) p[i] = Math.min(r - i, p[mirr]);
+      while (t[i + (1 + p[i])] === t[i - (1 + p[i])]) p[i]++;
+      if (i + p[i] > r) { c = i; r = i + p[i]; }
+    }
+    let maxLen = 0, maxCenter = 0;
+    for (let i = 1; i < n - 1; i++) { if (p[i] > maxLen) { maxLen = p[i]; maxCenter = i; } }
+    const start = Math.floor((maxCenter - maxLen) / 2);
+    const longestPalindrome = text.substring(start, start + maxLen);
+    return { algorithm: "manacher", text, centers: p.filter((_, i) => i % 2 === 1).map(v => v), longestPalindrome, length: maxLen };
+  }
+
+  zAlgorithmSearch(text: string, pattern: string): ZAlgorithmResult {
+    const s = pattern + "$" + text;
+    const n = s.length;
+    const z = new Array(n).fill(0);
+    let l = 0, r = 0, comparisons = 0;
+    for (let i = 1; i < n; i++) {
+      if (i <= r) z[i] = Math.min(r - i + 1, z[i - l]);
+      while (i + z[i] < n && s[z[i]] === s[i + z[i]]) { z[i]++; comparisons++; }
+      if (i + z[i] - 1 > r) { l = i; r = i + z[i] - 1; }
+    }
+    const matches: number[] = [];
+    const patLen = pattern.length;
+    for (let i = patLen + 1; i < n; i++) if (z[i] >= patLen) matches.push(i - patLen - 1);
+    return { algorithm: "zAlgorithm", text, pattern, matches, zArray: z, comparisons };
+  }
+
+  levenshteinWithPath(a: string, b: string): LevenshteinResult {
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (a[i - 1] === b[j - 1]) dp[i][j] = dp[i - 1][j - 1];
+        else dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    const ops: { type: string; chars: string }[] = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) { ops.push({ type: "keep", chars: a[i - 1] }); i--; j--; }
+      else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) { ops.push({ type: "replace", chars: a[i - 1] + "->" + b[j - 1] }); i--; j--; }
+      else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) { ops.push({ type: "delete", chars: a[i - 1] }); i--; }
+      else if (j > 0 && dp[i][j] === dp[i][j - 1] + 1) { ops.push({ type: "insert", chars: b[j - 1] }); j--; }
+      else break;
+    }
+    ops.reverse();
+    return { algorithm: "levenshtein", distance: dp[m][n], matrix: dp, operations: ops };
+  }
+
+  lisWithPath(values: number[]): LISResult {
+    const n = values.length;
+    if (n === 0) return { algorithm: "lis", sequence: values, length: 0, subsequence: [], comparisons: 0 };
+    const dp: number[] = [];
+    const indices: number[] = [];
+    const prev: number[] = new Array(n).fill(-1);
+    let comparisons = 0;
+    for (let i = 0; i < n; i++) {
+      comparisons++;
+      let lo = 0, hi = dp.length;
+      while (lo < hi) {
+        comparisons++;
+        const mid = (lo + hi) >> 1;
+        if (values[dp[mid]] < values[i]) lo = mid + 1; else hi = mid;
+      }
+      if (lo === dp.length) { dp.push(i); } else { dp[lo] = i; }
+      indices.push(lo);
+      if (lo > 0) prev[i] = dp[lo - 1];
+    }
+    const lis: number[] = [];
+    let k = dp.length > 0 ? dp[dp.length - 1] : -1;
+    while (k >= 0) { lis.push(values[k]); k = prev[k]; }
+    lis.reverse();
+    return { algorithm: "lis", sequence: values, length: dp.length, subsequence: lis, comparisons };
+  }
+
+  dpBitmaskTSP(distances: number[][]): BitmaskTSPResult {
+    const n = distances.length;
+    const INF = 1e9;
+    const dp: number[][] = Array.from({ length: 1 << n }, () => new Array(n).fill(INF));
+    dp[1][0] = 0;
+    let statesExplored = 0;
+    for (let mask = 1; mask < (1 << n); mask++) {
+      for (let u = 0; u < n; u++) {
+        if (!(mask & (1 << u)) || dp[mask][u] >= INF) continue;
+        statesExplored++;
+        for (let v = 0; v < n; v++) {
+          if (mask & (1 << v)) continue;
+          const newMask = mask | (1 << v);
+          const nd = dp[mask][u] + distances[u][v];
+          if (nd < dp[newMask][v]) dp[newMask][v] = nd;
+        }
+      }
+    }
+    let best = INF;
+    let last = -1;
+    for (let u = 1; u < n; u++) { const nd = dp[(1 << n) - 1][u] + distances[u][0]; if (nd < best) { best = nd; last = u; } }
+    const path: number[] = [];
+    if (best < INF / 2) {
+      let mask = (1 << n) - 1, u = last;
+      while (u !== 0) { path.push(u); let prevU = -1; for (let v = 0; v < n; v++) { if (v !== u && (mask & (1 << v)) && dp[mask][u] === dp[mask ^ (1 << u)][v] + distances[v][u]) { prevU = v; break; } } mask ^= (1 << u); u = prevU; }
+      path.push(0);
+      path.reverse();
+    }
+    return { algorithm: "dpBitmaskTSP", distance: Math.round(best * 100) / 100, path, nodes: n, statesExplored };
+  }
+
+  regexMatching(text: string, pattern: string): RegexMatchingResult {
+    const m = text.length, p = pattern.length;
+    const dp: boolean[][] = Array.from({ length: m + 1 }, () => new Array(p + 1).fill(false));
+    dp[0][0] = true;
+    for (let j = 1; j <= p; j++) if (pattern[j - 1] === "*") dp[0][j] = dp[0][j - 2];
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= p; j++) {
+        if (pattern[j - 1] === "*") { dp[i][j] = dp[i][j - 2] || (dp[i - 1][j] && (pattern[j - 2] === text[i - 1] || pattern[j - 2] === ".")); }
+        else if (pattern[j - 1] === ".") { dp[i][j] = dp[i - 1][j - 1]; }
+        else { dp[i][j] = dp[i - 1][j - 1] && pattern[j - 1] === text[i - 1]; }
+      }
+    }
+    const matches: number[] = [];
+    if (dp[m][p]) {
+      for (let i = 0; i <= m; i++) { if (dp[i][p]) { matches.push(i); break; } }
+    }
+    return { algorithm: "regexMatching", text, pattern, matches: dp[m][p], matchPositions: matches };
+  }
+
+  damerauLevenshtein(a: string, b: string): { algorithm: string; distance: number; matrix: number[][] } {
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+        }
+      }
+    }
+    return { algorithm: "damerauLevenshtein", distance: dp[m][n], matrix: dp };
+  }
+
+  // ============ DEPTH 5: ENHANCED EXISTING ============
+
+  lruCacheOps(capacity: number, ops: { type: "get" | "put"; key: string; value?: number }[]): LRUCacheResult {
+    const cache = new Map<string, number>();
+    const resultOps: { action: string; key: string; value?: number; evicted?: boolean }[] = [];
+    for (const op of ops) {
+      if (op.type === "get") {
+        if (cache.has(op.key)) { const v = cache.get(op.key)!; cache.delete(op.key); cache.set(op.key, v); resultOps.push({ action: "get", key: op.key, value: v }); }
+        else { resultOps.push({ action: "get", key: op.key }); }
+      } else if (op.type === "put" && op.value !== undefined) {
+        let evicted = false;
+        if (cache.has(op.key)) { cache.delete(op.key); }
+        else if (cache.size >= capacity) { const firstKey = cache.keys().next().value; if (firstKey !== undefined) cache.delete(firstKey); evicted = true; }
+        cache.set(op.key, op.value);
+        resultOps.push({ action: "put", key: op.key, value: op.value, evicted });
+      }
+    }
+    return { capacity, operations: resultOps, finalState: [...cache.entries()].map(([k, v]) => ({ key: k, value: v })) };
+  }
+
+  bloomFilterAdvanced(expectedElements: number, falsePositiveRate: number, items: string[], checks: string[]): { type: string; size: number; hashCount: number; bits: number[]; falsePositiveProbability: string; insertions: number; checks: { item: string; probablyPresent: boolean }[] } {
+    const size = Math.ceil(-expectedElements * Math.log(falsePositiveRate) / (Math.LN2 * Math.LN2));
+    const hashCount = Math.max(1, Math.round((size / expectedElements) * Math.LN2));
+    const bits = new Array(size).fill(0);
+    const hash = (s: string, i: number) => { let h = 0; for (let j = 0; j < s.length; j++) h = ((h << 5) - h + s.charCodeAt(j)) ^ (i * 0x9e3779b9); return Math.abs(h) % size; };
+    for (const item of items) { for (let i = 0; i < hashCount; i++) bits[hash(item, i)] = 1; }
+    const checksResult = checks.map(c => { let present = true; for (let i = 0; i < hashCount; i++) { if (bits[hash(c, i)] === 0) { present = false; break; } } return { item: c, probablyPresent: present }; });
+    return { type: "bloomFilterAdvanced", size, hashCount, bits, falsePositiveProbability: falsePositiveRate.toExponential(2), insertions: items.length, checks: checksResult };
+  }
+
+  segmentTreeLazyPropagation(values: number[], ops: { type: "update" | "query"; l: number; r: number; value?: number }[]): SegmentTreeLazyResult {
+    const n = values.length;
+    const size = 4 * n;
+    const tree = new Array(size).fill(0);
+    const lazy = new Array(size).fill(0);
+    const build = (idx: number, l: number, r: number) => {
+      if (l === r) { tree[idx] = values[l]; return; }
+      const mid = (l + r) >> 1;
+      build(idx * 2, l, mid); build(idx * 2 + 1, mid + 1, r);
+      tree[idx] = tree[idx * 2] + tree[idx * 2 + 1];
+    };
+    if (n > 0) build(1, 0, n - 1);
+    const push = (idx: number, l: number, r: number) => {
+      if (lazy[idx] !== 0) {
+        tree[idx] += lazy[idx] * (r - l + 1);
+        if (l !== r) { lazy[idx * 2] += lazy[idx]; lazy[idx * 2 + 1] += lazy[idx]; }
+        lazy[idx] = 0;
+      }
+    };
+    const update = (idx: number, l: number, r: number, ql: number, qr: number, val: number) => {
+      push(idx, l, r);
+      if (ql > r || qr < l) return;
+      if (ql <= l && r <= qr) { lazy[idx] += val; push(idx, l, r); return; }
+      const mid = (l + r) >> 1;
+      update(idx * 2, l, mid, ql, qr, val); update(idx * 2 + 1, mid + 1, r, ql, qr, val);
+      tree[idx] = tree[idx * 2] + tree[idx * 2 + 1];
+    };
+    const query = (idx: number, l: number, r: number, ql: number, qr: number): number => {
+      push(idx, l, r);
+      if (ql > r || qr < l) return 0;
+      if (ql <= l && r <= qr) return tree[idx];
+      const mid = (l + r) >> 1;
+      return query(idx * 2, l, mid, ql, qr) + query(idx * 2 + 1, mid + 1, r, ql, qr);
+    };
+    const resultOps: SegmentTreeLazyResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "update" && op.value !== undefined) { if (n > 0) update(1, 0, n - 1, op.l, op.r, op.value); resultOps.push({ type: "update", range: [op.l, op.r], value: op.value }); }
+      if (op.type === "query") { const r = n > 0 ? query(1, 0, n - 1, op.l, op.r) : 0; resultOps.push({ type: "query", range: [op.l, op.r], result: r }); }
+    }
+    return { type: "segmentTreeLazy", size: n, operations: resultOps };
+  }
+
+  dequeOps(initial: number[], ops: { type: "pushFront" | "pushBack" | "popFront" | "popBack" | "peekFront" | "peekBack" | "size" }[]): DequeResult {
+    const dq = [...initial];
+    const dqOps: DequeResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "pushFront") { dq.unshift(Math.floor(Math.random() * 100)); dqOps.push({ action: "pushFront", value: dq[0], result: [...dq] }); }
+      else if (op.type === "pushBack") { dq.push(Math.floor(Math.random() * 100)); dqOps.push({ action: "pushBack", value: dq[dq.length - 1], result: [...dq] }); }
+      else if (op.type === "popFront") { const v = dq.shift(); dqOps.push({ action: "popFront", value: v, result: [...dq] }); }
+      else if (op.type === "popBack") { const v = dq.pop(); dqOps.push({ action: "popBack", value: v, result: [...dq] }); }
+      else if (op.type === "peekFront") { dqOps.push({ action: "peekFront", value: dq.length > 0 ? dq[0] : undefined, result: [...dq] }); }
+      else if (op.type === "peekBack") { dqOps.push({ action: "peekBack", value: dq.length > 0 ? dq[dq.length - 1] : undefined, result: [...dq] }); }
+      else if (op.type === "size") { dqOps.push({ action: "size", value: dq.length, result: [...dq] }); }
+    }
+    return { type: "deque", initial, operations: dqOps };
+  }
+
+  priorityQueueOps(initial: number[], ops: { type: "push" | "pop" | "peek" | "size" }[]): PriorityQueueResult {
+    const heap: number[] = [];
+    const swap = (i: number, j: number) => { [heap[i], heap[j]] = [heap[j], heap[i]]; };
+    const push = (v: number) => { heap.push(v); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p] <= heap[i]) break; swap(p, i); i = p; } };
+    const pop = (): number | undefined => {
+      if (heap.length === 0) return undefined;
+      const r = heap[0]; const last = heap.pop()!;
+      if (heap.length > 0) { heap[0] = last; let i = 0; while (true) { let smallest = i; const l = 2 * i + 1, r = 2 * i + 2; if (l < heap.length && heap[l] < heap[smallest]) smallest = l; if (r < heap.length && heap[r] < heap[smallest]) smallest = r; if (smallest === i) break; swap(i, smallest); i = smallest; } }
+      return r;
+    };
+    const pqOps: PriorityQueueResult["operations"] = [];
+    for (const v of initial) push(v);
+    for (const op of ops) {
+      if (op.type === "push") { const v = Math.floor(Math.random() * 200); push(v); pqOps.push({ action: "push", value: v, size: heap.length }); }
+      else if (op.type === "pop") { const v = pop(); pqOps.push({ action: "pop", value: v, size: heap.length }); }
+      else if (op.type === "peek") { pqOps.push({ action: "peek", value: heap.length > 0 ? heap[0] : undefined, size: heap.length }); }
+      else if (op.type === "size") { pqOps.push({ action: "size", value: heap.length, size: heap.length }); }
+    }
+    return { type: "priorityQueue", initial, operations: pqOps };
+  }
+
+  hashMapChaining(capacity: number, ops: { type: "put" | "get" | "delete"; key: string; value?: number }[]): HashMapChainingResult {
+    const table: [string, number][][] = Array.from({ length: capacity }, () => []);
+    const hash = (k: string) => { let h = 0; for (let i = 0; i < k.length; i++) h = ((h << 5) - h + k.charCodeAt(i)) | 0; return Math.abs(h) % capacity; };
+    const opsResult: HashMapChainingResult["operations"] = [];
+    let elements = 0;
+    for (const op of ops) {
+      if (op.type === "put" && op.value !== undefined) {
+        const h = hash(op.key);
+        const bucket = table[h];
+        let found = false;
+        for (let j = 0; j < bucket.length; j++) { if (bucket[j][0] === op.key) { bucket[j][1] = op.value; found = true; opsResult.push({ action: "put", key: op.key, value: op.value }); break; } }
+        if (!found) { bucket.push([op.key, op.value]); elements++; opsResult.push({ action: "put", key: op.key, value: op.value, collision: bucket.length > 1 }); }
+      } else if (op.type === "get") {
+        const h = hash(op.key);
+        const bucket = table[h];
+        let found = false;
+        for (const [k, v] of bucket) { if (k === op.key) { opsResult.push({ action: "get", key: op.key, result: v }); found = true; break; } }
+        if (!found) opsResult.push({ action: "get", key: op.key });
+      } else if (op.type === "delete") {
+        const h = hash(op.key);
+        const bucket = table[h];
+        let deleted = false;
+        for (let j = 0; j < bucket.length; j++) { if (bucket[j][0] === op.key) { bucket.splice(j, 1); elements--; opsResult.push({ action: "delete", key: op.key }); deleted = true; break; } }
+        if (!deleted) opsResult.push({ action: "delete", key: op.key });
+      }
+    }
+    return { type: "hashMapChaining", capacity, loadFactor: (elements / capacity).toFixed(2), operations: opsResult };
+  }
+
+  circularBufferOps(capacity: number, ops: { type: "push" | "pop" | "peek" | "toArray"; value?: number }[]): CircularBufferResult {
+    const buf = new Array(capacity).fill(null);
+    let head = 0, tail = 0, size = 0;
+    const opsResult: CircularBufferResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "push" && op.value !== undefined) {
+        if (size === capacity) { buf[tail] = op.value; tail = (tail + 1) % capacity; head = (head + 1) % capacity; }
+        else { buf[tail] = op.value; tail = (tail + 1) % capacity; size++; }
+        opsResult.push({ action: "push", value: op.value, head, tail });
+      } else if (op.type === "pop") {
+        if (size === 0) { opsResult.push({ action: "pop", head, tail }); }
+        else { const v = buf[head]; buf[head] = null; head = (head + 1) % capacity; size--; opsResult.push({ action: "pop", value: v, head, tail }); }
+      } else if (op.type === "peek") {
+        opsResult.push({ action: "peek", value: size > 0 ? buf[head] : null, head, tail });
+      } else if (op.type === "toArray") {
+        const arr: number[] = [];
+        for (let i = 0; i < size; i++) arr.push(buf[(head + i) % capacity] as number);
+        opsResult.push({ action: "toArray", result: arr, head, tail });
+      }
+    }
+    const elements: number[] = [];
+    for (let i = 0; i < size; i++) elements.push(buf[(head + i) % capacity] as number);
+    return { type: "circularBuffer", capacity, elements, operations: opsResult };
+  }
+
+  // ============ DEPTH 5: MARKETING DEPTH ============
+
+  exp3Bandit(variants: string[], rewards: { variant: string; reward: number }[], gamma: number = 0.1): MarketingDepthResult {
+    const k = variants.length;
+    const weights = new Array(k).fill(1);
+    const probabilities = new Array(k).fill(1 / k);
+    const selected: string[] = [];
+    const cumulativeReward: number[] = [];
+    let totalReward = 0;
+    for (const r of rewards) {
+      const idx = variants.indexOf(r.variant);
+      if (idx < 0) continue;
+      for (let i = 0; i < k; i++) probabilities[i] = (1 - gamma) * (weights[i] / weights.reduce((s, w) => s + w, 0)) + gamma / k;
+      const estReward = r.reward / probabilities[idx];
+      weights[idx] *= Math.exp(gamma * estReward / k);
+      totalReward += r.reward;
+      selected.push(r.variant);
+      cumulativeReward.push(Math.round(totalReward * 100) / 100);
+    }
+    return { algorithm: "exp3Bandit", output: { variants, finalWeights: weights.map(w => Math.round(w * 100) / 100), finalProbabilities: probabilities.map(p => Math.round(p * 10000) / 10000), totalReward: Math.round(totalReward * 100) / 100, selected, cumulativeReward } };
+  }
+
+  thompsonSamplingGaussian(variants: string[], rewards: { variant: string; value: number }[], priorMean: number = 0, priorVariance: number = 1): MarketingDepthResult {
+    const means = new Map<string, number>();
+    const variances = new Map<string, number>();
+    const counts = new Map<string, number>();
+    const sums = new Map<string, number>();
+    for (const v of variants) { means.set(v, priorMean); variances.set(v, priorVariance); counts.set(v, 0); sums.set(v, 0); }
+    for (const r of rewards) {
+      if (!variants.includes(r.variant)) continue;
+      const n = (counts.get(r.variant) || 0) + 1;
+      const oldSum = sums.get(r.variant) || 0;
+      const newSum = oldSum + r.value;
+      const oldMean = means.get(r.variant) || priorMean;
+      const newMean = oldMean + (r.value - oldMean) / n;
+      const oldVar = variances.get(r.variant) || priorVariance;
+      const newVar = n > 1 ? ((n - 2) * oldVar + (r.value - oldMean) * (r.value - newMean)) / (n - 1) : priorVariance;
+      counts.set(r.variant, n);
+      sums.set(r.variant, newSum);
+      means.set(r.variant, newMean);
+      variances.set(r.variant, Math.max(newVar, 0.01));
+    }
+    const summary = variants.map(v => ({ variant: v, mean: Math.round((means.get(v) || 0) * 100) / 100, variance: Math.round((variances.get(v) || 0) * 100) / 100, samples: counts.get(v) || 0 }));
+    const bestVariant = summary.reduce((best, s) => s.mean > best.mean ? s : best);
+    return { algorithm: "thompsonSamplingGaussian", output: { summary, bestVariant: bestVariant.variant, bestMean: bestVariant.mean, priorMean, priorVariance, totalSamples: rewards.length } };
+  }
+
+  kaplanMeierSurvival(times: number[], events: number[]): MarketingDepthResult {
+    const n = times.length;
+    const data = times.map((t, i) => ({ time: t, event: events[i] === 1 }));
+    data.sort((a, b) => a.time - b.time);
+    const survival: { time: number; atRisk: number; events: number; survivalProb: number }[] = [];
+    let atRisk = n;
+    let survProb = 1;
+    for (let i = 0; i < n; ) {
+      const t = data[i].time;
+      let eventCount = 0;
+      let j = i;
+      while (j < n && data[j].time === t) { if (data[j].event) eventCount++; j++; }
+      survProb *= (atRisk - eventCount) / atRisk;
+      survival.push({ time: t, atRisk, events: eventCount, survivalProb: Math.round(survProb * 10000) / 10000 });
+      atRisk -= (j - i);
+      i = j;
+    }
+    const medianIdx = survival.findIndex(s => s.survivalProb <= 0.5);
+    const medianSurvivalTime = medianIdx >= 0 ? survival[medianIdx].time : (times.length > 0 ? Math.max(...times) : 0);
+    return { algorithm: "kaplanMeier", output: { survivalCurve: survival, medianSurvivalTime, totalObservations: n, events: events.filter(e => e === 1).length } };
+  }
+
+  upliftModeling(control: { users: number; conversions: number }[], treatment: { users: number; conversions: number }[]): MarketingDepthResult {
+    const segments = Math.max(control.length, treatment.length);
+    const upliftCurve: { segment: number; controlRate: number; treatmentRate: number; uplift: number }[] = [];
+    for (let i = 0; i < segments; i++) {
+      const c = control[i] || { users: 0, conversions: 0 };
+      const t = treatment[i] || { users: 0, conversions: 0 };
+      const cRate = c.users > 0 ? c.conversions / c.users : 0;
+      const tRate = t.users > 0 ? t.conversions / t.users : 0;
+      upliftCurve.push({ segment: i, controlRate: Math.round(cRate * 10000) / 10000, treatmentRate: Math.round(tRate * 10000) / 10000, uplift: Math.round((tRate - cRate) * 10000) / 10000 });
+    }
+    const avgUplift = upliftCurve.reduce((s, u) => s + u.uplift, 0) / Math.max(segments, 1);
+    const totalControlConv = control.reduce((s, c) => s + c.conversions, 0);
+    const totalControlUsers = control.reduce((s, c) => s + c.users, 0);
+    const totalTreatmentConv = treatment.reduce((s, t) => s + t.conversions, 0);
+    const totalTreatmentUsers = treatment.reduce((s, t) => s + t.users, 0);
+    return { algorithm: "upliftModeling", output: { upliftCurve, averageUplift: Math.round(avgUplift * 10000) / 10000, controlConversionRate: totalControlUsers > 0 ? Math.round(totalControlConv / totalControlUsers * 10000) / 10000 : 0, treatmentConversionRate: totalTreatmentUsers > 0 ? Math.round(totalTreatmentConv / totalTreatmentUsers * 10000) / 10000 : 0, segments } };
+  }
+
+  causalInferenceDML(treatment: number[], outcome: number[], covariates: number[][]): MarketingDepthResult {
+    const n = Math.min(treatment.length, outcome.length, covariates.length);
+    const resT: number[] = [];
+    const resO: number[] = [];
+    const half = Math.floor(n / 2);
+    for (let i = 0; i < n; i++) {
+      const trainIdx = i < half ? half : 0;
+      const trainEnd = i < half ? n : half;
+      let sumX = 0, sumY = 0, count = 0;
+      for (let j = trainIdx; j < trainEnd; j++) { if (j !== i) { sumX += covariates[j][0] || 0; sumY += covariates[j][1] || 0; count++; } }
+      const meanX = count > 0 ? sumX / count : 0;
+      const meanY = count > 0 ? sumY / count : 0;
+      resT.push(treatment[i] - meanX);
+      resO.push(outcome[i] - meanY);
+    }
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += resT[i] * resO[i]; den += resT[i] * resT[i]; }
+    const ate = den > 0 ? num / den : 0;
+    const residuals = resT.map((t, i) => ({ treatmentResidual: Math.round(t * 1000) / 1000, outcomeResidual: Math.round(resO[i] * 1000) / 1000 }));
+    return { algorithm: "causalInferenceDML", output: { ate: Math.round(ate * 10000) / 10000, sampleSize: n, residuals: residuals.slice(0, 10), covariates: covariates[0]?.length || 0 } };
+  }
+
+  sinkhornOptimalTransport(source: number[], target: number[], costMatrix: number[][], iterations: number = 10, reg: number = 0.1): MarketingDepthResult {
+    const n = source.length, m = target.length;
+    let K = costMatrix.map(row => row.map(c => Math.exp(-c / reg)));
+    let u = new Array(n).fill(1);
+    let v = new Array(m).fill(1);
+    for (let iter = 0; iter < iterations; iter++) {
+      for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < m; j++) s += K[i][j] * v[j]; u[i] = s > 0 ? source[i] / s : 1; }
+      for (let j = 0; j < m; j++) { let s = 0; for (let i = 0; i < n; i++) s += K[i][j] * u[i]; v[j] = s > 0 ? target[j] / s : 1; }
+    }
+    const transportPlan = K.map((row, i) => row.map((k, j) => Math.round(u[i] * k * v[j] * 10000) / 10000));
+    const totalCost = transportPlan.reduce((s, row, i) => s + row.reduce((s2, v, j) => s2 + v * costMatrix[i][j], 0), 0);
+    return { algorithm: "sinkhornOptimalTransport", output: { transportPlan, totalCost: Math.round(totalCost * 100) / 100, source: source.map(v => Math.round(v * 100) / 100), target: target.map(v => Math.round(v * 100) / 100), iterations, regularization: reg } };
+  }
+
+  shapleyAttribution(channels: string[], conversions: Record<string, number[]>, totalConversions: number[]): MarketingDepthResult {
+    const n = channels.length;
+    const shapValues: number[] = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+      let sum = 0;
+      for (let mask = 0; mask < (1 << n); mask++) {
+        if (!(mask & (1 << i))) continue;
+        const size = (mask.toString(2).match(/1/g) || []).length;
+        const prevMask = mask ^ (1 << i);
+        const weight = factorial(size - 1) * factorial(n - size) / factorial(n);
+        const withVal = conversions[i] ? conversions[i].reduce((s, v, idx) => mask & (1 << idx) ? s + v : s, 0) : 0;
+        const withoutVal = conversions[i] ? conversions[i].reduce((s, v, idx) => prevMask & (1 << idx) ? s + v : s, 0) : 0;
+        sum += weight * (withVal - withoutVal);
+      }
+      shapValues[i] = sum;
+    }
+    const totalConv = totalConversions.reduce((s, v) => s + v, 0);
+    const attribution = channels.map((ch, i) => ({ channel: ch, shapleyValue: Math.round(shapValues[i] * 100) / 100, share: totalConv > 0 ? Math.round(shapValues[i] / totalConv * 10000) / 100 : 0 }));
+    return { algorithm: "shapleyAttribution", output: { attribution, totalConversions: totalConv, channels: n } };
+  }
+
+  brierScoreCalibration(predictions: { predicted: number; actual: number }[]): MarketingDepthResult {
+    const n = predictions.length;
+    const brierScore = predictions.reduce((s, p) => s + (p.predicted - p.actual) ** 2, 0) / n;
+    const bins = 10;
+    const binSize = 1 / bins;
+    const calibrationCurve: { bin: string; meanPredicted: number; fractionPositive: number; count: number }[] = [];
+    for (let b = 0; b < bins; b++) {
+      const lower = b * binSize;
+      const upper = (b + 1) * binSize;
+      const inBin = predictions.filter(p => p.predicted >= lower && p.predicted < upper);
+      if (inBin.length > 0) {
+        const meanPred = inBin.reduce((s, p) => s + p.predicted, 0) / inBin.length;
+        const fracPos = inBin.reduce((s, p) => s + p.actual, 0) / inBin.length;
+        calibrationCurve.push({ bin: `${lower.toFixed(1)}-${upper.toFixed(1)}`, meanPredicted: Math.round(meanPred * 10000) / 10000, fractionPositive: Math.round(fracPos * 10000) / 10000, count: inBin.length });
+      }
+    }
+    const logLoss = -predictions.reduce((s, p) => s + p.actual * Math.log(Math.max(p.predicted, 1e-10)) + (1 - p.actual) * Math.log(Math.max(1 - p.predicted, 1e-10)), 0) / n;
+    return { algorithm: "brierScoreCalibration", output: { brierScore: Math.round(brierScore * 10000) / 10000, logLoss: Math.round(logLoss * 10000) / 10000, calibrationCurve, totalPredictions: n } };
+  }
+
+  funnelConversionAnalysis(stages: string[], conversions: number[]): MarketingDepthResult {
+    const n = stages.length;
+    const funnel: { stage: string; users: number; dropoff: number; conversionRate: string; dropoffRate: string }[] = [];
+    for (let i = 0; i < n; i++) {
+      const users = conversions[i];
+      const dropoff = i > 0 ? conversions[i - 1] - users : 0;
+      const convRate = i > 0 && conversions[0] > 0 ? (users / conversions[0] * 100) : (i === 0 ? 100 : 0);
+      const dropoffRate = i > 0 && conversions[i - 1] > 0 ? (dropoff / conversions[i - 1] * 100) : 0;
+      funnel.push({ stage: stages[i], users, dropoff, conversionRate: convRate.toFixed(2) + "%", dropoffRate: dropoffRate.toFixed(2) + "%" });
+    }
+    const overallConversion = conversions[0] > 0 ? (conversions[conversions.length - 1] / conversions[0] * 100) : 0;
+    return { algorithm: "funnelAnalysis", output: { funnel, overallConversionRate: overallConversion.toFixed(2) + "%", totalEntered: conversions[0], totalConverted: conversions[conversions.length - 1], stages: n } };
+  }
+
+  responseSurfaceBid(bids: number[], impressions: number[], conversions: number[], revenue: number[]): MarketingDepthResult {
+    const n = Math.min(bids.length, impressions.length, conversions.length, revenue.length);
+    const surface: { bid: number; impressions: number; conversions: number; revenue: number; cpa: number; roas: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const cpa = conversions[i] > 0 ? bids[i] * impressions[i] / conversions[i] : 0;
+      const roas = bids[i] * impressions[i] > 0 ? revenue[i] / (bids[i] * impressions[i]) : 0;
+      surface.push({ bid: bids[i], impressions: impressions[i], conversions: conversions[i], revenue: revenue[i], cpa: Math.round(cpa * 100) / 100, roas: Math.round(roas * 10000) / 10000 });
+    }
+    const optimalIdx = surface.reduce((best, s, i) => s.roas > (best >= 0 ? surface[best].roas : -Infinity) ? i : best, -1);
+    const elasticity = n > 1 ? (impressions[n - 1] - impressions[0]) / Math.max(impressions[0], 1) / ((bids[n - 1] - bids[0]) / Math.max(bids[0], 1)) : 0;
+    return { algorithm: "responseSurfaceBid", output: { surface, optimalBid: optimalIdx >= 0 ? surface[optimalIdx].bid : 0, optimalRoas: optimalIdx >= 0 ? surface[optimalIdx].roas : 0, bidElasticity: Math.round(elasticity * 10000) / 10000, dataPoints: n } };
   }
 }
 

@@ -1260,4 +1260,192 @@ router.post(
   }),
 );
 
+// ============ DEPTH 5 Routes ============
+
+router.post("/ds/sparse-table-rmq", asyncHandler(async (req, res) => {
+  const { values, queries } = req.body;
+  if (!values || !queries) return res.status(400).json({ error: "values and queries required" });
+  sendSuccess(res, dsAlgorithmService.sparseTableRMQ(values, queries));
+}));
+router.post("/ds/xor-linked-list", asyncHandler(async (req, res) => {
+  const { values } = req.body;
+  if (!values) return res.status(400).json({ error: "values required" });
+  sendSuccess(res, dsAlgorithmService.xorLinkedListOps(values));
+}));
+router.post("/ds/bit-2d", asyncHandler(async (req, res) => {
+  const { rows, cols, updates, queries } = req.body;
+  if (!rows || !cols || !updates || !queries) return res.status(400).json({ error: "rows, cols, updates, queries required" });
+  sendSuccess(res, dsAlgorithmService.binaryIndexedTree2D(rows, cols, updates, queries));
+}));
+router.post("/ds/cartesian-tree-build", asyncHandler(async (req, res) => {
+  const { values } = req.body;
+  if (!values) return res.status(400).json({ error: "values required" });
+  sendSuccess(res, dsAlgorithmService.cartesianTreeBuild(values));
+}));
+router.post("/ds/dsu", asyncHandler(async (req, res) => {
+  const { operations } = req.body;
+  if (!operations) return res.status(400).json({ error: "operations required" });
+  sendSuccess(res, dsAlgorithmService.disjointSetUnionAdvanced(operations));
+}));
+router.post("/ds/treap-implicit", asyncHandler(async (req, res) => {
+  const { values, operations } = req.body;
+  if (!values || !operations) return res.status(400).json({ error: "values and operations required" });
+  sendSuccess(res, dsAlgorithmService.treapImplicit(values, operations));
+}));
+
+router.post("/graph/min-cost-max-flow", asyncHandler(async (req, res) => {
+  const { nodes, edges, source, sink } = req.body;
+  if (!nodes || !edges || !source || !sink) return res.status(400).json({ error: "nodes, edges, source, sink required" });
+  sendSuccess(res, dsAlgorithmService.minCostMaxFlow(nodes, edges, source, sink));
+}));
+router.post("/graph/bron-kerbosch", asyncHandler(async (req, res) => {
+  const { adjacency } = req.body;
+  if (!adjacency) return res.status(400).json({ error: "adjacency required" });
+  sendSuccess(res, dsAlgorithmService.bronKerboschMaxClique(adjacency));
+}));
+router.post("/graph/mst", asyncHandler(async (req, res) => {
+  const { nodes, edges } = req.body;
+  if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+  sendSuccess(res, dsAlgorithmService.minimumSpanningTree(nodes, edges));
+}));
+router.post("/graph/kosaraju", asyncHandler(async (req, res) => {
+  const { graph } = req.body;
+  if (!graph) return res.status(400).json({ error: "graph required" });
+  sendSuccess(res, dsAlgorithmService.kosarajuSCC(graph));
+}));
+router.post("/graph/articulation-points", asyncHandler(async (req, res) => {
+  const { nodes, edges } = req.body;
+  if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+  sendSuccess(res, dsAlgorithmService.articulationPointsAndBridges(nodes, edges));
+}));
+router.post("/graph/bipartite-matching", asyncHandler(async (req, res) => {
+  const { left, right, edges } = req.body;
+  if (!left || !right || !edges) return res.status(400).json({ error: "left, right, edges required" });
+  sendSuccess(res, dsAlgorithmService.bipartiteMatching(left, right, edges));
+}));
+
+router.post("/string/manacher-algo", asyncHandler(async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: "text required" });
+  sendSuccess(res, dsAlgorithmService.manacherAlgorithm(text));
+}));
+router.post("/string/z-algo", asyncHandler(async (req, res) => {
+  const { text, pattern } = req.body;
+  if (!text || !pattern) return res.status(400).json({ error: "text and pattern required" });
+  sendSuccess(res, dsAlgorithmService.zAlgorithmSearch(text, pattern));
+}));
+router.post("/string/levenshtein-path", asyncHandler(async (req, res) => {
+  const { a, b } = req.body;
+  if (!a || !b) return res.status(400).json({ error: "strings a and b required" });
+  sendSuccess(res, dsAlgorithmService.levenshteinWithPath(a, b));
+}));
+router.post("/dp/lis-path", asyncHandler(async (req, res) => {
+  const { values } = req.body;
+  if (!values) return res.status(400).json({ error: "values required" });
+  sendSuccess(res, dsAlgorithmService.lisWithPath(values));
+}));
+router.post("/dp/tsp-bitmask", asyncHandler(async (req, res) => {
+  const { distances } = req.body;
+  if (!distances) return res.status(400).json({ error: "distances matrix required" });
+  sendSuccess(res, dsAlgorithmService.dpBitmaskTSP(distances));
+}));
+router.post("/dp/regex-match", asyncHandler(async (req, res) => {
+  const { text, pattern } = req.body;
+  if (!text || !pattern) return res.status(400).json({ error: "text and pattern required" });
+  sendSuccess(res, dsAlgorithmService.regexMatching(text, pattern));
+}));
+router.post("/dp/damerau-lev", asyncHandler(async (req, res) => {
+  const { a, b } = req.body;
+  if (!a || !b) return res.status(400).json({ error: "strings a and b required" });
+  sendSuccess(res, dsAlgorithmService.damerauLevenshtein(a, b));
+}));
+
+router.post("/ds/lru-cache-ops", asyncHandler(async (req, res) => {
+  const { capacity, operations } = req.body;
+  if (capacity === undefined || !operations) return res.status(400).json({ error: "capacity and operations required" });
+  sendSuccess(res, dsAlgorithmService.lruCacheOps(capacity, operations));
+}));
+router.post("/ds/bloom-filter-advanced", asyncHandler(async (req, res) => {
+  const { expectedElements, falsePositiveRate, items, checks } = req.body;
+  if (expectedElements === undefined || falsePositiveRate === undefined || !items || !checks)
+    return res.status(400).json({ error: "expectedElements, falsePositiveRate, items, checks required" });
+  sendSuccess(res, dsAlgorithmService.bloomFilterAdvanced(expectedElements, falsePositiveRate, items, checks));
+}));
+router.post("/ds/segment-tree-lazy", asyncHandler(async (req, res) => {
+  const { values, operations } = req.body;
+  if (!values || !operations) return res.status(400).json({ error: "values and operations required" });
+  sendSuccess(res, dsAlgorithmService.segmentTreeLazyPropagation(values, operations));
+}));
+router.post("/ds/deque-ops", asyncHandler(async (req, res) => {
+  const { initial, operations } = req.body;
+  if (!initial || !operations) return res.status(400).json({ error: "initial and operations required" });
+  sendSuccess(res, dsAlgorithmService.dequeOps(initial, operations));
+}));
+router.post("/ds/priority-queue", asyncHandler(async (req, res) => {
+  const { initial, operations } = req.body;
+  if (!initial || !operations) return res.status(400).json({ error: "initial and operations required" });
+  sendSuccess(res, dsAlgorithmService.priorityQueueOps(initial, operations));
+}));
+router.post("/ds/hash-map", asyncHandler(async (req, res) => {
+  const { capacity, operations } = req.body;
+  if (capacity === undefined || !operations) return res.status(400).json({ error: "capacity and operations required" });
+  sendSuccess(res, dsAlgorithmService.hashMapChaining(capacity, operations));
+}));
+router.post("/ds/circular-buffer", asyncHandler(async (req, res) => {
+  const { capacity, operations } = req.body;
+  if (capacity === undefined || !operations) return res.status(400).json({ error: "capacity and operations required" });
+  sendSuccess(res, dsAlgorithmService.circularBufferOps(capacity, operations));
+}));
+
+router.post("/marketing/exp3", asyncHandler(async (req, res) => {
+  const { variants, rewards, gamma } = req.body;
+  if (!variants || !rewards) return res.status(400).json({ error: "variants and rewards required" });
+  sendSuccess(res, dsAlgorithmService.exp3Bandit(variants, rewards, gamma || 0.1));
+}));
+router.post("/marketing/thompson-gaussian", asyncHandler(async (req, res) => {
+  const { variants, rewards, priorMean, priorVariance } = req.body;
+  if (!variants || !rewards) return res.status(400).json({ error: "variants and rewards required" });
+  sendSuccess(res, dsAlgorithmService.thompsonSamplingGaussian(variants, rewards, priorMean || 0, priorVariance || 1));
+}));
+router.post("/marketing/kaplan-meier", asyncHandler(async (req, res) => {
+  const { times, events } = req.body;
+  if (!times || !events) return res.status(400).json({ error: "times and events required" });
+  sendSuccess(res, dsAlgorithmService.kaplanMeierSurvival(times, events));
+}));
+router.post("/marketing/uplift", asyncHandler(async (req, res) => {
+  const { control, treatment } = req.body;
+  if (!control || !treatment) return res.status(400).json({ error: "control and treatment required" });
+  sendSuccess(res, dsAlgorithmService.upliftModeling(control, treatment));
+}));
+router.post("/marketing/causal-dml", asyncHandler(async (req, res) => {
+  const { treatment, outcome, covariates } = req.body;
+  if (!treatment || !outcome || !covariates) return res.status(400).json({ error: "treatment, outcome, covariates required" });
+  sendSuccess(res, dsAlgorithmService.causalInferenceDML(treatment, outcome, covariates));
+}));
+router.post("/marketing/optimal-transport", asyncHandler(async (req, res) => {
+  const { source, target, costMatrix, iterations, reg } = req.body;
+  if (!source || !target || !costMatrix) return res.status(400).json({ error: "source, target, costMatrix required" });
+  sendSuccess(res, dsAlgorithmService.sinkhornOptimalTransport(source, target, costMatrix, iterations || 10, reg || 0.1));
+}));
+router.post("/marketing/shapley-attr", asyncHandler(async (req, res) => {
+  const { channels, conversions, totalConversions } = req.body;
+  if (!channels || !conversions || !totalConversions) return res.status(400).json({ error: "channels, conversions, totalConversions required" });
+  sendSuccess(res, dsAlgorithmService.shapleyAttribution(channels, conversions, totalConversions));
+}));
+router.post("/marketing/brier-score", asyncHandler(async (req, res) => {
+  const { predictions } = req.body;
+  if (!predictions) return res.status(400).json({ error: "predictions required" });
+  sendSuccess(res, dsAlgorithmService.brierScoreCalibration(predictions));
+}));
+router.post("/marketing/funnel-analysis", asyncHandler(async (req, res) => {
+  const { stages, conversions } = req.body;
+  if (!stages || !conversions) return res.status(400).json({ error: "stages and conversions required" });
+  sendSuccess(res, dsAlgorithmService.funnelConversionAnalysis(stages, conversions));
+}));
+router.post("/marketing/response-surface", asyncHandler(async (req, res) => {
+  const { bids, impressions, conversions, revenue } = req.body;
+  if (!bids || !impressions || !conversions || !revenue) return res.status(400).json({ error: "bids, impressions, conversions, revenue required" });
+  sendSuccess(res, dsAlgorithmService.responseSurfaceBid(bids, impressions, conversions, revenue));
+}));
+
 export default router;

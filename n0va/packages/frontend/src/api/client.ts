@@ -1317,5 +1317,87 @@ export const api = {
       request<any>("/ds-algorithms/marketing/reach-frequency", { method: "POST", body: JSON.stringify(data) }),
     marketingMixModel: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/mmm", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 5 - Advanced DS
+    sparseTableRMQ: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/sparse-table-rmq", { method: "POST", body: JSON.stringify(data) }),
+    xorLinkedList: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/xor-linked-list", { method: "POST", body: JSON.stringify(data) }),
+    bit2d: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/bit-2d", { method: "POST", body: JSON.stringify(data) }),
+    cartesianTreeBuild: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/cartesian-tree-build", { method: "POST", body: JSON.stringify(data) }),
+    dsu: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/dsu", { method: "POST", body: JSON.stringify(data) }),
+    treapImplicit: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/treap-implicit", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 5 - Advanced Algorithms
+    minCostMaxFlow: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/min-cost-max-flow", { method: "POST", body: JSON.stringify(data) }),
+    bronKerbosch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/bron-kerbosch", { method: "POST", body: JSON.stringify(data) }),
+    mstCalc: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/mst", { method: "POST", body: JSON.stringify(data) }),
+    kosaraju: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/kosaraju", { method: "POST", body: JSON.stringify(data) }),
+    articulationPts: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/articulation-points", { method: "POST", body: JSON.stringify(data) }),
+    bipartiteMatch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/bipartite-matching", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 5 - String / DP
+    manacherAlgo: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/manacher-algo", { method: "POST", body: JSON.stringify(data) }),
+    zAlgo: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/z-algo", { method: "POST", body: JSON.stringify(data) }),
+    levenshteinDist: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/levenshtein-path", { method: "POST", body: JSON.stringify(data) }),
+    longestIS: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/lis-path", { method: "POST", body: JSON.stringify(data) }),
+    tspBitmask: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/tsp-bitmask", { method: "POST", body: JSON.stringify(data) }),
+    regexMatch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/regex-match", { method: "POST", body: JSON.stringify(data) }),
+    damerauLevenshtein: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/damerau-lev", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 5 - Enhanced Existing
+    lruCacheOps: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/lru-cache-ops", { method: "POST", body: JSON.stringify(data) }),
+    bloomFilterAdvanced: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/bloom-filter-advanced", { method: "POST", body: JSON.stringify(data) }),
+    segTreeLazy: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/segment-tree-lazy", { method: "POST", body: JSON.stringify(data) }),
+    deque: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/deque-ops", { method: "POST", body: JSON.stringify(data) }),
+    priorityQueue: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/priority-queue", { method: "POST", body: JSON.stringify(data) }),
+    hashMap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/hash-map", { method: "POST", body: JSON.stringify(data) }),
+    circularBuffer: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/circular-buffer", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 5 - Marketing Depth
+    exp3Bandit: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/exp3", { method: "POST", body: JSON.stringify(data) }),
+    thompsonGaussian: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/thompson-gaussian", { method: "POST", body: JSON.stringify(data) }),
+    kaplanMeier: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/kaplan-meier", { method: "POST", body: JSON.stringify(data) }),
+    upliftModeling: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/uplift", { method: "POST", body: JSON.stringify(data) }),
+    causalDml: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/causal-dml", { method: "POST", body: JSON.stringify(data) }),
+    optimalTransport: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/optimal-transport", { method: "POST", body: JSON.stringify(data) }),
+    shapleyAttribution: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/shapley-attr", { method: "POST", body: JSON.stringify(data) }),
+    brierScore: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/brier-score", { method: "POST", body: JSON.stringify(data) }),
+    funnelAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/funnel-analysis", { method: "POST", body: JSON.stringify(data) }),
+    responseSurface: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/response-surface", { method: "POST", body: JSON.stringify(data) }),
   },
 };
