@@ -1399,5 +1399,81 @@ export const api = {
       request<any>("/ds-algorithms/marketing/funnel-analysis", { method: "POST", body: JSON.stringify(data) }),
     responseSurface: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/response-surface", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 6 - Advanced DS
+    sqrtDecomposition: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/sqrt-decomposition", { method: "POST", body: JSON.stringify(data) }),
+    waveletTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/wavelet-tree", { method: "POST", body: JSON.stringify(data) }),
+    dancingLinks: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/dancing-links", { method: "POST", body: JSON.stringify(data) }),
+    linkCutTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/link-cut-tree", { method: "POST", body: JSON.stringify(data) }),
+    vanEmdeBoas: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/van-emde-boas", { method: "POST", body: JSON.stringify(data) }),
+    pairingHeap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/pairing-heap", { method: "POST", body: JSON.stringify(data) }),
+    intervalMapStabbing: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/interval-map-stabbing", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 6 - Advanced Algorithms
+    blossomMatching: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/blossom", { method: "POST", body: JSON.stringify(data) }),
+    gomoryHuTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/gomory-hu", { method: "POST", body: JSON.stringify(data) }),
+    fftMultiply: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/fft", { method: "POST", body: JSON.stringify(data) }),
+    kargerMinCut: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/karger", { method: "POST", body: JSON.stringify(data) }),
+    nQueens: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/n-queens", { method: "POST", body: JSON.stringify(data) }),
+    majorityElement: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/algo/majority-element", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 6 - String / DP
+    suffixAutomaton: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/suffix-automaton", { method: "POST", body: JSON.stringify(data) }),
+    lyndonFactorization: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/lyndon", { method: "POST", body: JSON.stringify(data) }),
+    runLengthEncoding: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/rle", { method: "POST", body: JSON.stringify(data) }),
+    soundexPhonetic: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/soundex", { method: "POST", body: JSON.stringify(data) }),
+    dpRodCutting: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/rod-cutting", { method: "POST", body: JSON.stringify(data) }),
+    dpOptimalBST: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/optimal-bst", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 6 - Enhanced Existing
+    multiSetBag: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/multi-set-bag", { method: "POST", body: JSON.stringify(data) }),
+    fenwickRangePoint: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/fenwick-range-point", { method: "POST", body: JSON.stringify(data) }),
+    unionBySize: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/union-by-size", { method: "POST", body: JSON.stringify(data) }),
+    binaryTrieXor: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ds/binary-trie-xor", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 6 - Marketing Depth
+    holtWinters: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/holt-winters", { method: "POST", body: JSON.stringify(data) }),
+    garchVolatility: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/garch", { method: "POST", body: JSON.stringify(data) }),
+    bayesianAB: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/bayesian-ab", { method: "POST", body: JSON.stringify(data) }),
+    confidenceInterval: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/confidence-interval", { method: "POST", body: JSON.stringify(data) }),
+    tTest: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/t-test", { method: "POST", body: JSON.stringify(data) }),
+    monteCarloCLV: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/monte-carlo-clv", { method: "POST", body: JSON.stringify(data) }),
+    adstock: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/adstock", { method: "POST", body: JSON.stringify(data) }),
+    efficientFrontier: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/efficient-frontier", { method: "POST", body: JSON.stringify(data) }),
+    mediaSaturation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/media-saturation", { method: "POST", body: JSON.stringify(data) }),
+    timeDecayAttr: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/time-decay-attr", { method: "POST", body: JSON.stringify(data) }),
   },
 };

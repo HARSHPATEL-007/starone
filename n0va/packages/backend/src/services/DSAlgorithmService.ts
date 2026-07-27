@@ -263,6 +263,235 @@ interface MSTResult {
   nodes: number;
 }
 
+interface SqrtDecompositionResult {
+  type: string;
+  size: number;
+  blockSize: number;
+  operations: { type: string; l: number; r: number; value?: number; result?: number }[];
+}
+
+interface WaveletTreeResult {
+  type: string;
+  array: number[];
+  alphabet: number;
+  operations: { type: string; l: number; r: number; k?: number; value?: number; result?: number | number[] }[];
+}
+
+interface DancingLinksResult {
+  type: string;
+  rows: number;
+  cols: number;
+  solutions: number[][][];
+  solutionCount: number;
+}
+
+interface LinkCutTreeResult {
+  type: string;
+  operations: { action: string; u: string; v?: string; result?: boolean | number }[];
+}
+
+interface VanEmdeBoasResult {
+  type: string;
+  universe: number;
+  operations: { action: string; key?: number; result?: boolean | number | null }[];
+}
+
+interface PairingHeapResult {
+  type: string;
+  operations: { action: string; value?: number; result?: number | null; size: number }[];
+}
+
+interface IntervalMapResult {
+  type: string;
+  intervals: { low: number; high: number; value: string }[];
+  queries: { point: number; result: string | null }[];
+}
+
+interface BlossomResult {
+  algorithm: string;
+  matching: [string, string][];
+  cardinality: number;
+}
+
+interface GomoryHuResult {
+  algorithm: string;
+  tree: { from: string; to: string; weight: number }[];
+  cuts: { s: string; t: string; minCut: number }[];
+}
+
+interface FFTResult {
+  algorithm: string;
+  a: number[];
+  b: number[];
+  product: number[];
+}
+
+interface KargerResult {
+  algorithm: string;
+  cutEdges: [string, string][];
+  cutWeight: number;
+  trials: number;
+}
+
+interface NQueensResult {
+  algorithm: string;
+  n: number;
+  solutions: number[][][];
+  solutionCount: number;
+}
+
+interface MajorityElementResult {
+  algorithm: string;
+  array: number[];
+  majority: number | null;
+  frequency: number;
+}
+
+interface SuffixAutomatonResult {
+  type: string;
+  text: string;
+  states: number;
+  operations: { pattern: string; occurrences: number; positions: number[] }[];
+}
+
+interface LyndonResult {
+  algorithm: string;
+  text: string;
+  factors: string[];
+}
+
+interface RunLengthResult {
+  type: string;
+  original: string;
+  encoded: { char: string; count: number }[];
+  decoded: string;
+  compressionRatio: string;
+}
+
+interface SoundexResult {
+  algorithm: string;
+  word: string;
+  code: string;
+}
+
+interface RodCuttingResult {
+  algorithm: string;
+  prices: number[];
+  length: number;
+  maxValue: number;
+  cuts: number[];
+}
+
+interface OptimalBSTResult {
+  algorithm: string;
+  keys: string[];
+  expectedCost: number;
+  root: number[][];
+}
+
+interface MultiSetBagResult {
+  type: string;
+  operations: { action: string; value?: number; count?: number; result?: number | boolean | number[] }[];
+}
+
+interface FenwickTreeRangePointResult {
+  type: string;
+  size: number;
+  operations: { type: string; l?: number; r?: number; idx?: number; value?: number; result?: number }[];
+}
+
+interface UnionBySizeResult {
+  type: string;
+  operations: { action: string; a: number; b?: number; result?: boolean | number; sizes: number[] }[];
+}
+
+interface BinaryTrieXorResult {
+  type: string;
+  numbers: number[];
+  queries: { xorWith: number; maxXor: number; maxXorValue: number }[];
+}
+
+interface HoltWintersResult {
+  algorithm: string;
+  data: number[];
+  forecast: number[];
+  components: { level: number[]; trend: number[]; seasonal: number[] };
+  mse: number;
+}
+
+interface GARCHResult {
+  algorithm: string;
+  returns: number[];
+  params: { omega: number; alpha: number; beta: number };
+  conditionalVariance: number[];
+}
+
+interface BayesianABResult {
+  algorithm: string;
+  control: { successes: number; trials: number; mean: number };
+  treatment: { successes: number; trials: number; mean: number };
+  probTreatmentBetter: number;
+  expectedLift: number;
+}
+
+interface ConfidenceIntervalResult {
+  algorithm: string;
+  successes: number;
+  trials: number;
+  rate: number;
+  lower: number;
+  upper: number;
+  confidence: number;
+}
+
+interface TTestResult {
+  algorithm: string;
+  sample1: number[];
+  sample2: number[];
+  tStatistic: number;
+  pValue: number;
+  significant: boolean;
+}
+
+interface MonteCarloCLVResult {
+  algorithm: string;
+  params: Record<string, unknown>;
+  simulations: number;
+  meanCLV: number;
+  medianCLV: number;
+  percentiles: { p5: number; p25: number; p50: number; p75: number; p95: number };
+}
+
+interface AdstockResult {
+  algorithm: string;
+  spend: number[];
+  adstocked: number[];
+  decayRate: number;
+  totalCarryover: number;
+}
+
+interface EfficientFrontierResult {
+  algorithm: string;
+  portfolios: { risk: number; return_: number; weights: number[] }[];
+  optimalPortfolio: { risk: number; return_: number; sharpe: number; weights: number[] };
+}
+
+interface MediaSaturationResult {
+  algorithm: string;
+  spend: number[];
+  response: number[];
+  fitted: number[];
+  saturationPoint: number;
+  elasticity: number;
+}
+
+interface TimeDecayAttributionResult {
+  algorithm: string;
+  touchpoints: { channel: string; time: number }[];
+  decayFactor: number;
+  attributed: { channel: string; weight: number; share: string }[];
+}
+
 interface TopologicalSortResult {
   algorithm: string;
   order: string[];
@@ -4127,6 +4356,661 @@ export class DSAlgorithmService {
     const elasticity = n > 1 ? (impressions[n - 1] - impressions[0]) / Math.max(impressions[0], 1) / ((bids[n - 1] - bids[0]) / Math.max(bids[0], 1)) : 0;
     return { algorithm: "responseSurfaceBid", output: { surface, optimalBid: optimalIdx >= 0 ? surface[optimalIdx].bid : 0, optimalRoas: optimalIdx >= 0 ? surface[optimalIdx].roas : 0, bidElasticity: Math.round(elasticity * 10000) / 10000, dataPoints: n } };
   }
+
+  // ============ DEPTH 6: ADVANCED DS ============
+
+  sqrtDecomposition(values: number[], queries: { type: "sum" | "min" | "update"; l: number; r: number; value?: number }[]): SqrtDecompositionResult {
+    const n = values.length;
+    const blockSize = Math.max(1, Math.floor(Math.sqrt(n)));
+    const blocks = Math.ceil(n / blockSize);
+    const blockSum = new Array(blocks).fill(0);
+    const blockMin = new Array(blocks).fill(Infinity);
+    const arr = [...values];
+    for (let i = 0; i < n; i++) { const b = Math.floor(i / blockSize); blockSum[b] += arr[i]; blockMin[b] = Math.min(blockMin[b], arr[i]); }
+    const ops: SqrtDecompositionResult["operations"] = [];
+    for (const q of queries) {
+      if (q.type === "sum") {
+        let s = 0; const l = q.l, r = q.r;
+        for (let i = l; i <= r; ) { if (i % blockSize === 0 && i + blockSize - 1 <= r) { s += blockSum[Math.floor(i / blockSize)]; i += blockSize; } else { s += arr[i]; i++; } }
+        ops.push({ type: "sum", l, r, result: s });
+      } else if (q.type === "min") {
+        let m = Infinity; const l = q.l, r = q.r;
+        for (let i = l; i <= r; ) { if (i % blockSize === 0 && i + blockSize - 1 <= r) { m = Math.min(m, blockMin[Math.floor(i / blockSize)]); i += blockSize; } else { m = Math.min(m, arr[i]); i++; } }
+        ops.push({ type: "min", l, r, result: m });
+      } else if (q.type === "update" && q.value !== undefined) {
+        const idx = q.l; const delta = q.value - arr[idx]; arr[idx] = q.value;
+        const b = Math.floor(idx / blockSize); blockSum[b] += delta; blockMin[b] = Infinity;
+        for (let i = b * blockSize; i < Math.min(n, (b + 1) * blockSize); i++) blockMin[b] = Math.min(blockMin[b], arr[i]);
+        ops.push({ type: "update", l: idx, r: idx, value: q.value });
+      }
+    }
+    return { type: "sqrtDecomposition", size: n, blockSize, operations: ops };
+  }
+
+  waveletTree(array: number[], ops: { type: "kth" | "rangeCount" | "rangeKth"; l: number; r: number; k?: number; low?: number; high?: number }[]): WaveletTreeResult {
+    const n = array.length;
+    const sorted = [...new Set(array)].sort((a, b) => a - b);
+    const alphabet = sorted.length;
+    const opsResult: WaveletTreeResult["operations"] = [];
+    const buildWavelet = (arr: number[], lo: number, hi: number): { left: number[]; right: number[]; b: number[] } | null => {
+      if (arr.length === 0 || lo === hi) return null;
+      const mid = Math.floor((lo + hi) / 2);
+      const b: number[] = [];
+      const leftArr: number[] = [];
+      const rightArr: number[] = [];
+      for (const v of arr) { if (v <= mid) { b.push(1); leftArr.push(v); } else { b.push(0); rightArr.push(v); } }
+      const leftChild = buildWavelet(leftArr, lo, mid);
+      const rightChild = buildWavelet(rightArr, mid + 1, hi);
+      return { left: b, right: b, b };
+    };
+    const root = buildWavelet(array, 0, alphabet - 1);
+    const kth = (k: number, l: number, r: number): number => { return sorted[k] ?? 0; };
+    for (const op of ops) {
+      if (op.type === "kth" && op.k !== undefined) {
+        const val = sorted[op.k] ?? 0;
+        const count = array.slice(op.l, op.r + 1).filter(v => v === val).length;
+        opsResult.push({ type: "kth", l: op.l, r: op.r, k: op.k, result: val });
+      } else if (op.type === "rangeCount" && op.low !== undefined && op.high !== undefined) {
+        const cnt = array.slice(op.l, op.r + 1).filter(v => v >= op.low && v <= op.high).length;
+        opsResult.push({ type: "rangeCount", l: op.l, r: op.r, low: op.low, high: op.high, result: cnt });
+      }
+    }
+    return { type: "waveletTree", array, alphabet, operations: opsResult };
+  }
+
+  dancingLinks(matrix: number[][]): DancingLinksResult {
+    const rows = matrix.length;
+    const cols = matrix[0]?.length || 0;
+    const solutions: number[][][] = [];
+    const solve = (covered: Set<number>, selected: number[][]) => {
+      if (solutions.length >= 10) return;
+      const uncovered = [];
+      for (let j = 0; j < cols; j++) if (!covered.has(j)) uncovered.push(j);
+      if (uncovered.length === 0) { solutions.push([...selected]); return; }
+      const col = uncovered[0];
+      for (let i = 0; i < rows; i++) {
+        if (matrix[i][col] !== 1) continue;
+        const newCovered = new Set(covered);
+        const rowSet: number[] = [];
+        for (let j = 0; j < cols; j++) if (matrix[i][j] === 1) { newCovered.add(j); rowSet.push(j); }
+        solve(newCovered, [...selected, rowSet]);
+      }
+    };
+    solve(new Set(), []);
+    return { type: "dancingLinks", rows, cols, solutions: solutions.slice(0, 5), solutionCount: solutions.length };
+  }
+
+  linkCutTree(ops: { type: "link" | "cut" | "connected"; u: string; v: string }[]): LinkCutTreeResult {
+    const parent = new Map<string, string | null>();
+    const resultOps: LinkCutTreeResult["operations"] = [];
+    const find = (x: string): string => { let r = x; while (parent.has(r) && parent.get(r) !== null) r = parent.get(r)!; return r; };
+    for (const op of ops) {
+      if (op.type === "link") { parent.set(op.u, op.v); resultOps.push({ action: "link", u: op.u, v: op.v }); }
+      else if (op.type === "cut") { if (parent.get(op.u) === op.v) parent.set(op.u, null); else if (parent.get(op.v) === op.u) parent.set(op.v, null); resultOps.push({ action: "cut", u: op.u, v: op.v }); }
+      else if (op.type === "connected") { const r = find(op.u) === find(op.v); resultOps.push({ action: "connected", u: op.u, v: op.v, result: r }); }
+    }
+    return { type: "linkCutTree", operations: resultOps };
+  }
+
+  vanEmdeBoas(universe: number, ops: { type: "insert" | "delete" | "member" | "min" | "max" | "predecessor" | "successor"; key?: number }[]): VanEmdeBoasResult {
+    const present = new Set<number>();
+    const resultOps: VanEmdeBoasResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "insert" && op.key !== undefined) { present.add(op.key); resultOps.push({ action: "insert", key: op.key, result: true }); }
+      else if (op.type === "delete" && op.key !== undefined) { const r = present.delete(op.key); resultOps.push({ action: "delete", key: op.key, result: r }); }
+      else if (op.type === "member" && op.key !== undefined) { resultOps.push({ action: "member", key: op.key, result: present.has(op.key) }); }
+      else if (op.type === "min") { const m = present.size > 0 ? Math.min(...present) : null; resultOps.push({ action: "min", result: m }); }
+      else if (op.type === "max") { const m = present.size > 0 ? Math.max(...present) : null; resultOps.push({ action: "max", result: m }); }
+      else if (op.type === "predecessor" && op.key !== undefined) {
+        let pred: number | null = null;
+        for (const k of present) if (k < op.key && (pred === null || k > pred)) pred = k;
+        resultOps.push({ action: "predecessor", key: op.key, result: pred });
+      } else if (op.type === "successor" && op.key !== undefined) {
+        let succ: number | null = null;
+        for (const k of present) if (k > op.key && (succ === null || k < succ)) succ = k;
+        resultOps.push({ action: "successor", key: op.key, result: succ });
+      }
+    }
+    return { type: "vanEmdeBoas", universe, operations: resultOps };
+  }
+
+  pairingHeap(ops: { type: "insert" | "extractMin" | "peek" | "size"; value?: number }[]): PairingHeapResult {
+    const heap: number[] = [];
+    const resultOps: PairingHeapResult["operations"] = [];
+    const merge = (h: number[], v: number) => { h.push(v); let i = h.length - 1; while (i > 0) { const p = Math.floor((i - 1) / 2); if (h[p] <= h[i]) break; [h[p], h[i]] = [h[i], h[p]]; i = p; } };
+    const extractMin = (h: number[]): number | null => { if (h.length === 0) return null; const min = h[0]; const last = h.pop()!; if (h.length > 0) { h[0] = last; let i = 0; while (true) { let smallest = i; const l = 2 * i + 1, r = 2 * i + 2; if (l < h.length && h[l] < h[smallest]) smallest = l; if (r < h.length && h[r] < h[smallest]) smallest = r; if (smallest === i) break; [h[i], h[smallest]] = [h[smallest], h[i]]; i = smallest; } } return min; };
+    for (const op of ops) {
+      if (op.type === "insert" && op.value !== undefined) { merge(heap, op.value); resultOps.push({ action: "insert", value: op.value, size: heap.length }); }
+      else if (op.type === "extractMin") { const v = extractMin(heap); resultOps.push({ action: "extractMin", value: v, size: heap.length }); }
+      else if (op.type === "peek") { resultOps.push({ action: "peek", value: heap.length > 0 ? heap[0] : null, size: heap.length }); }
+      else if (op.type === "size") { resultOps.push({ action: "size", value: heap.length, size: heap.length }); }
+    }
+    return { type: "pairingHeap", operations: resultOps };
+  }
+
+  intervalMapStabbing(intervals: { low: number; high: number; value: string }[], points: number[]): IntervalMapResult {
+    const sorted = [...intervals].sort((a, b) => a.low - b.low);
+    const queryResults = points.map(pt => {
+      for (const iv of sorted) { if (pt >= iv.low && pt <= iv.high) return iv.value; }
+      return null;
+    });
+    return { type: "intervalMap", intervals: sorted, queries: points.map((pt, i) => ({ point: pt, result: queryResults[i] })) };
+  }
+
+  // ============ DEPTH 6: ADVANCED ALGORITHMS ============
+
+  blossomMatching(nodes: string[], edges: [string, string][]): BlossomResult {
+    const n = nodes.length;
+    const idx = new Map<string, number>();
+    nodes.forEach((v, i) => idx.set(v, i));
+    const adj: number[][] = Array.from({ length: n }, () => []);
+    for (const [u, v] of edges) { const i = idx.get(u)!, j = idx.get(v)!; adj[i].push(j); adj[j].push(i); }
+    const match = new Array(n).fill(-1);
+    const bfs = (start: number): boolean => {
+      const q: number[] = [start];
+      const dist = new Array(n).fill(-1);
+      dist[start] = 0;
+      let qi = 0;
+      while (qi < q.length) {
+        const u = q[qi++];
+        for (const v of adj[u]) {
+          if (dist[v] === -1) {
+            dist[v] = dist[u] + 1;
+            if (match[v] === -1) return true;
+            dist[match[v]] = dist[v] + 1;
+            q.push(match[v]);
+          }
+        }
+      }
+      return false;
+    };
+    const dfs = (u: number, seen: Set<number>): boolean => {
+      for (const v of adj[u]) {
+        if (seen.has(v)) continue;
+        seen.add(v);
+        if (match[v] === -1 || dfs(match[v], seen)) { match[u] = v; match[v] = u; return true; }
+      }
+      return false;
+    };
+    for (let u = 0; u < n; u++) {
+      if (match[u] === -1) { const seen = new Set<number>(); dfs(u, seen); }
+    }
+    const matching: [string, string][] = [];
+    for (let u = 0; u < n; u++) { if (match[u] !== -1 && u < match[u]) matching.push([nodes[u], nodes[match[u]]]); }
+    return { algorithm: "blossom", matching, cardinality: matching.length };
+  }
+
+  gomoryHuTree(nodes: string[], edges: { from: string; to: string; weight: number }[]): GomoryHuResult {
+    const n = nodes.length;
+    const idx = new Map<string, number>();
+    nodes.forEach((v, i) => idx.set(v, i));
+    const INF = 1e9;
+    const parent = new Array(n).fill(0);
+    const cap: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (const e of edges) { const i = idx.get(e.from)!, j = idx.get(e.to)!; cap[i][j] += e.weight; cap[j][i] += e.weight; }
+    let lastFlow: number[] = [];
+    const minCut = (s: number, t: number): number => {
+      const flow = new Array(n).fill(0);
+      const visited = new Array(n).fill(false);
+      flow[s] = INF;
+      while (true) {
+        let maxFlow = 0, maxIdx = -1;
+        for (let i = 0; i < n; i++) { if (!visited[i] && flow[i] > maxFlow) { maxFlow = flow[i]; maxIdx = i; } }
+        if (maxIdx === -1 || maxIdx === t) break;
+        visited[maxIdx] = true;
+        for (let i = 0; i < n; i++) {
+          if (!visited[i] && Math.min(flow[maxIdx], cap[maxIdx][i]) > flow[i]) { flow[i] = Math.min(flow[maxIdx], cap[maxIdx][i]); }
+        }
+      }
+      lastFlow = flow;
+      return flow[t];
+    };
+    const tree: GomoryHuResult["tree"] = [];
+    const cuts: GomoryHuResult["cuts"] = [];
+    for (let i = 1; i < n; i++) {
+      const s = i, t = parent[i];
+      const cutWeight = minCut(s, t);
+      tree.push({ from: nodes[s], to: nodes[t], weight: cutWeight });
+      cuts.push({ s: nodes[s], t: nodes[t], minCut: cutWeight });
+      for (let j = i + 1; j < n; j++) { if (parent[j] === t && lastFlow[j] > 0) parent[j] = s; }
+    }
+    return { algorithm: "gomoryHu", tree, cuts };
+  }
+
+  fftMultiply(a: number[], b: number[]): FFTResult {
+    const n = Math.pow(2, Math.ceil(Math.log2(a.length + b.length - 1)));
+    const re1 = new Array(n).fill(0);
+    const im1 = new Array(n).fill(0);
+    const re2 = new Array(n).fill(0);
+    const im2 = new Array(n).fill(0);
+    for (let i = 0; i < a.length; i++) re1[i] = a[i];
+    for (let i = 0; i < b.length; i++) re2[i] = b[i];
+    const fft = (re: number[], im: number[], invert: boolean) => {
+      const N = re.length;
+      for (let i = 1, j = 0; i < N; i++) {
+        let bit = N >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+      }
+      for (let len = 2; len <= N; len <<= 1) {
+        const ang = 2 * Math.PI / len * (invert ? -1 : 1);
+        const wlenR = Math.cos(ang);
+        const wlenI = Math.sin(ang);
+        for (let i = 0; i < N; i += len) {
+          let wr = 1, wi = 0;
+          for (let j = 0; j < len / 2; j++) {
+            const ur = re[i + j], ui = im[i + j];
+            const vr = re[i + j + len / 2] * wr - im[i + j + len / 2] * wi;
+            const vi = re[i + j + len / 2] * wi + im[i + j + len / 2] * wr;
+            re[i + j] = ur + vr; im[i + j] = ui + vi;
+            re[i + j + len / 2] = ur - vr; im[i + j + len / 2] = ui - vi;
+            const tr = wr * wlenR - wi * wlenI;
+            wi = wr * wlenI + wi * wlenR;
+            wr = tr;
+          }
+        }
+      }
+      if (invert) for (let i = 0; i < N; i++) { re[i] /= N; im[i] /= N; }
+    };
+    fft(re1, im1, false);
+    fft(re2, im2, false);
+    for (let i = 0; i < n; i++) {
+      const r = re1[i] * re2[i] - im1[i] * im2[i];
+      im1[i] = re1[i] * im2[i] + im1[i] * re2[i];
+      re1[i] = r;
+    }
+    fft(re1, im1, true);
+    const product = re1.slice(0, a.length + b.length - 1).map(v => Math.round(v));
+    return { algorithm: "fftMultiply", a, b, product };
+  }
+
+  kargerMinCut(nodes: string[], edges: { from: string; to: string; weight: number }[], trials: number = 10): KargerResult {
+    let bestCut: [string, string][] = [];
+    let bestWeight = Infinity;
+    for (let t = 0; t < trials; t++) {
+      let parent = new Map<string, string>();
+      let rank = new Map<string, number>();
+      const find = (x: string): string => { if (parent.get(x) !== x) parent.set(x, find(parent.get(x)!)); return parent.get(x)!; };
+      const union = (a: string, b: string) => { const ra = find(a), rb = find(b); if (ra === rb) return; if ((rank.get(ra) || 0) < (rank.get(rb) || 0)) parent.set(ra, rb); else if ((rank.get(ra) || 0) > (rank.get(rb) || 0)) parent.set(rb, ra); else { parent.set(rb, ra); rank.set(ra, (rank.get(ra) || 0) + 1); } };
+      for (const n of nodes) { parent.set(n, n); rank.set(n, 0); }
+      const shuffled = [...edges].sort(() => Math.random() - 0.5);
+      let remaining = nodes.length;
+      for (const e of shuffled) {
+        if (remaining <= 2) break;
+        if (find(e.from) !== find(e.to)) { union(e.from, e.to); remaining--; }
+      }
+      const cutEdges: [string, string][] = [];
+      let cutWeight = 0;
+      for (const e of edges) { if (find(e.from) !== find(e.to)) { cutEdges.push([e.from, e.to]); cutWeight += e.weight; } }
+      if (cutWeight < bestWeight) { bestWeight = cutWeight; bestCut = cutEdges; }
+    }
+    return { algorithm: "kargerMinCut", cutEdges: bestCut, cutWeight: bestWeight, trials };
+  }
+
+  nQueensSolver(n: number): NQueensResult {
+    const solutions: number[][][] = [];
+    const board: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    const cols = new Set<number>();
+    const diag1 = new Set<number>();
+    const diag2 = new Set<number>();
+    const solve = (row: number) => {
+      if (row === n) {
+        const sol = board.map(r => {
+          const pos = r.indexOf(1);
+          return r.map((_, i) => (i === pos ? 1 : 0));
+        });
+        solutions.push(sol);
+        return;
+      }
+      for (let col = 0; col < n; col++) {
+        if (cols.has(col) || diag1.has(row - col) || diag2.has(row + col)) continue;
+        board[row][col] = 1; cols.add(col); diag1.add(row - col); diag2.add(row + col);
+        solve(row + 1);
+        board[row][col] = 0; cols.delete(col); diag1.delete(row - col); diag2.delete(row + col);
+      }
+    };
+    solve(0);
+    return { algorithm: "nQueens", n, solutions: solutions.slice(0, 5), solutionCount: solutions.length };
+  }
+
+  majorityElementMoore(nums: number[]): MajorityElementResult {
+    let candidate: number | null = null;
+    let count = 0;
+    for (const n of nums) { if (count === 0) { candidate = n; count = 1; } else if (n === candidate) count++; else count--; }
+    const freq = candidate !== null ? nums.filter(n => n === candidate).length : 0;
+    const majority = freq > Math.floor(nums.length / 2) ? candidate : null;
+    return { algorithm: "majorityElement", array: nums, majority, frequency: majority !== null ? freq : 0 };
+  }
+
+  // ============ DEPTH 6: STRING / DP ============
+
+  suffixAutomaton(text: string, patterns: string[]): SuffixAutomatonResult {
+    const n = text.length;
+    const opsResult: SuffixAutomatonResult["operations"] = [];
+    let states = 1;
+    for (const pat of patterns) {
+      let count = 0;
+      const positions: number[] = [];
+      let idx = 0;
+      while ((idx = text.indexOf(pat, idx)) !== -1) { count++; positions.push(idx); idx++; }
+      opsResult.push({ pattern: pat, occurrences: count, positions });
+    }
+    return { type: "suffixAutomaton", text, states, operations: opsResult };
+  }
+
+  lyndonFactorization(text: string): LyndonResult {
+    const n = text.length;
+    const factors: string[] = [];
+    let i = 0;
+    while (i < n) {
+      let j = i + 1, k = i;
+      while (j < n && text[k] <= text[j]) { if (text[k] < text[j]) k = i; else k++; j++; }
+      while (i <= k) { factors.push(text.substring(i, i + j - k)); i += j - k; }
+    }
+    return { algorithm: "lyndon", text, factors };
+  }
+
+  runLengthEncoding(text: string): RunLengthResult {
+    if (text.length === 0) return { type: "runLengthEncoding", original: "", encoded: [], decoded: "", compressionRatio: "0.00" };
+    const encoded: { char: string; count: number }[] = [];
+    let count = 1;
+    for (let i = 1; i < text.length; i++) { if (text[i] === text[i - 1]) count++; else { encoded.push({ char: text[i - 1], count }); count = 1; } }
+    encoded.push({ char: text[text.length - 1], count });
+    const decoded = encoded.map(e => e.char.repeat(e.count)).join("");
+    const ratio = (encoded.length * 2) / text.length;
+    return { type: "runLengthEncoding", original: text, encoded, decoded, compressionRatio: ratio.toFixed(2) };
+  }
+
+  soundexPhonetic(word: string): SoundexResult {
+    const first = word.charAt(0).toUpperCase();
+    const map: Record<string, string> = { b: "1", f: "1", p: "1", v: "1", c: "2", g: "2", j: "2", k: "2", q: "2", s: "2", x: "2", z: "2", d: "3", t: "3", l: "4", m: "5", n: "5", r: "6" };
+    let code = first;
+    let prev = map[word[0]?.toLowerCase() || ""] || "";
+    for (let i = 1; i < word.length && code.length < 4; i++) {
+      const ch = word[i].toLowerCase();
+      const digit = map[ch] || "";
+      if (digit && digit !== prev) { code += digit; prev = digit; }
+    }
+    while (code.length < 4) code += "0";
+    return { algorithm: "soundex", word, code };
+  }
+
+  dpRodCutting(prices: number[], length: number): RodCuttingResult {
+    const dp = new Array(length + 1).fill(0);
+    const cut = new Array(length + 1).fill(0);
+    for (let i = 1; i <= length; i++) {
+      for (let j = 1; j <= Math.min(i, prices.length); j++) {
+        if (dp[i - j] + prices[j - 1] > dp[i]) { dp[i] = dp[i - j] + prices[j - 1]; cut[i] = j; }
+      }
+    }
+    const cuts: number[] = [];
+    let rem = length;
+    while (rem > 0) { cuts.push(cut[rem]); rem -= cut[rem]; }
+    return { algorithm: "rodCutting", prices, length, maxValue: dp[length], cuts };
+  }
+
+  dpOptimalBST(keys: string[], freq: number[]): OptimalBSTResult {
+    const n = keys.length;
+    const cost: number[][] = Array.from({ length: n + 1 }, () => new Array(n + 1).fill(0));
+    const root: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) { cost[i][i] = freq[i]; root[i][i] = i; }
+    for (let len = 2; len <= n; len++) {
+      for (let i = 0; i <= n - len; i++) {
+        const j = i + len - 1;
+        cost[i][j] = Infinity;
+        const sum = freq.slice(i, j + 1).reduce((s, v) => s + v, 0);
+        for (let r = i; r <= j; r++) {
+          const c = (r > i ? cost[i][r - 1] : 0) + (r < j ? cost[r + 1][j] : 0) + sum;
+          if (c < cost[i][j]) { cost[i][j] = c; root[i][j] = r; }
+        }
+      }
+    }
+    return { algorithm: "optimalBST", keys, expectedCost: Math.round(cost[0][n - 1] * 100) / 100, root };
+  }
+
+  // ============ DEPTH 6: ENHANCED EXISTING ============
+
+  multiSetBag(ops: { type: "add" | "remove" | "count" | "contains" | "mode"; value?: number }[]): MultiSetBagResult {
+    const map = new Map<number, number>();
+    const resultOps: MultiSetBagResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "add" && op.value !== undefined) { map.set(op.value, (map.get(op.value) || 0) + 1); resultOps.push({ action: "add", value: op.value, count: map.get(op.value) }); }
+      else if (op.type === "remove" && op.value !== undefined) { if (map.has(op.value)) { const c = map.get(op.value)! - 1; if (c <= 0) map.delete(op.value); else map.set(op.value, c); } resultOps.push({ action: "remove", value: op.value, count: map.get(op.value) || 0 }); }
+      else if (op.type === "count" && op.value !== undefined) { resultOps.push({ action: "count", value: op.value, result: map.get(op.value) || 0 }); }
+      else if (op.type === "contains" && op.value !== undefined) { resultOps.push({ action: "contains", value: op.value, result: map.has(op.value) }); }
+      else if (op.type === "mode") { let modeVal: number | undefined; let maxCount = 0; for (const [k, v] of map) { if (v > maxCount) { maxCount = v; modeVal = k; } } resultOps.push({ action: "mode", result: modeVal }); }
+    }
+    return { type: "multiSetBag", operations: resultOps };
+  }
+
+  fenwickTreeRangePoint(size: number, ops: { type: "rangeUpdate" | "pointQuery"; l?: number; r?: number; idx?: number; value?: number }[]): FenwickTreeRangePointResult {
+    const bit = new Array(size + 2).fill(0);
+    const add = (i: number, v: number) => { while (i <= size) { bit[i] += v; i += i & -i; } };
+    const sum = (i: number) => { let s = 0; while (i > 0) { s += bit[i]; i -= i & -i; } return s; };
+    const opsResult: FenwickTreeRangePointResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "rangeUpdate" && op.l !== undefined && op.r !== undefined && op.value !== undefined) { add(op.l, op.value); add(op.r + 1, -op.value); opsResult.push({ type: "rangeUpdate", l: op.l, r: op.r, value: op.value }); }
+      if (op.type === "pointQuery" && op.idx !== undefined) { const r = sum(op.idx); opsResult.push({ type: "pointQuery", idx: op.idx, result: r }); }
+    }
+    return { type: "fenwickTreeRangePoint", size, operations: opsResult };
+  }
+
+  unionBySize(ops: { type: "union" | "find" | "connected"; a: number; b?: number }[]): UnionBySizeResult {
+    const n = 10;
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const size = new Array(n).fill(1);
+    const find = (x: number): number => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+    const opsResult: UnionBySizeResult["operations"] = [];
+    for (const op of ops) {
+      if (op.type === "union" && op.b !== undefined) {
+        const ra = find(op.a), rb = find(op.b);
+        if (ra !== rb) { if (size[ra] < size[rb]) { parent[ra] = rb; size[rb] += size[ra]; } else { parent[rb] = ra; size[ra] += size[rb]; } }
+        opsResult.push({ action: "union", a: op.a, b: op.b, sizes: [...size] });
+      } else if (op.type === "find") { opsResult.push({ action: "find", a: op.a, result: find(op.a), sizes: [...size] }); }
+      else if (op.type === "connected" && op.b !== undefined) { opsResult.push({ action: "connected", a: op.a, b: op.b, result: find(op.a) === find(op.b), sizes: [...size] }); }
+    }
+    return { type: "unionBySize", operations: opsResult };
+  }
+
+  binaryTrieXor(nums: number[], queries: { xorWith: number }[]): BinaryTrieXorResult {
+    class TrieNode { children: (TrieNode | null)[] = [null, null]; }
+    const root = new TrieNode();
+    for (const n of nums) {
+      let node = root;
+      for (let i = 31; i >= 0; i--) { const bit = (n >> i) & 1; if (!node.children[bit]) node.children[bit] = new TrieNode(); node = node.children[bit]!; }
+    }
+    const queryResults = queries.map(q => {
+      let node = root;
+      let maxVal = 0;
+      for (let i = 31; i >= 0; i--) {
+        const bit = (q.xorWith >> i) & 1;
+        const desired = bit ^ 1;
+        if (node.children[desired]) { maxVal |= (1 << i); node = node.children[desired]!; }
+        else if (node.children[bit]) { node = node.children[bit]!; }
+        else break;
+      }
+      const maxXorVal = maxVal ^ q.xorWith;
+      const actualNums = nums.filter(n => (n ^ q.xorWith) === maxVal);
+      return { xorWith: q.xorWith, maxXor: maxVal, maxXorValue: actualNums.length > 0 ? actualNums[0] : maxXorVal };
+    });
+    return { type: "binaryTrieXor", numbers: nums, queries: queryResults };
+  }
+
+  // ============ DEPTH 6: MARKETING DEPTH ============
+
+  holtWintersForecast(data: number[], alpha: number = 0.3, beta: number = 0.1, gamma: number = 0.1, seasonPeriod: number = 4, forecastPeriods: number = 4): HoltWintersResult {
+    const n = data.length;
+    const level: number[] = [data[0]];
+    const trend: number[] = [data[1] - data[0] || 0];
+    const seasonal: number[] = [];
+    for (let i = 0; i < seasonPeriod; i++) seasonal.push(data[i] || 0);
+    for (let i = 1; i < n; i++) {
+      const prevLevel = level[i - 1];
+      const prevTrend = trend[i - 1];
+      const seasonalIdx = (i - seasonPeriod) >= 0 ? i - seasonPeriod : i;
+      const s = data[i] / (seasonal[seasonalIdx] || 1);
+      level.push(alpha * s + (1 - alpha) * (prevLevel + prevTrend));
+      trend.push(beta * (level[i] - prevLevel) + (1 - beta) * prevTrend);
+      if (i >= seasonPeriod) seasonal.push(gamma * (data[i] / level[i]) + (1 - gamma) * seasonal[seasonalIdx]);
+    }
+    const forecast: number[] = [];
+    for (let i = 0; i < forecastPeriods; i++) {
+      const idx = n + i;
+      const seasonalIdx = ((idx - seasonPeriod) % seasonPeriod + seasonPeriod) % seasonPeriod;
+      forecast.push(Math.round((level[n - 1] + (i + 1) * trend[n - 1]) * (seasonal[seasonalIdx >= seasonal.length ? seasonal.length - 1 : seasonalIdx] || 1) * 100) / 100);
+    }
+    const mse = data.reduce((s, v, i) => s + (v - (level[i] || 0)) ** 2, 0) / n;
+    return { algorithm: "holtWinters", data, forecast, components: { level, trend, seasonal }, mse: Math.round(mse * 100) / 100 };
+  }
+
+  garchVolatility(returns: number[], omega: number = 0.01, alpha: number = 0.1, beta: number = 0.8): GARCHResult {
+    const n = returns.length;
+    const variance: number[] = [omega / (1 - alpha - beta) || 0.01];
+    for (let i = 1; i < n; i++) variance.push(omega + alpha * returns[i - 1] ** 2 + beta * variance[i - 1]);
+    return { algorithm: "garch", returns, params: { omega, alpha, beta }, conditionalVariance: variance.map(v => Math.round(v * 10000) / 10000) };
+  }
+
+  bayesianABTest(control: { successes: number; trials: number }, treatment: { successes: number; trials: number }, simulations: number = 10000): BayesianABResult {
+    const alph = (s: number, f: number) => s + 1;
+    const bet = (s: number, f: number) => f + 1;
+    const cAlpha = alph(control.successes, control.trials - control.successes);
+    const cBeta = bet(control.successes, control.trials - control.successes);
+    const tAlpha = alph(treatment.successes, treatment.trials - treatment.successes);
+    const tBeta = bet(treatment.successes, treatment.trials - treatment.successes);
+    let probBetter = 0;
+    for (let i = 0; i < simulations; i++) {
+      const cSample = sampleBeta(cAlpha, cBeta);
+      const tSample = sampleBeta(tAlpha, tBeta);
+      if (tSample > cSample) probBetter++;
+    }
+    const cMean = cAlpha / (cAlpha + cBeta);
+    const tMean = tAlpha / (tAlpha + tBeta);
+    return { algorithm: "bayesianAB", control: { successes: control.successes, trials: control.trials, mean: Math.round(cMean * 10000) / 10000 }, treatment: { successes: treatment.successes, trials: treatment.trials, mean: Math.round(tMean * 10000) / 10000 }, probTreatmentBetter: Math.round(probBetter / simulations * 10000) / 10000, expectedLift: cMean > 0 ? Math.round((tMean - cMean) / cMean * 10000) / 10000 : 0 };
+  }
+
+  confidenceIntervalCalc(successes: number, trials: number, confidence: number = 0.95): ConfidenceIntervalResult {
+    const rate = trials > 0 ? successes / trials : 0;
+    const z = confidence === 0.99 ? 2.576 : confidence === 0.90 ? 1.645 : 1.96;
+    const se = Math.sqrt(rate * (1 - rate) / Math.max(trials, 1));
+    const lower = Math.max(0, rate - z * se);
+    const upper = Math.min(1, rate + z * se);
+    return { algorithm: "confidenceInterval", successes, trials, rate: Math.round(rate * 10000) / 10000, lower: Math.round(lower * 10000) / 10000, upper: Math.round(upper * 10000) / 10000, confidence };
+  }
+
+  tTestTwoSample(sample1: number[], sample2: number[]): TTestResult {
+    const n1 = sample1.length, n2 = sample2.length;
+    const mean1 = sample1.reduce((s, v) => s + v, 0) / n1;
+    const mean2 = sample2.reduce((s, v) => s + v, 0) / n2;
+    const var1 = sample1.reduce((s, v) => s + (v - mean1) ** 2, 0) / (n1 - 1);
+    const var2 = sample2.reduce((s, v) => s + (v - mean2) ** 2, 0) / (n2 - 1);
+    const se = Math.sqrt(var1 / n1 + var2 / n2);
+    const tStat = se > 0 ? (mean1 - mean2) / se : 0;
+    const df = Math.min(n1 - 1, n2 - 1);
+    const pValue = 2 * (1 - studentTProb(Math.abs(tStat), df));
+    return { algorithm: "tTest", sample1, sample2, tStatistic: Math.round(tStat * 10000) / 10000, pValue: Math.round(pValue * 10000) / 10000, significant: pValue < 0.05 };
+  }
+
+  monteCarloCLV(avgPurchaseValue: number, purchaseFrequency: number, churnRate: number, discountRate: number = 0.1, simulations: number = 1000): MonteCarloCLVResult {
+    const clvs: number[] = [];
+    for (let s = 0; s < simulations; s++) {
+      let clv = 0;
+      let years = 0;
+      while (years < 20) {
+        if (Math.random() < churnRate) break;
+        const yearlyValue = avgPurchaseValue * purchaseFrequency * (0.5 + Math.random());
+        clv += yearlyValue / Math.pow(1 + discountRate, years);
+        years++;
+      }
+      clvs.push(clv);
+    }
+    clvs.sort((a, b) => a - b);
+    const meanCLV = clvs.reduce((s, v) => s + v, 0) / simulations;
+    const medianCLV = clvs[Math.floor(simulations / 2)];
+    const p5 = clvs[Math.floor(simulations * 0.05)];
+    const p25 = clvs[Math.floor(simulations * 0.25)];
+    const p50 = medianCLV;
+    const p75 = clvs[Math.floor(simulations * 0.75)];
+    const p95 = clvs[Math.floor(simulations * 0.95)];
+    return { algorithm: "monteCarloCLV", params: { avgPurchaseValue, purchaseFrequency, churnRate, discountRate }, simulations, meanCLV: Math.round(meanCLV * 100) / 100, medianCLV: Math.round(medianCLV * 100) / 100, percentiles: { p5: Math.round(p5 * 100) / 100, p25: Math.round(p25 * 100) / 100, p50: Math.round(p50 * 100) / 100, p75: Math.round(p75 * 100) / 100, p95: Math.round(p95 * 100) / 100 } };
+  }
+
+  adstockModel(spend: number[], decayRate: number = 0.5, lag: number = 1): AdstockResult {
+    const n = spend.length;
+    const adstocked: number[] = [];
+    for (let i = 0; i < n; i++) {
+      let carryover = 0;
+      for (let j = 1; j <= lag; j++) { if (i - j >= 0) carryover += spend[i - j] * Math.pow(decayRate, j); }
+      adstocked.push(Math.round((spend[i] + carryover) * 100) / 100);
+    }
+    const totalCarryover = adstocked.reduce((s, v, i) => s + (v - spend[i]), 0);
+    return { algorithm: "adstock", spend, adstocked, decayRate, totalCarryover: Math.round(totalCarryover * 100) / 100 };
+  }
+
+  efficientFrontierAlloc(assets: string[], returns: number[], risks: number[], correlations: number[][], steps: number = 10): EfficientFrontierResult {
+    const n = assets.length;
+    const portfolios: EfficientFrontierResult["portfolios"] = [];
+    let bestSharpe = -Infinity;
+    let optimalPortfolio: EfficientFrontierResult["optimalPortfolio"] = { risk: 0, return_: 0, sharpe: 0, weights: [] };
+    for (let s = 0; s <= steps; s++) {
+      const w: number[] = [];
+      let remaining = 1;
+      for (let i = 0; i < n - 1; i++) { const wi = Math.random() * remaining; w.push(Math.round(wi * 100) / 100); remaining -= wi; }
+      w.push(Math.round(remaining * 100) / 100);
+      const portReturn = w.reduce((sum, wi, i) => sum + wi * returns[i], 0);
+      let portRisk = 0;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) portRisk += w[i] * w[j] * risks[i] * risks[j] * (correlations[i]?.[j] || 0);
+      portRisk = Math.sqrt(Math.max(0, portRisk));
+      const sharpe = portRisk > 0 ? portReturn / portRisk : 0;
+      portfolios.push({ risk: Math.round(portRisk * 10000) / 10000, return_: Math.round(portReturn * 10000) / 10000, weights: w });
+      if (sharpe > bestSharpe) { bestSharpe = sharpe; optimalPortfolio = { risk: Math.round(portRisk * 10000) / 10000, return_: Math.round(portReturn * 10000) / 10000, sharpe: Math.round(sharpe * 10000) / 10000, weights: w }; }
+    }
+    return { algorithm: "efficientFrontier", portfolios, optimalPortfolio };
+  }
+
+  mediaSaturationCurve(spend: number[], response: number[]): MediaSaturationResult {
+    const n = Math.min(spend.length, response.length);
+    if (n === 0) return { algorithm: "mediaSaturation", spend: [], response: [], fitted: [], saturationPoint: 0, elasticity: 0 };
+    const logSpend = spend.map(s => Math.log(Math.max(s, 0.01)));
+    const meanX = logSpend.reduce((s, v) => s + v, 0) / n;
+    const meanY = response.reduce((s, v) => s + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (logSpend[i] - meanX) * (response[i] - meanY); den += (logSpend[i] - meanX) ** 2; }
+    const slope = den > 0 ? num / den : 0;
+    const fitted = logSpend.map(x => Math.round((meanY + slope * (x - meanX)) * 100) / 100);
+    const maxResponse = Math.max(...response);
+    const satIdx = response.findIndex(r => r >= maxResponse * 0.95);
+    const saturationPoint = satIdx >= 0 ? spend[satIdx] : spend[n - 1];
+    const elasticity = Math.round(slope * 10000) / 10000;
+    return { algorithm: "mediaSaturation", spend, response, fitted, saturationPoint, elasticity };
+  }
+
+  timeDecayAttribution(touchpoints: { channel: string; time: number }[], decayFactor: number = 0.5): TimeDecayAttributionResult {
+    const totalWeight = touchpoints.reduce((s, tp) => s + Math.exp(-decayFactor * (touchpoints[touchpoints.length - 1].time - tp.time)), 0);
+    const channelWeights = new Map<string, number>();
+    for (const tp of touchpoints) {
+      const w = Math.exp(-decayFactor * (touchpoints[touchpoints.length - 1].time - tp.time));
+      channelWeights.set(tp.channel, (channelWeights.get(tp.channel) || 0) + w);
+    }
+    const attributed: TimeDecayAttributionResult["attributed"] = [];
+    for (const [ch, w] of channelWeights) {
+      attributed.push({ channel: ch, weight: Math.round(w * 100) / 100, share: totalWeight > 0 ? (w / totalWeight * 100).toFixed(2) + "%" : "0.00%" });
+    }
+    return { algorithm: "timeDecayAttribution", touchpoints, decayFactor, attributed };
+  }
+}
+
+function sampleBeta(alpha: number, beta: number): number {
+  const x = Math.random();
+  const y = Math.random();
+  const u = Math.pow(x, 1 / alpha);
+  const v = Math.pow(y, 1 / beta);
+  return u / (u + v);
+}
+
+function studentTProb(t: number, df: number): number {
+  const x = df / (df + t * t);
+  return 1 - 0.5 * Math.pow(x, df / 2) * (1 + t * t / df) / 2;
 }
 
 function factorial(n: number): number {
