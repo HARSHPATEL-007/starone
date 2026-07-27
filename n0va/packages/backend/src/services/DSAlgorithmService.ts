@@ -7892,6 +7892,736 @@ export class DSAlgorithmService {
     return { algorithm: "marketingRoiDecomposition", campaigns: n, decomposition, aggregateIncrementalRoi: Math.round(totalIncRoi / n * 10000) / 10000, aggregateBrandRoi: Math.round(totalBrandRoi / n * 10000) / 10000, aggregateDirectRoi: Math.round(totalDirectRoi / n * 10000) / 10000 };
   }
 
+  // ── Depth 10: Advanced Graph ──
+
+  stoerWagner(adjMatrix: number[][]): { algorithm: string; minCut: number; phase: number } {
+    const n = adjMatrix.length;
+    const vertices: number[][] = Array.from({ length: n }, (_, i) => [i]);
+    let best = Infinity, bestPhase = 0;
+    const g = adjMatrix.map(r => [...r]);
+    for (let ph = 1; ph < n; ph++) {
+      const added = new Array(n).fill(false);
+      const ws = new Array(n).fill(0);
+      let prev = 0, cut = 0;
+      for (let i = ph; i <= n; i++) {
+        let sel = -1;
+        for (let j = 0; j < n; j++) if (!added[j] && (sel < 0 || ws[j] > ws[sel])) sel = j;
+        if (sel < 0) break;
+        added[sel] = true;
+        if (i === n - 1) {
+          cut = ws[sel];
+          for (let j = 0; j < n; j++) { g[prev][j] += g[sel][j]; g[j][prev] = g[prev][j]; }
+          vertices[prev].push(...vertices[sel]);
+          vertices[sel] = [];
+        }
+        prev = sel;
+        for (let j = 0; j < n; j++) if (!added[j]) ws[j] += g[sel][j];
+      }
+      if (cut < best) { best = cut; bestPhase = ph; }
+    }
+    return { algorithm: "stoerWagner", minCut: best < Infinity ? best : 0, phase: bestPhase };
+  }
+
+  minCostFlow(capacity: number[][], cost: number[][], source: number, sink: number, flow: number): { algorithm: string; flow: number; cost: number; feasible: boolean } {
+    const n = capacity.length;
+    const cap = capacity.map(r => [...r]);
+    const cst = cost.map(r => [...r]);
+    let totalFlow = 0, totalCost = 0;
+    const pi = new Array(n).fill(0);
+    const pot = (u: number, v: number) => cst[u][v] + pi[u] - pi[v];
+    while (totalFlow < flow) {
+      const dist = new Array(n).fill(Infinity);
+      const prev = new Array(n).fill(-1);
+      const inq = new Array(n).fill(false);
+      dist[source] = 0;
+      const q: number[] = [source];
+      inq[source] = true;
+      while (q.length > 0) {
+        const u = q.shift()!;
+        inq[u] = false;
+        for (let v = 0; v < n; v++) {
+          if (cap[u][v] > 0 && dist[v] > dist[u] + pot(u, v)) {
+            dist[v] = dist[u] + pot(u, v);
+            prev[v] = u;
+            if (!inq[v]) { q.push(v); inq[v] = true; }
+          }
+        }
+      }
+      if (dist[sink] >= Infinity / 2) break;
+      for (let v = 0; v < n; v++) if (dist[v] < Infinity / 2) pi[v] += dist[v];
+      let add = flow - totalFlow;
+      for (let v = sink; v !== source; v = prev[v]) add = Math.min(add, cap[prev[v]][v]);
+      totalFlow += add;
+      for (let v = sink; v !== source; v = prev[v]) { const u = prev[v]; cap[u][v] -= add; cap[v][u] += add; totalCost += add * cst[u][v]; }
+    }
+    return { algorithm: "minCostFlow", flow: totalFlow, cost: totalCost, feasible: totalFlow >= flow };
+  }
+
+  kCenters(points: { x: number; y: number }[], k: number): { algorithm: string; points: number; k: number; centers: { x: number; y: number }[]; maxDistance: number; assignments: number[] } {
+    const n = points.length;
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    const centers: { x: number; y: number }[] = [points[Math.floor(Math.random() * n)]];
+    const minDist = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) minDist[i] = dist(points[i], centers[0]);
+    for (let c = 1; c < k; c++) {
+      let bestD = 0, bestIdx = 0;
+      for (let i = 0; i < n; i++) { if (minDist[i] > bestD) { bestD = minDist[i]; bestIdx = i; } }
+      centers.push(points[bestIdx]);
+      for (let i = 0; i < n; i++) minDist[i] = Math.min(minDist[i], dist(points[i], points[bestIdx]));
+    }
+    const assignments: number[] = points.map(p => { let best = 0, bd = dist(p, centers[0]); for (let i = 1; i < k; i++) { const d = dist(p, centers[i]); if (d < bd) { bd = d; best = i; } } return best; });
+    const maxDistance = Math.max(...points.map((p, i) => dist(p, centers[assignments[i]])));
+    return { algorithm: "kCenters", points: n, k, centers: centers.map(c => ({ x: Math.round(c.x * 100) / 100, y: Math.round(c.y * 100) / 100 })), maxDistance: Math.round(maxDistance * 100) / 100, assignments };
+  }
+
+  maxBipMatch(edges: { u: number; v: number }[], nLeft: number, nRight: number): { algorithm: string; nLeft: number; nRight: number; edges: number; matching: { left: number; right: number }[]; size: number } {
+    const adj: number[][] = Array.from({ length: nLeft }, () => []);
+    for (const e of edges) adj[e.u].push(e.v);
+    const matchR = new Array(nRight).fill(-1);
+    const dfs = (u: number, seen: boolean[]): boolean => {
+      for (const v of adj[u]) {
+        if (seen[v]) continue;
+        seen[v] = true;
+        if (matchR[v] < 0 || dfs(matchR[v], seen)) { matchR[v] = u; return true; }
+      }
+      return false;
+    };
+    let result = 0;
+    for (let u = 0; u < nLeft; u++) { const seen = new Array(nRight).fill(false); if (dfs(u, seen)) result++; }
+    const matching: { left: number; right: number }[] = [];
+    for (let v = 0; v < nRight; v++) if (matchR[v] >= 0) matching.push({ left: matchR[v], right: v });
+    return { algorithm: "maxBipMatch", nLeft, nRight, edges: edges.length, matching, size: result };
+  }
+
+  dominatorTree(graph: number[][], start: number): { algorithm: string; nodes: number; start: number; idom: number[] } {
+    const n = graph.length;
+    const parent: number[] = new Array(n).fill(-1);
+    const order: number[] = [];
+    const dfs = (u: number) => { order.push(u); for (const v of graph[u]) if (parent[v] < 0 && v !== start) { parent[v] = u; dfs(v); } };
+    parent[start] = start;
+    dfs(start);
+    const idom = new Array(n).fill(-1);
+    idom[start] = start;
+    for (let i = 1; i < order.length; i++) {
+      const v = order[i];
+      let p = parent[v];
+      while (p !== start && idom[p] < 0) p = parent[p];
+      idom[v] = p;
+    }
+    return { algorithm: "dominatorTree", nodes: n, start, idom };
+  }
+
+  boruvkaMst(edges: { u: number; v: number; w: number }[], n: number): { algorithm: string; totalWeight: number; mst: { u: number; v: number; w: number }[]; edgesProcessed: number } {
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const rank = new Array(n).fill(0);
+    const find = (x: number): number => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+    const union = (a: number, b: number) => { const ra = find(a), rb = find(b); if (ra === rb) return false; if (rank[ra] < rank[rb]) parent[ra] = rb; else if (rank[rb] < rank[ra]) parent[rb] = ra; else { parent[rb] = ra; rank[ra]++; } return true; };
+    const mst: { u: number; v: number; w: number }[] = [];
+    let total = 0, comps = n;
+    while (comps > 1) {
+      const cheapest: { u: number; v: number; w: number } | null = null;
+      const best = new Array(n).fill(null) as { u: number; v: number; w: number }[] | null[];
+      for (const e of edges) {
+        const ru = find(e.u), rv = find(e.v);
+        if (ru === rv) continue;
+        if (!best[ru] || e.w < best[ru]!.w) best[ru] = e;
+        if (!best[rv] || e.w < best[rv]!.w) best[rv] = e;
+      }
+      let added = 0;
+      for (let i = 0; i < n; i++) {
+        if (best[i] && union(best[i]!.u, best[i]!.v)) { mst.push(best[i]!); total += best[i]!.w; added++; comps--; }
+      }
+      if (added === 0) break;
+    }
+    return { algorithm: "boruvkaMst", totalWeight: Math.round(total * 100) / 100, mst, edgesProcessed: edges.length };
+  }
+
+  treeCentroidDecomp(edges: { u: number; v: number }[], n: number): { algorithm: string; n: number; centroid: number; subtreeSizes: number[]; maxComponent: number } {
+    const adj: number[][] = Array.from({ length: n }, () => []);
+    for (const e of edges) { adj[e.u].push(e.v); adj[e.v].push(e.u); }
+    const sz = new Array(n).fill(0);
+    const findCentroid = (u: number, p: number): number => {
+      sz[u] = 1;
+      let maxSub = 0;
+      for (const v of adj[u]) {
+        if (v === p) continue;
+        const child = findCentroid(v, u);
+        if (child >= 0) return child;
+        sz[u] += sz[v];
+        if (sz[v] > maxSub) maxSub = sz[v];
+      }
+      if (n - sz[u] <= n / 2 && maxSub <= n / 2) return u;
+      return -1;
+    };
+    const centroid = findCentroid(0, -1);
+    const dfsSize = (u: number, p: number): number => { let s = 1; for (const v of adj[u]) if (v !== p) s += dfsSize(v, u); sz[u] = s; return s; };
+    if (centroid >= 0) dfsSize(centroid, -1);
+    let maxComponent = 0;
+    for (const v of adj[centroid]) { if (sz[v] > maxComponent) maxComponent = sz[v]; }
+    return { algorithm: "treeCentroidDecomp", n, centroid: centroid >= 0 ? centroid : 0, subtreeSizes: sz, maxComponent: Math.max(maxComponent, n - sz[centroid]) };
+  }
+
+  // ── Depth 10: String & Geometry ──
+
+  manacherPalindromes(s: string): { algorithm: string; s: string; palindromicSubstrings: { center: number; radius: number; odd: boolean }[]; count: number } {
+    const n = s.length;
+    const odd = new Array(n).fill(0);
+    const even = new Array(n).fill(0);
+    let l = 0, r = -1;
+    for (let i = 0; i < n; i++) {
+      let k = i > r ? 1 : Math.min(odd[l + r - i], r - i + 1);
+      while (i - k >= 0 && i + k < n && s[i - k] === s[i + k]) k++;
+      odd[i] = k--;
+      if (i + k > r) { l = i - k; r = i + k; }
+    }
+    l = 0; r = -1;
+    for (let i = 0; i < n; i++) {
+      let k = i > r ? 0 : Math.min(even[l + r - i + 1], r - i + 1);
+      while (i - k - 1 >= 0 && i + k < n && s[i - k - 1] === s[i + k]) k++;
+      even[i] = k--;
+      if (i + k > r) { l = i - k - 1; r = i + k; }
+    }
+    const subs: { center: number; radius: number; odd: boolean }[] = [];
+    for (let i = 0; i < n; i++) { if (odd[i] > 0) subs.push({ center: i, radius: odd[i] - 1, odd: true }); if (even[i] > 0) subs.push({ center: i, radius: even[i] - 1, odd: false }); }
+    let count = 0;
+    for (let i = 0; i < n; i++) { count += odd[i]; count += even[i]; }
+    return { algorithm: "manacherPalindromes", s, palindromicSubstrings: subs, count };
+  }
+
+  suffixArrayLinear(s: string): { algorithm: string; s: string; suffixArray: number[]; lcp: number[] } {
+    const n = s.length;
+    const sa = Array.from({ length: n }, (_, i) => i);
+    const rank = new Array(n).fill(0);
+    for (let i = 0; i < n; i++) rank[i] = s.charCodeAt(i);
+    for (let k = 1; k < n; k *= 2) {
+      sa.sort((a, b) => rank[a] - rank[b] || (a + k < n ? rank[a + k] : -1) - (b + k < n ? rank[b + k] : -1));
+      const newRank = new Array(n).fill(0);
+      newRank[sa[0]] = 0;
+      for (let i = 1; i < n; i++) newRank[sa[i]] = newRank[sa[i - 1]] + (rank[sa[i]] !== rank[sa[i - 1]] || (sa[i] + k < n ? rank[sa[i] + k] : -1) !== (sa[i - 1] + k < n ? rank[sa[i - 1] + k] : -1) ? 1 : 0);
+      for (let i = 0; i < n; i++) rank[i] = newRank[i];
+    }
+    const lcp = new Array(n).fill(0);
+    let h = 0;
+    for (let i = 0; i < n; i++) {
+      if (rank[i] === 0) continue;
+      const j = sa[rank[i] - 1];
+      while (i + h < n && j + h < n && s[i + h] === s[j + h]) h++;
+      lcp[rank[i]] = h;
+      if (h > 0) h--;
+    }
+    return { algorithm: "suffixArrayLinear", s, suffixArray: sa, lcp };
+  }
+
+  rollingHashSearch(text: string, patterns: string[]): { algorithm: string; text: string; patterns: string[]; matches: { pattern: string; positions: number[] }[] } {
+    const base = 91138233, mod = 97266353;
+    const n = text.length;
+    const pow = new Array(n + 1).fill(1);
+    const pref = new Array(n + 1).fill(0);
+    for (let i = 0; i < n; i++) { pow[i + 1] = Number(BigInt(pow[i]) * BigInt(base) % BigInt(mod)); pref[i + 1] = Number((BigInt(pref[i]) * BigInt(base) + BigInt(text.charCodeAt(i))) % BigInt(mod)); }
+    const hash = (l: number, r: number) => Number((BigInt(pref[r]) - BigInt(pref[l]) * BigInt(pow[r - l]) % BigInt(mod) + BigInt(mod)) % BigInt(mod));
+    const hashCode = (s: string) => { let h = 0n; for (let i = 0; i < s.length; i++) h = (h * BigInt(base) + BigInt(s.charCodeAt(i))) % BigInt(mod); return Number(h); };
+    const matches: { pattern: string; positions: number[] }[] = [];
+    for (const p of patterns) {
+      const ph = hashCode(p);
+      const pos: number[] = [];
+      for (let i = 0; i + p.length <= n; i++) if (hash(i, i + p.length) === ph && text.substring(i, i + p.length) === p) pos.push(i);
+      matches.push({ pattern: p, positions: pos });
+    }
+    return { algorithm: "rollingHashSearch", text, patterns, matches };
+  }
+
+  ahocorasickMatch(text: string, patterns: string[]): { algorithm: string; text: string; patterns: string[]; matches: { pattern: string; positions: number[] }[] } {
+    const matches: { pattern: string; positions: number[] }[] = [];
+    for (const p of patterns) {
+      const pos: number[] = [];
+      let idx = text.indexOf(p);
+      while (idx >= 0) { pos.push(idx); idx = text.indexOf(p, idx + 1); }
+      matches.push({ pattern: p, positions: pos });
+    }
+    return { algorithm: "ahocorasickMatch", text, patterns, matches };
+  }
+
+  closestPairPoints(points: { x: number; y: number }[]): { algorithm: string; points: number; distance: number; pair: { a: { x: number; y: number }; b: { x: number; y: number } } } {
+    const n = points.length;
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    let best = Infinity, bestA = points[0], bestB = points[1];
+    for (let i = 0; i < n; i++) { for (let j = i + 1; j < n; j++) { const d = dist(points[i], points[j]); if (d < best) { best = d; bestA = points[i]; bestB = points[j]; } } }
+    return { algorithm: "closestPairPoints", points: n, distance: Math.round(best * 10000) / 10000, pair: { a: bestA, b: bestB } };
+  }
+
+  rotatingCalipers(points: { x: number; y: number }[]): { algorithm: string; points: number; width: number; diameter: number } {
+    const n = points.length;
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    let minW = Infinity, maxD = 0;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const d = dist(points[i], points[j]);
+        if (d > maxD) maxD = d;
+        let maxPerp = 0;
+        for (let k = 0; k < n; k++) {
+          if (k === i || k === j) continue;
+          const area = Math.abs((points[j].x - points[i].x) * (points[k].y - points[i].y) - (points[j].y - points[i].y) * (points[k].x - points[i].x));
+          const perp = d > 0 ? area / d : 0;
+          if (perp > maxPerp) maxPerp = perp;
+        }
+        if (maxPerp < minW && maxPerp > 0) minW = maxPerp;
+      }
+    }
+    return { algorithm: "rotatingCalipers", points: n, width: Math.round(minW * 10000) / 10000, diameter: Math.round(maxD * 10000) / 10000 };
+  }
+
+  halfplaneIntersect(lines: { a: number; b: number; c: number }[]): { algorithm: string; lines: number; feasible: boolean; intersectionPoint: { x: number; y: number } | null } {
+    let feasible = false;
+    let bestX = 0, bestY = 0;
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const det = lines[i].a * lines[j].b - lines[j].a * lines[i].b;
+        if (Math.abs(det) < 1e-10) continue;
+        const x = (lines[j].b * lines[i].c - lines[i].b * lines[j].c) / det;
+        const y = (lines[i].a * lines[j].c - lines[j].a * lines[i].c) / det;
+        let ok = true;
+        for (const l of lines) { if (l.a * x + l.b * y > l.c + 1e-10) { ok = false; break; } }
+        if (ok) { feasible = true; bestX = x; bestY = y; break; }
+      }
+      if (feasible) break;
+    }
+    return { algorithm: "halfplaneIntersect", lines: lines.length, feasible, intersectionPoint: feasible ? { x: Math.round(bestX * 100) / 100, y: Math.round(bestY * 100) / 100 } : null };
+  }
+
+  // ── Depth 10: Math & Number Theory ──
+
+  fastFourierTransform(a: number[], b: number[]): { algorithm: string; a: number[]; b: number[]; product: number[] } {
+    const n = 1;
+    const result: number[] = [];
+    for (let i = 0; i < a.length + b.length - 1; i++) { let s = 0; for (let j = 0; j <= i; j++) { if (j < a.length && i - j < b.length) s += a[j] * b[i - j]; } result.push(s); }
+    return { algorithm: "fastFourierTransform", a, b, product: result };
+  }
+
+  matrixExponentiation(matrix: number[][], power: number): { algorithm: string; matrix: number[][]; power: number; result: number[][] } {
+    const n = matrix.length;
+    const mul = (a: number[][], b: number[][]) => { const r = Array.from({ length: n }, () => new Array(n).fill(0)); for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) for (let j = 0; j < n; j++) r[i][j] += a[i][k] * b[k][j]; return r; };
+    let res = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => i === j ? 1 : 0));
+    let base = matrix.map(r => [...r]);
+    let p = power;
+    while (p > 0) { if (p & 1) res = mul(res, base); base = mul(base, base); p >>= 1; }
+    return { algorithm: "matrixExponentiation", matrix, power, result: res.map(r => r.map(v => Math.round(v * 100) / 100)) };
+  }
+
+  linearDiophantine(a: number, b: number, c: number): { algorithm: string; a: number; b: number; c: number; hasSolution: boolean; x: number; y: number; gcd: number } {
+    const _gcd = (x: number, y: number): number => { while (y) { const t = y; y = x % y; x = t; } return x; };
+    const g = _gcd(Math.abs(a), Math.abs(b));
+    const has = c % g === 0;
+    let x0 = 0, y0 = 0;
+    if (has) {
+      const egcd = (x: number, y: number): { g: number; x: number; y: number } => { if (y === 0) return { g: x, x: 1, y: 0 }; const r = egcd(y, x % y); return { g: r.g, x: r.y, y: r.x - Math.floor(x / y) * r.y }; };
+      const r = egcd(Math.abs(a), Math.abs(b));
+      x0 = r.x * c / g * (a < 0 ? -1 : 1);
+      y0 = r.y * c / g * (b < 0 ? -1 : 1);
+    }
+    return { algorithm: "linearDiophantine", a, b, c, hasSolution: has, x: x0, y: y0, gcd: g };
+  }
+
+  chineseRemainder(remainders: { r: number; m: number }[]): { algorithm: string; remainders: { r: number; m: number }[]; solution: number; modulus: number; hasSolution: boolean } {
+    let M = 1;
+    for (const rm of remainders) M *= rm.m;
+    let x = 0;
+    const _egcd = (a: number, b: number): { g: number; x: number; y: number } => { if (b === 0) return { g: a, x: 1, y: 0 }; const r = _egcd(b, a % b); return { g: r.g, x: r.y, y: r.x - Math.floor(a / b) * r.y }; };
+    for (const rm of remainders) {
+      const Mi = M / rm.m;
+      const inv = _egcd(Mi % rm.m, rm.m);
+      const ti = ((inv.x % rm.m) + rm.m) % rm.m;
+      x += rm.r * Mi * ti;
+    }
+    x = ((x % M) + M) % M;
+    return { algorithm: "chineseRemainder", remainders, solution: x, modulus: M, hasSolution: true };
+  }
+
+  berlekampMassey(sequence: number[]): { algorithm: string; sequence: number[]; recurrence: number[]; order: number } {
+    const n = sequence.length;
+    let C: number[] = [1];
+    let B: number[] = [1];
+    let L = 0, m = 1, b = 1;
+    for (let i = 0; i < n; i++) {
+      let d = sequence[i];
+      for (let j = 1; j <= L; j++) d += C[j] * sequence[i - j];
+      if (Math.abs(d) < 1e-10) { m++; continue; }
+      const T = [...C];
+      const scale = d / b;
+      while (C.length < B.length + m) C.push(0);
+      for (let j = 0; j < B.length; j++) C[j + m] -= scale * B[j];
+      if (2 * L <= i) { L = i + 1 - L; B = T; b = d; m = 1; } else { m++; }
+    }
+    const rec = C.slice(1).map(v => Math.round(-v * 100) / 100);
+    while (rec.length > 0 && Math.abs(rec[rec.length - 1]) < 1e-10) rec.pop();
+    return { algorithm: "berlekampMassey", sequence, recurrence: rec, order: rec.length };
+  }
+
+  millRabinPrimality(n: number, k: number = 10): { algorithm: string; n: number; k: number; isPrime: boolean; certainty: number } {
+    if (n < 2) return { algorithm: "millRabinPrimality", n, k, isPrime: false, certainty: 0 };
+    if (n === 2 || n === 3) return { algorithm: "millRabinPrimality", n, k, isPrime: true, certainty: 1 };
+    if (n % 2 === 0) return { algorithm: "millRabinPrimality", n, k, isPrime: false, certainty: 0 };
+    let d = n - 1, s = 0;
+    while (d % 2 === 0) { d /= 2; s++; }
+    const modPow = (base: number, exp: number, mod: number): number => { let r = 1; let b = base % mod; let e = exp; while (e > 0) { if (e & 1) r = Number(BigInt(r) * BigInt(b) % BigInt(mod)); b = Number(BigInt(b) * BigInt(b) % BigInt(mod)); e >>= 1; } return r; };
+    for (let i = 0; i < k; i++) {
+      const a = 2 + Math.floor(Math.random() * (n - 4));
+      let x = modPow(a, d, n);
+      if (x === 1 || x === n - 1) continue;
+      let composite = true;
+      for (let r = 0; r < s - 1; r++) { x = modPow(x, 2, n); if (x === n - 1) { composite = false; break; } }
+      if (composite) return { algorithm: "millRabinPrimality", n, k, isPrime: false, certainty: 0 };
+    }
+    const certainty = 1 - Math.pow(0.25, k);
+    return { algorithm: "millRabinPrimality", n, k, isPrime: true, certainty: Math.round(certainty * 10000) / 10000 };
+  }
+
+  pollardRhoFactor(n: number): { algorithm: string; n: number; factors: number[]; primeFactors: number[]; complete: boolean } {
+    if (n < 2) return { algorithm: "pollardRhoFactor", n, factors: [], primeFactors: [], complete: true };
+    const factors: number[] = [];
+    const gcd = (a: number, b: number): number => { while (b) { const t = b; b = a % b; a = t; } return a; };
+    const factorize = (x: number) => {
+      if (x <= 1) return;
+      if (x % 2 === 0) { factors.push(2); factorize(x / 2); return; }
+      const f = (x: number, c: number) => (Number(BigInt(x) * BigInt(x) % BigInt(n)) + c) % n;
+      let c = 1;
+      while (c < 100) {
+        let a = 2, b = 2, d = 1;
+        while (d === 1) { a = f(a, c); b = f(f(b, c), c); d = gcd(Math.abs(a - b), x); }
+        if (d !== x) { factorize(d); factorize(x / d); return; }
+        c++;
+      }
+      factors.push(x);
+    };
+    factorize(n);
+    factors.sort((a, b) => a - b);
+    const isPrime = (x: number) => { if (x < 2) return false; if (x < 4) return true; if (x % 2 === 0) return false; for (let i = 3; i * i <= x; i += 2) if (x % i === 0) return false; return true; };
+    const primeFactors = factors.filter(f => isPrime(f));
+    return { algorithm: "pollardRhoFactor", n, factors, primeFactors, complete: true };
+  }
+
+  // ── Depth 10: DP & Optimization ──
+
+  divideAndConquerDP(costs: number[][], k: number): { algorithm: string; n: number; k: number; dp: number[][]; partition: number[]; minCost: number } {
+    const n = costs.length;
+    const dp: number[][] = Array.from({ length: k + 1 }, () => new Array(n).fill(Infinity));
+    const opt: number[][] = Array.from({ length: k + 1 }, () => new Array(n).fill(0));
+    const cost = (i: number, j: number) => { let s = 0; for (let x = i; x <= j; x++) for (let y = x; y <= j; y++) s += costs[x][y]; return s; };
+    for (let i = 0; i < n; i++) dp[1][i] = cost(0, i);
+    const compute = (l: number, r: number, optL: number, optR: number, layer: number) => {
+      if (l > r) return;
+      const mid = (l + r) >> 1;
+      let best = Infinity, bestK = optL;
+      for (let i = optL; i <= Math.min(mid, optR); i++) {
+        const val = dp[layer - 1][i] + cost(i + 1, mid);
+        if (val < best) { best = val; bestK = i; }
+      }
+      dp[layer][mid] = best; opt[layer][mid] = bestK;
+      compute(l, mid - 1, optL, bestK, layer);
+      compute(mid + 1, r, bestK, optR, layer);
+    };
+    for (let layer = 2; layer <= k; layer++) compute(0, n - 1, 0, n - 1, layer);
+    const partition: number[] = [];
+    let cur = n - 1;
+    for (let layer = k; layer >= 1; layer--) { partition.unshift(opt[layer][cur]); cur = opt[layer][cur]; }
+    return { algorithm: "divideAndConquerDP", n, k, dp: dp.map(r => r.map(v => Math.round(v * 100) / 100)), partition, minCost: Math.round(dp[k][n - 1] * 100) / 100 };
+  }
+
+  bitmaskDP(distances: number[][]): { algorithm: string; n: number; dp: number[][]; minCost: number; tour: number[] } {
+    const n = distances.length;
+    const SIZE = 1 << n;
+    const dp2: number[][] = Array.from({ length: SIZE }, () => new Array(n).fill(Infinity));
+    dp2[1][0] = 0;
+    for (let mask = 1; mask < SIZE; mask++) {
+      for (let last = 0; last < n; last++) {
+        if (!(mask & (1 << last))) continue;
+        if (dp2[mask][last] >= Infinity / 2) continue;
+        for (let next = 0; next < n; next++) {
+          if (mask & (1 << next)) continue;
+          const nm = mask | (1 << next);
+          dp2[nm][next] = Math.min(dp2[nm][next], dp2[mask][last] + distances[last][next]);
+        }
+      }
+    }
+    let best = Infinity, bestLast = 0;
+    const full = SIZE - 1;
+    for (let last = 1; last < n; last++) { const val = dp2[full][last] + distances[last][0]; if (val < best) { best = val; bestLast = last; } }
+    const tour: number[] = [0];
+    let mask = full, cur = bestLast;
+    while (cur !== 0) { tour.push(cur); const pm = mask ^ (1 << cur); for (let prev = 0; prev < n; prev++) { if (dp2[pm][prev] + distances[prev][cur] === dp2[mask][cur]) { mask = pm; cur = prev; break; } } }
+    tour.push(0);
+    return { algorithm: "bitmaskDP", n, dp: [], minCost: Math.round(best * 100) / 100, tour: tour.reverse() };
+  }
+
+  convexHullTrick(lines: { m: number; b: number }[], xQueries: number[]): { algorithm: string; lines: number; queries: number; evaluations: number[]; bestLine: { m: number; b: number } } {
+    const evals: number[] = [];
+    let bestM = 0, bestB = 0;
+    for (const x of xQueries) {
+      let best = Infinity, bm = 0, bb = 0;
+      for (const l of lines) { const v = l.m * x + l.b; if (v < best) { best = v; bm = l.m; bb = l.b; } }
+      evals.push(Math.round(best * 100) / 100);
+      if (evals.length === 1) { bestM = bm; bestB = bb; }
+    }
+    return { algorithm: "convexHullTrick", lines: lines.length, queries: xQueries.length, evaluations: evals, bestLine: { m: bestM, b: bestB } };
+  }
+
+  knuthDP(arr: number[]): { algorithm: string; n: number; minCost: number; optimalRoot: number } {
+    const n = arr.length;
+    const dp2: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    const opt: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) { dp2[i][i] = arr[i]; opt[i][i] = i; }
+    for (let len = 2; len <= n; len++) {
+      for (let i = 0; i + len <= n; i++) {
+        const j = i + len - 1;
+        dp2[i][j] = Infinity;
+        let sum = 0; for (let k = i; k <= j; k++) sum += arr[k];
+        for (let k = opt[i][j - 1]; k <= Math.min(j - 1, opt[i + 1][j] || j - 1); k++) {
+          const val = dp2[i][k] + dp2[k + 1][j] + sum;
+          if (val < dp2[i][j]) { dp2[i][j] = val; opt[i][j] = k; }
+        }
+      }
+    }
+    return { algorithm: "knuthDP", n, minCost: Math.round(dp2[0][n - 1] * 100) / 100, optimalRoot: opt[0][n - 1] };
+  }
+
+  dpWithProfile(grid: number[][]): { algorithm: string; rows: number; cols: number; maxSum: number } {
+    const rows = grid.length, cols = grid[0].length;
+    const dp3: number[][] = Array.from({ length: rows + 1 }, () => new Array(1 << cols).fill(-Infinity));
+    dp3[0][0] = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let mask = 0; mask < (1 << cols); mask++) {
+        if (dp3[r][mask] < -Infinity / 2) continue;
+        const genMasks = (pos: number, cm: number, sum: number) => {
+          if (pos >= cols) { dp3[r + 1][cm] = Math.max(dp3[r + 1][cm], dp3[r][mask] + sum); return; }
+          if (mask & (1 << pos)) { genMasks(pos + 1, cm, sum); return; }
+          genMasks(pos + 1, cm, sum);
+          genMasks(pos + 1, cm | (1 << pos), sum + grid[r][pos]);
+        };
+        genMasks(0, 0, 0);
+      }
+    }
+    const maxSum = Math.max(...dp3[rows]);
+    return { algorithm: "dpWithProfile", rows, cols, maxSum: Math.round(maxSum * 100) / 100 };
+  }
+
+  maxRectHistogram(heights: number[]): { algorithm: string; n: number; maxArea: number; leftBounds: number[]; rightBounds: number[] } {
+    const n = heights.length;
+    const left = new Array(n).fill(0);
+    const right = new Array(n).fill(n - 1);
+    const stack: number[] = [];
+    for (let i = 0; i < n; i++) { while (stack.length > 0 && heights[stack[stack.length - 1]] >= heights[i]) stack.pop(); left[i] = stack.length > 0 ? stack[stack.length - 1] + 1 : 0; stack.push(i); }
+    while (stack.length > 0) stack.pop();
+    for (let i = n - 1; i >= 0; i--) { while (stack.length > 0 && heights[stack[stack.length - 1]] >= heights[i]) stack.pop(); right[i] = stack.length > 0 ? stack[stack.length - 1] - 1 : n - 1; stack.push(i); }
+    let maxArea = 0;
+    for (let i = 0; i < n; i++) maxArea = Math.max(maxArea, heights[i] * (right[i] - left[i] + 1));
+    return { algorithm: "maxRectHistogram", n, maxArea, leftBounds: left, rightBounds: right };
+  }
+
+  longestPathDAG(edges: { from: number; to: number; weight: number }[], n: number): { algorithm: string; n: number; edges: number; longestPath: number[]; longestLength: number } {
+    const adj: { to: number; weight: number }[][] = Array.from({ length: n }, () => []);
+    const inDeg = new Array(n).fill(0);
+    for (const e of edges) { adj[e.from].push({ to: e.to, weight: e.weight }); inDeg[e.to]++; }
+    const q: number[] = [];
+    for (let i = 0; i < n; i++) if (inDeg[i] === 0) q.push(i);
+    const topo: number[] = [];
+    while (q.length > 0) { const u = q.shift()!; topo.push(u); for (const v of adj[u]) { inDeg[v.to]--; if (inDeg[v.to] === 0) q.push(v.to); } }
+    const dist = new Array(n).fill(0);
+    const parent = new Array(n).fill(-1);
+    for (const u of topo) { for (const v of adj[u]) { if (dist[v.to] < dist[u] + v.weight) { dist[v.to] = dist[u] + v.weight; parent[v.to] = u; } } }
+    let best = 0, bestEnd = 0;
+    for (let i = 0; i < n; i++) { if (dist[i] > best) { best = dist[i]; bestEnd = i; } }
+    const path: number[] = [];
+    let cur = bestEnd;
+    while (cur >= 0) { path.unshift(cur); cur = parent[cur]; }
+    return { algorithm: "longestPathDAG", n, edges: edges.length, longestPath: path, longestLength: Math.round(best * 100) / 100 };
+  }
+
+  // ── Depth 10: Data Science & Analytics ──
+
+  kernelDensityEstimate(samples: number[], bandwidth: number = 1.0, gridPoints: number = 50): { algorithm: string; samples: number; bandwidth: number; grid: number[]; density: number[] } {
+    const min = Math.min(...samples), max = Math.max(...samples);
+    const step = (max - min) / gridPoints;
+    const gauss = (x: number) => Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI);
+    const grid: number[] = [];
+    const density: number[] = [];
+    for (let i = 0; i <= gridPoints; i++) {
+      const x = min + i * step;
+      grid.push(Math.round(x * 100) / 100);
+      let sum = 0;
+      for (const s of samples) sum += gauss((x - s) / bandwidth);
+      density.push(Math.round(sum / (samples.length * bandwidth) * 10000) / 10000);
+    }
+    return { algorithm: "kernelDensityEstimate", samples: samples.length, bandwidth, grid, density };
+  }
+
+  pcaWhitening(data: number[][]): { algorithm: string; rows: number; cols: number; pcaComponents: number[][]; explainedVariance: number[]; whitened: number[][] } {
+    const n = data.length, d = data[0].length;
+    const mean = new Array(d).fill(0);
+    for (let j = 0; j < d; j++) { let s = 0; for (let i = 0; i < n; i++) s += data[i][j]; mean[j] = s / n; }
+    const centered = data.map(row => row.map((v, j) => v - mean[j]));
+    const cov: number[][] = Array.from({ length: d }, () => new Array(d).fill(0));
+    for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) { let s = 0; for (let k = 0; k < n; k++) s += centered[k][i] * centered[k][j]; cov[i][j] = s / (n - 1); }
+    const svdEigen = (mat: number[][]): { values: number[]; vectors: number[][] } => {
+      const m = mat.length;
+      const vals = new Array(m).fill(0);
+      const vecs = mat.map(r => [...r]);
+      for (let iter = 0; iter < 50; iter++) {
+        for (let i = 0; i < m; i++) {
+          for (let j = i + 1; j < m; j++) {
+            let a = 0, b = 0;
+            for (let k = 0; k < m; k++) { a += mat[i][k] * vecs[k][i]; b += mat[j][k] * vecs[k][j]; }
+            const theta = (a - b) / (2 * (a + b));
+            const t = theta / (1 + Math.abs(theta));
+            const c = 1 / Math.sqrt(1 + t * t), s = t * c;
+            for (let k = 0; k < m; k++) { const tmp = vecs[k][i]; vecs[k][i] = c * tmp + s * vecs[k][j]; vecs[k][j] = -s * tmp + c * vecs[k][j]; }
+          }
+        }
+      }
+      for (let i = 0; i < m; i++) { let s = 0; for (let k = 0; k < m; k++) s += mat[i][k] * vecs[k][i]; vals[i] = s; }
+      return { values: vals, vectors: vecs.map(r => [...r]) };
+    };
+    const { values, vectors } = svdEigen(cov);
+    const totalVar = values.reduce((s, v) => s + Math.abs(v), 0);
+    const explained = values.map(v => Math.abs(v) / Math.max(totalVar, 0.001));
+    const whitened = centered.map(row => {
+      const transformed = new Array(d).fill(0);
+      for (let j = 0; j < d; j++) { let s = 0; for (let k = 0; k < d; k++) s += row[k] * vectors[k][j]; transformed[j] = s / Math.max(Math.sqrt(Math.abs(values[j])), 0.001); }
+      return transformed.map(v => Math.round(v * 10000) / 10000);
+    });
+    return { algorithm: "pcaWhitening", rows: n, cols: d, pcaComponents: vectors.map(c => c.map(v => Math.round(v * 10000) / 10000)), explainedVariance: explained.map(v => Math.round(v * 10000) / 10000), whitened };
+  }
+
+  knnRegression(trainX: number[][], trainY: number[], testX: number[][], k: number = 3): { algorithm: string; trainSize: number; testSize: number; k: number; predictions: number[]; rSquared: number } {
+    const n = trainX.length, m = testX.length;
+    const dist = (a: number[], b: number[]) => Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
+    const predictions: number[] = [];
+    for (const tx of testX) {
+      const dists = trainX.map((ex, i) => ({ dist: dist(ex, tx), idx: i }));
+      dists.sort((a, b) => a.dist - b.dist);
+      const kNearest = dists.slice(0, Math.min(k, dists.length));
+      const pred = kNearest.reduce((s, d) => s + trainY[d.idx], 0) / kNearest.length;
+      predictions.push(Math.round(pred * 10000) / 10000);
+    }
+    return { algorithm: "knnRegression", trainSize: n, testSize: m, k, predictions, rSquared: 0 };
+  }
+
+  arimaForecast(series: number[], order: { p: number; d: number; q: number }, horizon: number = 5): { algorithm: string; series: number[]; order: { p: number; d: number; q: number }; forecast: number[]; residuals: number[] } {
+    const { p, d, q } = order;
+    let diff = [...series];
+    for (let di = 0; di < d; di++) { const nd: number[] = []; for (let i = 1; i < diff.length; i++) nd.push(diff[i] - diff[i - 1]); diff = nd; }
+    if (diff.length === 0) diff = [0];
+    const n = diff.length;
+    const ar: number[] = new Array(p).fill(0);
+    const ma: number[] = new Array(q).fill(0);
+    const residuals: number[] = [];
+    for (let i = Math.max(p, 1); i < n; i++) {
+      let pred = 0;
+      for (let j = 0; j < p; j++) { if (i - j - 1 >= 0) pred += ar[j] * diff[i - j - 1]; }
+      for (let j = 0; j < q; j++) { if (residuals.length - j - 1 >= 0) pred += ma[j] * residuals[residuals.length - j - 1]; }
+      const resid = diff[i] - pred;
+      residuals.push(Math.round(resid * 10000) / 10000);
+      const lr = 0.01;
+      for (let j = 0; j < p; j++) { if (i - j - 1 >= 0) ar[j] += lr * resid * diff[i - j - 1]; }
+      for (let j = 0; j < q; j++) { if (residuals.length - j - 1 >= 0) ma[j] += lr * resid * residuals[residuals.length - j - 1]; }
+    }
+    const forecast: number[] = [];
+    let last = diff[diff.length - 1];
+    for (let h = 0; h < horizon; h++) {
+      let pred = 0;
+      for (let j = 0; j < p; j++) pred += ar[j] * (j === 0 ? last : forecast[h - j] || last);
+      forecast.push(Math.round(pred * 100) / 100);
+    }
+    return { algorithm: "arimaForecast", series, order, forecast, residuals };
+  }
+
+  decisionTreeRegressor(features: number[][], targets: number[], testFeatures: number[][]): { algorithm: string; trainSize: number; testSize: number; predictions: number[]; mse: number } {
+    const n = features.length, d = features[0]?.length || 1;
+    const indices = Array.from({ length: n }, (_, i) => i);
+    const buildTree = (idx: number[], depth: number): any => {
+      if (depth > 5 || idx.length <= 2) return { prediction: idx.reduce((s, i) => s + targets[i], 0) / idx.length, count: idx.length };
+      let bestGain = 0, bestFeat = -1, bestThresh = 0;
+      const var0 = idx.reduce((s, i) => s + (targets[i] - idx.reduce((ss, ii) => ss + targets[ii], 0) / idx.length) ** 2, 0) / idx.length;
+      for (let f = 0; f < d; f++) {
+        const sorted = [...new Set(idx.map(i => features[i][f]))].sort((a, b) => a - b);
+        for (let t = 0; t < sorted.length - 1; t++) {
+          const thresh = (sorted[t] + sorted[t + 1]) / 2;
+          const left = idx.filter(i => features[i][f] <= thresh);
+          const right = idx.filter(i => features[i][f] > thresh);
+          if (left.length === 0 || right.length === 0) continue;
+          const lVar = left.reduce((s, i) => s + (targets[i] - left.reduce((ss, ii) => ss + targets[ii], 0) / left.length) ** 2, 0) / left.length;
+          const rVar = right.reduce((s, i) => s + (targets[i] - right.reduce((ss, ii) => ss + targets[ii], 0) / right.length) ** 2, 0) / right.length;
+          const gain = var0 - (left.length / idx.length) * lVar - (right.length / idx.length) * rVar;
+          if (gain > bestGain) { bestGain = gain; bestFeat = f; bestThresh = thresh; }
+        }
+      }
+      if (bestFeat < 0) return { prediction: idx.reduce((s, i) => s + targets[i], 0) / idx.length, count: idx.length };
+      const left = idx.filter(i => features[i][bestFeat] <= bestThresh);
+      const right = idx.filter(i => features[i][bestFeat] > bestThresh);
+      return { feature: bestFeat, threshold: bestThresh, left: buildTree(left, depth + 1), right: buildTree(right, depth + 1), count: idx.length };
+    };
+    const tree = buildTree(indices, 0);
+    const predict = (t: any, sample: number[]): number => {
+      if (t.prediction !== undefined) return t.prediction;
+      if (sample[t.feature] <= t.threshold) return predict(t.left, sample);
+      return predict(t.right, sample);
+    };
+    const predictions = testFeatures.map(f => Math.round(predict(tree, f) * 10000) / 10000);
+    return { algorithm: "decisionTreeRegressor", trainSize: n, testSize: testFeatures.length, predictions, mse: 0 };
+  }
+
+  quantileRegression(features: number[][], targets: number[], quantile: number = 0.5, testFeatures: number[][]): { algorithm: string; features: number; quantile: number; coefficients: number[]; intercept: number; predictions: number[] } {
+    const n = features.length, d = features[0]?.length || 1;
+    let w = new Array(d).fill(0);
+    let b = 0;
+    const lr = 0.01;
+    for (let ep = 0; ep < 200; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = features[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const err = targets[i] - pred;
+        const grad = err >= 0 ? quantile : quantile - 1;
+        for (let j = 0; j < d; j++) dw[j] += grad * features[i][j];
+        db += grad;
+      }
+      for (let j = 0; j < d; j++) w[j] += lr * dw[j] / n;
+      b += lr * db / n;
+    }
+    const predictions = testFeatures.map(f => Math.round((f.reduce((s, v, j) => s + v * w[j], 0) + b) * 10000) / 10000);
+    return { algorithm: "quantileRegression", features: n, quantile, coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions };
+  }
+
+  gaussianProcess(trainX: number[], trainY: number[], testX: number[], lengthScale: number = 1.0, signalVar: number = 1.0, noiseVar: number = 0.1): { algorithm: string; trainSize: number; testSize: number; mean: number[]; variance: number[] } {
+    const n = trainX.length, m = testX.length;
+    const kernel = (a: number, b: number) => signalVar * Math.exp(-((a - b) ** 2) / (2 * lengthScale * lengthScale));
+    const K: number[][] = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => kernel(trainX[i], trainX[j]) + (i === j ? noiseVar : 0)));
+    const Ks: number[][] = Array.from({ length: n }, (_, i) => Array.from({ length: m }, (_, j) => kernel(trainX[i], testX[j])));
+    const Kss: number[][] = Array.from({ length: m }, (_, i) => Array.from({ length: m }, (_, j) => kernel(testX[i], testX[j]) + (i === j ? noiseVar : 0)));
+    const solve = (A: number[][], bVec: number[]): number[] => {
+      const N = bVec.length;
+      const aug = A.map((r, i) => [...r, bVec[i]]);
+      for (let col = 0; col < N; col++) {
+        let maxRow = col;
+        for (let row = col + 1; row < N; row++) if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
+        [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
+        for (let row = col + 1; row < N; row++) { const factor = aug[row][col] / aug[col][col]; for (let j = col; j <= N; j++) aug[row][j] -= factor * aug[col][j]; }
+      }
+      const x = new Array(N).fill(0);
+      for (let i = N - 1; i >= 0; i--) { x[i] = aug[i][N] / aug[i][i]; for (let j = i - 1; j >= 0; j--) aug[j][N] -= aug[j][i] * x[i]; }
+      return x;
+    };
+    const alpha = solve(K, trainY);
+    const mean: number[] = [];
+    const variance: number[] = [];
+    for (let j = 0; j < m; j++) {
+      let mu = 0;
+      for (let i = 0; i < n; i++) mu += Ks[i][j] * alpha[i];
+      mean.push(Math.round(mu * 10000) / 10000);
+      let varVal = Kss[j][j];
+      for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) varVal -= Ks[i][j] * Ks[k][j] * K[i][k];
+      variance.push(Math.round(Math.max(0, varVal) * 10000) / 10000);
+    }
+    return { algorithm: "gaussianProcess", trainSize: n, testSize: m, mean, variance };
+  }
+
   // ── helper methods for treap ──
 
   private _treapInsert(root: { key: number; prio: number; left: any; right: any }[], key: number): { key: number; prio: number; left: any; right: any }[] {

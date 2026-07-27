@@ -1705,6 +1705,81 @@ export const api = {
       request<any>("/ds-algorithms/marketing/attribution-funnel", { method: "POST", body: JSON.stringify(data) }),
     marketingRoiDecomposition: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/roi-decomposition", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 10: Advanced Graph
+    stoerWagner: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/stoer-wagner", { method: "POST", body: JSON.stringify(data) }),
+    minCostFlow: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/min-cost-flow", { method: "POST", body: JSON.stringify(data) }),
+    kCenters: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/k-centers", { method: "POST", body: JSON.stringify(data) }),
+    maxBipMatch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/max-bip-match", { method: "POST", body: JSON.stringify(data) }),
+    dominatorTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/dominator-tree", { method: "POST", body: JSON.stringify(data) }),
+    boruvkaMst: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/boruvka-mst", { method: "POST", body: JSON.stringify(data) }),
+    treeCentroidDecomp: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/tree-centroid-decomp", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 10: String & Geometry
+    manacherPalindromes: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/manacher-palindromes", { method: "POST", body: JSON.stringify(data) }),
+    suffixArrayLinear: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/suffix-array", { method: "POST", body: JSON.stringify(data) }),
+    rollingHashSearch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/rolling-hash", { method: "POST", body: JSON.stringify(data) }),
+    ahocorasickMatch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/ahocorasick", { method: "POST", body: JSON.stringify(data) }),
+    closestPairPoints: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/geo/closest-pair", { method: "POST", body: JSON.stringify(data) }),
+    rotatingCalipers: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/geo/rotating-calipers", { method: "POST", body: JSON.stringify(data) }),
+    halfplaneIntersect: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/geo/halfplane-intersect", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 10: Math & Number Theory
+    fastFourierTransform: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/fft", { method: "POST", body: JSON.stringify(data) }),
+    matrixExponentiation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/matrix-expo", { method: "POST", body: JSON.stringify(data) }),
+    linearDiophantine: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/linear-diophantine", { method: "POST", body: JSON.stringify(data) }),
+    chineseRemainder: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/chinese-remainder", { method: "POST", body: JSON.stringify(data) }),
+    berlekampMassey: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/berlekamp-massey", { method: "POST", body: JSON.stringify(data) }),
+    millRabinPrimality: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/miller-rabin", { method: "POST", body: JSON.stringify(data) }),
+    pollardRhoFactor: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/math/pollard-rho", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 10: DP & Optimization
+    divideAndConquerDP: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/divide-conquer", { method: "POST", body: JSON.stringify(data) }),
+    bitmaskDP: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/bitmask", { method: "POST", body: JSON.stringify(data) }),
+    convexHullTrick: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/convex-hull-trick", { method: "POST", body: JSON.stringify(data) }),
+    knuthDP: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/knuth", { method: "POST", body: JSON.stringify(data) }),
+    dpWithProfile: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/with-profile", { method: "POST", body: JSON.stringify(data) }),
+    maxRectHistogram: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/max-rect-histogram", { method: "POST", body: JSON.stringify(data) }),
+    longestPathDAG: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/longest-path-dag", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 10: Data Science & Analytics
+    kernelDensityEstimate: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/kde", { method: "POST", body: JSON.stringify(data) }),
+    pcaWhitening: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/pca-whitening", { method: "POST", body: JSON.stringify(data) }),
+    knnRegression: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/knn-regression", { method: "POST", body: JSON.stringify(data) }),
+    arimaForecast: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/arima", { method: "POST", body: JSON.stringify(data) }),
+    decisionTreeRegressor: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/decision-tree", { method: "POST", body: JSON.stringify(data) }),
+    quantileRegression: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/quantile-regression", { method: "POST", body: JSON.stringify(data) }),
+    gaussianProcess: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/ml/gaussian-process", { method: "POST", body: JSON.stringify(data) }),
   },
 
   autonomousCampaignManager: {

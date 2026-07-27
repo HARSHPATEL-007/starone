@@ -2166,4 +2166,189 @@ router.post("/marketing/roi-decomposition", asyncHandler(async (req, res) => {
   sendSuccess(res, dsAlgorithmService.marketingRoiDecomposition(campaigns));
 }));
 
+// ── Depth 10: Advanced Graph ──
+router.post("/graph/stoer-wagner", asyncHandler(async (req, res) => {
+  const { adjMatrix } = req.body;
+  if (!adjMatrix || !Array.isArray(adjMatrix)) return res.status(400).json({ error: "adjMatrix array required" });
+  sendSuccess(res, dsAlgorithmService.stoerWagner(adjMatrix));
+}));
+router.post("/graph/min-cost-flow", asyncHandler(async (req, res) => {
+  const { capacity, cost, source, sink, flow } = req.body;
+  if (!capacity || !cost || source === undefined || sink === undefined || flow === undefined) return res.status(400).json({ error: "capacity, cost, source, sink, flow required" });
+  sendSuccess(res, dsAlgorithmService.minCostFlow(capacity, cost, source, sink, flow));
+}));
+router.post("/graph/k-centers", asyncHandler(async (req, res) => {
+  const { points, k } = req.body;
+  if (!points || !Array.isArray(points)) return res.status(400).json({ error: "points array required" });
+  sendSuccess(res, dsAlgorithmService.kCenters(points, k || 2));
+}));
+router.post("/graph/max-bip-match", asyncHandler(async (req, res) => {
+  const { edges, nLeft, nRight } = req.body;
+  if (!edges || !Array.isArray(edges)) return res.status(400).json({ error: "edges array required" });
+  sendSuccess(res, dsAlgorithmService.maxBipMatch(edges, nLeft || 0, nRight || 0));
+}));
+router.post("/graph/dominator-tree", asyncHandler(async (req, res) => {
+  const { graph, start } = req.body;
+  if (!graph || !Array.isArray(graph)) return res.status(400).json({ error: "graph array required" });
+  sendSuccess(res, dsAlgorithmService.dominatorTree(graph, start || 0));
+}));
+router.post("/graph/boruvka-mst", asyncHandler(async (req, res) => {
+  const { edges, n } = req.body;
+  if (!edges || !Array.isArray(edges)) return res.status(400).json({ error: "edges array required" });
+  sendSuccess(res, dsAlgorithmService.boruvkaMst(edges, n || 0));
+}));
+router.post("/graph/tree-centroid-decomp", asyncHandler(async (req, res) => {
+  const { edges, n } = req.body;
+  if (!edges || !Array.isArray(edges)) return res.status(400).json({ error: "edges array required" });
+  sendSuccess(res, dsAlgorithmService.treeCentroidDecomp(edges, n || 0));
+}));
+
+// ── Depth 10: String & Geometry ──
+router.post("/string/manacher-palindromes", asyncHandler(async (req, res) => {
+  const { s } = req.body;
+  if (s === undefined) return res.status(400).json({ error: "s required" });
+  sendSuccess(res, dsAlgorithmService.manacherPalindromes(s));
+}));
+router.post("/string/suffix-array", asyncHandler(async (req, res) => {
+  const { s } = req.body;
+  if (s === undefined) return res.status(400).json({ error: "s required" });
+  sendSuccess(res, dsAlgorithmService.suffixArrayLinear(s));
+}));
+router.post("/string/rolling-hash", asyncHandler(async (req, res) => {
+  const { text, patterns } = req.body;
+  if (text === undefined) return res.status(400).json({ error: "text required" });
+  sendSuccess(res, dsAlgorithmService.rollingHashSearch(text, patterns || []));
+}));
+router.post("/string/ahocorasick", asyncHandler(async (req, res) => {
+  const { text, patterns } = req.body;
+  if (text === undefined) return res.status(400).json({ error: "text required" });
+  sendSuccess(res, dsAlgorithmService.ahocorasickMatch(text, patterns || []));
+}));
+router.post("/geo/closest-pair", asyncHandler(async (req, res) => {
+  const { points } = req.body;
+  if (!points || !Array.isArray(points)) return res.status(400).json({ error: "points array required" });
+  sendSuccess(res, dsAlgorithmService.closestPairPoints(points));
+}));
+router.post("/geo/rotating-calipers", asyncHandler(async (req, res) => {
+  const { points } = req.body;
+  if (!points || !Array.isArray(points)) return res.status(400).json({ error: "points array required" });
+  sendSuccess(res, dsAlgorithmService.rotatingCalipers(points));
+}));
+router.post("/geo/halfplane-intersect", asyncHandler(async (req, res) => {
+  const { lines } = req.body;
+  if (!lines || !Array.isArray(lines)) return res.status(400).json({ error: "lines array required" });
+  sendSuccess(res, dsAlgorithmService.halfplaneIntersect(lines));
+}));
+
+// ── Depth 10: Math & Number Theory ──
+router.post("/math/fft", asyncHandler(async (req, res) => {
+  const { a, b } = req.body;
+  if (!a || !b) return res.status(400).json({ error: "a and b arrays required" });
+  sendSuccess(res, dsAlgorithmService.fastFourierTransform(a, b));
+}));
+router.post("/math/matrix-expo", asyncHandler(async (req, res) => {
+  const { matrix, power } = req.body;
+  if (!matrix || !Array.isArray(matrix)) return res.status(400).json({ error: "matrix array required" });
+  sendSuccess(res, dsAlgorithmService.matrixExponentiation(matrix, power || 1));
+}));
+router.post("/math/linear-diophantine", asyncHandler(async (req, res) => {
+  const { a, b, c } = req.body;
+  if (a === undefined || b === undefined || c === undefined) return res.status(400).json({ error: "a, b, c required" });
+  sendSuccess(res, dsAlgorithmService.linearDiophantine(a, b, c));
+}));
+router.post("/math/chinese-remainder", asyncHandler(async (req, res) => {
+  const { remainders } = req.body;
+  if (!remainders) return res.status(400).json({ error: "remainders required" });
+  sendSuccess(res, dsAlgorithmService.chineseRemainder(remainders));
+}));
+router.post("/math/berlekamp-massey", asyncHandler(async (req, res) => {
+  const { sequence } = req.body;
+  if (!sequence || !Array.isArray(sequence)) return res.status(400).json({ error: "sequence array required" });
+  sendSuccess(res, dsAlgorithmService.berlekampMassey(sequence));
+}));
+router.post("/math/miller-rabin", asyncHandler(async (req, res) => {
+  const { n, k } = req.body;
+  if (n === undefined) return res.status(400).json({ error: "n required" });
+  sendSuccess(res, dsAlgorithmService.millRabinPrimality(n, k));
+}));
+router.post("/math/pollard-rho", asyncHandler(async (req, res) => {
+  const { n } = req.body;
+  if (n === undefined) return res.status(400).json({ error: "n required" });
+  sendSuccess(res, dsAlgorithmService.pollardRhoFactor(n));
+}));
+
+// ── Depth 10: DP & Optimization ──
+router.post("/dp/divide-conquer", asyncHandler(async (req, res) => {
+  const { costs, k } = req.body;
+  if (!costs || !Array.isArray(costs)) return res.status(400).json({ error: "costs array required" });
+  sendSuccess(res, dsAlgorithmService.divideAndConquerDP(costs, k || 2));
+}));
+router.post("/dp/bitmask", asyncHandler(async (req, res) => {
+  const { distances } = req.body;
+  if (!distances || !Array.isArray(distances)) return res.status(400).json({ error: "distances array required" });
+  sendSuccess(res, dsAlgorithmService.bitmaskDP(distances));
+}));
+router.post("/dp/convex-hull-trick", asyncHandler(async (req, res) => {
+  const { lines, xQueries } = req.body;
+  if (!lines || !Array.isArray(lines)) return res.status(400).json({ error: "lines array required" });
+  sendSuccess(res, dsAlgorithmService.convexHullTrick(lines, xQueries || []));
+}));
+router.post("/dp/knuth", asyncHandler(async (req, res) => {
+  const { arr } = req.body;
+  if (!arr || !Array.isArray(arr)) return res.status(400).json({ error: "arr array required" });
+  sendSuccess(res, dsAlgorithmService.knuthDP(arr));
+}));
+router.post("/dp/with-profile", asyncHandler(async (req, res) => {
+  const { grid } = req.body;
+  if (!grid || !Array.isArray(grid)) return res.status(400).json({ error: "grid array required" });
+  sendSuccess(res, dsAlgorithmService.dpWithProfile(grid));
+}));
+router.post("/dp/max-rect-histogram", asyncHandler(async (req, res) => {
+  const { heights } = req.body;
+  if (!heights || !Array.isArray(heights)) return res.status(400).json({ error: "heights array required" });
+  sendSuccess(res, dsAlgorithmService.maxRectHistogram(heights));
+}));
+router.post("/dp/longest-path-dag", asyncHandler(async (req, res) => {
+  const { edges, n } = req.body;
+  if (!edges || !Array.isArray(edges)) return res.status(400).json({ error: "edges array required" });
+  sendSuccess(res, dsAlgorithmService.longestPathDAG(edges, n || 0));
+}));
+
+// ── Depth 10: Data Science & Analytics ──
+router.post("/ml/kde", asyncHandler(async (req, res) => {
+  const { samples, bandwidth, gridPoints } = req.body;
+  if (!samples || !Array.isArray(samples)) return res.status(400).json({ error: "samples array required" });
+  sendSuccess(res, dsAlgorithmService.kernelDensityEstimate(samples, bandwidth, gridPoints));
+}));
+router.post("/ml/pca-whitening", asyncHandler(async (req, res) => {
+  const { data } = req.body;
+  if (!data || !Array.isArray(data)) return res.status(400).json({ error: "data array required" });
+  sendSuccess(res, dsAlgorithmService.pcaWhitening(data));
+}));
+router.post("/ml/knn-regression", asyncHandler(async (req, res) => {
+  const { trainX, trainY, testX, k } = req.body;
+  if (!trainX || !trainY || !testX) return res.status(400).json({ error: "trainX, trainY, and testX required" });
+  sendSuccess(res, dsAlgorithmService.knnRegression(trainX, trainY, testX, k));
+}));
+router.post("/ml/arima", asyncHandler(async (req, res) => {
+  const { series, order, horizon } = req.body;
+  if (!series || !Array.isArray(series)) return res.status(400).json({ error: "series array required" });
+  sendSuccess(res, dsAlgorithmService.arimaForecast(series, order || { p: 1, d: 0, q: 1 }, horizon));
+}));
+router.post("/ml/decision-tree", asyncHandler(async (req, res) => {
+  const { features, targets, testFeatures } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, and testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.decisionTreeRegressor(features, targets, testFeatures));
+}));
+router.post("/ml/quantile-regression", asyncHandler(async (req, res) => {
+  const { features, targets, quantile, testFeatures } = req.body;
+  if (!features || !targets || !testFeatures) return res.status(400).json({ error: "features, targets, and testFeatures required" });
+  sendSuccess(res, dsAlgorithmService.quantileRegression(features, targets, quantile, testFeatures));
+}));
+router.post("/ml/gaussian-process", asyncHandler(async (req, res) => {
+  const { trainX, trainY, testX, lengthScale, signalVar, noiseVar } = req.body;
+  if (!trainX || !trainY || !testX) return res.status(400).json({ error: "trainX, trainY, and testX required" });
+  sendSuccess(res, dsAlgorithmService.gaussianProcess(trainX, trainY, testX, lengthScale, signalVar, noiseVar));
+}));
+
 export default router;
