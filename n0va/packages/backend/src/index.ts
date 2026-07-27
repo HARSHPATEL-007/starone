@@ -108,6 +108,10 @@ import creativeAIEnhancedRoutes from "./routes/creative-ai-enhanced";
 import audienceInsightsEnhancedRoutes from "./routes/audience-insights-enhanced";
 import adCopyPersonalizationRoutes from "./routes/ad-copy-personalization";
 import campaignHealthPredictorRoutes from "./routes/campaign-health-predictor";
+import predictiveForecastingEnhancedRoutes from "./routes/predictive-forecasting-enhanced";
+import incrementalityTestingRoutes from "./routes/incrementality-testing";
+import searchIntelligenceRoutes from "./routes/search-intelligence";
+import anomalyDetectionEnhancedRoutes from "./routes/anomaly-detection-enhanced";
 
 const app = express();
 const httpServer = createServer(app);
@@ -229,6 +233,10 @@ app.use("/api/v1/creative-ai/enhanced", authMiddleware, tenantMiddleware, creati
 app.use("/api/v1/audience-insights/enhanced", authMiddleware, tenantMiddleware, audienceInsightsEnhancedRoutes);
 app.use("/api/v1/ad-copy-personalization", authMiddleware, tenantMiddleware, adCopyPersonalizationRoutes);
 app.use("/api/v1/campaign-health-predictor", authMiddleware, tenantMiddleware, campaignHealthPredictorRoutes);
+app.use("/api/v1/predictive-forecasting/enhanced", authMiddleware, tenantMiddleware, predictiveForecastingEnhancedRoutes);
+app.use("/api/v1/incrementality-testing", authMiddleware, tenantMiddleware, incrementalityTestingRoutes);
+app.use("/api/v1/search-intelligence", authMiddleware, tenantMiddleware, searchIntelligenceRoutes);
+app.use("/api/v1/anomaly-detection/enhanced", authMiddleware, tenantMiddleware, anomalyDetectionEnhancedRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 

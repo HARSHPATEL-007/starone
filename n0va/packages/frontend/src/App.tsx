@@ -129,6 +129,10 @@ import CreativeAIEnhanced from "./pages/CreativeAIEnhanced";
 import AudienceInsightsEnhanced from "./pages/AudienceInsightsEnhanced";
 import AdCopyPersonalization from "./pages/AdCopyPersonalization";
 import CampaignHealthPredictor from "./pages/CampaignHealthPredictor";
+import PredictiveForecastingEnhanced from "./pages/PredictiveForecastingEnhanced";
+import IncrementalityTesting from "./pages/IncrementalityTesting";
+import SearchIntelligence from "./pages/SearchIntelligence";
+import AnomalyDetectionEnhanced from "./pages/AnomalyDetectionEnhanced";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("n0va_token");
@@ -274,6 +278,10 @@ export default function App() {
                 <Route path="/audience-insights-enhanced" element={<AudienceInsightsEnhanced />} />
                 <Route path="/ad-copy-personalization" element={<AdCopyPersonalization />} />
                 <Route path="/campaign-health-predictor" element={<CampaignHealthPredictor />} />
+                <Route path="/predictive-forecasting-enhanced" element={<PredictiveForecastingEnhanced />} />
+                <Route path="/incrementality-testing" element={<IncrementalityTesting />} />
+                <Route path="/search-intelligence" element={<SearchIntelligence />} />
+                <Route path="/anomaly-detection-enhanced" element={<AnomalyDetectionEnhanced />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

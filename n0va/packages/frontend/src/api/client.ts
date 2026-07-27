@@ -987,6 +987,58 @@ export const api = {
     sampleUser: () => request<any>("/ad-copy-personalization/sample-user"),
     sampleMVTVariants: () => request<any>("/ad-copy-personalization/sample-mvt-variants"),
   },
+  predictiveForecastingEnhanced: {
+    decompose: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/enhanced/decompose", { method: "POST", body: JSON.stringify(data) }),
+    changepoints: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/enhanced/changepoints", { method: "POST", body: JSON.stringify(data) }),
+    arima: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/enhanced/arima", { method: "POST", body: JSON.stringify(data) }),
+    ensemble: (data: Record<string, unknown>) =>
+      request<any>("/predictive-forecasting/enhanced/ensemble", { method: "POST", body: JSON.stringify(data) }),
+  },
+  incrementalityTesting: {
+    did: (data: Record<string, unknown>) =>
+      request<any>("/incrementality-testing/did", { method: "POST", body: JSON.stringify(data) }),
+    syntheticControl: (data: Record<string, unknown>) =>
+      request<any>("/incrementality-testing/synthetic-control", { method: "POST", body: JSON.stringify(data) }),
+    cuped: (data: Record<string, unknown>) =>
+      request<any>("/incrementality-testing/cuped", { method: "POST", body: JSON.stringify(data) }),
+    powerAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/incrementality-testing/power-analysis", { method: "POST", body: JSON.stringify(data) }),
+    geoExperiment: (data: Record<string, unknown>) =>
+      request<any>("/incrementality-testing/geo-experiment", { method: "POST", body: JSON.stringify(data) }),
+    sampleData: (regions?: string, days?: number, treatment?: string) =>
+      request<any>(`/incrementality-testing/sample-data${regions ? `?regions=${regions}` : ""}${days ? `${regions ? "&" : "?"}days=${days}` : ""}${treatment ? `${(regions || days) ? "&" : "?"}treatment=${treatment}` : ""}`),
+  },
+  searchIntelligence: {
+    cluster: (data: Record<string, unknown>) =>
+      request<any>("/search-intelligence/cluster", { method: "POST", body: JSON.stringify(data) }),
+    qualityScore: (data: Record<string, unknown>) =>
+      request<any>("/search-intelligence/quality-score", { method: "POST", body: JSON.stringify(data) }),
+    auctionInsights: (data: Record<string, unknown>) =>
+      request<any>("/search-intelligence/auction-insights", { method: "POST", body: JSON.stringify(data) }),
+    bidRecommendation: (data: Record<string, unknown>) =>
+      request<any>("/search-intelligence/bid-recommendation", { method: "POST", body: JSON.stringify(data) }),
+    tfidf: (data: Record<string, unknown>) =>
+      request<any>("/search-intelligence/tfidf", { method: "POST", body: JSON.stringify(data) }),
+    sampleKeywords: () => request<any>("/search-intelligence/sample-keywords"),
+    sampleCompetitors: (keyword?: string) =>
+      request<any>(`/search-intelligence/sample-competitors${keyword ? `?keyword=${keyword}` : ""}`),
+    sampleQualityHistory: () => request<any>("/search-intelligence/sample-quality-history"),
+  },
+  anomalyDetectionEnhanced: {
+    detect: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/enhanced/detect", { method: "POST", body: JSON.stringify(data) }),
+    multivariate: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/enhanced/multivariate", { method: "POST", body: JSON.stringify(data) }),
+    drift: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/enhanced/drift", { method: "POST", body: JSON.stringify(data) }),
+    scanCampaign: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/enhanced/scan-campaign", { method: "POST", body: JSON.stringify(data) }),
+    ensemble: (data: Record<string, unknown>) =>
+      request<any>("/anomaly-detection/enhanced/ensemble", { method: "POST", body: JSON.stringify(data) }),
+  },
   campaignHealth: {
     healthScore: (metrics: Record<string, unknown>[]) =>
       request<any>("/campaign-health-predictor/health-score", { method: "POST", body: JSON.stringify({ metrics }) }),

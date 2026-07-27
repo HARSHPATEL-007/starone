@@ -74,6 +74,9 @@ import {
   Globe,
   Cpu,
   Lightbulb,
+  Beaker,
+  Search,
+  ScanLine,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -110,8 +113,12 @@ const navItems = [
   { to: "/workflow-builder", icon: GitBranch, label: "Workflow Builder" },
   { to: "/admin", icon: Shield, label: "Admin Panel" },
   { to: "/predictive-forecasting", icon: TrendingUp, label: "Forecasting" },
+  { to: "/predictive-forecasting-enhanced", icon: TrendingUp, label: "Forecasting+" },
   { to: "/ab-test-statistics", icon: Sigma, label: "A/B Stats" },
   { to: "/anomaly-detection", icon: AlertTriangle, label: "Anomaly Detection" },
+  { to: "/anomaly-detection-enhanced", icon: ScanLine, label: "Anomaly Detection+" },
+  { to: "/incrementality-testing", icon: Beaker, label: "Incrementality" },
+  { to: "/search-intelligence", icon: Search, label: "Search Intel" },
   { to: "/portfolio-budget-optimizer", icon: DollarSign, label: "Budget Optimizer" },
   { to: "/campaign-saturation", icon: TrendingDown, label: "Saturation" },
   { to: "/cost-tracker", icon: DollarSign, label: "Cost Tracker" },

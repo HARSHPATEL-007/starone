@@ -28,11 +28,56 @@ interface HistoricalPoint {
   value: number;
 }
 
+interface DecomposedComponents {
+  trend: number[];
+  seasonal: number[];
+  residual: number[];
+  seasonalStrength: number;
+  trendStrength: number;
+}
+
+interface Changepoint {
+  index: number;
+  date: string;
+  meanBefore: number;
+  meanAfter: number;
+  magnitude: number;
+  direction: "up" | "down";
+}
+
+interface ARIMAResult {
+  campaignId: string;
+  metric: string;
+  horizon: number;
+  points: ForecastPoint[];
+  model: { p: number; d: number; q: number; aic: number; mse: number };
+  coefficients: { ar: number[]; ma: number[]; constant: number };
+  summary: {
+    nextPeriod: number;
+    lowerBound: number;
+    upperBound: number;
+    confidence: number;
+    trend: "up" | "down" | "stable";
+  };
+}
+
+interface EnsembleForecastResult {
+  campaignId: string;
+  metric: string;
+  horizon: number;
+  models: { name: string; weight: number; mse: number }[];
+  points: ForecastPoint[];
+  weights: number[];
+  summary: {
+    nextPeriod: number;
+    lowerBound: number;
+    upperBound: number;
+    confidence: number;
+    trend: "up" | "down" | "stable";
+  };
+}
+
 export class PredictiveForecastingService {
-  /**
-   * Triple Exponential Smoothing (Holt-Winters) for seasonal data.
-   * Falls back to double/single smoothing when seasonality cannot be detected.
-   */
   forecast(
     campaignId: string,
     metric: string,
@@ -136,11 +181,8 @@ export class PredictiveForecastingService {
     const trendValue = values.length >= 7
       ? values.slice(-7).reduce((a, b) => a + b, 0) / 7 - values.slice(0, 7).reduce((a, b) => a + b, 0) / 7
       : 0;
-    const trend_direction: "up" | "down" | "stable" = trendValue > 0.05 * (values.reduce((a, b) => a + b, 0) / values.length) ? "up" : trendValue < -0.05 * (values.reduce((a, b) => a + b, 0) / values.length) ? "down" : "stable";
-
-    const totalSpend = values.reduce((a, b) => a + b, 0);
-    const avgDaily = totalSpend / n;
-    const projectedDaily = future.reduce((a, p) => a + p.predicted, 0) / horizon;
+    const avgVal = values.reduce((a, b) => a + b, 0) / values.length;
+    const trend_direction: "up" | "down" | "stable" = trendValue > 0.05 * avgVal ? "up" : trendValue < -0.05 * avgVal ? "down" : "stable";
 
     return {
       campaignId,
@@ -181,8 +223,6 @@ export class PredictiveForecastingService {
     const remainingDays = totalDays - elapsedDays;
     const spentSoFar = dailySpend.reduce((a, b) => a + b, 0);
 
-    const avgDaily = dailySpend.length > 0 ? spentSoFar / dailySpend.length : 0;
-
     const result = this.forecast(campaignId, "spend", dailySpend.map((v, i) => {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
@@ -194,11 +234,13 @@ export class PredictiveForecastingService {
     const willOverspend = projectedEndSpend > totalBudget;
     const willUnderutilize = projectedEndSpend < totalBudget * 0.7;
 
+    const cache: { date: string; predictedSpend: number; cumulative: number; remaining: number }[] = [];
     const dailyProjections = result.points.slice(-remainingDays).map((p) => {
-      const cumIdx = dailyProjectionsCache.length > 0 ? dailyProjectionsCache[dailyProjectionsCache.length - 1].cumulative : spentSoFar;
-      return { date: p.date, predictedSpend: p.predicted, cumulative: cumIdx + p.predicted, remaining: totalBudget - cumIdx - p.predicted };
+      const cum = cache.length > 0 ? cache[cache.length - 1].cumulative : spentSoFar;
+      const entry = { date: p.date, predictedSpend: p.predicted, cumulative: cum + p.predicted, remaining: totalBudget - cum - p.predicted };
+      cache.push(entry);
+      return entry;
     });
-    const dailyProjectionsCache: { date: string; predictedSpend: number; cumulative: number; remaining: number }[] = [];
 
     return {
       projectedEndSpend: Math.round(projectedEndSpend * 100) / 100,
@@ -251,6 +293,343 @@ export class PredictiveForecastingService {
     };
   }
 
+  decomposeTimeSeries(values: number[], seasonLength: number = 7): DecomposedComponents {
+    const n = values.length;
+    if (n < seasonLength * 2) {
+      const mean = values.reduce((a, b) => a + b, 0) / n;
+      return { trend: values.map(() => mean), seasonal: new Array(n).fill(0), residual: values.map((v) => v - mean), seasonalStrength: 0, trendStrength: 0 };
+    }
+
+    const trend: number[] = [];
+    const halfWindow = Math.min(Math.floor(n / 4), 7);
+    for (let i = 0; i < n; i++) {
+      const start = Math.max(0, i - halfWindow);
+      const end = Math.min(n, i + halfWindow + 1);
+      trend.push(values.slice(start, end).reduce((a, b) => a + b, 0) / (end - start));
+    }
+
+    const detrended = values.map((v, i) => v - trend[i]);
+
+    const seasonal = new Array(n).fill(0);
+    const seasonCounts = new Array(seasonLength).fill(0);
+    const seasonSums = new Array(seasonLength).fill(0);
+    for (let i = 0; i < n; i++) {
+      seasonSums[i % seasonLength] += detrended[i];
+      seasonCounts[i % seasonLength]++;
+    }
+    const seasonalPattern = seasonSums.map((s, i) => (seasonCounts[i] > 0 ? s / seasonCounts[i] : 0));
+    const patternMean = seasonalPattern.reduce((a, b) => a + b, 0) / seasonLength;
+    const centeredPattern = seasonalPattern.map((s) => s - patternMean);
+
+    for (let i = 0; i < n; i++) {
+      seasonal[i] = centeredPattern[i % seasonLength];
+    }
+
+    const residual = values.map((v, i) => v - trend[i] - seasonal[i]);
+
+    const totalVar = values.reduce((s, v) => s + (v - values.reduce((a, b) => a + b, 0) / n) ** 2, 0);
+    const residualVar = residual.reduce((s, v) => s + v * v, 0);
+    const seasonalVar = seasonal.reduce((s, v) => s + v * v, 0);
+    const trendVar = trend.reduce((s, v) => s + (v - trend.reduce((a, b) => a + b, 0) / n) ** 2, 0);
+
+    const seasonalStrength = totalVar > 0 ? Math.min(1, Math.max(0, 1 - residualVar / (seasonalVar + residualVar + 1e-10))) : 0;
+    const trendStrength = totalVar > 0 ? Math.min(1, Math.max(0, 1 - residualVar / (trendVar + residualVar + 1e-10))) : 0;
+
+    return { trend, seasonal, residual, seasonalStrength, trendStrength };
+  }
+
+  detectChangepoints(values: number[], minSegmentSize: number = 5): Changepoint[] {
+    const n = values.length;
+    if (n < minSegmentSize * 2 + 2) return [];
+
+    const changepoints: Changepoint[] = [];
+    const overallMean = values.reduce((a, b) => a + b, 0) / n;
+
+    let cumsum = 0;
+    let maxCumsum = 0;
+    let candidateIdx = -1;
+
+    for (let i = 0; i < n; i++) {
+      cumsum += values[i] - overallMean;
+      if (Math.abs(cumsum) > Math.abs(maxCumsum) && i >= minSegmentSize && i <= n - minSegmentSize) {
+        maxCumsum = cumsum;
+        candidateIdx = i;
+      }
+    }
+
+    if (candidateIdx >= minSegmentSize && candidateIdx <= n - minSegmentSize) {
+      const before = values.slice(0, candidateIdx + 1);
+      const after = values.slice(candidateIdx + 1);
+      const meanBefore = before.reduce((a, b) => a + b, 0) / before.length;
+      const meanAfter = after.reduce((a, b) => a + b, 0) / after.length;
+      const magnitude = Math.abs(meanAfter - meanBefore);
+      const direction: "up" | "down" = meanAfter > meanBefore ? "up" : "down";
+
+      if (magnitude > 0.05 * Math.abs(overallMean)) {
+        changepoints.push({
+          index: candidateIdx,
+          date: String(candidateIdx),
+          meanBefore: Math.round(meanBefore * 100) / 100,
+          meanAfter: Math.round(meanAfter * 100) / 100,
+          magnitude: Math.round(magnitude * 100) / 100,
+          direction,
+        });
+      }
+    }
+
+    return changepoints;
+  }
+
+  arimaForecast(
+    campaignId: string,
+    metric: string,
+    history: HistoricalPoint[],
+    horizon: number = 30,
+    options?: { p?: number; d?: number; q?: number; confidence?: number },
+  ): ARIMAResult {
+    const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let values = sorted.map((p) => p.value);
+    const n = values.length;
+    if (n < 4) throw new Error("Need at least 4 data points for ARIMA");
+
+    const p = options?.p ?? 2;
+    const d = options?.d ?? 1;
+    const q = options?.q ?? 2;
+    const confidence = options?.confidence ?? 0.95;
+    const z = confidence >= 0.99 ? 2.576 : confidence >= 0.95 ? 1.96 : 1.645;
+
+    let differenced = [...values];
+    for (let di = 0; di < d; di++) {
+      differenced = differenced.slice(1).map((v, i) => v - differenced[i]);
+    }
+    const diffN = differenced.length;
+
+    const mean = differenced.reduce((a, b) => a + b, 0) / diffN;
+    const centered = differenced.map((v) => v - mean);
+
+    const arCoeffs: number[] = new Array(p).fill(0);
+    if (p > 0 && diffN > p * 2) {
+      for (let i = 0; i < p; i++) {
+        let num = 0, den = 0;
+        for (let j = p; j < diffN; j++) {
+          num += centered[j] * centered[j - i - 1];
+          den += centered[j - i - 1] ** 2;
+        }
+        arCoeffs[i] = den > 0 ? num / den : 0;
+      }
+    }
+
+    const maCoeffs: number[] = new Array(q).fill(0);
+    const residuals: number[] = new Array(diffN).fill(0);
+    for (let i = 0; i < diffN; i++) {
+      let predicted = mean;
+      for (let j = 0; j < Math.min(p, i); j++) {
+        predicted += arCoeffs[j] * centered[i - j - 1];
+      }
+      for (let j = 0; j < Math.min(q, i); j++) {
+        predicted += maCoeffs[j] * residuals[i - j - 1];
+      }
+      residuals[i] = centered[i] - predicted + mean;
+    }
+
+    const mse = residuals.reduce((s, r) => s + r * r, 0) / diffN;
+    const numParams = p + q + 1;
+    const aic = diffN > 0 ? diffN * Math.log(mse) + 2 * numParams : 0;
+
+    const fitted: number[] = [];
+    let cumError = 0;
+    for (let i = 0; i < n; i++) {
+      if (i < d) {
+        fitted.push(values[i]);
+        continue;
+      }
+      const diffIdx = i - d;
+      let pred = mean;
+      for (let j = 0; j < Math.min(p, diffIdx); j++) {
+        pred += arCoeffs[j] * centered[diffIdx - j - 1];
+      }
+      for (let j = 0; j < Math.min(q, diffIdx); j++) {
+        pred += maCoeffs[j] * residuals[diffIdx - j - 1];
+      }
+
+      let accumulated = pred + mean;
+      for (let di = 0; di < d; di++) {
+        accumulated += i - di - 1 >= 0 ? values[i - di - 1] : 0;
+      }
+      fitted.push(Math.max(0, accumulated));
+      const err = values[i] - fitted[i];
+      cumError += err * err;
+    }
+    const fitMse = cumError / n;
+    const rmse = Math.sqrt(fitMse);
+
+    const lastDate = new Date(sorted[sorted.length - 1].date);
+    const points: ForecastPoint[] = sorted.map((p, i) => ({
+      date: p.date,
+      actual: p.value,
+      predicted: Math.max(0, Math.round(fitted[i] * 100) / 100),
+      lowerBound: Math.max(0, Math.round((fitted[i] - z * rmse) * 100) / 100),
+      upperBound: Math.round((fitted[i] + z * rmse) * 100) / 100,
+    }));
+
+    const future: ForecastPoint[] = [];
+    const lastValues = values.slice(-Math.max(p, d));
+    for (let i = 1; i <= horizon; i++) {
+      const d2 = new Date(lastDate);
+      d2.setDate(d2.getDate() + i);
+      const dateStr = d2.toISOString().split("T")[0];
+
+      let pred = mean;
+      const recentVals = [...lastValues, ...future.map((f) => f.predicted)];
+      const centeredRecent = recentVals.map((v) => v - mean);
+
+      for (let j = 0; j < Math.min(p, recentVals.length); j++) {
+        pred += arCoeffs[j] * (centeredRecent[centeredRecent.length - j - 1] || 0);
+      }
+      for (let j = 0; j < Math.min(q, residuals.length); j++) {
+        pred += maCoeffs[j] * (residuals[residuals.length - j - 1] || 0);
+      }
+
+      let accumulated = pred + mean;
+      for (let di = 0; di < d; di++) {
+        accumulated += recentVals[recentVals.length - di - 1] || 0;
+      }
+      accumulated = Math.max(0, accumulated);
+
+      future.push({
+        date: dateStr,
+        predicted: Math.round(accumulated * 100) / 100,
+        lowerBound: Math.max(0, Math.round((accumulated - z * rmse) * 100) / 100),
+        upperBound: Math.round((accumulated + z * rmse) * 100) / 100,
+      });
+    }
+
+    const recentAvg = values.slice(-7).reduce((a, b) => a + b, 0) / Math.min(7, values.length);
+    const earlyAvg = values.slice(0, Math.min(7, values.length)).reduce((a, b) => a + b, 0) / Math.min(7, values.length);
+    const trend_dir: "up" | "down" | "stable" = recentAvg > earlyAvg * 1.05 ? "up" : recentAvg < earlyAvg * 0.95 ? "down" : "stable";
+
+    return {
+      campaignId,
+      metric,
+      horizon,
+      points: [...points, ...future],
+      model: { p, d, q, aic: Math.round(aic * 100) / 100, mse: Math.round(fitMse * 100) / 100 },
+      coefficients: {
+        ar: arCoeffs.map((c) => Math.round(c * 1000) / 1000),
+        ma: maCoeffs.map((c) => Math.round(c * 1000) / 1000),
+        constant: Math.round(mean * 100) / 100,
+      },
+      summary: {
+        nextPeriod: future[0]?.predicted || 0,
+        lowerBound: future[0]?.lowerBound || 0,
+        upperBound: future[0]?.upperBound || 0,
+        confidence,
+        trend: trend_dir,
+      },
+    };
+  }
+
+  ensembleForecast(
+    campaignId: string,
+    metric: string,
+    history: HistoricalPoint[],
+    horizon: number = 30,
+    options?: { confidence?: number },
+  ): EnsembleForecastResult {
+    const sorted = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const values = sorted.map((p) => p.value);
+    const n = values.length;
+    const confidence = options?.confidence ?? 0.95;
+
+    const models: { name: string; weight: number; mse: number }[] = [];
+    let predictions: number[][] = [];
+
+    try {
+      const hw = this.forecast(campaignId, metric, history, horizon, { confidence });
+      const hwMse = hw.model.mse;
+      const hwFcst = hw.points.slice(-horizon).map((p) => p.predicted);
+      const hwWeight = hwMse > 0 ? 1 / hwMse : 1;
+      models.push({ name: "holt-winters", weight: hwWeight, mse: hwMse });
+      predictions.push(hwFcst);
+    } catch { models.push({ name: "holt-winters", weight: 0.1, mse: 999 }); predictions.push(new Array(horizon).fill(0)); }
+
+    try {
+      const ar = this.arimaForecast(campaignId, metric, history, horizon, { p: 2, d: 1, q: 2, confidence });
+      const arMse = ar.model.mse;
+      const arFcst = ar.points.slice(-horizon).map((p) => p.predicted);
+      const arWeight = arMse > 0 ? 1 / arMse : 1;
+      models.push({ name: "arima", weight: arWeight, mse: arMse });
+      predictions.push(arFcst);
+    } catch { models.push({ name: "arima", weight: 0.1, mse: 999 }); predictions.push(new Array(horizon).fill(0)); }
+
+    const naiveFcst = new Array(horizon).fill(values[values.length - 1]);
+    const naiveMse = values.slice(1).reduce((s, v, i) => s + (v - values[i]) ** 2, 0) / Math.max(1, values.length - 1);
+    models.push({ name: "naive", weight: naiveMse > 0 ? 1 / naiveMse : 0.1, mse: naiveMse });
+    predictions.push(naiveFcst);
+
+    if (n >= 14) {
+      const weeklyAvg = values.slice(-7).reduce((a, b) => a + b, 0) / 7;
+      const seasonalNaive = new Array(horizon).fill(0).map((_, i) => {
+        const idx = Math.max(0, values.length - 7 + (i % 7));
+        return values[idx] || weeklyAvg;
+      });
+      const snMse = values.slice(7).reduce((s, v, i) => s + (v - values[i]) ** 2, 0) / Math.max(1, values.length - 7);
+      models.push({ name: "seasonal-naive", weight: snMse > 0 ? 1 / snMse : 0.1, mse: snMse });
+      predictions.push(seasonalNaive);
+    }
+
+    const totalWeight = models.reduce((s, m) => s + m.weight, 0);
+    const normalizedModels = models.map((m) => ({ ...m, weight: totalWeight > 0 ? m.weight / totalWeight : 1 / models.length }));
+
+    const lastDate = new Date(sorted[sorted.length - 1].date);
+    const ensemblePoints: ForecastPoint[] = [];
+
+    const latestValues = values.slice(-7);
+    const recentMean = latestValues.reduce((a, b) => a + b, 0) / latestValues.length;
+    const residualStd = Math.sqrt(latestValues.reduce((s, v) => s + (v - recentMean) ** 2, 0) / latestValues.length);
+    const z = confidence >= 0.99 ? 2.576 : confidence >= 0.95 ? 1.96 : 1.645;
+
+    for (let i = 0; i < horizon; i++) {
+      const d3 = new Date(lastDate);
+      d3.setDate(d3.getDate() + i + 1);
+      const dateStr = d3.toISOString().split("T")[0];
+
+      let ensemblePred = 0;
+      for (let m = 0; m < predictions.length; m++) {
+        ensemblePred += normalizedModels[m].weight * predictions[m][i];
+      }
+      const spread = residualStd * Math.sqrt(1 + i * 0.1);
+
+      ensemblePoints.push({
+        date: dateStr,
+        predicted: Math.max(0, Math.round(ensemblePred * 100) / 100),
+        lowerBound: Math.max(0, Math.round((ensemblePred - z * spread) * 100) / 100),
+        upperBound: Math.round((ensemblePred + z * spread) * 100) / 100,
+      });
+    }
+
+    const allPreds = values.slice(-7).concat(ensemblePoints.slice(0, 7).map((p) => p.predicted));
+    const epAvg = allPreds.slice(-7).reduce((a, b) => a + b, 0) / 7;
+    const epEarly = allPreds.slice(0, 7).reduce((a, b) => a + b, 0) / 7;
+    const trend_dir: "up" | "down" | "stable" = epAvg > epEarly * 1.05 ? "up" : epAvg < epEarly * 0.95 ? "down" : "stable";
+
+    return {
+      campaignId,
+      metric,
+      horizon,
+      models: normalizedModels.map((m) => ({ name: m.name, weight: Math.round(m.weight * 1000) / 1000, mse: Math.round(m.mse * 100) / 100 })),
+      points: ensemblePoints,
+      weights: normalizedModels.map((m) => Math.round(m.weight * 1000) / 1000),
+      summary: {
+        nextPeriod: ensemblePoints[0]?.predicted || 0,
+        lowerBound: ensemblePoints[0]?.lowerBound || 0,
+        upperBound: ensemblePoints[0]?.upperBound || 0,
+        confidence,
+        trend: trend_dir,
+      },
+    };
+  }
+
   private detectSeasonality(values: number[], minSeason: number): number {
     const n = values.length;
     if (n < 2 * minSeason) return 1;
@@ -281,13 +660,14 @@ export class PredictiveForecastingService {
     const seasonal: number[] = new Array(seasonLength).fill(0);
     const cycles = Math.floor(n / seasonLength);
     if (cycles < 2) return seasonal;
+    const overallMean = values.reduce((a, b) => a + b, 0) / n;
     for (let i = 0; i < seasonLength; i++) {
       let sum = 0, count = 0;
       for (let j = 0; j < cycles; j++) {
         sum += values[j * seasonLength + i];
         count++;
       }
-      seasonal[i] = sum / count - values.slice(0, n).reduce((a, b) => a + b, 0) / n;
+      seasonal[i] = count > 0 ? sum / count - overallMean : 0;
     }
     return seasonal;
   }
