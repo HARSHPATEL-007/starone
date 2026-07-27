@@ -1161,5 +1161,161 @@ export const api = {
       request<any>("/ds-algorithms/fenwick-2d", { method: "POST", body: JSON.stringify(data) }),
     biDijkstra: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/graph/bi-dijkstra", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 3 - Deeper Data Structures
+    skipList: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/skip-list", { method: "POST", body: JSON.stringify(data) }),
+    redBlackTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/red-black-tree", { method: "POST", body: JSON.stringify(data) }),
+    intervalTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/interval-tree", { method: "POST", body: JSON.stringify(data) }),
+    treap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/treap", { method: "POST", body: JSON.stringify(data) }),
+    fibonacciHeap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/fibonacci-heap", { method: "POST", body: JSON.stringify(data) }),
+    radixTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/radix-tree", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 3 - Deeper Algorithms
+    dinicMaxFlow: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/dinic-max-flow", { method: "POST", body: JSON.stringify(data) }),
+    hungarian: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/hungarian", { method: "POST", body: JSON.stringify(data) }),
+    hopcroftKarp: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/hopcroft-karp", { method: "POST", body: JSON.stringify(data) }),
+    johnsons: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/johnsons", { method: "POST", body: JSON.stringify(data) }),
+    medianOfMedians: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/median-of-medians", { method: "POST", body: JSON.stringify(data) }),
+    hpFilter: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/hp-filter", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 3 - String / DP
+    longestCommonSubstring: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/longest-common-substring", { method: "POST", body: JSON.stringify(data) }),
+    jaroWinkler: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/jaro-winkler", { method: "POST", body: JSON.stringify(data) }),
+    hammingDistance: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/hamming-distance", { method: "POST", body: JSON.stringify(data) }),
+    palindromePartitioning: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/palindrome-partitioning", { method: "POST", body: JSON.stringify(data) }),
+    eggDrop: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/egg-drop", { method: "POST", body: JSON.stringify(data) }),
+    tsp: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/tsp", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 3 - Enhanced Existing
+    medianHeap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/median-heap", { method: "POST", body: JSON.stringify(data) }),
+    trieWildcard: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/trie-wildcard", { method: "POST", body: JSON.stringify(data) }),
+    fenwickRangeUpdate: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/fenwick-range-update", { method: "POST", body: JSON.stringify(data) }),
+    segmentTreeAdvanced: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/segment-tree-advanced", { method: "POST", body: JSON.stringify(data) }),
+    bloomFilterUnion: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/bloom-filter-union", { method: "POST", body: JSON.stringify(data) }),
+    lfuCache: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/lfu-cache", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 3 - Marketing Depth
+    vcgPayments: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/vcg", { method: "POST", body: JSON.stringify(data) }),
+    markovChain: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/markov-chain", { method: "POST", body: JSON.stringify(data) }),
+    bangBangPacing: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/bang-bang", { method: "POST", body: JSON.stringify(data) }),
+    pageRankAudience: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/page-rank", { method: "POST", body: JSON.stringify(data) }),
+    submodularMaximization: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/submodular", { method: "POST", body: JSON.stringify(data) }),
+    adSequencing: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/ad-sequence", { method: "POST", body: JSON.stringify(data) }),
+    optimalStopping: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/optimal-stopping", { method: "POST", body: JSON.stringify(data) }),
+    littleLaw: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/little-law", { method: "POST", body: JSON.stringify(data) }),
+    thompsonSampling: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/thompson-sampling", { method: "POST", body: JSON.stringify(data) }),
+    differentialPrivacy: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/differential-privacy", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 4 - Advanced Data Structures
+    bTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/b-tree", { method: "POST", body: JSON.stringify(data) }),
+    kdTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/kd-tree", { method: "POST", body: JSON.stringify(data) }),
+    quadTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/quad-tree", { method: "POST", body: JSON.stringify(data) }),
+    cartesianTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/cartesian-tree", { method: "POST", body: JSON.stringify(data) }),
+    bitArray: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/bit-array", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 4 - Advanced Algorithms
+    stoerWagner: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/stoer-wagner", { method: "POST", body: JSON.stringify(data) }),
+    galeShapley: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/gale-shapley", { method: "POST", body: JSON.stringify(data) }),
+    pushRelabel: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/push-relabel", { method: "POST", body: JSON.stringify(data) }),
+    simulatedAnnealing: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/simulated-annealing", { method: "POST", body: JSON.stringify(data) }),
+    beamSearch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/beam-search", { method: "POST", body: JSON.stringify(data) }),
+    eulerianPath: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/eulerian-path", { method: "POST", body: JSON.stringify(data) }),
+    chinesePostman: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/graph/chinese-postman", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 4 - String / DP
+    ahoCorasick: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/aho-corasick", { method: "POST", body: JSON.stringify(data) }),
+    bwt: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/bwt", { method: "POST", body: JSON.stringify(data) }),
+    needlemanWunsch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/needleman-wunsch", { method: "POST", body: JSON.stringify(data) }),
+    minWindow: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/string/min-window", { method: "POST", body: JSON.stringify(data) }),
+    longestPalindromicSubseq: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/lps", { method: "POST", body: JSON.stringify(data) }),
+    balloonBurst: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/balloon-burst", { method: "POST", body: JSON.stringify(data) }),
+    wildcardMatch: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/dp/wildcard-match", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 4 - Enhanced Existing
+    persistentSegmentTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/persistent-segment-tree", { method: "POST", body: JSON.stringify(data) }),
+    minMaxHeap: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/min-max-heap", { method: "POST", body: JSON.stringify(data) }),
+    orderStatisticTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/order-statistic-tree", { method: "POST", body: JSON.stringify(data) }),
+    concurrentLRU: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/concurrent-lru", { method: "POST", body: JSON.stringify(data) }),
+    ropeString: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/rope-string", { method: "POST", body: JSON.stringify(data) }),
+
+    // Depth 4 - Marketing Depth
+    multiTouchAttribution: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/multi-touch", { method: "POST", body: JSON.stringify(data) }),
+    budgetSmoothing: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/budget-smoothing", { method: "POST", body: JSON.stringify(data) }),
+    adFatigue: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/ad-fatigue", { method: "POST", body: JSON.stringify(data) }),
+    churnHeuristic: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/churn-heuristic", { method: "POST", body: JSON.stringify(data) }),
+    chiSquare: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/chi-square", { method: "POST", body: JSON.stringify(data) }),
+    bidLandscape: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/bid-landscape", { method: "POST", body: JSON.stringify(data) }),
+    incrementality: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/incrementality", { method: "POST", body: JSON.stringify(data) }),
+    clvCalculation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/clv", { method: "POST", body: JSON.stringify(data) }),
+    reachFrequency: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/reach-frequency", { method: "POST", body: JSON.stringify(data) }),
+    marketingMixModel: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/mmm", { method: "POST", body: JSON.stringify(data) }),
   },
 };

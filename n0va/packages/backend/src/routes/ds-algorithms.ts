@@ -555,4 +555,709 @@ router.post(
   }),
 );
 
+// ============ DEPTH 3: DEEPER DATA STRUCTURES ============
+
+router.post(
+  "/skip-list",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { operations } = req.body;
+    if (!operations) return res.status(400).json({ error: "operations array required" });
+    const result = dsAlgorithmService.skipListOperations(operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/red-black-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { operations } = req.body;
+    if (!operations) return res.status(400).json({ error: "operations array required" });
+    const result = dsAlgorithmService.redBlackTreeOperations(operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/interval-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { intervals, queries } = req.body;
+    if (!intervals || !queries) return res.status(400).json({ error: "intervals and queries required" });
+    const result = dsAlgorithmService.intervalTreeOperations(intervals, queries);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/treap",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { operations } = req.body;
+    if (!operations) return res.status(400).json({ error: "operations array required" });
+    const result = dsAlgorithmService.treapOperations(operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/fibonacci-heap",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { operations } = req.body;
+    if (!operations) return res.status(400).json({ error: "operations array required" });
+    const result = dsAlgorithmService.fibonacciHeapOperations(operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/radix-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { words, queries } = req.body;
+    if (!words || !queries) return res.status(400).json({ error: "words and queries required" });
+    const result = dsAlgorithmService.radixTreeOperations(words, queries);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 3: DEEPER ALGORITHMS ============
+
+router.post(
+  "/graph/dinic-max-flow",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges, source, sink } = req.body;
+    if (!nodes || !edges || !source || !sink) return res.status(400).json({ error: "nodes, edges, source, sink required" });
+    const result = dsAlgorithmService.dinicMaxFlow(nodes, edges, source, sink);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/hungarian",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { costMatrix } = req.body;
+    if (!costMatrix || !Array.isArray(costMatrix)) return res.status(400).json({ error: "costMatrix array required" });
+    const result = dsAlgorithmService.hungarianAlgorithm(costMatrix);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/graph/hopcroft-karp",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { left, right, edges } = req.body;
+    if (!left || !right || !edges) return res.status(400).json({ error: "left, right, edges required" });
+    const result = dsAlgorithmService.hopcroftKarpBipartite(left, right, edges);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/graph/johnsons",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges } = req.body;
+    if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+    const result = dsAlgorithmService.johnsonsAlgorithm(nodes, edges);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/median-of-medians",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { array, k } = req.body;
+    if (!array || !Array.isArray(array) || k === undefined) return res.status(400).json({ error: "array and k required" });
+    const result = dsAlgorithmService.medianOfMedians(array, k);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/hp-filter",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values, lambda } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.hpFilter(values, lambda || 1600);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 3: STRING / DP ============
+
+router.post(
+  "/string/longest-common-substring",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { a, b } = req.body;
+    if (!a || !b) return res.status(400).json({ error: "a and b required" });
+    const result = dsAlgorithmService.longestCommonSubstring(a, b);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/string/jaro-winkler",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { a, b } = req.body;
+    if (!a || !b) return res.status(400).json({ error: "a and b required" });
+    const result = dsAlgorithmService.jaroWinklerSimilarity(a, b);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/string/hamming-distance",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { a, b } = req.body;
+    if (!a || !b) return res.status(400).json({ error: "a and b required" });
+    const result = dsAlgorithmService.hammingDistance(a, b);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/dp/palindrome-partitioning",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { s } = req.body;
+    if (!s) return res.status(400).json({ error: "s required" });
+    const result = dsAlgorithmService.palindromePartitioning(s);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/dp/egg-drop",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { eggs, floors } = req.body;
+    if (eggs === undefined || floors === undefined) return res.status(400).json({ error: "eggs and floors required" });
+    const result = dsAlgorithmService.eggDrop(eggs, floors);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/dp/tsp",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cities, distances } = req.body;
+    if (cities === undefined || !distances) return res.status(400).json({ error: "cities and distances required" });
+    const result = dsAlgorithmService.travelingSalesmanDp(cities, distances);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 3: ENHANCED EXISTING ============
+
+router.post(
+  "/median-heap",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.medianHeapOperations(values);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/trie-wildcard",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { words, queries } = req.body;
+    if (!words || !queries) return res.status(400).json({ error: "words and queries required" });
+    const result = dsAlgorithmService.trieWildcardSearch(words, queries);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/fenwick-range-update",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values, updates, queries } = req.body;
+    if (!values || !updates || !queries) return res.status(400).json({ error: "values, updates, queries required" });
+    const result = dsAlgorithmService.fenwickRangeUpdate(values, updates, queries);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/segment-tree-advanced",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values, operations } = req.body;
+    if (!values || !operations) return res.status(400).json({ error: "values and operations required" });
+    const result = dsAlgorithmService.segmentTreeAdvanced(values, operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/bloom-filter-union",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { filters } = req.body;
+    if (!filters || !Array.isArray(filters)) return res.status(400).json({ error: "filters array required" });
+    const result = dsAlgorithmService.bloomFilterUnionIntersect(filters);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/lfu-cache",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { capacity, operations } = req.body;
+    if (!capacity || !operations) return res.status(400).json({ error: "capacity and operations required" });
+    const result = dsAlgorithmService.lfuCacheOperations(capacity, operations);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 3: MARKETING DEPTH ============
+
+router.post(
+  "/marketing/vcg",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { bidders, items, slots } = req.body;
+    if (!bidders || items === undefined || slots === undefined) return res.status(400).json({ error: "bidders, items, slots required" });
+    const result = dsAlgorithmService.vcgPayments(bidders, items, slots);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/markov-chain",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { channels, paths } = req.body;
+    if (!channels || !paths) return res.status(400).json({ error: "channels and paths required" });
+    const result = dsAlgorithmService.markovChainAttribution(channels, paths);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/bang-bang",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { spendHistory, budget, daysElapsed, totalDays, tolerance } = req.body;
+    if (!spendHistory || budget === undefined || daysElapsed === undefined || totalDays === undefined)
+      return res.status(400).json({ error: "spendHistory, budget, daysElapsed, totalDays required" });
+    const result = dsAlgorithmService.bangBangPacing(spendHistory, budget, daysElapsed, totalDays, tolerance || 0.1);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/page-rank",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges, damping, iterations } = req.body;
+    if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+    const result = dsAlgorithmService.pageRankAudience(nodes, edges, damping || 0.85, iterations || 20);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/submodular",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { items, budget } = req.body;
+    if (!items || budget === undefined) return res.status(400).json({ error: "items and budget required" });
+    const result = dsAlgorithmService.submodularMaximization(items, budget);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/ad-sequence",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { positions, ads } = req.body;
+    if (positions === undefined || !ads) return res.status(400).json({ error: "positions and ads required" });
+    const result = dsAlgorithmService.adSequencingDp(positions, ads);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/optimal-stopping",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { candidates } = req.body;
+    if (!candidates || !Array.isArray(candidates)) return res.status(400).json({ error: "candidates array required" });
+    const result = dsAlgorithmService.optimalStopping(candidates);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/little-law",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { arrivalRate, avgServiceTime } = req.body;
+    if (arrivalRate === undefined || avgServiceTime === undefined) return res.status(400).json({ error: "arrivalRate and avgServiceTime required" });
+    const result = dsAlgorithmService.littleLawInventory(arrivalRate, avgServiceTime);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/thompson-sampling",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { variants, samples } = req.body;
+    if (!variants) return res.status(400).json({ error: "variants required" });
+    const result = dsAlgorithmService.thompsonSampling(variants, samples || 1000);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/differential-privacy",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { rawValues, epsilon, sensitivity } = req.body;
+    if (!rawValues || epsilon === undefined) return res.status(400).json({ error: "rawValues and epsilon required" });
+    const result = dsAlgorithmService.differentialPrivacy(rawValues, epsilon, sensitivity || 1);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 4: ADVANCED DATA STRUCTURES ============
+
+router.post(
+  "/b-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { operations, degree } = req.body;
+    if (!operations) return res.status(400).json({ error: "operations array required" });
+    const result = dsAlgorithmService.bTreeOperations(operations, degree || 3);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/kd-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { points, target } = req.body;
+    if (!points || !target) return res.status(400).json({ error: "points and target required" });
+    const result = dsAlgorithmService.kdTreeNearestNeighbor(points, target);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/quad-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { points, region } = req.body;
+    if (!points || !region) return res.status(400).json({ error: "points and region required" });
+    const result = dsAlgorithmService.quadTreeRegionQuery(points, region);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/cartesian-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.cartesianTreeOperations(values);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/bit-array",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.bitArrayOperations(values);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 4: ADVANCED ALGORITHMS ============
+
+router.post(
+  "/graph/stoer-wagner",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges } = req.body;
+    if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+    const result = dsAlgorithmService.stoerWagnerMinCut(nodes, edges);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/graph/gale-shapley",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { proposers, reviewers } = req.body;
+    if (!proposers || !reviewers) return res.status(400).json({ error: "proposers and reviewers required" });
+    const result = dsAlgorithmService.galeShapleyMatching(proposers, reviewers);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/graph/push-relabel",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges, source, sink } = req.body;
+    if (!nodes || !edges || !source || !sink) return res.status(400).json({ error: "nodes, edges, source, sink required" });
+    const result = dsAlgorithmService.pushRelabelMaxFlow(nodes, edges, source, sink);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/simulated-annealing",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { initialSolution, costFn, tempStart, tempEnd, coolingRate } = req.body;
+    if (!initialSolution || !costFn) return res.status(400).json({ error: "initialSolution and costFn required" });
+    const fn = typeof costFn === "string" ? new Function("return " + costFn)() : costFn;
+    const result = dsAlgorithmService.simulatedAnnealing(initialSolution, fn, tempStart || 100, tempEnd || 0.01, coolingRate || 0.95);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/beam-search",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { start, goal, expand, beamWidth } = req.body;
+    if (!start || !goal || !expand) return res.status(400).json({ error: "start, goal, expand required" });
+    const expandFn = typeof expand === "string" ? new Function("return " + expand)() : expand;
+    const result = dsAlgorithmService.beamSearch(start, goal, expandFn, beamWidth || 3);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/graph/eulerian-path",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges } = req.body;
+    if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+    const result = dsAlgorithmService.eulerianPath(nodes, edges);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/graph/chinese-postman",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nodes, edges } = req.body;
+    if (!nodes || !edges) return res.status(400).json({ error: "nodes and edges required" });
+    const result = dsAlgorithmService.chinesePostman(nodes, edges);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 4: STRING / DP ============
+
+router.post(
+  "/string/aho-corasick",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text, patterns } = req.body;
+    if (!text || !patterns) return res.status(400).json({ error: "text and patterns required" });
+    const result = dsAlgorithmService.ahoCorasickSearch(text, patterns);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/string/bwt",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: "text required" });
+    const result = dsAlgorithmService.burrowsWheelerTransform(text);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/string/needleman-wunsch",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { a, b, matchScore, gapPenalty, mismatchPenalty } = req.body;
+    if (!a || !b) return res.status(400).json({ error: "a and b required" });
+    const result = dsAlgorithmService.needlemanWunschAlignment(a, b, matchScore || 2, gapPenalty || -1, mismatchPenalty || -1);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/string/min-window",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { s, t } = req.body;
+    if (!s || !t) return res.status(400).json({ error: "s and t required" });
+    const result = dsAlgorithmService.minWindowSubstring(s, t);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/dp/lps",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { s } = req.body;
+    if (!s) return res.status(400).json({ error: "s required" });
+    const result = dsAlgorithmService.longestPalindromicSubsequence(s);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/dp/balloon-burst",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { nums } = req.body;
+    if (!nums || !Array.isArray(nums)) return res.status(400).json({ error: "nums array required" });
+    const result = dsAlgorithmService.balloonBurst(nums);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/dp/wildcard-match",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { s, pattern } = req.body;
+    if (!s || !pattern) return res.status(400).json({ error: "s and pattern required" });
+    const result = dsAlgorithmService.wildcardMatching(s, pattern);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 4: ENHANCED EXISTING ============
+
+router.post(
+  "/persistent-segment-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values, operations } = req.body;
+    if (!values || !operations) return res.status(400).json({ error: "values and operations required" });
+    const result = dsAlgorithmService.persistentSegmentTree(values, operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/min-max-heap",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.minMaxHeapOperations(values);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/order-statistic-tree",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.orderStatisticTree(values);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/concurrent-lru",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { capacity, operations } = req.body;
+    if (!capacity || !operations) return res.status(400).json({ error: "capacity and operations required" });
+    const result = dsAlgorithmService.concurrentLRUCache(capacity, operations);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/rope-string",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { s, operations } = req.body;
+    if (!s || !operations) return res.status(400).json({ error: "s and operations required" });
+    const result = dsAlgorithmService.ropeStringOperations(s, operations);
+    sendSuccess(res, result);
+  }),
+);
+
+// ============ DEPTH 4: MARKETING DEPTH ============
+
+router.post(
+  "/marketing/multi-touch",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { paths, model } = req.body;
+    if (!paths) return res.status(400).json({ error: "paths required" });
+    const result = dsAlgorithmService.multiTouchAttribution(paths, model || "linear");
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/budget-smoothing",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { values, windowSize } = req.body;
+    if (!values || !Array.isArray(values)) return res.status(400).json({ error: "values array required" });
+    const result = dsAlgorithmService.budgetSmoothing(values, windowSize || 3);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/ad-fatigue",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { impressions, responses } = req.body;
+    if (!impressions || !responses) return res.status(400).json({ error: "impressions and responses required" });
+    const result = dsAlgorithmService.adFatigueSaturation(impressions, responses);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/churn-heuristic",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { users } = req.body;
+    if (!users) return res.status(400).json({ error: "users required" });
+    const result = dsAlgorithmService.churnHeuristic(users);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/chi-square",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { control, variant } = req.body;
+    if (!control || !variant) return res.status(400).json({ error: "control and variant required" });
+    const result = dsAlgorithmService.chiSquareSignificance(control, variant);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/bid-landscape",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { historicalBids, targetImpressions } = req.body;
+    if (!historicalBids || targetImpressions === undefined) return res.status(400).json({ error: "historicalBids and targetImpressions required" });
+    const result = dsAlgorithmService.bidLandscapeForecast(historicalBids, targetImpressions);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/incrementality",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { control, treatment } = req.body;
+    if (!control || !treatment) return res.status(400).json({ error: "control and treatment required" });
+    const result = dsAlgorithmService.incrementalityTest(control, treatment);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/clv",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { avgPurchaseValue, purchaseFrequency, churnRate, discountRate } = req.body;
+    if (avgPurchaseValue === undefined || purchaseFrequency === undefined || churnRate === undefined)
+      return res.status(400).json({ error: "avgPurchaseValue, purchaseFrequency, churnRate required" });
+    const result = dsAlgorithmService.clvCalculation(avgPurchaseValue, purchaseFrequency, churnRate, discountRate || 0.1);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/reach-frequency",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { budget, cpm, frequencyCap } = req.body;
+    if (budget === undefined || cpm === undefined || frequencyCap === undefined)
+      return res.status(400).json({ error: "budget, cpm, frequencyCap required" });
+    const result = dsAlgorithmService.reachFrequencyEstimate(budget, cpm, frequencyCap);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/marketing/mmm",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { channels, responseValues } = req.body;
+    if (!channels || !responseValues) return res.status(400).json({ error: "channels and responseValues required" });
+    const result = dsAlgorithmService.marketingMixModel(channels, responseValues);
+    sendSuccess(res, result);
+  }),
+);
+
 export default router;
