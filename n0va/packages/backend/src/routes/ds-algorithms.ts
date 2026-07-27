@@ -1985,4 +1985,185 @@ router.post("/marketing/cohort-retention", asyncHandler(async (req, res) => {
   sendSuccess(res, dsAlgorithmService.cohortRetention(cohorts));
 }));
 
+// ── Depth 9: Campaign Intelligence & Attribution ──
+router.post("/marketing/campaign-attribution-shapley", asyncHandler(async (req, res) => {
+  const { channels, conversions } = req.body;
+  if (!channels || !conversions) return res.status(400).json({ error: "channels and conversions required" });
+  sendSuccess(res, dsAlgorithmService.campaignAttributionShapley(channels, conversions));
+}));
+router.post("/marketing/budget-pacing-kalman", asyncHandler(async (req, res) => {
+  const { spendHistory, targetSpend, measurementNoise, processNoise } = req.body;
+  if (!spendHistory || targetSpend === undefined) return res.status(400).json({ error: "spendHistory and targetSpend required" });
+  sendSuccess(res, dsAlgorithmService.budgetPacingKalman(spendHistory, targetSpend, measurementNoise, processNoise));
+}));
+router.post("/marketing/creative-forecast", asyncHandler(async (req, res) => {
+  const { metrics, alpha, beta, horizon } = req.body;
+  if (!metrics) return res.status(400).json({ error: "metrics array required" });
+  sendSuccess(res, dsAlgorithmService.creativePerformanceForecast(metrics, alpha, beta, horizon));
+}));
+router.post("/marketing/saturation-time-decay", asyncHandler(async (req, res) => {
+  const { spend, conversions, decayRate } = req.body;
+  if (!spend || !conversions) return res.status(400).json({ error: "spend and conversions required" });
+  sendSuccess(res, dsAlgorithmService.campaignSaturationTimeDecay(spend, conversions, decayRate));
+}));
+router.post("/marketing/ad-frequency-optimizer", asyncHandler(async (req, res) => {
+  const { impressions, conversions, maxFrequency } = req.body;
+  if (!impressions || !conversions) return res.status(400).json({ error: "impressions and conversions required" });
+  sendSuccess(res, dsAlgorithmService.adFrequencyOptimizer(impressions, conversions, maxFrequency));
+}));
+router.post("/marketing/conversion-attribution-markov", asyncHandler(async (req, res) => {
+  const { paths } = req.body;
+  if (!paths) return res.status(400).json({ error: "paths required" });
+  sendSuccess(res, dsAlgorithmService.conversionAttributionMarkov(paths));
+}));
+router.post("/marketing/journey-clustering", asyncHandler(async (req, res) => {
+  const { journeys, nClusters } = req.body;
+  if (!journeys) return res.status(400).json({ error: "journeys required" });
+  sendSuccess(res, dsAlgorithmService.customerJourneyClustering(journeys, nClusters));
+}));
+// ── Depth 9: Audience & Segmentation ──
+router.post("/marketing/lookalike-scoring", asyncHandler(async (req, res) => {
+  const { seed, candidates } = req.body;
+  if (!seed || !candidates) return res.status(400).json({ error: "seed and candidates required" });
+  sendSuccess(res, dsAlgorithmService.audienceLookalikeScoring(seed, candidates));
+}));
+router.post("/marketing/sentiment-time-series", asyncHandler(async (req, res) => {
+  const { sentiments, windowSize } = req.body;
+  if (!sentiments) return res.status(400).json({ error: "sentiments array required" });
+  sendSuccess(res, dsAlgorithmService.sentimentTimeSeries(sentiments, windowSize));
+}));
+router.post("/marketing/customer-ltv-monte-carlo", asyncHandler(async (req, res) => {
+  const { transactions, nSimulations } = req.body;
+  if (!transactions) return res.status(400).json({ error: "transactions required" });
+  sendSuccess(res, dsAlgorithmService.customerLtvMonteCarlo(transactions, nSimulations));
+}));
+router.post("/marketing/rfm-segmentation", asyncHandler(async (req, res) => {
+  const { customers } = req.body;
+  if (!customers) return res.status(400).json({ error: "customers required" });
+  sendSuccess(res, dsAlgorithmService.rfmSegmentation(customers));
+}));
+router.post("/marketing/audience-overlap", asyncHandler(async (req, res) => {
+  const { audiences } = req.body;
+  if (!audiences) return res.status(400).json({ error: "audiences required" });
+  sendSuccess(res, dsAlgorithmService.audienceOverlapAnalysis(audiences));
+}));
+router.post("/marketing/persona-affinity", asyncHandler(async (req, res) => {
+  const { personas, channels } = req.body;
+  if (!personas || !channels) return res.status(400).json({ error: "personas and channels required" });
+  sendSuccess(res, dsAlgorithmService.personaAffinityMatrix(personas, channels));
+}));
+router.post("/marketing/predictive-lead-scoring", asyncHandler(async (req, res) => {
+  const { leads } = req.body;
+  if (!leads) return res.status(400).json({ error: "leads required" });
+  sendSuccess(res, dsAlgorithmService.predictiveLeadScoring(leads));
+}));
+// ── Depth 9: Bidding & Budget Optimization ──
+router.post("/marketing/adaptive-bid-strategy", asyncHandler(async (req, res) => {
+  const { historicalBids, winRates, targetRoas, learningRate } = req.body;
+  if (!historicalBids || !winRates || targetRoas === undefined) return res.status(400).json({ error: "historicalBids, winRates, and targetRoas required" });
+  sendSuccess(res, dsAlgorithmService.adaptiveBidStrategy(historicalBids, winRates, targetRoas, learningRate));
+}));
+router.post("/marketing/budget-reallocator", asyncHandler(async (req, res) => {
+  const { channels, totalBudget } = req.body;
+  if (!channels || totalBudget === undefined) return res.status(400).json({ error: "channels and totalBudget required" });
+  sendSuccess(res, dsAlgorithmService.budgetReallocator(channels, totalBudget));
+}));
+router.post("/marketing/pacing-control-chart", asyncHandler(async (req, res) => {
+  const { spendSequence, targetPerPeriod, threshold } = req.body;
+  if (!spendSequence || targetPerPeriod === undefined) return res.status(400).json({ error: "spendSequence and targetPerPeriod required" });
+  sendSuccess(res, dsAlgorithmService.pacingControlChart(spendSequence, targetPerPeriod, threshold));
+}));
+router.post("/marketing/multi-touch-time-decay", asyncHandler(async (req, res) => {
+  const { paths, decayHalfLife } = req.body;
+  if (!paths) return res.status(400).json({ error: "paths required" });
+  sendSuccess(res, dsAlgorithmService.multiTouchAttributionTimeDecay(paths, decayHalfLife));
+}));
+router.post("/marketing/campaign-optimizer-evolutionary", asyncHandler(async (req, res) => {
+  const { campaigns, generations } = req.body;
+  if (!campaigns) return res.status(400).json({ error: "campaigns required" });
+  sendSuccess(res, dsAlgorithmService.campaignOptimizerEvolutionary(campaigns, generations));
+}));
+router.post("/marketing/cost-curve-fitting", asyncHandler(async (req, res) => {
+  const { spendLevels, costs } = req.body;
+  if (!spendLevels || !costs) return res.status(400).json({ error: "spendLevels and costs required" });
+  sendSuccess(res, dsAlgorithmService.costCurveFitting(spendLevels, costs));
+}));
+router.post("/marketing/marginal-roi", asyncHandler(async (req, res) => {
+  const { channelData } = req.body;
+  if (!channelData) return res.status(400).json({ error: "channelData required" });
+  sendSuccess(res, dsAlgorithmService.marginalROICalculation(channelData));
+}));
+// ── Depth 9: Marketing Analytics ──
+router.post("/marketing/media-mix-decomposer", asyncHandler(async (req, res) => {
+  const { spendData, conversions, lambda } = req.body;
+  if (!spendData || !conversions) return res.status(400).json({ error: "spendData and conversions required" });
+  sendSuccess(res, dsAlgorithmService.mediaMixDecomposer(spendData, conversions, lambda));
+}));
+router.post("/marketing/incremental-lift", asyncHandler(async (req, res) => {
+  const { controlConversions, treatmentConversions } = req.body;
+  if (!controlConversions || !treatmentConversions) return res.status(400).json({ error: "controlConversions and treatmentConversions required" });
+  sendSuccess(res, dsAlgorithmService.incrementalLiftAnalysis(controlConversions, treatmentConversions));
+}));
+router.post("/marketing/campaign-health-composite", asyncHandler(async (req, res) => {
+  const { metrics } = req.body;
+  if (!metrics) return res.status(400).json({ error: "metrics required" });
+  sendSuccess(res, dsAlgorithmService.campaignHealthComposite(metrics));
+}));
+router.post("/marketing/anomaly-detection-kpi", asyncHandler(async (req, res) => {
+  const { kpiValues, windowSize, zThreshold } = req.body;
+  if (!kpiValues) return res.status(400).json({ error: "kpiValues required" });
+  sendSuccess(res, dsAlgorithmService.anomalyDetectionMarketing(kpiValues, windowSize, zThreshold));
+}));
+router.post("/marketing/keyword-clustering", asyncHandler(async (req, res) => {
+  const { keywords, nClusters } = req.body;
+  if (!keywords) return res.status(400).json({ error: "keywords required" });
+  sendSuccess(res, dsAlgorithmService.keywordClustering(keywords, nClusters));
+}));
+router.post("/marketing/ad-copy-effectiveness", asyncHandler(async (req, res) => {
+  const { variants, priorAlpha, priorBeta } = req.body;
+  if (!variants) return res.status(400).json({ error: "variants required" });
+  sendSuccess(res, dsAlgorithmService.adCopyEffectiveness(variants, priorAlpha, priorBeta));
+}));
+router.post("/marketing/competitive-price-index", asyncHandler(async (req, res) => {
+  const { ourPrices, competitorPrices } = req.body;
+  if (!ourPrices || !competitorPrices) return res.status(400).json({ error: "ourPrices and competitorPrices required" });
+  sendSuccess(res, dsAlgorithmService.competitivePriceIndex(ourPrices, competitorPrices));
+}));
+// ── Depth 9: Forecasting & Prediction ──
+router.post("/marketing/demand-forecast-seasonal", asyncHandler(async (req, res) => {
+  const { historical, seasonLength, horizon } = req.body;
+  if (!historical) return res.status(400).json({ error: "historical data required" });
+  sendSuccess(res, dsAlgorithmService.demandForecastSeasonal(historical, seasonLength, horizon));
+}));
+router.post("/marketing/churn-prediction-tree", asyncHandler(async (req, res) => {
+  const { features, labels, minSamplesSplit } = req.body;
+  if (!features || !labels) return res.status(400).json({ error: "features and labels required" });
+  sendSuccess(res, dsAlgorithmService.churnPredictionTree(features, labels, minSamplesSplit));
+}));
+router.post("/marketing/revenue-forecast-monte-carlo", asyncHandler(async (req, res) => {
+  const { historicalRevenue, nSimulations, horizon } = req.body;
+  if (!historicalRevenue) return res.status(400).json({ error: "historicalRevenue required" });
+  sendSuccess(res, dsAlgorithmService.revenueForecastMonteCarlo(historicalRevenue, nSimulations, horizon));
+}));
+router.post("/marketing/campaign-lift-prediction", asyncHandler(async (req, res) => {
+  const { campaignMetrics } = req.body;
+  if (!campaignMetrics) return res.status(400).json({ error: "campaignMetrics required" });
+  sendSuccess(res, dsAlgorithmService.campaignLiftPrediction(campaignMetrics));
+}));
+router.post("/marketing/customer-acquisition-cost", asyncHandler(async (req, res) => {
+  const { acquisitions, channelMix } = req.body;
+  if (!acquisitions || !channelMix) return res.status(400).json({ error: "acquisitions and channelMix required" });
+  sendSuccess(res, dsAlgorithmService.customerAcquisitionCost(acquisitions, channelMix));
+}));
+router.post("/marketing/attribution-funnel", asyncHandler(async (req, res) => {
+  const { funnelStages } = req.body;
+  if (!funnelStages) return res.status(400).json({ error: "funnelStages required" });
+  sendSuccess(res, dsAlgorithmService.attributionFunnelAnalysis(funnelStages));
+}));
+router.post("/marketing/roi-decomposition", asyncHandler(async (req, res) => {
+  const { campaigns } = req.body;
+  if (!campaigns) return res.status(400).json({ error: "campaigns required" });
+  sendSuccess(res, dsAlgorithmService.marketingRoiDecomposition(campaigns));
+}));
+
 export default router;

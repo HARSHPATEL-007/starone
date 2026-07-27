@@ -1630,6 +1630,81 @@ export const api = {
       request<any>("/ds-algorithms/marketing/price-elasticity", { method: "POST", body: JSON.stringify(data) }),
     cohortRetention: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/cohort-retention", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 9: Campaign Intelligence & Attribution
+    campaignAttributionShapley: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/campaign-attribution-shapley", { method: "POST", body: JSON.stringify(data) }),
+    budgetPacingKalman: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/budget-pacing-kalman", { method: "POST", body: JSON.stringify(data) }),
+    creativePerformanceForecast: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/creative-forecast", { method: "POST", body: JSON.stringify(data) }),
+    campaignSaturationTimeDecay: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/saturation-time-decay", { method: "POST", body: JSON.stringify(data) }),
+    adFrequencyOptimizer: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/ad-frequency-optimizer", { method: "POST", body: JSON.stringify(data) }),
+    conversionAttributionMarkov: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/conversion-attribution-markov", { method: "POST", body: JSON.stringify(data) }),
+    customerJourneyClustering: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/journey-clustering", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 9: Audience & Segmentation
+    audienceLookalikeScoring: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/lookalike-scoring", { method: "POST", body: JSON.stringify(data) }),
+    sentimentTimeSeries: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/sentiment-time-series", { method: "POST", body: JSON.stringify(data) }),
+    customerLtvMonteCarlo: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/customer-ltv-monte-carlo", { method: "POST", body: JSON.stringify(data) }),
+    rfmSegmentation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/rfm-segmentation", { method: "POST", body: JSON.stringify(data) }),
+    audienceOverlapAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/audience-overlap", { method: "POST", body: JSON.stringify(data) }),
+    personaAffinityMatrix: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/persona-affinity", { method: "POST", body: JSON.stringify(data) }),
+    predictiveLeadScoring: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/predictive-lead-scoring", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 9: Bidding & Budget Optimization
+    adaptiveBidStrategy: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/adaptive-bid-strategy", { method: "POST", body: JSON.stringify(data) }),
+    budgetReallocator: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/budget-reallocator", { method: "POST", body: JSON.stringify(data) }),
+    pacingControlChart: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/pacing-control-chart", { method: "POST", body: JSON.stringify(data) }),
+    multiTouchAttributionTimeDecay: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/multi-touch-time-decay", { method: "POST", body: JSON.stringify(data) }),
+    campaignOptimizerEvolutionary: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/campaign-optimizer-evolutionary", { method: "POST", body: JSON.stringify(data) }),
+    costCurveFitting: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/cost-curve-fitting", { method: "POST", body: JSON.stringify(data) }),
+    marginalROICalculation: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/marginal-roi", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 9: Marketing Analytics
+    mediaMixDecomposer: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/media-mix-decomposer", { method: "POST", body: JSON.stringify(data) }),
+    incrementalLiftAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/incremental-lift", { method: "POST", body: JSON.stringify(data) }),
+    campaignHealthComposite: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/campaign-health-composite", { method: "POST", body: JSON.stringify(data) }),
+    anomalyDetectionMarketing: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/anomaly-detection-kpi", { method: "POST", body: JSON.stringify(data) }),
+    keywordClustering: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/keyword-clustering", { method: "POST", body: JSON.stringify(data) }),
+    adCopyEffectiveness: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/ad-copy-effectiveness", { method: "POST", body: JSON.stringify(data) }),
+    competitivePriceIndex: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/competitive-price-index", { method: "POST", body: JSON.stringify(data) }),
+    // Depth 9: Forecasting & Prediction
+    demandForecastSeasonal: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/demand-forecast-seasonal", { method: "POST", body: JSON.stringify(data) }),
+    churnPredictionTree: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/churn-prediction-tree", { method: "POST", body: JSON.stringify(data) }),
+    revenueForecastMonteCarlo: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/revenue-forecast-monte-carlo", { method: "POST", body: JSON.stringify(data) }),
+    campaignLiftPrediction: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/campaign-lift-prediction", { method: "POST", body: JSON.stringify(data) }),
+    customerAcquisitionCost: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/customer-acquisition-cost", { method: "POST", body: JSON.stringify(data) }),
+    attributionFunnelAnalysis: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/attribution-funnel", { method: "POST", body: JSON.stringify(data) }),
+    marketingRoiDecomposition: (data: Record<string, unknown>) =>
+      request<any>("/ds-algorithms/marketing/roi-decomposition", { method: "POST", body: JSON.stringify(data) }),
   },
 
   autonomousCampaignManager: {

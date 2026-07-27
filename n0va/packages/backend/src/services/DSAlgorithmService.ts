@@ -7121,6 +7121,777 @@ export class DSAlgorithmService {
     return { algorithm: "cohortRetention", cohorts: results, avgRetentionCurve: avgCurve, overallRetention };
   }
 
+  // ── Depth 9: Campaign Intelligence & Attribution ──
+
+  campaignAttributionShapley(channels: string[], conversions: { channel: string; value: number; interactions: string[] }[]): { algorithm: string; channels: string[]; attribution: Record<string, number>; conversions: number } {
+    const n = channels.length;
+    const contrib: Record<string, number> = {};
+    for (const ch of channels) contrib[ch] = 0;
+    for (const conv of conversions) {
+      const relevant = [...new Set(conv.interactions.filter(i => channels.includes(i)))];
+      const m = relevant.length;
+      for (let i = 0; i < (1 << m); i++) {
+        const subset: string[] = [];
+        for (let j = 0; j < m; j++) if (i & (1 << j)) subset.push(relevant[j]);
+        const weight = subset.length;
+        const marg = conv.value;
+        for (const ch of relevant) {
+          if (subset.includes(ch)) {
+            if (weight > 0) contrib[ch] += marg / (m * weight);
+          } else {
+            contrib[ch] -= marg / (m * (m - weight));
+          }
+        }
+      }
+    }
+    return { algorithm: "campaignAttributionShapley", channels, attribution: Object.fromEntries(Object.entries(contrib).map(([k, v]) => [k, Math.round(v * 100) / 100])), conversions: conversions.length };
+  }
+
+  budgetPacingKalman(spendHistory: number[], targetSpend: number, measurementNoise: number = 0.1, processNoise: number = 0.01): { algorithm: string; spendHistory: number[]; targetSpend: number; filtered: number[]; adjustments: number[]; finalRate: number } {
+    let x = spendHistory[0] || 0;
+    let p = 1;
+    const filtered: number[] = [];
+    const adjustments: number[] = [];
+    for (const z of spendHistory) {
+      p += processNoise;
+      const k = p / (p + measurementNoise);
+      x += k * (z - x);
+      p *= (1 - k);
+      filtered.push(Math.round(x * 100) / 100);
+      const adj = Math.max(-targetSpend * 0.5, Math.min(targetSpend * 0.5, (targetSpend - x) * 0.3));
+      adjustments.push(Math.round(adj * 100) / 100);
+    }
+    return { algorithm: "budgetPacingKalman", spendHistory, targetSpend, filtered, adjustments, finalRate: filtered.length > 0 ? Math.round((filtered[filtered.length - 1] / Math.max(targetSpend, 1)) * 1000) / 1000 : 0 };
+  }
+
+  creativePerformanceForecast(metrics: number[], alpha: number = 0.3, beta: number = 0.1, horizon: number = 5): { algorithm: string; metrics: number[]; alpha: number; beta: number; forecast: number[]; smoothed: number[]; trend: number[] } {
+    const n = metrics.length;
+    if (n < 2) return { algorithm: "creativePerformanceForecast", metrics, alpha, beta, forecast: new Array(horizon).fill(metrics[0] || 0), smoothed: metrics, trend: new Array(n).fill(0) };
+    let level = metrics[0], trend = metrics[1] - metrics[0];
+    const smoothed: number[] = [level];
+    const trends: number[] = [trend];
+    for (let i = 1; i < n; i++) {
+      const newLevel = alpha * metrics[i] + (1 - alpha) * (level + trend);
+      const newTrend = beta * (newLevel - level) + (1 - beta) * trend;
+      level = newLevel; trend = newTrend;
+      smoothed.push(Math.round(level * 100) / 100);
+      trends.push(Math.round(trend * 10000) / 10000);
+    }
+    const forecast: number[] = [];
+    for (let h = 1; h <= horizon; h++) forecast.push(Math.round((level + h * trend) * 100) / 100);
+    return { algorithm: "creativePerformanceForecast", metrics, alpha, beta, forecast, smoothed, trend: trends };
+  }
+
+  campaignSaturationTimeDecay(spend: number[], conversions: number[], decayRate: number = 0.3): { algorithm: string; spend: number[]; conversions: number[]; decayRate: number; fitted: number[]; saturationPoint: number; elasticity: number } {
+    const n = Math.min(spend.length, conversions.length);
+    const decayed: number[] = [];
+    let cumulative = 0;
+    for (let i = 0; i < n; i++) {
+      cumulative = cumulative * (1 - decayRate) + spend[i];
+      decayed.push(Math.round(cumulative * 100) / 100);
+    }
+    const meanS = decayed.reduce((s, v) => s + v, 0) / n;
+    const meanC = conversions.slice(0, n).reduce((s, v) => s + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (decayed[i] - meanS) * (conversions[i] - meanC); den += (decayed[i] - meanS) ** 2; }
+    const elasticity = den > 0 ? num / den : 0;
+    const fitted = decayed.map(s => Math.round((meanC + elasticity * (s - meanS)) * 100) / 100);
+    const saturationPoint = decayed[decayed.length - 1];
+    return { algorithm: "campaignSaturationTimeDecay", spend, conversions, decayRate, fitted, saturationPoint: Math.round(saturationPoint * 100) / 100, elasticity: Math.round(elasticity * 10000) / 10000 };
+  }
+
+  adFrequencyOptimizer(impressions: number[], conversions: number[], maxFrequency: number = 10): { algorithm: string; impressions: number[]; conversions: number[]; maxFrequency: number; optimalFrequency: number; curve: { freq: number; convRate: number }[] } {
+    const n = Math.min(impressions.length, conversions.length);
+    const rates: number[] = [];
+    for (let f = 1; f <= maxFrequency; f++) {
+      const bucket: number[] = [];
+      for (let i = 0; i < n; i++) if (impressions[i] >= f) bucket.push(conversions[i]);
+      rates.push(bucket.length > 0 ? bucket.reduce((s, v) => s + v, 0) / bucket.length : 0);
+    }
+    const curve = rates.map((r, i) => ({ freq: i + 1, convRate: Math.round(r * 10000) / 10000 }));
+    let bestIdx = 0, bestRate = 0;
+    for (let i = 1; i < rates.length; i++) { const marginal = rates[i] - rates[i - 1]; if (marginal > bestRate) { bestRate = marginal; bestIdx = i; } }
+    return { algorithm: "adFrequencyOptimizer", impressions, conversions, maxFrequency, optimalFrequency: bestIdx + 1, curve };
+  }
+
+  conversionAttributionMarkov(paths: { channels: string[]; conversion: boolean }[]): { algorithm: string; paths: number; channelImportance: Record<string, number>; removalEffects: Record<string, number> } {
+    const transitions = new Map<string, Map<string, number>>();
+    const channelCount = new Map<string, number>();
+    const convCount = new Map<string, number>();
+    for (const p of paths) {
+      const unique = [...new Set(p.channels)];
+      for (const ch of unique) channelCount.set(ch, (channelCount.get(ch) || 0) + 1);
+      for (let i = 0; i < unique.length - 1; i++) {
+        if (!transitions.has(unique[i])) transitions.set(unique[i], new Map());
+        transitions.get(unique[i])!.set(unique[i + 1], (transitions.get(unique[i])!.get(unique[i + 1]) || 0) + 1);
+      }
+      if (p.conversion && unique.length > 0) convCount.set(unique[unique.length - 1], (convCount.get(unique[unique.length - 1]) || 0) + 1);
+    }
+    const totalTransitions = (ch: string) => { const t = transitions.get(ch); return t ? [...t.values()].reduce((s, v) => s + v, 0) : 0; };
+    const importance: Record<string, number> = {};
+    const removalEffects: Record<string, number> = {};
+    for (const [ch, cnt] of channelCount) {
+      const convs = convCount.get(ch) || 0;
+      const tt = totalTransitions(ch);
+      importance[ch] = cnt > 0 ? Math.round(convs / cnt * 10000) / 10000 : 0;
+      removalEffects[ch] = tt > 0 ? Math.round(convs / tt * 10000) / 10000 : 0;
+    }
+    return { algorithm: "conversionAttributionMarkov", paths: paths.length, channelImportance: importance, removalEffects };
+  }
+
+  customerJourneyClustering(journeys: { id: string; touchpoints: string[]; conversions: number }[], nClusters: number = 3): { algorithm: string; journeys: number; nClusters: number; clusters: { id: string; cluster: number }[]; centroids: number[][] } {
+    const allTouchpoints = [...new Set(journeys.flatMap(j => j.touchpoints))];
+    const vectors = journeys.map(j => allTouchpoints.map(t => j.touchpoints.includes(t) ? 1 : 0));
+    const n = vectors.length, d = allTouchpoints.length;
+    const centroids: number[][] = Array.from({ length: nClusters }, () => Array.from({ length: d }, () => Math.random()));
+    const assignments: number[] = new Array(n).fill(0);
+    for (let iter = 0; iter < 20; iter++) {
+      for (let i = 0; i < n; i++) {
+        let best = 0, bestDist = Infinity;
+        for (let c = 0; c < nClusters; c++) {
+          const dist = vectors[i].reduce((s, v, j) => s + (v - centroids[c][j]) ** 2, 0);
+          if (dist < bestDist) { bestDist = dist; best = c; }
+        }
+        assignments[i] = best;
+      }
+      for (let c = 0; c < nClusters; c++) {
+        const members = vectors.filter((_, i) => assignments[i] === c);
+        if (members.length > 0) {
+          for (let j = 0; j < d; j++) centroids[c][j] = members.reduce((s, v) => s + v[j], 0) / members.length;
+        }
+      }
+    }
+    const clusters = journeys.map((j, i) => ({ id: j.id, cluster: assignments[i] }));
+    return { algorithm: "customerJourneyClustering", journeys: journeys.length, nClusters, clusters, centroids: centroids.map(c => c.map(v => Math.round(v * 100) / 100)) };
+  }
+
+  // ── Depth 9: Audience & Segmentation ──
+
+  audienceLookalikeScoring(seed: number[], candidates: number[][]): { algorithm: string; seed: number[]; candidates: number; scores: { index: number; score: number }[] } {
+    const mag = Math.sqrt(seed.reduce((s, v) => s + v * v, 0));
+    const seedNorm = mag > 0 ? seed.map(v => v / mag) : seed;
+    const scores = candidates.map((c, i) => {
+      const cMag = Math.sqrt(c.reduce((s, v) => s + v * v, 0));
+      const cNorm = cMag > 0 ? c.map(v => v / cMag) : c;
+      const sim = seedNorm.reduce((s, v, j) => s + v * (cNorm[j] || 0), 0);
+      return { index: i, score: Math.round((sim + 1) / 2 * 10000) / 10000 };
+    });
+    scores.sort((a, b) => b.score - a.score);
+    return { algorithm: "audienceLookalikeScoring", seed, candidates: candidates.length, scores };
+  }
+
+  sentimentTimeSeries(sentiments: number[], windowSize: number = 3): { algorithm: string; sentiments: number[]; windowSize: number; smoothed: number[]; trend: number[]; volatility: number[] } {
+    const n = sentiments.length;
+    const smoothed: number[] = [];
+    const volatility: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const lo = Math.max(0, i - windowSize + 1);
+      const window = sentiments.slice(lo, i + 1);
+      smoothed.push(Math.round(window.reduce((s, v) => s + v, 0) / window.length * 10000) / 10000);
+      const mean = window.reduce((s, v) => s + v, 0) / window.length;
+      volatility.push(Math.round(Math.sqrt(window.reduce((s, v) => s + (v - mean) ** 2, 0) / window.length) * 10000) / 10000);
+    }
+    const trend = smoothed.map((_, i) => {
+      if (i === 0) return 0;
+      return Math.round((smoothed[i] - smoothed[i - 1]) * 10000) / 10000;
+    });
+    return { algorithm: "sentimentTimeSeries", sentiments, windowSize, smoothed, trend, volatility };
+  }
+
+  customerLtvMonteCarlo(transactions: number[][], nSimulations: number = 1000): { algorithm: string; transactions: number; nSimulations: number; meanLtv: number; medianLtv: number; percentiles: { p5: number; p25: number; p50: number; p75: number; p95: number } } {
+    const avgValues = transactions.map(t => t.length > 0 ? t.reduce((s, v) => s + v, 0) / t.length : 0);
+    const freqs = transactions.map(t => t.length);
+    const meanVal = avgValues.reduce((s, v) => s + v, 0) / avgValues.length;
+    const meanFreq = freqs.reduce((s, v) => s + v, 0) / freqs.length;
+    const simulated: number[] = [];
+    for (let s = 0; s < nSimulations; s++) {
+      let total = 0;
+      for (let p = 0; p < Math.ceil(meanFreq * (1 + (Math.random() - 0.5) * 0.4)); p++) total += meanVal * (0.8 + Math.random() * 0.4);
+      simulated.push(total);
+    }
+    simulated.sort((a, b) => a - b);
+    const meanLtv = simulated.reduce((s, v) => s + v, 0) / simulated.length;
+    const sorted = [...simulated].sort((a, b) => a - b);
+    const p = (k: number) => sorted[Math.floor(k / 100 * sorted.length)];
+    return { algorithm: "customerLtvMonteCarlo", transactions: transactions.length, nSimulations, meanLtv: Math.round(meanLtv * 100) / 100, medianLtv: Math.round(p(50) * 100) / 100, percentiles: { p5: Math.round(p(5) * 100) / 100, p25: Math.round(p(25) * 100) / 100, p50: Math.round(p(50) * 100) / 100, p75: Math.round(p(75) * 100) / 100, p95: Math.round(p(95) * 100) / 100 } };
+  }
+
+  rfmSegmentation(customers: { id: string; recency: number; frequency: number; monetary: number }[]): { algorithm: string; customers: number; segments: { id: string; rScore: number; fScore: number; mScore: number; segment: string; score: number }[] } {
+    const r = customers.map(c => c.recency), f = customers.map(c => c.frequency), m = customers.map(c => c.monetary);
+    const quantile = (arr: number[], v: number) => { const sorted = [...arr].sort((a, b) => a - b); const idx = sorted.findIndex(x => x >= v); return idx < 0 ? 0 : Math.min(4, Math.floor(idx / sorted.length * 5)); };
+    const segments: { id: string; rScore: number; fScore: number; mScore: number; segment: string; score: number }[] = [];
+    for (const c of customers) {
+      const rScore = 4 - quantile(r, c.recency);
+      const fScore = quantile(f, c.frequency);
+      const mScore = quantile(m, c.monetary);
+      const total = rScore + fScore + mScore;
+      let segment = "gold";
+      if (total <= 4) segment = "bronze";
+      else if (total <= 8) segment = "silver";
+      else segment = "gold";
+      segments.push({ id: c.id, rScore, fScore, mScore, segment, score: Math.round(total / 12 * 10000) / 10000 });
+    }
+    return { algorithm: "rfmSegmentation", customers: customers.length, segments };
+  }
+
+  audienceOverlapAnalysis(audiences: { name: string; members: string[] }[]): { algorithm: string; audiences: number; overlapMatrix: { a: string; b: string; jaccard: number }[]; uniqueTotal: number } {
+    const overlap: { a: string; b: string; jaccard: number }[] = [];
+    const allMembers = new Set<string>();
+    for (const a of audiences) for (const m of a.members) allMembers.add(m);
+    for (let i = 0; i < audiences.length; i++) {
+      for (let j = i + 1; j < audiences.length; j++) {
+        const setA = new Set(audiences[i].members);
+        const setB = new Set(audiences[j].members);
+        let intersection = 0, union = new Set(audiences[i].members);
+        for (const m of audiences[j].members) union.add(m);
+        for (const m of setA) if (setB.has(m)) intersection++;
+        overlap.push({ a: audiences[i].name, b: audiences[j].name, jaccard: Math.round(intersection / Math.max(union.size, 1) * 10000) / 10000 });
+      }
+    }
+    return { algorithm: "audienceOverlapAnalysis", audiences: audiences.length, overlapMatrix: overlap, uniqueTotal: allMembers.size };
+  }
+
+  personaAffinityMatrix(personas: { name: string; attributes: Record<string, number> }[], channels: { name: string; scores: Record<string, number> }[]): { algorithm: string; matrix: { persona: string; channel: string; affinity: number }[]; recommendations: { persona: string; topChannel: string; score: number }[] } {
+    const matrix: { persona: string; channel: string; affinity: number }[] = [];
+    const recommendations: { persona: string; topChannel: string; score: number }[] = [];
+    for (const p of personas) {
+      let bestCh = "", bestScore = 0;
+      for (const ch of channels) {
+        let dot = 0, pMag = 0, cMag = 0;
+        const allKeys = [...new Set([...Object.keys(p.attributes), ...Object.keys(ch.scores)])];
+        for (const k of allKeys) {
+          const pv = p.attributes[k] || 0, cv = ch.scores[k] || 0;
+          dot += pv * cv; pMag += pv * pv; cMag += cv * cv;
+        }
+        const affinity = pMag > 0 && cMag > 0 ? dot / (Math.sqrt(pMag) * Math.sqrt(cMag)) : 0;
+        matrix.push({ persona: p.name, channel: ch.name, affinity: Math.round(affinity * 10000) / 10000 });
+        if (affinity > bestScore) { bestScore = affinity; bestCh = ch.name; }
+      }
+      recommendations.push({ persona: p.name, topChannel: bestCh, score: Math.round(bestScore * 10000) / 10000 });
+    }
+    return { algorithm: "personaAffinityMatrix", matrix, recommendations };
+  }
+
+  predictiveLeadScoring(leads: { features: number[]; converted: number }[]): { algorithm: string; leads: number; coefficients: number[]; intercept: number; predictions: { index: number; score: number; predicted: number }[]; auc: number } {
+    const n = leads.length;
+    const d = leads[0]?.features.length || 1;
+    let w = new Array(d).fill(0);
+    let b = 0;
+    const sigmoid = (x: number) => 1 / (1 + Math.exp(-Math.max(-100, Math.min(100, x))));
+    for (let ep = 0; ep < 100; ep++) {
+      let dw = new Array(d).fill(0), db = 0;
+      for (const lead of leads) {
+        const z = lead.features.reduce((s, v, j) => s + v * w[j], 0) + b;
+        const pred = sigmoid(z);
+        const err = pred - lead.converted;
+        for (let j = 0; j < d; j++) dw[j] += err * lead.features[j];
+        db += err;
+      }
+      for (let j = 0; j < d; j++) w[j] -= 0.01 * dw[j] / n;
+      b -= 0.01 * db / n;
+    }
+    const predictions: { index: number; score: number; predicted: number }[] = [];
+    let tp = 0, fp = 0, tn = 0, fn = 0;
+    for (let i = 0; i < n; i++) {
+      const z = leads[i].features.reduce((s, v, j) => s + v * w[j], 0) + b;
+      const score = sigmoid(z);
+      const pred = score >= 0.5 ? 1 : 0;
+      predictions.push({ index: i, score: Math.round(score * 10000) / 10000, predicted: pred });
+      if (pred === 1 && leads[i].converted === 1) tp++;
+      else if (pred === 1 && leads[i].converted === 0) fp++;
+      else if (pred === 0 && leads[i].converted === 0) tn++;
+      else fn++;
+    }
+    const tpr = tp + fn > 0 ? tp / (tp + fn) : 0;
+    const fpr = fp + tn > 0 ? fp / (fp + tn) : 0;
+    const auc = tpr > 0 || fpr > 0 ? Math.round((1 + tpr - fpr) / 2 * 10000) / 10000 : 0.5;
+    return { algorithm: "predictiveLeadScoring", leads: n, coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, predictions, auc };
+  }
+
+  // ── Depth 9: Bidding & Budget Optimization ──
+
+  adaptiveBidStrategy(historicalBids: number[], winRates: number[], targetRoas: number, learningRate: number = 0.1): { algorithm: string; historicalBids: number[]; winRates: number[]; targetRoas: number; adjustedBids: number[]; expectedRoas: number } {
+    const n = Math.min(historicalBids.length, winRates.length);
+    let estimatedElasticity = 0;
+    if (n >= 2) {
+      const meanBid = historicalBids.reduce((s, v) => s + v, 0) / n;
+      const meanWin = winRates.reduce((s, v) => s + v, 0) / n;
+      let num = 0, den = 0;
+      for (let i = 0; i < n; i++) { num += (historicalBids[i] - meanBid) * (winRates[i] - meanWin); den += (historicalBids[i] - meanBid) ** 2; }
+      estimatedElasticity = den > 0 ? num / den : 0;
+    }
+    const adjustedBids = historicalBids.map(b => {
+      const adj = b * (1 + learningRate * (targetRoas - 1 / Math.max(b, 0.01)));
+      return Math.round(Math.max(0.01, adj) * 100) / 100;
+    });
+    const avgWinRate = winRates.reduce((s, v) => s + v, 0) / Math.max(n, 1);
+    const expectedRoas = avgWinRate > 0 ? Math.round(estimatedElasticity * avgWinRate * 10000) / 10000 : 0;
+    return { algorithm: "adaptiveBidStrategy", historicalBids, winRates, targetRoas, adjustedBids, expectedRoas };
+  }
+
+  budgetReallocator(channels: { name: string; currentBudget: number; marginalRoi: number; maxBudget: number }[], totalBudget: number): { algorithm: string; channels: number; totalBudget: number; allocations: { name: string; allocated: number; roi: number }[]; totalExpectedRoi: number } {
+    const allocs = channels.map(c => ({ name: c.name, allocated: c.currentBudget, roi: c.marginalRoi, maxBudget: c.maxBudget }));
+    let remaining = totalBudget - allocs.reduce((s, a) => s + a.allocated, 0);
+    let iterations = 0;
+    while (remaining > 0.01 && iterations < 100) {
+      allocs.sort((a, b) => b.roi - a.roi);
+      let moved = false;
+      for (const a of allocs) {
+        if (remaining <= 0) break;
+        const room = a.maxBudget - a.allocated;
+        if (room > 0 && a.roi > 0) {
+          const add = Math.min(room, remaining, 10);
+          a.allocated += add;
+          remaining -= add;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+      iterations++;
+    }
+    const totalExpectedRoi = allocs.reduce((s, a) => s + a.allocated * a.roi, 0);
+    return { algorithm: "budgetReallocator", channels: channels.length, totalBudget, allocations: allocs.map(a => ({ name: a.name, allocated: Math.round(a.allocated * 100) / 100, roi: Math.round(a.roi * 10000) / 10000 })), totalExpectedRoi: Math.round(totalExpectedRoi * 100) / 100 };
+  }
+
+  pacingControlChart(spendSequence: number[], targetPerPeriod: number, threshold: number = 2): { algorithm: string; spendSequence: number[]; targetPerPeriod: number; threshold: number; cumulativeSum: number[]; alerts: number[]; status: string } {
+    const n = spendSequence.length;
+    const errors = spendSequence.map(s => s - targetPerPeriod);
+    let cumSum = 0;
+    const cumulativeSum: number[] = [];
+    const alerts: number[] = [];
+    let highCount = 0;
+    for (let i = 0; i < n; i++) {
+      cumSum += errors[i];
+      cumulativeSum.push(Math.round(cumSum * 100) / 100);
+      if (Math.abs(cumSum) > threshold * Math.sqrt(i + 1)) {
+        alerts.push(i);
+        highCount++;
+      }
+    }
+    const status = highCount > n * 0.3 ? "out_of_control" : highCount > 0 ? "warning" : "in_control";
+    return { algorithm: "pacingControlChart", spendSequence, targetPerPeriod, threshold, cumulativeSum, alerts, status };
+  }
+
+  multiTouchAttributionTimeDecay(paths: { channels: string[]; conversion: boolean; timeToConvert: number }[], decayHalfLife: number = 7): { algorithm: string; paths: number; decayHalfLife: number; attribution: Record<string, number>; model: string } {
+    const decay = (t: number) => Math.pow(0.5, t / decayHalfLife);
+    const contrib: Record<string, number> = {};
+    let totalConv = 0;
+    for (const p of paths) {
+      if (!p.conversion) continue;
+      totalConv++;
+      const unique = [...new Set(p.channels)];
+      if (unique.length === 0) continue;
+      const n = unique.length;
+      let totalWeight = 0;
+      const weights: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const w = decay(Math.max(0, p.timeToConvert - i));
+        weights.push(w); totalWeight += w;
+      }
+      for (let i = 0; i < n; i++) {
+        const attr = totalWeight > 0 ? weights[i] / totalWeight * (1 / n) : 1 / n;
+        contrib[unique[i]] = (contrib[unique[i]] || 0) + attr;
+      }
+    }
+    const attribution: Record<string, number> = {};
+    for (const [ch, v] of Object.entries(contrib)) attribution[ch] = Math.round(v * 10000) / 10000;
+    return { algorithm: "multiTouchAttributionTimeDecay", paths: paths.length, decayHalfLife, attribution, model: "time_decay" };
+  }
+
+  campaignOptimizerEvolutionary(campaigns: { name: string; budget: number; roas: number; risk: number }[], generations: number = 20): { algorithm: string; campaigns: number; generations: number; paretoFront: { allocation: Record<string, number>; totalRoas: number; totalRisk: number }[]; bestAllocation: Record<string, number> } {
+    const n = campaigns.length;
+    const popSize = 50;
+    const mutate = (ind: number[]) => {
+      const idx = Math.floor(Math.random() * n);
+      ind[idx] = Math.random();
+      const sum = ind.reduce((s, v) => s + v, 0);
+      return ind.map(v => v / sum);
+    };
+    const crossover = (a: number[], b: number[]) => {
+      const pt = Math.floor(Math.random() * n);
+      return [...a.slice(0, pt), ...b.slice(pt, n)];
+    };
+    let pop: number[][] = Array.from({ length: popSize }, () => {
+      const raw = Array.from({ length: n }, () => Math.random());
+      const sum = raw.reduce((s, v) => s + v, 0);
+      return raw.map(v => v / sum);
+    });
+    let bestInd = pop[0];
+    let bestFitness = 0;
+    for (let g = 0; g < generations; g++) {
+      const fitness = pop.map(ind => {
+        const totalRoi = ind.reduce((s, v, i) => s + v * campaigns[i].roas * campaigns[i].budget, 0);
+        const totalRisk = ind.reduce((s, v, i) => s + v * campaigns[i].risk, 0);
+        return totalRoi - totalRisk * 0.5;
+      });
+      for (let i = 0; i < popSize; i++) { if (fitness[i] > bestFitness) { bestFitness = fitness[i]; bestInd = pop[i]; } }
+      const newPop: number[][] = [bestInd];
+      for (let i = 1; i < popSize; i++) {
+        if (Math.random() < 0.8) {
+          const p1 = pop[Math.floor(Math.random() * popSize)], p2 = pop[Math.floor(Math.random() * popSize)];
+          let child = crossover(p1, p2);
+          if (Math.random() < 0.2) child = mutate(child);
+          newPop.push(child);
+        } else {
+          newPop.push(pop[Math.floor(Math.random() * popSize)]);
+        }
+      }
+      pop = newPop;
+    }
+    const bestAllocation: Record<string, number> = {};
+    for (let i = 0; i < n; i++) bestAllocation[campaigns[i].name] = Math.round(bestInd[i] * 10000) / 10000;
+    const paretoFront = [{ allocation: bestAllocation, totalRoas: Math.round(bestFitness * 100) / 100, totalRisk: Math.round(bestInd.reduce((s, v, i) => s + v * campaigns[i].risk, 0) * 100) / 100 }];
+    return { algorithm: "campaignOptimizerEvolutionary", campaigns: n, generations, paretoFront, bestAllocation };
+  }
+
+  costCurveFitting(spendLevels: number[], costs: number[]): { algorithm: string; spendLevels: number[]; costs: number[]; alpha: number; beta: number; fitted: number[]; rSquared: number } {
+    const n = Math.min(spendLevels.length, costs.length);
+    const logS = spendLevels.slice(0, n).map(s => Math.log(Math.max(s, 0.01)));
+    const logC = costs.slice(0, n).map(c => Math.log(Math.max(c, 0.01)));
+    const meanLogS = logS.reduce((s, v) => s + v, 0) / n;
+    const meanLogC = logC.reduce((s, v) => s + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (logS[i] - meanLogS) * (logC[i] - meanLogC); den += (logS[i] - meanLogS) ** 2; }
+    const beta = den > 0 ? num / den : 1;
+    const alpha = Math.exp(meanLogC - beta * meanLogS);
+    const fitted = spendLevels.slice(0, n).map(s => alpha * Math.pow(s, beta));
+    let ssRes = 0, ssTot = 0;
+    const meanCost = costs.slice(0, n).reduce((s, v) => s + v, 0) / n;
+    for (let i = 0; i < n; i++) { ssRes += (costs[i] - fitted[i]) ** 2; ssTot += (costs[i] - meanCost) ** 2; }
+    const rSquared = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+    return { algorithm: "costCurveFitting", spendLevels, costs, alpha: Math.round(alpha * 10000) / 10000, beta: Math.round(beta * 10000) / 10000, fitted: fitted.map(v => Math.round(v * 100) / 100), rSquared: Math.round(rSquared * 10000) / 10000 };
+  }
+
+  marginalROICalculation(channelData: { channel: string; spend: number; conversions: number; conversionValue: number }[]): { algorithm: string; channels: number; marginalRois: { channel: string; currentRoi: number; marginalRoi: number; optimalSpend: number }[] } {
+    const results: { channel: string; currentRoi: number; marginalRoi: number; optimalSpend: number }[] = [];
+    for (const ch of channelData) {
+      const currentRoi = ch.spend > 0 ? (ch.conversions * ch.conversionValue) / ch.spend : 0;
+      const marginalRoi = currentRoi * (1 - ch.spend / Math.max(ch.spend + 100, 1));
+      const optimalSpend = ch.conversions > 0 ? Math.sqrt(ch.conversions * ch.conversionValue * 2) : ch.spend;
+      results.push({ channel: ch.channel, currentRoi: Math.round(currentRoi * 10000) / 10000, marginalRoi: Math.round(Math.max(0, marginalRoi) * 10000) / 10000, optimalSpend: Math.round(optimalSpend * 100) / 100 });
+    }
+    return { algorithm: "marginalROICalculation", channels: channelData.length, marginalRois: results };
+  }
+
+  // ── Depth 9: Marketing Analytics ──
+
+  mediaMixDecomposer(spendData: { channel: string; spend: number[] }[], conversions: number[], lambda: number = 0.1): { algorithm: string; channels: string[]; coefficients: number[]; intercept: number; rSquared: number; contribution: Record<string, number> } {
+    const n = conversions.length;
+    const chNames = spendData.map(d => d.channel);
+    const k = chNames.length;
+    const X = Array.from({ length: n }, (_, i) => spendData.map(d => d.spend[i] || 0));
+    const y = conversions.map(c => Math.log(Math.max(c, 0.01)));
+    const meanY = y.reduce((s, v) => s + v, 0) / n;
+    let w = new Array(k).fill(0);
+    let b = meanY;
+    for (let ep = 0; ep < 200; ep++) {
+      const gradW = new Array(k).fill(0);
+      let gradB = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = X[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+        const err = pred - y[i];
+        for (let j = 0; j < k; j++) gradW[j] += err * X[i][j];
+        gradB += err;
+      }
+      for (let j = 0; j < k; j++) gradW[j] = (gradW[j] + lambda * w[j]) / n;
+      gradB /= n;
+      for (let j = 0; j < k; j++) w[j] -= 0.001 * gradW[j];
+      b -= 0.001 * gradB;
+    }
+    let ssRes = 0, ssTot = 0;
+    for (let i = 0; i < n; i++) {
+      const pred = X[i].reduce((s, v, j) => s + v * w[j], 0) + b;
+      ssRes += (y[i] - pred) ** 2;
+      ssTot += (y[i] - meanY) ** 2;
+    }
+    const rSquared = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+    const contribution: Record<string, number> = {};
+    for (let j = 0; j < k; j++) contribution[chNames[j]] = Math.round(Math.exp(w[j]) * 10000) / 10000;
+    return { algorithm: "mediaMixDecomposer", channels: chNames, coefficients: w.map(v => Math.round(v * 10000) / 10000), intercept: Math.round(b * 10000) / 10000, rSquared: Math.round(rSquared * 10000) / 10000, contribution };
+  }
+
+  incrementalLiftAnalysis(controlConversions: number[], treatmentConversions: number[]): { algorithm: string; controlConversions: number[]; treatmentConversions: number[]; lift: number; pValue: number; significant: boolean; controlMean: number; treatmentMean: number } {
+    const n1 = controlConversions.length, n2 = treatmentConversions.length;
+    const mean1 = controlConversions.reduce((s, v) => s + v, 0) / n1;
+    const mean2 = treatmentConversions.reduce((s, v) => s + v, 0) / n2;
+    const var1 = controlConversions.reduce((s, v) => s + (v - mean1) ** 2, 0) / (n1 - 1 || 1);
+    const var2 = treatmentConversions.reduce((s, v) => s + (v - mean2) ** 2, 0) / (n2 - 1 || 1);
+    const se = Math.sqrt(var1 / n1 + var2 / n2);
+    const tStat = se > 0 ? (mean2 - mean1) / se : 0;
+    const df = Math.min(n1, n2) - 1;
+    const pValue = Math.min(1, 2 * (1 - 1 / (1 + Math.exp(-0.5 * tStat * tStat))));
+    const lift = mean1 > 0 ? (mean2 - mean1) / mean1 : 0;
+    return { algorithm: "incrementalLiftAnalysis", controlConversions, treatmentConversions, lift: Math.round(lift * 10000) / 10000, pValue: Math.round(pValue * 10000) / 10000, significant: pValue < 0.05, controlMean: Math.round(mean1 * 10000) / 10000, treatmentMean: Math.round(mean2 * 10000) / 10000 };
+  }
+
+  campaignHealthComposite(metrics: { kpi: string; value: number; weight: number; threshold: number }[]): { algorithm: string; metrics: number; compositeScore: number; contributions: { kpi: string; score: number; status: string }[]; overallStatus: string } {
+    let totalScore = 0, totalWeight = 0;
+    const contributions: { kpi: string; score: number; status: string }[] = [];
+    for (const m of metrics) {
+      const score = Math.min(1, Math.max(0, m.value / Math.max(m.threshold, 0.01)));
+      totalScore += score * m.weight;
+      totalWeight += m.weight;
+      const status = score >= 0.8 ? "healthy" : score >= 0.5 ? "at_risk" : "critical";
+      contributions.push({ kpi: m.kpi, score: Math.round(score * 10000) / 10000, status });
+    }
+    const compositeScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+    const overallStatus = compositeScore >= 0.8 ? "healthy" : compositeScore >= 0.5 ? "at_risk" : "critical";
+    return { algorithm: "campaignHealthComposite", metrics: metrics.length, compositeScore: Math.round(compositeScore * 10000) / 10000, contributions, overallStatus };
+  }
+
+  anomalyDetectionMarketing(kpiValues: number[], windowSize: number = 7, zThreshold: number = 2): { algorithm: string; kpiValues: number[]; windowSize: number; zThreshold: number; anomalies: { index: number; value: number; zScore: number }[]; rollingMean: number[]; rollingStd: number[] } {
+    const n = kpiValues.length;
+    const anomalies: { index: number; value: number; zScore: number }[] = [];
+    const rollingMean: number[] = [];
+    const rollingStd: number[] = [];
+    for (let i = windowSize; i < n; i++) {
+      const prev = kpiValues.slice(i - windowSize, i);
+      const mean = prev.reduce((s, v) => s + v, 0) / windowSize;
+      const std = Math.sqrt(prev.reduce((s, v) => s + (v - mean) ** 2, 0) / windowSize);
+      rollingMean.push(Math.round(mean * 10000) / 10000);
+      rollingStd.push(Math.round(std * 10000) / 10000);
+      const val = kpiValues[i];
+      const z = std > 0 ? (val - mean) / std : 0;
+      if (Math.abs(z) > zThreshold) anomalies.push({ index: i, value: val, zScore: Math.round(z * 100) / 100 });
+    }
+    return { algorithm: "anomalyDetectionMarketing", kpiValues, windowSize, zThreshold, anomalies, rollingMean, rollingStd };
+  }
+
+  keywordClustering(keywords: { term: string; embeddings: number[] }[], nClusters: number = 3): { algorithm: string; keywords: number; nClusters: number; clusters: { term: string; cluster: number }[]; centroids: number[][] } {
+    const n = keywords.length;
+    const d = keywords[0]?.embeddings.length || 1;
+    const vectors = keywords.map(k => k.embeddings);
+    const centroids: number[][] = Array.from({ length: nClusters }, () => Array.from({ length: d }, () => Math.random()));
+    const assignments: number[] = new Array(n).fill(0);
+    for (let iter = 0; iter < 30; iter++) {
+      for (let i = 0; i < n; i++) {
+        let best = 0, bestDist = Infinity;
+        for (let c = 0; c < nClusters; c++) {
+          const dist = vectors[i].reduce((s, v, j) => s + (v - centroids[c][j]) ** 2, 0);
+          if (dist < bestDist) { bestDist = dist; best = c; }
+        }
+        assignments[i] = best;
+      }
+      for (let c = 0; c < nClusters; c++) {
+        const members = vectors.filter((_, i) => assignments[i] === c);
+        if (members.length > 0) for (let j = 0; j < d; j++) centroids[c][j] = members.reduce((s, v) => s + v[j], 0) / members.length;
+      }
+    }
+    const clusters = keywords.map((k, i) => ({ term: k.term, cluster: assignments[i] }));
+    return { algorithm: "keywordClustering", keywords: n, nClusters, clusters, centroids: centroids.map(c => c.map(v => Math.round(v * 100) / 100)) };
+  }
+
+  adCopyEffectiveness(variants: { variant: string; impressions: number; clicks: number; conversions: number }[], priorAlpha: number = 1, priorBeta: number = 1): { algorithm: string; variants: number; results: { variant: string; ctr: number; cvr: number; posteriorMean: number; winProb: number; credibleInterval: { lower: number; upper: number } }[]; winningVariant: string } {
+    const results: { variant: string; ctr: number; cvr: number; posteriorMean: number; winProb: number; credibleInterval: { lower: number; upper: number } }[] = [];
+    for (const v of variants) {
+      const ctr = v.impressions > 0 ? v.clicks / v.impressions : 0;
+      const cvr = v.clicks > 0 ? v.conversions / v.clicks : 0;
+      const posteriorAlpha = priorAlpha + v.conversions;
+      const posteriorBeta = priorBeta + v.clicks - v.conversions;
+      const posteriorMean = posteriorAlpha / (posteriorAlpha + posteriorBeta);
+      const std = Math.sqrt(posteriorAlpha * posteriorBeta / ((posteriorAlpha + posteriorBeta) ** 2 * (posteriorAlpha + posteriorBeta + 1)));
+      results.push({ variant: v.variant, ctr: Math.round(ctr * 10000) / 10000, cvr: Math.round(cvr * 10000) / 10000, posteriorMean: Math.round(posteriorMean * 10000) / 10000, winProb: Math.round(posteriorMean * 10000) / 10000, credibleInterval: { lower: Math.round(Math.max(0, posteriorMean - 1.96 * std) * 10000) / 10000, upper: Math.round(Math.min(1, posteriorMean + 1.96 * std) * 10000) / 10000 } });
+    }
+    results.sort((a, b) => b.posteriorMean - a.posteriorMean);
+    return { algorithm: "adCopyEffectiveness", variants: variants.length, results, winningVariant: results.length > 0 ? results[0].variant : "" };
+  }
+
+  competitivePriceIndex(ourPrices: number[], competitorPrices: number[][]): { algorithm: string; ourPrices: number[]; competitors: number; priceIndex: number[]; avgCompetitorPrice: number[]; position: string } {
+    const n = ourPrices.length;
+    const numCompetitors = competitorPrices.length;
+    const avgCompPrice: number[] = [];
+    const priceIndex: number[] = [];
+    for (let i = 0; i < n; i++) {
+      let sum = 0, count = 0;
+      for (let c = 0; c < numCompetitors; c++) { if (competitorPrices[c][i] !== undefined) { sum += competitorPrices[c][i]; count++; } }
+      const avg = count > 0 ? sum / count : 0;
+      avgCompPrice.push(Math.round(avg * 100) / 100);
+      priceIndex.push(Math.round((avg > 0 ? ourPrices[i] / avg : 1) * 10000) / 10000);
+    }
+    const avgIndex = priceIndex.reduce((s, v) => s + v, 0) / n;
+    const position = avgIndex < 0.95 ? "below_market" : avgIndex > 1.05 ? "above_market" : "at_market";
+    return { algorithm: "competitivePriceIndex", ourPrices, competitors: numCompetitors, priceIndex, avgCompetitorPrice: avgCompPrice, position };
+  }
+
+  // ── Depth 9: Forecasting & Prediction ──
+
+  demandForecastSeasonal(historical: number[], seasonLength: number = 12, horizon: number = 6): { algorithm: string; historical: number[]; seasonLength: number; horizon: number; forecast: number[]; seasonalFactors: number[]; trend: number } {
+    const n = historical.length;
+    const seasons = Math.floor(n / seasonLength);
+    const seasonalFactors: number[] = [];
+    for (let s = 0; s < seasonLength; s++) {
+      let sum = 0, cnt = 0;
+      for (let y = 0; y < seasons; y++) { sum += historical[y * seasonLength + s]; cnt++; }
+      const overallMean = historical.reduce((a, b) => a + b, 0) / n;
+      seasonalFactors.push(cnt > 0 && overallMean > 0 ? sum / cnt / overallMean : 1);
+    }
+    const xMean = (n - 1) / 2, yMean = historical.reduce((s, v) => s + v, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) { num += (i - xMean) * (historical[i] - yMean); den += (i - xMean) ** 2; }
+    const trend = den > 0 ? num / den : 0;
+    const lastLevel = yMean;
+    const forecast: number[] = [];
+    for (let h = 1; h <= horizon; h++) {
+      const idx = (n + h - 1) % seasonLength;
+      forecast.push(Math.round(Math.max(0, (lastLevel + trend * (n + h)) * seasonalFactors[idx]) * 100) / 100);
+    }
+    return { algorithm: "demandForecastSeasonal", historical, seasonLength, horizon, forecast, seasonalFactors: seasonalFactors.map(v => Math.round(v * 10000) / 10000), trend: Math.round(trend * 10000) / 10000 };
+  }
+
+  churnPredictionTree(features: number[][], labels: number[], minSamplesSplit: number = 2): { algorithm: string; features: number[][]; labels: number[]; minSamplesSplit: number; predictions: number[]; accuracy: number; importances: number[] } {
+    const n = features.length, d = features[0]?.length || 1;
+    const indices = Array.from({ length: n }, (_, i) => i);
+    const predict = (idx: number[]): number => { const ones = idx.filter(i => labels[i] === 1).length; return ones > idx.length / 2 ? 1 : 0; };
+    const gini = (idx: number[]) => {
+      if (idx.length === 0) return 0;
+      const ones = idx.filter(i => labels[i] === 1).length;
+      const p = ones / idx.length;
+      return 2 * p * (1 - p);
+    };
+    const buildTree = (idx: number[], depth: number): any => {
+      if (idx.length < minSamplesSplit || depth > 5 || new Set(idx.map(i => labels[i])).size <= 1) return { prediction: predict(idx), count: idx.length };
+      let bestGain = 0, bestFeat = -1, bestThresh = 0;
+      for (let f = 0; f < d; f++) {
+        const sorted = [...new Set(idx.map(i => features[i][f]))].sort((a, b) => a - b);
+        for (let t = 0; t < sorted.length - 1; t++) {
+          const thresh = (sorted[t] + sorted[t + 1]) / 2;
+          const left = idx.filter(i => features[i][f] <= thresh);
+          const right = idx.filter(i => features[i][f] > thresh);
+          if (left.length === 0 || right.length === 0) continue;
+          const gain = gini(idx) - (left.length / idx.length) * gini(left) - (right.length / idx.length) * gini(right);
+          if (gain > bestGain) { bestGain = gain; bestFeat = f; bestThresh = thresh; }
+        }
+      }
+      if (bestFeat < 0) return { prediction: predict(idx), count: idx.length };
+      const left = idx.filter(i => features[i][bestFeat] <= bestThresh);
+      const right = idx.filter(i => features[i][bestFeat] > bestThresh);
+      return { feature: bestFeat, threshold: bestThresh, left: buildTree(left, depth + 1), right: buildTree(right, depth + 1), count: idx.length };
+    };
+    const tree = buildTree(indices, 0);
+    const predictSample = (tree: any, sample: number[]): number => {
+      if (tree.prediction !== undefined) return tree.prediction;
+      if (sample[tree.feature] <= tree.threshold) return predictSample(tree.left, sample);
+      return predictSample(tree.right, sample);
+    };
+    const predictions = features.map(f => predictSample(tree, f));
+    const correct = predictions.filter((p, i) => p === labels[i]).length;
+    const importances = new Array(d).fill(0);
+    const countSplits = (t: any, feat: number): number => {
+      if (t.feature === undefined) return 0;
+      let c = t.feature === feat ? 1 : 0;
+      if (t.left) c += countSplits(t.left, feat);
+      if (t.right) c += countSplits(t.right, feat);
+      return c;
+    };
+    for (let f = 0; f < d; f++) importances[f] = countSplits(tree, f) / d;
+    return { algorithm: "churnPredictionTree", features, labels, minSamplesSplit, predictions, accuracy: Math.round(correct / n * 10000) / 10000, importances: importances.map(v => Math.round(v * 10000) / 10000) };
+  }
+
+  revenueForecastMonteCarlo(historicalRevenue: number[], nSimulations: number = 500, horizon: number = 12): { algorithm: string; historicalRevenue: number[]; nSimulations: number; horizon: number; meanForecast: number[]; lowerBound: number[]; upperBound: number[]; confidenceLevel: number } {
+    const n = historicalRevenue.length;
+    const returns: number[] = [];
+    for (let i = 1; i < n; i++) returns.push(historicalRevenue[i] / Math.max(historicalRevenue[i - 1], 0.01) - 1);
+    const meanRet = returns.reduce((s, v) => s + v, 0) / Math.max(returns.length, 1);
+    const stdRet = Math.sqrt(returns.reduce((s, v) => s + (v - meanRet) ** 2, 0) / Math.max(returns.length, 1));
+    const lastVal = historicalRevenue[n - 1];
+    const paths: number[][] = [];
+    for (let s = 0; s < nSimulations; s++) {
+      const path: number[] = [];
+      let val = lastVal;
+      for (let h = 0; h < horizon; h++) { val *= (1 + meanRet + stdRet * (Math.random() * 2 - 1)); path.push(val); }
+      paths.push(path);
+    }
+    const meanForecast: number[] = [];
+    const lowerBound: number[] = [];
+    const upperBound: number[] = [];
+    for (let h = 0; h < horizon; h++) {
+      const vals = paths.map(p => p[h]).sort((a, b) => a - b);
+      meanForecast.push(Math.round(vals.reduce((s, v) => s + v, 0) / vals.length * 100) / 100);
+      lowerBound.push(Math.round(vals[Math.floor(0.05 * vals.length)] * 100) / 100);
+      upperBound.push(Math.round(vals[Math.floor(0.95 * vals.length)] * 100) / 100);
+    }
+    return { algorithm: "revenueForecastMonteCarlo", historicalRevenue, nSimulations, horizon, meanForecast, lowerBound, upperBound, confidenceLevel: 0.9 };
+  }
+
+  campaignLiftPrediction(campaignMetrics: { prePeriod: number[]; postPeriod: number[]; control: number[] }): { algorithm: string; campaignMetrics: { prePeriod: number[]; postPeriod: number[]; control: number[] }; lift: number; confidenceInterval: { lower: number; upper: number }; significant: boolean; effectSize: number } {
+    const pre = campaignMetrics.prePeriod;
+    const post = campaignMetrics.postPeriod;
+    const control = campaignMetrics.control;
+    const preMean = pre.reduce((s, v) => s + v, 0) / pre.length;
+    const postMean = post.reduce((s, v) => s + v, 0) / post.length;
+    const controlMean = control.reduce((s, v) => s + v, 0) / control.length;
+    const treatmentEffect = (postMean - preMean) - (controlMean - preMean);
+    const lift = preMean > 0 ? treatmentEffect / preMean : 0;
+    const n = Math.min(post.length, control.length);
+    const postVar = post.reduce((s, v) => s + (v - postMean) ** 2, 0) / (post.length - 1 || 1);
+    const controlVar = control.reduce((s, v) => s + (v - controlMean) ** 2, 0) / (control.length - 1 || 1);
+    const se = Math.sqrt(postVar / post.length + controlVar / control.length);
+    const tStat = se > 0 ? treatmentEffect / se : 0;
+    const pVal = Math.min(1, 2 * (1 - 1 / (1 + Math.exp(-0.5 * tStat * tStat))));
+    const cohensD = se > 0 ? treatmentEffect / se : 0;
+    return { algorithm: "campaignLiftPrediction", campaignMetrics, lift: Math.round(lift * 10000) / 10000, confidenceInterval: { lower: Math.round((treatmentEffect - 1.96 * se) * 10000) / 10000, upper: Math.round((treatmentEffect + 1.96 * se) * 10000) / 10000 }, significant: pVal < 0.05, effectSize: Math.round(cohensD * 10000) / 10000 };
+  }
+
+  customerAcquisitionCost(acquisitions: { channel: string; spend: number; customers: number }[], channelMix: { channel: string; mix: number }[]): { algorithm: string; acquisitions: number; channelMix: { channel: string; mix: number }[]; cacByChannel: { channel: string; cac: number; blendedCac: number }[]; overallCac: number; recommendedMix: { channel: string; recommendedMix: number }[] } {
+    const cacByChannel: { channel: string; cac: number; blendedCac: number }[] = [];
+    for (const a of acquisitions) {
+      const cac = a.customers > 0 ? a.spend / a.customers : Infinity;
+      const mix = channelMix.find(m => m.channel === a.channel);
+      const blendedCac = mix ? cac * mix.mix : cac;
+      cacByChannel.push({ channel: a.channel, cac: Math.round(cac * 100) / 100, blendedCac: Math.round(blendedCac * 100) / 100 });
+    }
+    const overallCac = cacByChannel.reduce((s, c) => s + c.blendedCac, 0);
+    const totalSpend = acquisitions.reduce((s, a) => s + a.spend, 0);
+    const totalCustomers = acquisitions.reduce((s, a) => s + a.customers, 0);
+    const overall = totalCustomers > 0 ? totalSpend / totalCustomers : 0;
+    const sorted = [...cacByChannel].sort((a, b) => a.cac - b.cac);
+    const minCac = sorted.length > 0 ? sorted[0].cac : 0;
+    const recommendedMix = acquisitions.map(a => {
+      const cac = a.customers > 0 ? a.spend / a.customers : Infinity;
+      const rec = minCac > 0 && cac > 0 ? Math.round((minCac / cac) * 10000) / 10000 : 0;
+      return { channel: a.channel, recommendedMix: Math.round(rec * 100) / 100 };
+    });
+    return { algorithm: "customerAcquisitionCost", acquisitions: acquisitions.length, channelMix, cacByChannel, overallCac: Math.round(overall * 100) / 100, recommendedMix };
+  }
+
+  attributionFunnelAnalysis(funnelStages: { stage: string; users: number; conversions: number; assistedBy: string[] }[]): { algorithm: string; funnelStages: number; stageMetrics: { stage: string; conversionRate: number; dropOff: number; assistedConversions: number }[]; overallConversionRate: number; assistedImpact: Record<string, number> } {
+    const totalUsers = funnelStages[0]?.users || 1;
+    const stageMetrics: { stage: string; conversionRate: number; dropOff: number; assistedConversions: number }[] = [];
+    const assistedImpact: Record<string, number> = {};
+    for (let i = 0; i < funnelStages.length; i++) {
+      const stage = funnelStages[i];
+      const convRate = stage.users > 0 ? stage.conversions / stage.users : 0;
+      const dropOff = i > 0 && funnelStages[i - 1].users > 0 ? 1 - stage.users / funnelStages[i - 1].users : 0;
+      for (const a of stage.assistedBy) assistedImpact[a] = (assistedImpact[a] || 0) + 1;
+      stageMetrics.push({ stage: stage.stage, conversionRate: Math.round(convRate * 10000) / 10000, dropOff: Math.round(dropOff * 10000) / 10000, assistedConversions: stage.conversions });
+    }
+    const lastStage = funnelStages[funnelStages.length - 1];
+    const overallConversionRate = totalUsers > 0 ? lastStage.conversions / totalUsers : 0;
+    const formattedAssisted: Record<string, number> = {};
+    for (const [k, v] of Object.entries(assistedImpact)) formattedAssisted[k] = Math.round(v / funnelStages.length * 10000) / 10000;
+    return { algorithm: "attributionFunnelAnalysis", funnelStages: funnelStages.length, stageMetrics, overallConversionRate: Math.round(overallConversionRate * 10000) / 10000, assistedImpact: formattedAssisted };
+  }
+
+  marketingRoiDecomposition(campaigns: { name: string; spend: number; incrementalConversions: number; brandConversions: number; directConversions: number; conversionValue: number }[]): { algorithm: string; campaigns: number; decomposition: { name: string; incrementalRoi: number; brandRoi: number; directRoi: number; totalRoi: number; incrementalityShare: number }[]; aggregateIncrementalRoi: number; aggregateBrandRoi: number; aggregateDirectRoi: number } {
+    const decomposition: { name: string; incrementalRoi: number; brandRoi: number; directRoi: number; totalRoi: number; incrementalityShare: number }[] = [];
+    let totalIncRoi = 0, totalBrandRoi = 0, totalDirectRoi = 0;
+    for (const c of campaigns) {
+      const totalConv = c.incrementalConversions + c.brandConversions + c.directConversions;
+      const totalVal = totalConv * c.conversionValue;
+      const totalRoi = c.spend > 0 ? totalVal / c.spend : 0;
+      const incrementalRoi = c.spend > 0 ? (c.incrementalConversions * c.conversionValue) / c.spend : 0;
+      const brandRoi = c.spend > 0 ? (c.brandConversions * c.conversionValue) / c.spend : 0;
+      const directRoi = c.spend > 0 ? (c.directConversions * c.conversionValue) / c.spend : 0;
+      const incrementalityShare = totalConv > 0 ? c.incrementalConversions / totalConv : 0;
+      decomposition.push({ name: c.name, incrementalRoi: Math.round(incrementalRoi * 10000) / 10000, brandRoi: Math.round(brandRoi * 10000) / 10000, directRoi: Math.round(directRoi * 10000) / 10000, totalRoi: Math.round(totalRoi * 10000) / 10000, incrementalityShare: Math.round(incrementalityShare * 10000) / 10000 });
+      totalIncRoi += incrementalRoi;
+      totalBrandRoi += brandRoi;
+      totalDirectRoi += directRoi;
+    }
+    const n = campaigns.length;
+    return { algorithm: "marketingRoiDecomposition", campaigns: n, decomposition, aggregateIncrementalRoi: Math.round(totalIncRoi / n * 10000) / 10000, aggregateBrandRoi: Math.round(totalBrandRoi / n * 10000) / 10000, aggregateDirectRoi: Math.round(totalDirectRoi / n * 10000) / 10000 };
+  }
+
   // ── helper methods for treap ──
 
   private _treapInsert(root: { key: number; prio: number; left: any; right: any }[], key: number): { key: number; prio: number; left: any; right: any }[] {
