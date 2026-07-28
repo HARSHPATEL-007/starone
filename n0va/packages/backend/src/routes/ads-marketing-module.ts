@@ -178,4 +178,35 @@ router.get("/predictive-alerts", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/diagnose", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.diagnosticAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/root-causes", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.rootCauseSummary(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/cross-campaign-diagnostics", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossCampaignDiagnostics(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/metric-health", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.metricHealthTrends(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/recovery-plan", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.recoveryPlan(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "No findings to generate plan" });
+}));
+
+router.post("/remediate", asyncHandler(async (req, res) => {
+  const { findingId, action, metricBefore, metricAfter } = req.body;
+  const result = adsMarketingModule.remediationRecord(findingId, action, metricBefore, metricAfter);
+  sendSuccess(res, result);
+}));
+
 export default router;

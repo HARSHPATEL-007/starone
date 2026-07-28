@@ -7,6 +7,7 @@ import { CampaignSummaryService } from "./CampaignSummaryService";
 import { attributionService } from "./AttributionService";
 import { campaignBudgetSimulator } from "./CampaignBudgetSimulatorService";
 import { campaignInsightsEngine, InsightsDashboard, CorrelationAnalysis, TrendAnalysis, BudgetEfficiencyScore, CrossCampaignAttribution, PredictiveAlertSummary } from "./CampaignInsightsEngineService";
+import { campaignPerformanceDiagnostics } from "./CampaignPerformanceDiagnosticsService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1618,6 +1619,30 @@ export class AdsMarketingModuleService {
 
   predictiveAlertSummary(tenantId: string): PredictiveAlertSummary {
     return campaignInsightsEngine.generatePredictiveAlerts(tenantId);
+  }
+
+  diagnosticAnalysis(campaignId: string, tenantId: string) {
+    return campaignPerformanceDiagnostics.diagnoseCampaign(campaignId, tenantId);
+  }
+
+  rootCauseSummary(tenantId: string) {
+    return campaignPerformanceDiagnostics.rootCauseSummary(tenantId);
+  }
+
+  crossCampaignDiagnostics(tenantId: string) {
+    return campaignPerformanceDiagnostics.crossCampaignDiagnostics(tenantId);
+  }
+
+  metricHealthTrends(tenantId: string) {
+    return campaignPerformanceDiagnostics.metricHealthTrends(tenantId);
+  }
+
+  recoveryPlan(campaignId: string, tenantId: string) {
+    return campaignPerformanceDiagnostics.generateRecoveryPlan(campaignId, tenantId);
+  }
+
+  remediationRecord(findingId: string, action: string, metricBefore: number, metricAfter: number) {
+    return campaignPerformanceDiagnostics.remediateFinding(findingId, action, metricBefore, metricAfter);
   }
 }
 

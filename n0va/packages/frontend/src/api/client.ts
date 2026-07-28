@@ -2007,6 +2007,13 @@ export const api = {
     budgetEfficiency: () => request<any>("/ads-marketing-module/budget-efficiency"),
     crossCampaignAttribution: () => request<any>("/ads-marketing-module/cross-campaign-attribution"),
     predictiveAlerts: () => request<any>("/ads-marketing-module/predictive-alerts"),
+    diagnose: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/diagnose`),
+    rootCauses: () => request<any>("/ads-marketing-module/root-causes"),
+    crossCampaignDiagnostics: () => request<any>("/ads-marketing-module/cross-campaign-diagnostics"),
+    metricHealth: () => request<any>("/ads-marketing-module/metric-health"),
+    recoveryPlan: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/recovery-plan`),
+    remediate: (findingId: string, action: string, metricBefore: number, metricAfter: number) =>
+      request<any>("/ads-marketing-module/remediate", { method: "POST", body: JSON.stringify({ findingId, action, metricBefore, metricAfter }) }),
   },
 
   agentSwarm: {
@@ -2230,5 +2237,15 @@ export const api = {
     budgetEfficiency: () => request<any>("/campaign-insights-engine/budget-efficiency"),
     crossAttribution: () => request<any>("/campaign-insights-engine/cross-attribution"),
     predictiveAlerts: () => request<any>("/campaign-insights-engine/predictive-alerts"),
+  },
+
+  campaignPerformanceDiagnostics: {
+    diagnose: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/diagnose`),
+    rootCauses: () => request<any>("/campaign-performance-diagnostics/root-causes"),
+    crossCampaign: () => request<any>("/campaign-performance-diagnostics/cross-campaign"),
+    metricHealth: () => request<any>("/campaign-performance-diagnostics/metric-health"),
+    recoveryPlan: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/recovery-plan`),
+    remediate: (findingId: string, action: string, metricBefore: number, metricAfter: number) =>
+      request<any>("/campaign-performance-diagnostics/remediate", { method: "POST", body: JSON.stringify({ findingId, action, metricBefore, metricAfter }) }),
   },
 };
