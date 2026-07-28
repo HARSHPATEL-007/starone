@@ -269,4 +269,35 @@ router.get("/decomposition-trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/ad-quality", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.adQualityAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/quality-score", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.qualityScoreEstimate(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/relevance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.adRelevanceScore(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/quality-improvement", asyncHandler(async (req, res) => {
+  const target = req.query.target ? parseInt(req.query.target as string, 10) : undefined;
+  const result = adsMarketingModule.qualityImprovementPlan(req.params.campaignId, req.user!.tenantId, target);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/competitive-quality", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.competitiveAdQuality(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/quality-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.qualityTrendTracking(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
 export default router;

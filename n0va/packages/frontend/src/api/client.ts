@@ -2026,6 +2026,13 @@ export const api = {
     roiSensitivity: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/roi-sensitivity`),
     roiForecast: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/roi-forecast`),
     decompositionTrends: () => request<any>("/ads-marketing-module/decomposition-trends"),
+    adQuality: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/ad-quality`),
+    qualityScore: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/quality-score`),
+    adRelevance: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/relevance`),
+    qualityImprovementPlan: (campaignId: string, target?: number) =>
+      request<any>(`/ads-marketing-module/campaign/${campaignId}/quality-improvement${target ? `?target=${target}` : ""}`),
+    competitiveAdQuality: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/competitive-quality`),
+    qualityTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/quality-trends`),
   },
 
   agentSwarm: {
@@ -2277,5 +2284,15 @@ export const api = {
     sensitivity: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/sensitivity`),
     forecastByFactor: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/forecast-by-factor`),
     trends: () => request<any>("/campaign-roi-decomposition/decomposition-trends"),
+  },
+
+  campaignAdQualityAnalyzer: {
+    analyze: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/analyze`),
+    qualityScore: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/quality-score`),
+    relevance: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/relevance`),
+    improvementPlan: (campaignId: string, target?: number) =>
+      request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/improvement-plan${target ? `?target=${target}` : ""}`),
+    competitive: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/competitive`),
+    trends: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/trends`),
   },
 };

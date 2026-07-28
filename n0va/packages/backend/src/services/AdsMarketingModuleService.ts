@@ -10,6 +10,7 @@ import { campaignInsightsEngine, InsightsDashboard, CorrelationAnalysis, TrendAn
 import { campaignPerformanceDiagnostics } from "./CampaignPerformanceDiagnosticsService";
 import { campaignDaypartingOptimizer } from "./CampaignDaypartingOptimizerService";
 import { campaignROIDecomposition } from "./CampaignROIDecompositionService";
+import { campaignAdQualityAnalyzer } from "./CampaignAdQualityAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1693,6 +1694,30 @@ export class AdsMarketingModuleService {
 
   decompositionTrends(tenantId: string) {
     return campaignROIDecomposition.decompositionTrends(tenantId);
+  }
+
+  adQualityAnalysis(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.analyzeAdQuality(campaignId, tenantId);
+  }
+
+  qualityScoreEstimate(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.estimateQualityScore(campaignId, tenantId);
+  }
+
+  adRelevanceScore(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.analyzeRelevance(campaignId, tenantId);
+  }
+
+  qualityImprovementPlan(campaignId: string, tenantId: string, targetScore?: number) {
+    return campaignAdQualityAnalyzer.generateImprovementPlan(campaignId, tenantId, targetScore);
+  }
+
+  competitiveAdQuality(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.competitiveAdQuality(campaignId, tenantId);
+  }
+
+  qualityTrendTracking(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.trackQualityTrends(campaignId, tenantId);
   }
 }
 
