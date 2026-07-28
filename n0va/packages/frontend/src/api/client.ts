@@ -2020,6 +2020,12 @@ export const api = {
     daypartingTimePatterns: () => request<any>("/ads-marketing-module/dayparting/time-patterns"),
     daypartingScheduleConflicts: () => request<any>("/ads-marketing-module/dayparting/schedule-conflicts"),
     daypartingTimezonePerformance: () => request<any>("/ads-marketing-module/dayparting/timezone-performance"),
+    roiDecomposition: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/roi-decomposition`),
+    factorAttribution: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/factor-attribution`),
+    marginalReturns: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/marginal-returns`),
+    roiSensitivity: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/roi-sensitivity`),
+    roiForecast: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/roi-forecast`),
+    decompositionTrends: () => request<any>("/ads-marketing-module/decomposition-trends"),
   },
 
   agentSwarm: {
@@ -2262,5 +2268,14 @@ export const api = {
     timePatterns: () => request<any>("/campaign-dayparting-optimizer/time-patterns"),
     scheduleConflicts: () => request<any>("/campaign-dayparting-optimizer/schedule-conflicts"),
     timezonePerformance: () => request<any>("/campaign-dayparting-optimizer/timezone-performance"),
+  },
+
+  campaignROIDecomposition: {
+    decompose: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/decompose`),
+    attribution: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/attribution`),
+    marginalReturns: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/marginal-returns`),
+    sensitivity: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/sensitivity`),
+    forecastByFactor: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/forecast-by-factor`),
+    trends: () => request<any>("/campaign-roi-decomposition/decomposition-trends"),
   },
 };

@@ -239,4 +239,34 @@ router.get("/dayparting/timezone-performance", asyncHandler(async (req, res) => 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/roi-decomposition", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.roiDecomposition(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/factor-attribution", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.factorAttribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/marginal-returns", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.marginalReturnAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/roi-sensitivity", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.roiSensitivity(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/roi-forecast", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.roiForecastByFactor(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/decomposition-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.decompositionTrends(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

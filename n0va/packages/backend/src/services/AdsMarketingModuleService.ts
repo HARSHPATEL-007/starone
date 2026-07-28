@@ -9,6 +9,7 @@ import { campaignBudgetSimulator } from "./CampaignBudgetSimulatorService";
 import { campaignInsightsEngine, InsightsDashboard, CorrelationAnalysis, TrendAnalysis, BudgetEfficiencyScore, CrossCampaignAttribution, PredictiveAlertSummary } from "./CampaignInsightsEngineService";
 import { campaignPerformanceDiagnostics } from "./CampaignPerformanceDiagnosticsService";
 import { campaignDaypartingOptimizer } from "./CampaignDaypartingOptimizerService";
+import { campaignROIDecomposition } from "./CampaignROIDecompositionService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1668,6 +1669,30 @@ export class AdsMarketingModuleService {
 
   daypartingPlan(campaignId: string, tenantId: string) {
     return campaignDaypartingOptimizer.generateDaypartingPlan(campaignId, tenantId);
+  }
+
+  roiDecomposition(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.decomposeROI(campaignId, tenantId);
+  }
+
+  factorAttribution(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.attributeFactors(campaignId, tenantId);
+  }
+
+  marginalReturnAnalysis(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.analyzeMarginalReturns(campaignId, tenantId);
+  }
+
+  roiSensitivity(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.analyzeSensitivity(campaignId, tenantId);
+  }
+
+  roiForecastByFactor(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.forecastByFactor(campaignId, tenantId);
+  }
+
+  decompositionTrends(tenantId: string) {
+    return campaignROIDecomposition.decompositionTrends(tenantId);
   }
 }
 
