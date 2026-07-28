@@ -300,4 +300,43 @@ router.get("/campaign/:campaignId/quality-trends", asyncHandler(async (req, res)
   sendSuccess(res, result || { error: "Campaign not found" });
 }));
 
+router.get("/audience-expansion", asyncHandler(async (req, res) => {
+  const seed = req.query.seedAudienceId as string | undefined;
+  const result = adsMarketingModule.audienceExpansion(req.user!.tenantId, seed);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/expansion-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.expansionRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/audience-similarity", asyncHandler(async (req, res) => {
+  const audienceA = req.query.audienceA as string;
+  const audienceB = req.query.audienceB as string;
+  if (!audienceA || !audienceB) { sendSuccess(res, { error: "audienceA and audienceB required" }); return; }
+  const result = adsMarketingModule.audienceSimilarity(audienceA, audienceB, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Could not compute similarity" });
+}));
+
+router.get("/expansion-quality", asyncHandler(async (req, res) => {
+  const seed = req.query.seedAudienceId as string;
+  const expanded = req.query.expandedAudienceId as string;
+  if (!seed || !expanded) { sendSuccess(res, { error: "seedAudienceId and expandedAudienceId required" }); return; }
+  const result = adsMarketingModule.expansionQuality(seed, expanded, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Could not assess quality" });
+}));
+
+router.get("/cross-platform-unification", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossPlatformUnification(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/expansion-performance", asyncHandler(async (req, res) => {
+  const audienceId = req.query.audienceId as string;
+  if (!audienceId) { sendSuccess(res, { error: "audienceId required" }); return; }
+  const result = adsMarketingModule.expansionPerformance(audienceId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Audience not found" });
+}));
+
 export default router;

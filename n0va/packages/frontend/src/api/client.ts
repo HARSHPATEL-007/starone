@@ -2033,6 +2033,15 @@ export const api = {
       request<any>(`/ads-marketing-module/campaign/${campaignId}/quality-improvement${target ? `?target=${target}` : ""}`),
     competitiveAdQuality: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/competitive-quality`),
     qualityTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/quality-trends`),
+    audienceExpansion: (seedAudienceId?: string) =>
+      request<any>(`/ads-marketing-module/audience-expansion${seedAudienceId ? `?seedAudienceId=${seedAudienceId}` : ""}`),
+    expansionRecommendations: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/expansion-recommendations`),
+    audienceSimilarity: (audienceA: string, audienceB: string) =>
+      request<any>(`/ads-marketing-module/audience-similarity?audienceA=${encodeURIComponent(audienceA)}&audienceB=${encodeURIComponent(audienceB)}`),
+    expansionQuality: (seedAudienceId: string, expandedAudienceId: string) =>
+      request<any>(`/ads-marketing-module/expansion-quality?seedAudienceId=${encodeURIComponent(seedAudienceId)}&expandedAudienceId=${encodeURIComponent(expandedAudienceId)}`),
+    crossPlatformUnification: () => request<any>("/ads-marketing-module/cross-platform-unification"),
+    expansionPerformance: (audienceId: string) => request<any>(`/ads-marketing-module/expansion-performance?audienceId=${encodeURIComponent(audienceId)}`),
   },
 
   agentSwarm: {
@@ -2294,5 +2303,18 @@ export const api = {
       request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/improvement-plan${target ? `?target=${target}` : ""}`),
     competitive: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/competitive`),
     trends: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/trends`),
+  },
+
+  campaignAudienceExpansion: {
+    lookalike: (seedAudienceId?: string) =>
+      request<any>(`/campaign-audience-expansion/lookalike${seedAudienceId ? `?seedAudienceId=${seedAudienceId}` : ""}`),
+    recommendations: (campaignId: string) => request<any>(`/campaign-audience-expansion/campaign/${campaignId}/recommendations`),
+    similarity: (audienceA: string, audienceB: string) =>
+      request<any>(`/campaign-audience-expansion/similarity?audienceA=${encodeURIComponent(audienceA)}&audienceB=${encodeURIComponent(audienceB)}`),
+    quality: (seedAudienceId: string, expandedAudienceId: string) =>
+      request<any>(`/campaign-audience-expansion/quality?seedAudienceId=${encodeURIComponent(seedAudienceId)}&expandedAudienceId=${encodeURIComponent(expandedAudienceId)}`),
+    unification: (platformA?: string, platformB?: string) =>
+      request<any>(`/campaign-audience-expansion/unification${platformA ? `?platformA=${platformA}&platformB=${platformB}` : ""}`),
+    performance: (audienceId: string) => request<any>(`/campaign-audience-expansion/performance?audienceId=${encodeURIComponent(audienceId)}`),
   },
 };

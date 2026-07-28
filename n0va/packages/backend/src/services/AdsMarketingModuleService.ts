@@ -11,6 +11,7 @@ import { campaignPerformanceDiagnostics } from "./CampaignPerformanceDiagnostics
 import { campaignDaypartingOptimizer } from "./CampaignDaypartingOptimizerService";
 import { campaignROIDecomposition } from "./CampaignROIDecompositionService";
 import { campaignAdQualityAnalyzer } from "./CampaignAdQualityAnalyzerService";
+import { campaignAudienceExpansion } from "./CampaignAudienceExpansionService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1718,6 +1719,30 @@ export class AdsMarketingModuleService {
 
   qualityTrendTracking(campaignId: string, tenantId: string) {
     return campaignAdQualityAnalyzer.trackQualityTrends(campaignId, tenantId);
+  }
+
+  audienceExpansion(tenantId: string, seedAudienceId?: string) {
+    return campaignAudienceExpansion.findLookalikeAudiences(tenantId, seedAudienceId);
+  }
+
+  expansionRecommendations(campaignId: string, tenantId: string) {
+    return campaignAudienceExpansion.generateExpansionRecommendations(campaignId, tenantId);
+  }
+
+  audienceSimilarity(audienceAId: string, audienceBId: string, tenantId: string) {
+    return campaignAudienceExpansion.computeAudienceSimilarity(audienceAId, audienceBId, tenantId);
+  }
+
+  expansionQuality(seedAudienceId: string, expandedAudienceId: string, tenantId: string) {
+    return campaignAudienceExpansion.assessExpansionQuality(seedAudienceId, expandedAudienceId, tenantId);
+  }
+
+  crossPlatformUnification(tenantId: string) {
+    return campaignAudienceExpansion.crossPlatformUnification(tenantId);
+  }
+
+  expansionPerformance(audienceId: string, tenantId: string) {
+    return campaignAudienceExpansion.trackExpansionPerformance(audienceId, tenantId);
   }
 }
 
