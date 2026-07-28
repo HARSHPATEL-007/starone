@@ -339,4 +339,34 @@ router.get("/expansion-performance", asyncHandler(async (req, res) => {
   sendSuccess(res, result || { error: "Audience not found" });
 }));
 
+router.get("/campaign/:campaignId/cross-device", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossDevicePerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/device-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.deviceOptimizationRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/cross-device-conversion-paths", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossDeviceConversionPaths(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/device-bid-adjustments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.deviceBidAdjustments(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/device-audience-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.deviceAudienceOverlap(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/device-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.deviceTrendAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

@@ -12,6 +12,7 @@ import { campaignDaypartingOptimizer } from "./CampaignDaypartingOptimizerServic
 import { campaignROIDecomposition } from "./CampaignROIDecompositionService";
 import { campaignAdQualityAnalyzer } from "./CampaignAdQualityAnalyzerService";
 import { campaignAudienceExpansion } from "./CampaignAudienceExpansionService";
+import { campaignCrossDeviceAnalyzer } from "./CampaignCrossDeviceAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1743,6 +1744,30 @@ export class AdsMarketingModuleService {
 
   expansionPerformance(audienceId: string, tenantId: string) {
     return campaignAudienceExpansion.trackExpansionPerformance(audienceId, tenantId);
+  }
+
+  crossDevicePerformance(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.analyzeCrossDevice(campaignId, tenantId);
+  }
+
+  deviceOptimizationRecommendations(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.generateDeviceRecommendations(campaignId, tenantId);
+  }
+
+  crossDeviceConversionPaths(tenantId: string) {
+    return campaignCrossDeviceAnalyzer.analyzeConversionPaths(tenantId);
+  }
+
+  deviceBidAdjustments(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.calculateBidAdjustments(campaignId, tenantId);
+  }
+
+  deviceAudienceOverlap(tenantId: string) {
+    return campaignCrossDeviceAnalyzer.analyzeDeviceAudienceOverlap(tenantId);
+  }
+
+  deviceTrendAnalysis(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.analyzeDeviceTrends(campaignId, tenantId);
   }
 }
 

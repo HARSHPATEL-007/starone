@@ -2042,6 +2042,12 @@ export const api = {
       request<any>(`/ads-marketing-module/expansion-quality?seedAudienceId=${encodeURIComponent(seedAudienceId)}&expandedAudienceId=${encodeURIComponent(expandedAudienceId)}`),
     crossPlatformUnification: () => request<any>("/ads-marketing-module/cross-platform-unification"),
     expansionPerformance: (audienceId: string) => request<any>(`/ads-marketing-module/expansion-performance?audienceId=${encodeURIComponent(audienceId)}`),
+    crossDevice: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/cross-device`),
+    deviceRecommendations: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/device-recommendations`),
+    crossDeviceConversionPaths: () => request<any>("/ads-marketing-module/cross-device-conversion-paths"),
+    deviceBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/device-bid-adjustments`),
+    deviceAudienceOverlap: () => request<any>("/ads-marketing-module/device-audience-overlap"),
+    deviceTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/device-trends`),
   },
 
   agentSwarm: {
@@ -2316,5 +2322,14 @@ export const api = {
     unification: (platformA?: string, platformB?: string) =>
       request<any>(`/campaign-audience-expansion/unification${platformA ? `?platformA=${platformA}&platformB=${platformB}` : ""}`),
     performance: (audienceId: string) => request<any>(`/campaign-audience-expansion/performance?audienceId=${encodeURIComponent(audienceId)}`),
+  },
+
+  campaignCrossDeviceAnalyzer: {
+    analyze: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/analyze`),
+    recommendations: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/recommendations`),
+    conversionPaths: () => request<any>("/campaign-cross-device-analyzer/conversion-paths"),
+    bidAdjustments: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/bid-adjustments`),
+    audienceOverlap: () => request<any>("/campaign-cross-device-analyzer/audience-overlap"),
+    deviceTrends: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/trends`),
   },
 };
