@@ -2060,6 +2060,12 @@ export const api = {
     frequencyCapping: () => request<any>("/ads-marketing-module/frequency-capping"),
     crossCampaignFrequency: () => request<any>("/ads-marketing-module/cross-campaign-frequency"),
     frequencyImpactPrediction: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/frequency-impact`),
+    discoveredSegments: () => request<any>("/ads-marketing-module/discovered-segments"),
+    segmentPerformance: () => request<any>("/ads-marketing-module/segment-performance"),
+    segmentTargeting: () => request<any>("/ads-marketing-module/segment-targeting"),
+    segmentComparison: () => request<any>("/ads-marketing-module/segment-comparison"),
+    segmentTrends: () => request<any>("/ads-marketing-module/segment-trends"),
+    segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),
   },
 
   agentSwarm: {
@@ -2361,5 +2367,14 @@ export const api = {
     frequencyCapping: () => request<any>("/campaign-frequency-analyzer/frequency-capping"),
     crossCampaignFrequency: () => request<any>("/campaign-frequency-analyzer/cross-campaign-frequency"),
     frequencyImpact: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/frequency-impact`),
+  },
+
+  campaignSegmentDiscovery: {
+    segments: () => request<any>("/campaign-segment-discovery/segments"),
+    segmentPerformance: () => request<any>("/campaign-segment-discovery/segment-performance"),
+    segmentTargeting: () => request<any>("/campaign-segment-discovery/segment-targeting"),
+    segmentComparison: () => request<any>("/campaign-segment-discovery/segment-comparison"),
+    segmentTrends: () => request<any>("/campaign-segment-discovery/segment-trends"),
+    segmentOverlap: () => request<any>("/campaign-segment-discovery/segment-overlap"),
   },
 };

@@ -15,6 +15,7 @@ import { campaignAudienceExpansion } from "./CampaignAudienceExpansionService";
 import { campaignCrossDeviceAnalyzer } from "./CampaignCrossDeviceAnalyzerService";
 import { campaignGeoPerformanceAnalyzer } from "./CampaignGeoPerformanceAnalyzerService";
 import { campaignFrequencyAnalyzer } from "./CampaignFrequencyAnalyzerService";
+import { campaignSegmentDiscovery } from "./CampaignSegmentDiscoveryService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1818,6 +1819,30 @@ export class AdsMarketingModuleService {
 
   frequencyImpactPrediction(campaignId: string, tenantId: string) {
     return campaignFrequencyAnalyzer.predictFrequencyImpact(campaignId, tenantId);
+  }
+
+  discoveredSegments(tenantId: string) {
+    return campaignSegmentDiscovery.discoverSegments(tenantId);
+  }
+
+  segmentPerformance(tenantId: string) {
+    return campaignSegmentDiscovery.analyzeSegmentPerformance(tenantId);
+  }
+
+  segmentTargetingRecommendations(tenantId: string) {
+    return campaignSegmentDiscovery.recommendSegmentTargeting(tenantId);
+  }
+
+  segmentComparison(tenantId: string) {
+    return campaignSegmentDiscovery.compareSegments(tenantId);
+  }
+
+  segmentTrends(tenantId: string) {
+    return campaignSegmentDiscovery.segmentTrends(tenantId);
+  }
+
+  segmentOverlap(tenantId: string) {
+    return campaignSegmentDiscovery.segmentOverlapAnalysis(tenantId);
   }
 }
 

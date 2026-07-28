@@ -429,4 +429,34 @@ router.get("/campaign/:campaignId/frequency-impact", asyncHandler(async (req, re
   sendSuccess(res, result);
 }));
 
+router.get("/discovered-segments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.discoveredSegments(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.segmentPerformance(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-targeting", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.segmentTargetingRecommendations(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-comparison", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.segmentComparison(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.segmentTrends(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.segmentOverlap(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
