@@ -1981,6 +1981,12 @@ export const api = {
     dashboard: () => request<any>("/ads-marketing-module/dashboard"),
     portfolioOverview: () => request<any>("/ads-marketing-module/portfolio-overview"),
     report: () => request<any>("/ads-marketing-module/report"),
+    competitiveBenchmark: () => request<any>("/ads-marketing-module/competitive-benchmark"),
+    realtimeMonitor: () => request<any>("/ads-marketing-module/realtime-monitor"),
+    budgetRebalance: () => request<any>("/ads-marketing-module/budget-rebalance", { method: "POST" }),
+    forecast: (days?: number) => request<any>(`/ads-marketing-module/forecast${days ? `?days=${days}` : ""}`),
+    anomalyScan: () => request<any>("/ads-marketing-module/anomaly-scan"),
+    executiveBriefing: () => request<any>("/ads-marketing-module/executive-briefing"),
   },
 
   agentSwarm: {
@@ -2152,5 +2158,24 @@ export const api = {
     rfm: (customers: any[]) => request<any>("/audience-insights/enhanced/rfm", { method: "POST", body: JSON.stringify({ customers }) }),
     lookalike: (seedAudience: any[], candidatePool: any[], targetSize?: number) =>
       request<any>("/audience-insights/enhanced/lookalike", { method: "POST", body: JSON.stringify({ seedAudience, candidatePool, targetSize }) }),
+  },
+
+  campaignAlertOrchestrator: {
+    rules: (status?: string) => request<any>(`/campaign-alert-orchestrator/rules${status ? `?status=${status}` : ""}`),
+    rule: (ruleId: string) => request<any>(`/campaign-alert-orchestrator/rules/${ruleId}`),
+    createRule: (rule: any) => request<any>("/campaign-alert-orchestrator/rules", { method: "POST", body: JSON.stringify(rule) }),
+    updateRule: (ruleId: string, updates: any) =>
+      request<any>(`/campaign-alert-orchestrator/rules/${ruleId}`, { method: "PUT", body: JSON.stringify(updates) }),
+    deleteRule: (ruleId: string) => request<void>(`/campaign-alert-orchestrator/rules/${ruleId}`, { method: "DELETE" }),
+    evaluate: () => request<any>("/campaign-alert-orchestrator/evaluate", { method: "POST" }),
+    alerts: (status?: string, limit?: number) =>
+      request<any>(`/campaign-alert-orchestrator/alerts${status ? `?status=${status}` : ""}${limit ? `${status ? "&" : "?"}limit=${limit}` : ""}`),
+    acknowledgeAlert: (alertId: string, userId?: string) =>
+      request<any>(`/campaign-alert-orchestrator/alerts/${alertId}/acknowledge`, { method: "POST", body: JSON.stringify({ userId }) }),
+    resolveAlert: (alertId: string, userId?: string) =>
+      request<any>(`/campaign-alert-orchestrator/alerts/${alertId}/resolve`, { method: "POST", body: JSON.stringify({ userId }) }),
+    dismissAlert: (alertId: string) =>
+      request<any>(`/campaign-alert-orchestrator/alerts/${alertId}/dismiss`, { method: "POST" }),
+    summary: () => request<any>("/campaign-alert-orchestrator/summary"),
   },
 };

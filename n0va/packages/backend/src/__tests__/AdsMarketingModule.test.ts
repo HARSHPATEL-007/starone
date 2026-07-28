@@ -158,3 +158,86 @@ describe("AdsMarketingModule - generateUnifiedReport", () => {
     expect(r.topRecommendations).toBeDefined();
   });
 });
+
+describe("AdsMarketingModule - competitiveBenchmark", () => {
+  it("returns benchmark comparison with industry data", () => {
+    const r = adsMarketingModule.competitiveBenchmark(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.portfolioSummary.totalCampaigns).toBeGreaterThan(0);
+    expect(r.benchmarks.length).toBeGreaterThan(0);
+    expect(r.topGaps.length).toBeGreaterThan(0);
+    for (const b of r.benchmarks) {
+      expect(["above", "at", "below"]).toContain(b.verdict);
+      expect(b.portfolioAvg).toBeGreaterThanOrEqual(0);
+      expect(b.industryAvg).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("AdsMarketingModule - realTimeMonitor", () => {
+  it("returns real-time snapshot with alerts and snapshots", () => {
+    const r = adsMarketingModule.realTimeMonitor(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.activeCampaigns).toBeGreaterThan(0);
+    expect(r.totalLiveSpend).toBeGreaterThanOrEqual(0);
+    expect(r.liveROAS).toBeGreaterThanOrEqual(0);
+    expect(r.alerts).toBeDefined();
+    expect(r.campaignSnapshots.length).toBeGreaterThan(0);
+    for (const s of r.campaignSnapshots) {
+      expect(s.campaignId).toBeTruthy();
+      expect(["up", "down", "stable"]).toContain(s.trend);
+    }
+  });
+});
+
+describe("AdsMarketingModule - budgetRebalancer", () => {
+  it("returns budget rebalance recommendations", () => {
+    const r = adsMarketingModule.budgetRebalancer(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.totalBudget).toBeGreaterThan(0);
+    expect(r.summary.campaignsAnalyzed).toBeGreaterThan(0);
+    expect(r.reallocations.length).toBeGreaterThan(0);
+    expect(r.underperformers).toBeDefined();
+    expect(r.topPerformers).toBeDefined();
+    for (const ra of r.reallocations) {
+      expect(ra.rationale).toBeTruthy();
+    }
+  });
+});
+
+describe("AdsMarketingModule - performanceForecast", () => {
+  it("returns forecasts with portfolio projection", () => {
+    const r = adsMarketingModule.performanceForecast(TEST_TENANT, 14);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.forecasts.length).toBeGreaterThan(0);
+    expect(r.portfolioProjection.projectedTotalRevenue).toBeGreaterThanOrEqual(0);
+    expect(r.portfolioProjection.avgConfidence).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("AdsMarketingModule - anomalyScan", () => {
+  it("returns anomaly scan across all campaigns", () => {
+    const r = adsMarketingModule.anomalyScan(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.totalAnomalies).toBeGreaterThanOrEqual(0);
+    expect(r.criticalCount + r.highCount + r.mediumCount + r.lowCount).toBe(r.totalAnomalies);
+    expect(r.topCampaigns).toBeDefined();
+    expect(r.anomalies).toBeDefined();
+  });
+});
+
+describe("AdsMarketingModule - executiveBriefing", () => {
+  it("returns executive briefing with sections and takeaways", () => {
+    const r = adsMarketingModule.executiveBriefing(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.title).toBeTruthy();
+    expect(r.summary).toBeTruthy();
+    expect(r.sections.length).toBeGreaterThan(0);
+    expect(r.keyTakeaways.length).toBeGreaterThan(0);
+    expect(r.recommendedActions).toBeDefined();
+    for (const s of r.sections) {
+      expect(s.heading).toBeTruthy();
+      expect(s.metrics.length).toBeGreaterThan(0);
+    }
+  });
+});

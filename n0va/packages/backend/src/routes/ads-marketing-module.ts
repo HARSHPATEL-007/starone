@@ -53,4 +53,35 @@ router.get("/report", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/competitive-benchmark", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.competitiveBenchmark(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/realtime-monitor", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.realTimeMonitor(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/budget-rebalance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetRebalancer(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/forecast", asyncHandler(async (req, res) => {
+  const days = req.query.days ? parseInt(req.query.days as string, 10) : 30;
+  const result = adsMarketingModule.performanceForecast(req.user!.tenantId, days);
+  sendSuccess(res, result);
+}));
+
+router.get("/anomaly-scan", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.anomalyScan(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/executive-briefing", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.executiveBriefing(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

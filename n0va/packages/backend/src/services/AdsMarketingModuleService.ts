@@ -221,6 +221,104 @@ interface SimulationResult {
   riskLevel: "low" | "medium" | "high";
 }
 
+interface CompetitiveBenchmarkResult {
+  generatedAt: string;
+  portfolioSummary: {
+    totalCampaigns: number;
+    avgROAS: number;
+    avgCTR: number;
+    avgCVR: number;
+    avgCPA: number;
+  };
+  benchmarks: {
+    vertical: string;
+    metric: string;
+    portfolioAvg: number;
+    industryAvg: number;
+    percentile: number;
+    verdict: "above" | "at" | "below";
+  }[];
+  topGaps: { metric: string; gap: number; recommendation: string }[];
+}
+
+interface RealTimeMonitorSnapshot {
+  generatedAt: string;
+  activeCampaigns: number;
+  totalLiveSpend: number;
+  totalLiveRevenue: number;
+  liveROAS: number;
+  alerts: { campaignId: string; campaignName: string; severity: "info" | "warning" | "critical"; message: string }[];
+  campaignSnapshots: {
+    campaignId: string; campaignName: string; status: string;
+    currentSpend: number; currentRevenue: number; currentROAS: number;
+    pacingStatus: string; budgetUtilization: number;
+    healthScore: number; trend: "up" | "down" | "stable";
+    alert: boolean;
+  }[];
+}
+
+interface BudgetRebalanceResult {
+  generatedAt: string;
+  totalBudget: number;
+  summary: { campaignsAnalyzed: number; campaignsRebalanced: number; totalShiftAmount: number; expectedROASImprovement: number };
+  reallocations: {
+    campaignId: string; campaignName: string;
+    currentBudget: number; recommendedBudget: number;
+    delta: number; deltaPercent: number;
+    currentROAS: number; projectedROAS: number;
+    rationale: string;
+  }[];
+  underperformers: { campaignId: string; campaignName: string; reason: string }[];
+  topPerformers: { campaignId: string; campaignName: string; reason: string }[];
+}
+
+interface PerformanceForecastResult {
+  generatedAt: string;
+  forecasts: {
+    campaignId: string; campaignName: string;
+    dailyProjections: { day: number; projectedSpend: number; projectedRevenue: number; projectedConversions: number }[];
+    totalProjectedRevenue: number;
+    totalProjectedConversions: number;
+    confidence: number;
+  }[];
+  portfolioProjection: {
+    projectedTotalRevenue: number;
+    projectedTotalROAS: number;
+    projectedTotalConversions: number;
+    avgConfidence: number;
+  };
+}
+
+interface AnomalyScanResult {
+  generatedAt: string;
+  totalAnomalies: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  anomalies: {
+    campaignId: string; campaignName: string; timestamp: string;
+    metric: string; expectedValue: number; actualValue: number;
+    deviation: number; severity: string; direction: string;
+    probableCause: string; recommendedAction: string;
+  }[];
+  topCampaigns: { campaignId: string; campaignName: string; anomalyCount: number; maxSeverity: string }[];
+}
+
+interface ExecutiveBriefing {
+  generatedAt: string;
+  title: string;
+  summary: string;
+  sections: {
+    heading: string;
+    content: string;
+    metrics: { label: string; value: string; trend: "up" | "down" | "stable" }[];
+    alerts: { message: string; priority: "high" | "medium" | "low" }[];
+  }[];
+  keyTakeaways: string[];
+  recommendedActions: { priority: "high" | "medium" | "low"; action: string; expectedImpact: string }[];
+}
+
 export class AdsMarketingModuleService {
   moduleHealth(): ModuleHealthCheck {
     const checks: { service: string; status: "pass" | "fail"; message: string }[] = [];
@@ -557,6 +655,239 @@ export class AdsMarketingModuleService {
     summary += `${stats.totalPipelines} pipelines (${stats.activePipelines} active), ${stats.pendingChanges} pending changes. `;
     if (health.status !== "healthy") summary += "Some services are degraded — check module health for details. ";
     return { generatedAt: new Date().toISOString(), moduleHealth: health, moduleStats: stats, portfolioOverview: portfolio, topRecommendations: topRecs, summary };
+  }
+
+  competitiveBenchmark(tenantId: string): CompetitiveBenchmarkResult {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const vertBenchmarks: Record<string, Record<string, number>> = {
+      ecommerce: { roas: 3.5, ctr: 1.8, cvr: 2.5, cpa: 25 },
+      saas: { roas: 2.8, ctr: 2.1, cvr: 1.5, cpa: 45 },
+      finance: { roas: 4.0, ctr: 1.2, cvr: 0.8, cpa: 60 },
+      healthcare: { roas: 2.5, ctr: 1.5, cvr: 1.2, cpa: 35 },
+      education: { roas: 3.0, ctr: 1.9, cvr: 2.0, cpa: 30 },
+    };
+    const vertical = "ecommerce";
+    const benchmarks = vertBenchmarks[vertical];
+    const total = portfolio.analyses.length || 1;
+    const avgROAS = portfolio.analyses.reduce((s, a) => s + a.performance.roas, 0) / total;
+    const avgCTR = portfolio.analyses.reduce((s, a) => s + a.performance.ctr, 0) / total;
+    const avgCVR = portfolio.analyses.reduce((s, a) => s + a.performance.cvr, 0) / total;
+    const avgCPA = portfolio.analyses.reduce((s, a) => s + (a.performance.cpa || 0), 0) / total;
+    const clampPct = (val: number, bm: number) => Math.min(100, Math.max(0, val / bm * 50));
+    const benchmarksOut = Object.entries(benchmarks).map(([metric, bm]) => {
+      const val = metric === "roas" ? avgROAS : metric === "ctr" ? avgCTR : metric === "cvr" ? avgCVR : avgCPA;
+      const percentile = Math.round(clampPct(val, bm));
+      const verdict: "above" | "at" | "below" = val > bm * 1.1 ? "above" : val < bm * 0.9 ? "below" : "at";
+      return { vertical, metric, portfolioAvg: Math.round(val * 100) / 100, industryAvg: bm, percentile, verdict };
+    });
+    const topGaps = benchmarksOut.filter(b => b.verdict === "below").slice(0, 3).map(b => ({
+      metric: b.metric,
+      gap: Math.round((b.industryAvg - b.portfolioAvg) * 100) / 100,
+      recommendation: `Improve ${b.metric.toUpperCase()} from ${b.portfolioAvg} to industry avg ${b.industryAvg}`,
+    }));
+    if (topGaps.length === 0) {
+      topGaps.push({ metric: "portfolio", gap: 0, recommendation: "Portfolio is at or above industry benchmarks" });
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      portfolioSummary: {
+        totalCampaigns: portfolio.analyses.length, avgROAS: Math.round(avgROAS * 100) / 100,
+        avgCTR: Math.round(avgCTR * 100) / 100, avgCVR: Math.round(avgCVR * 100) / 100,
+        avgCPA: Math.round(avgCPA * 100) / 100,
+      },
+      benchmarks: benchmarksOut,
+      topGaps,
+    };
+  }
+
+  realTimeMonitor(tenantId: string): RealTimeMonitorSnapshot {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const active = portfolio.analyses.filter(a => a.status === "active");
+    const totalSpend = portfolio.summary.totalSpend;
+    const totalRevenue = portfolio.summary.totalRevenue;
+    const liveROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+    const alerts: RealTimeMonitorSnapshot["alerts"] = [];
+    const snapshots = active.map(a => {
+      const util = a.performance.budgetUtilization || 0;
+      const pacing = util > 90 ? "ahead" : util > 70 ? "on_track" : util > 40 ? "behind" : "critical";
+      const trend = a.trends.length > 0 ? a.trends[0].direction : "stable";
+      const needsAlert = a.healthScore < 40 || a.performance.roas < 0.5 || util > 100;
+      if (needsAlert) {
+        const sev = a.healthScore < 30 ? "critical" : "warning";
+        alerts.push({ campaignId: a.campaignId, campaignName: a.campaignName, severity: sev, message: `Health: ${a.healthScore}, ROAS: ${a.performance.roas.toFixed(2)}` });
+      }
+      return {
+        campaignId: a.campaignId, campaignName: a.campaignName, status: a.status,
+        currentSpend: a.performance.spend, currentRevenue: a.performance.revenue,
+        currentROAS: a.performance.roas, pacingStatus: pacing,
+        budgetUtilization: util, healthScore: a.healthScore, trend, alert: needsAlert,
+      };
+    });
+    return {
+      generatedAt: new Date().toISOString(),
+      activeCampaigns: active.length,
+      totalLiveSpend: totalSpend, totalLiveRevenue: totalRevenue,
+      liveROAS: Math.round(liveROAS * 100) / 100,
+      alerts, campaignSnapshots: snapshots,
+    };
+  }
+
+  budgetRebalancer(tenantId: string): BudgetRebalanceResult {
+    const alloc = autonomousCampaignManager.recommendBudgetAllocation(tenantId);
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const totalShift = alloc.allocations.reduce((s, a) => s + Math.abs(a.budgetDelta), 0);
+    const rebalanced = alloc.allocations.filter(a => Math.abs(a.budgetDelta) > 0);
+    const sortedByROAS = [...portfolio.analyses].sort((a, b) => a.performance.roas - b.performance.roas);
+    const underperformers = sortedByROAS.slice(0, 3).filter(a => a.performance.roas < 1).map(a => ({
+      campaignId: a.campaignId, campaignName: a.campaignName,
+      reason: `Low ROAS (${a.performance.roas.toFixed(2)}x) — consider budget reduction or pause`,
+    }));
+    const topP = [...portfolio.analyses].sort((a, b) => b.performance.roas - a.performance.roas).slice(0, 3).map(a => ({
+      campaignId: a.campaignId, campaignName: a.campaignName,
+      reason: `High ROAS (${a.performance.roas.toFixed(2)}x) — consider budget increase`,
+    }));
+    return {
+      generatedAt: new Date().toISOString(),
+      totalBudget: alloc.totalBudget,
+      summary: {
+        campaignsAnalyzed: alloc.allocations.length,
+        campaignsRebalanced: rebalanced.length,
+        totalShiftAmount: Math.round(totalShift * 100) / 100,
+        expectedROASImprovement: Math.round((alloc.projectedTotalROAS - portfolio.summary.portfolioROAS) * 100) / 100,
+      },
+      reallocations: alloc.allocations.map(a => ({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        currentBudget: a.currentBudget, recommendedBudget: a.recommendedBudget,
+        delta: Math.round(a.budgetDelta * 100) / 100,
+        deltaPercent: a.currentBudget > 0 ? Math.round(a.budgetDelta / a.currentBudget * 10000) / 100 : 0,
+        currentROAS: a.currentROAS, projectedROAS: a.projectedROAS,
+        rationale: a.rationale,
+      })),
+      underperformers, topPerformers: topP,
+    };
+  }
+
+  performanceForecast(tenantId: string, days: number = 30): PerformanceForecastResult {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const forecasts = portfolio.analyses.map(a => {
+      const f = autonomousCampaignManager.getPerformanceForecast(a.campaignId, tenantId, days);
+      return f || { campaignId: a.campaignId, campaignName: a.campaignName, dailyProjections: [], totalProjectedRevenue: 0, totalProjectedConversions: 0, confidence: 0 };
+    });
+    const totalRevenue = forecasts.reduce((s, f) => s + f.totalProjectedRevenue, 0);
+    const totalConversions = forecasts.reduce((s, f) => s + f.totalProjectedConversions, 0);
+    const totalSpend = portfolio.analyses.reduce((s, a) => s + a.performance.spend, 0);
+    const projectedROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+    const avgConf = forecasts.reduce((s, f) => s + f.confidence, 0) / (forecasts.length || 1);
+    return {
+      generatedAt: new Date().toISOString(),
+      forecasts,
+      portfolioProjection: {
+        projectedTotalRevenue: Math.round(totalRevenue * 100) / 100,
+        projectedTotalROAS: Math.round(projectedROAS * 100) / 100,
+        projectedTotalConversions: Math.round(totalConversions * 100) / 100,
+        avgConfidence: Math.round(avgConf * 100) / 100,
+      },
+    };
+  }
+
+  anomalyScan(tenantId: string): AnomalyScanResult {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const allAnomalies = portfolio.analyses.flatMap(a => {
+      const anomalies = autonomousCampaignManager.detectAnomalies(a.campaignId, tenantId);
+      return anomalies.map(an => ({ ...an, campaignName: a.campaignName }));
+    });
+    const byCampaign = new Map<string, { name: string; count: number; maxSev: string }>();
+    for (const an of allAnomalies) {
+      const existing = byCampaign.get(an.campaignId) || { name: an.campaignName, count: 0, maxSev: "low" };
+      existing.count++;
+      const sevOrder = ["low", "medium", "high", "critical"];
+      if (sevOrder.indexOf(an.severity) > sevOrder.indexOf(existing.maxSev)) existing.maxSev = an.severity;
+      byCampaign.set(an.campaignId, existing);
+    }
+    const topCampaigns = [...byCampaign.entries()]
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5)
+      .map(([id, info]) => ({ campaignId: id, campaignName: info.name, anomalyCount: info.count, maxSeverity: info.maxSev }));
+    return {
+      generatedAt: new Date().toISOString(),
+      totalAnomalies: allAnomalies.length,
+      criticalCount: allAnomalies.filter(a => a.severity === "critical").length,
+      highCount: allAnomalies.filter(a => a.severity === "high").length,
+      mediumCount: allAnomalies.filter(a => a.severity === "medium").length,
+      lowCount: allAnomalies.filter(a => a.severity === "low").length,
+      anomalies: allAnomalies.map(a => ({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        timestamp: a.timestamp || new Date().toISOString(),
+        metric: a.metric, expectedValue: a.expectedValue, actualValue: a.actualValue,
+        deviation: a.deviation, severity: a.severity, direction: a.direction,
+        probableCause: a.probableCause, recommendedAction: a.recommendedAction,
+      })),
+      topCampaigns,
+    };
+  }
+
+  executiveBriefing(tenantId: string): ExecutiveBriefing {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const report = autonomousCampaignManager.generateExecutiveReport(tenantId);
+    const health = this.moduleHealth();
+    const alerts: { message: string; priority: "high" | "medium" | "low" }[] = [];
+    if (health.status !== "healthy") alerts.push({ message: `${health.status === "degraded" ? "Some" : "Critical"} module services degraded`, priority: "high" });
+    if (portfolio.summary.avgHealthScore < 50) alerts.push({ message: "Portfolio health below threshold", priority: "high" });
+    else if (portfolio.summary.avgHealthScore < 70) alerts.push({ message: "Portfolio health moderate", priority: "medium" });
+    const atRiskCount = report.atRiskCampaigns.length;
+    if (atRiskCount > 3) alerts.push({ message: `${atRiskCount} campaigns at risk`, priority: "high" });
+    else if (atRiskCount > 0) alerts.push({ message: `${atRiskCount} campaigns need attention`, priority: "medium" });
+    const summary = `Portfolio: ${portfolio.summary.totalCampaigns} campaigns, avg health ${portfolio.summary.avgHealthScore.toFixed(1)}, ROAS ${portfolio.summary.portfolioROAS.toFixed(2)}x. ${portfolio.summary.healthyCount} healthy, ${portfolio.summary.atRiskCount} at risk, ${portfolio.summary.criticalCount} critical.${alerts.length > 0 ? ` ${alerts.length} active alert(s).` : ""}`;
+    const sections: ExecutiveBriefing["sections"] = [
+      {
+        heading: "Portfolio Health",
+        content: `Average health score ${portfolio.summary.avgHealthScore.toFixed(1)}. ${portfolio.summary.healthyCount} campaigns healthy, ${portfolio.summary.atRiskCount} at risk, ${portfolio.summary.criticalCount} critical.`,
+        metrics: [
+          { label: "Avg Health", value: portfolio.summary.avgHealthScore.toFixed(1), trend: portfolio.summary.avgHealthScore >= 60 ? "up" : "down" },
+          { label: "Healthy", value: String(portfolio.summary.healthyCount), trend: "stable" },
+          { label: "At Risk", value: String(portfolio.summary.atRiskCount), trend: portfolio.summary.atRiskCount > 2 ? "down" : "stable" },
+        ],
+        alerts: alerts.filter(a => a.priority === "high").slice(0, 3),
+      },
+      {
+        heading: "Financial Performance",
+        content: `Portfolio ROAS: ${portfolio.summary.portfolioROAS.toFixed(2)}x. Total spend: $${portfolio.summary.totalSpend.toFixed(0)}, revenue: $${portfolio.summary.totalRevenue.toFixed(0)}.`,
+        metrics: [
+          { label: "ROAS", value: `${portfolio.summary.portfolioROAS.toFixed(2)}x`, trend: portfolio.summary.portfolioROAS >= 2 ? "up" : "down" },
+          { label: "Total Revenue", value: `$${portfolio.summary.totalRevenue.toFixed(0)}`, trend: "up" },
+          { label: "Total Spend", value: `$${portfolio.summary.totalSpend.toFixed(0)}`, trend: "stable" },
+        ],
+        alerts: portfolio.summary.portfolioROAS < 1.5 ? [{ message: "Portfolio ROAS below target", priority: "high" }] : [],
+      },
+      {
+        heading: "Active Alerts & Risks",
+        content: `${alerts.length} active alerts. ${portfolio.summary.criticalCount} critical campaigns require immediate attention.`,
+        metrics: [
+          { label: "Total Alerts", value: String(alerts.length), trend: alerts.length > 0 ? "down" : "stable" },
+          { label: "Critical", value: String(portfolio.summary.criticalCount), trend: portfolio.summary.criticalCount > 0 ? "down" : "stable" },
+        ],
+        alerts,
+      },
+    ];
+    const keyTakeaways = [
+      `Portfolio ROAS of ${portfolio.summary.portfolioROAS.toFixed(2)}x is ${portfolio.summary.portfolioROAS >= 2 ? "above" : "below"} target`,
+      `${portfolio.summary.healthyCount} of ${portfolio.summary.totalCampaigns} campaigns are healthy (${Math.round(portfolio.summary.healthyCount / (portfolio.summary.totalCampaigns || 1) * 100)}%)`,
+      `${portfolio.summary.criticalCount} campaigns need immediate intervention`,
+    ];
+    const actionItems = autonomousCampaignManager.generateActionItems(tenantId);
+    const recommendedActions = actionItems.slice(0, 5).map(a => ({
+      priority: a.priority as "high" | "medium" | "low",
+      action: a.action,
+      expectedImpact: a.impact || "Improved campaign performance",
+    }));
+    return {
+      generatedAt: new Date().toISOString(),
+      title: `Executive Briefing — ${new Date().toISOString().split("T")[0]}`,
+      summary,
+      sections,
+      keyTakeaways,
+      recommendedActions,
+    };
   }
 }
 
