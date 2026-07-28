@@ -1970,4 +1970,16 @@ export const api = {
     validate: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/validate`),
     rollback: (pipelineId: string) => request<any>(`/unified-ads-pipeline/${pipelineId}/rollback`, { method: "POST" }),
   },
+
+  adsMarketingModule: {
+    health: () => request<any>("/ads-marketing-module/health"),
+    stats: () => request<any>("/ads-marketing-module/stats"),
+    campaignHealth: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/health`),
+    campaignOptimize: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/optimize`, { method: "POST" }),
+    campaignLifecycle: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/lifecycle`),
+    campaignAnalysis: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/analysis`),
+    dashboard: () => request<any>("/ads-marketing-module/dashboard"),
+    portfolioOverview: () => request<any>("/ads-marketing-module/portfolio-overview"),
+    report: () => request<any>("/ads-marketing-module/report"),
+  },
 };

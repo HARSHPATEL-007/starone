@@ -115,6 +115,7 @@ import incrementalityTestingRoutes from "./routes/incrementality-testing";
 import searchIntelligenceRoutes from "./routes/search-intelligence";
 import anomalyDetectionEnhancedRoutes from "./routes/anomaly-detection-enhanced";
 import unifiedAdsPipelineRoutes from "./routes/unified-ads-pipeline";
+import adsMarketingModuleRoutes from "./routes/ads-marketing-module";
 
 const app = express();
 const httpServer = createServer(app);
@@ -243,6 +244,7 @@ app.use("/api/v1/incrementality-testing", authMiddleware, tenantMiddleware, incr
 app.use("/api/v1/search-intelligence", authMiddleware, tenantMiddleware, searchIntelligenceRoutes);
 app.use("/api/v1/anomaly-detection/enhanced", authMiddleware, tenantMiddleware, anomalyDetectionEnhancedRoutes);
 app.use("/api/v1/unified-ads-pipeline", authMiddleware, tenantMiddleware, unifiedAdsPipelineRoutes);
+app.use("/api/v1/ads-marketing-module", authMiddleware, tenantMiddleware, adsMarketingModuleRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
