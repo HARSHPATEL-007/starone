@@ -209,4 +209,34 @@ router.post("/remediate", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/dayparting", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.daypartingAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/dayparting-schedule", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.daypartingSchedule(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/dayparting-plan", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.daypartingPlan(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/dayparting/time-patterns", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.daypartingTimePatterns(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/dayparting/schedule-conflicts", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.daypartingScheduleConflicts(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/dayparting/timezone-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.daypartingTimezonePerformance(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

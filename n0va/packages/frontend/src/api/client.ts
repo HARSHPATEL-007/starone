@@ -2014,6 +2014,12 @@ export const api = {
     recoveryPlan: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/recovery-plan`),
     remediate: (findingId: string, action: string, metricBefore: number, metricAfter: number) =>
       request<any>("/ads-marketing-module/remediate", { method: "POST", body: JSON.stringify({ findingId, action, metricBefore, metricAfter }) }),
+    daypartingAnalysis: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/dayparting`),
+    daypartingSchedule: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/dayparting-schedule`),
+    daypartingPlan: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/dayparting-plan`),
+    daypartingTimePatterns: () => request<any>("/ads-marketing-module/dayparting/time-patterns"),
+    daypartingScheduleConflicts: () => request<any>("/ads-marketing-module/dayparting/schedule-conflicts"),
+    daypartingTimezonePerformance: () => request<any>("/ads-marketing-module/dayparting/timezone-performance"),
   },
 
   agentSwarm: {
@@ -2247,5 +2253,14 @@ export const api = {
     recoveryPlan: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/recovery-plan`),
     remediate: (findingId: string, action: string, metricBefore: number, metricAfter: number) =>
       request<any>("/campaign-performance-diagnostics/remediate", { method: "POST", body: JSON.stringify({ findingId, action, metricBefore, metricAfter }) }),
+  },
+
+  campaignDaypartingOptimizer: {
+    analyze: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/analyze`),
+    schedule: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/schedule`),
+    plan: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/plan`),
+    timePatterns: () => request<any>("/campaign-dayparting-optimizer/time-patterns"),
+    scheduleConflicts: () => request<any>("/campaign-dayparting-optimizer/schedule-conflicts"),
+    timezonePerformance: () => request<any>("/campaign-dayparting-optimizer/timezone-performance"),
   },
 };

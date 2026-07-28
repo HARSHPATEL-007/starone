@@ -8,6 +8,7 @@ import { attributionService } from "./AttributionService";
 import { campaignBudgetSimulator } from "./CampaignBudgetSimulatorService";
 import { campaignInsightsEngine, InsightsDashboard, CorrelationAnalysis, TrendAnalysis, BudgetEfficiencyScore, CrossCampaignAttribution, PredictiveAlertSummary } from "./CampaignInsightsEngineService";
 import { campaignPerformanceDiagnostics } from "./CampaignPerformanceDiagnosticsService";
+import { campaignDaypartingOptimizer } from "./CampaignDaypartingOptimizerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1643,6 +1644,30 @@ export class AdsMarketingModuleService {
 
   remediationRecord(findingId: string, action: string, metricBefore: number, metricAfter: number) {
     return campaignPerformanceDiagnostics.remediateFinding(findingId, action, metricBefore, metricAfter);
+  }
+
+  daypartingAnalysis(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.analyzeDayparting(campaignId, tenantId);
+  }
+
+  daypartingSchedule(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.recommendSchedule(campaignId, tenantId);
+  }
+
+  daypartingTimePatterns(tenantId: string) {
+    return campaignDaypartingOptimizer.detectTimePatterns(tenantId);
+  }
+
+  daypartingScheduleConflicts(tenantId: string) {
+    return campaignDaypartingOptimizer.findScheduleConflicts(tenantId);
+  }
+
+  daypartingTimezonePerformance(tenantId: string) {
+    return campaignDaypartingOptimizer.analyzeTimezonePerformance(tenantId);
+  }
+
+  daypartingPlan(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.generateDaypartingPlan(campaignId, tenantId);
   }
 }
 
