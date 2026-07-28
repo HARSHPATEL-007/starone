@@ -519,4 +519,34 @@ router.get("/campaign/:campaignId/placement-trends", asyncHandler(async (req, re
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/format-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.formatPerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/format-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.formatMixRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/format-opportunities", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.formatOpportunities(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/format-bid-adjustments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.formatBidAdjustments(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/audience-format-preference", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.formatAudiencePreference(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/format-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.formatTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

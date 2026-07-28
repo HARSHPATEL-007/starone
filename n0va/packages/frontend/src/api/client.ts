@@ -2078,6 +2078,12 @@ export const api = {
     placementBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/placement-bid-adjustments`),
     placementOverlap: () => request<any>("/ads-marketing-module/placement-overlap"),
     placementTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/placement-trends`),
+    formatPerformance: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/format-performance`),
+    formatRecommendations: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/format-recommendations`),
+    formatOpportunities: () => request<any>("/ads-marketing-module/format-opportunities"),
+    formatBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/format-bid-adjustments`),
+    formatAudiencePreference: () => request<any>("/ads-marketing-module/audience-format-preference"),
+    formatTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/format-trends`),
   },
 
   agentSwarm: {
@@ -2406,5 +2412,14 @@ export const api = {
     placementBidAdjustments: (campaignId: string) => request<any>(`/campaign-ad-placement-analyzer/campaign/${campaignId}/placement-bid-adjustments`),
     placementOverlap: () => request<any>("/campaign-ad-placement-analyzer/placement-overlap"),
     placementTrends: (campaignId: string) => request<any>(`/campaign-ad-placement-analyzer/campaign/${campaignId}/placement-trends`),
+  },
+
+  campaignAdFormatAnalyzer: {
+    formatPerformance: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-performance`),
+    formatRecommendations: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-recommendations`),
+    formatOpportunities: () => request<any>("/campaign-ad-format-analyzer/format-opportunities"),
+    formatBidAdjustments: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-bid-adjustments`),
+    audienceFormatPreference: () => request<any>("/campaign-ad-format-analyzer/audience-format-preference"),
+    formatTrends: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-trends`),
   },
 };

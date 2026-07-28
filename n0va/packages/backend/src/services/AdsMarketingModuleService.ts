@@ -18,6 +18,7 @@ import { campaignFrequencyAnalyzer } from "./CampaignFrequencyAnalyzerService";
 import { campaignSegmentDiscovery } from "./CampaignSegmentDiscoveryService";
 import { campaignGoalTracker } from "./CampaignGoalTrackerService";
 import { campaignAdPlacementAnalyzer } from "./CampaignAdPlacementAnalyzerService";
+import { campaignAdFormatAnalyzer } from "./CampaignAdFormatAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1893,6 +1894,30 @@ export class AdsMarketingModuleService {
 
   placementTrends(campaignId: string, tenantId: string) {
     return campaignAdPlacementAnalyzer.analyzePlacementTrends(campaignId, tenantId);
+  }
+
+  formatPerformance(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.analyzeFormatPerformance(campaignId, tenantId);
+  }
+
+  formatMixRecommendations(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.recommendFormatMix(campaignId, tenantId);
+  }
+
+  formatOpportunities(tenantId: string) {
+    return campaignAdFormatAnalyzer.identifyFormatOpportunities(tenantId);
+  }
+
+  formatBidAdjustments(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.calculateFormatBidAdjustments(campaignId, tenantId);
+  }
+
+  formatAudiencePreference(tenantId: string) {
+    return campaignAdFormatAnalyzer.analyzeAudienceFormatPreference(tenantId);
+  }
+
+  formatTrends(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.analyzeFormatTrends(campaignId, tenantId);
   }
 }
 
