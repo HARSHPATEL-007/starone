@@ -1987,6 +1987,13 @@ export const api = {
     forecast: (days?: number) => request<any>(`/ads-marketing-module/forecast${days ? `?days=${days}` : ""}`),
     anomalyScan: () => request<any>("/ads-marketing-module/anomaly-scan"),
     executiveBriefing: () => request<any>("/ads-marketing-module/executive-briefing"),
+    audienceOverlap: () => request<any>("/ads-marketing-module/audience-overlap"),
+    crossPlatformAudienceSync: () => request<any>("/ads-marketing-module/cross-platform-audience-sync"),
+    creativePerformanceMatrix: () => request<any>("/ads-marketing-module/creative-performance-matrix"),
+    placementIntelligence: () => request<any>("/ads-marketing-module/placement-intelligence"),
+    channelAttributionSummary: () => request<any>("/ads-marketing-module/channel-attribution-summary"),
+    portfolioScenarioPlanner: (scenarios: any[]) =>
+      request<any>("/ads-marketing-module/portfolio-scenario-planner", { method: "POST", body: JSON.stringify({ scenarios }) }),
   },
 
   agentSwarm: {
@@ -2177,5 +2184,19 @@ export const api = {
     dismissAlert: (alertId: string) =>
       request<any>(`/campaign-alert-orchestrator/alerts/${alertId}/dismiss`, { method: "POST" }),
     summary: () => request<any>("/campaign-alert-orchestrator/summary"),
+  },
+
+  campaignExperimentation: {
+    list: (status?: string) => request<any>(`/campaign-experimentation/experiments${status ? `?status=${status}` : ""}`),
+    get: (expId: string) => request<any>(`/campaign-experimentation/experiments/${expId}`),
+    create: (data: any) => request<any>("/campaign-experimentation/experiments", { method: "POST", body: JSON.stringify(data) }),
+    update: (expId: string, updates: any) =>
+      request<any>(`/campaign-experimentation/experiments/${expId}`, { method: "PUT", body: JSON.stringify(updates) }),
+    delete: (expId: string) => request<void>(`/campaign-experimentation/experiments/${expId}`, { method: "DELETE" }),
+    start: (expId: string) => request<any>(`/campaign-experimentation/experiments/${expId}/start`, { method: "POST" }),
+    complete: (expId: string) => request<any>(`/campaign-experimentation/experiments/${expId}/complete`, { method: "POST" }),
+    recordMetrics: (expId: string, variantId: string, date: string, metrics: any) =>
+      request<any>(`/campaign-experimentation/experiments/${expId}/metrics`, { method: "POST", body: JSON.stringify({ variantId, date, metrics }) }),
+    summary: () => request<any>("/campaign-experimentation/summary"),
   },
 };

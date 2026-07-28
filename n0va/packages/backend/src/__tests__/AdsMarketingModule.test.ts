@@ -17,6 +17,24 @@ beforeAll(() => {
       endDate: "2025-12-31",
     });
   }
+  mem.insert("audiences", {
+    tenantId: TEST_TENANT, name: "AMM Test Audience 1", type: "custom", platform: "meta", size: 100000, status: "active",
+    criteria: { job_titles: ["CTO"] }, createdBy: "test",
+  });
+  mem.insert("audiences", {
+    tenantId: TEST_TENANT, name: "AMM Test Audience 2", type: "lookalike", platform: "google", size: 500000, status: "active",
+    criteria: { source: "customer_list", percentage: 5 }, createdBy: "test",
+  });
+  mem.insert("creatives", {
+    tenantId: TEST_TENANT, name: "AMM Creative 1", type: "image", status: "active",
+    performance: { impressions: 50000, clicks: 1500, conversions: 75, spend: 3000, revenue: 9000 },
+    createdBy: "test",
+  });
+  mem.insert("creatives", {
+    tenantId: TEST_TENANT, name: "AMM Creative 2", type: "video", status: "active",
+    performance: { impressions: 80000, clicks: 2400, conversions: 120, spend: 5000, revenue: 20000 },
+    createdBy: "test",
+  });
 });
 
 describe("AdsMarketingModule - moduleHealth", () => {
@@ -238,6 +256,80 @@ describe("AdsMarketingModule - executiveBriefing", () => {
     for (const s of r.sections) {
       expect(s.heading).toBeTruthy();
       expect(s.metrics.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("AdsMarketingModule - audienceOverlapAnalysis", () => {
+  it("returns overlap analysis across active campaigns", () => {
+    const r = adsMarketingModule.audienceOverlapAnalysis(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.overlaps).toBeDefined();
+    expect(r.summary.totalPairs).toBeGreaterThanOrEqual(0);
+    expect(r.summary.estimatedWaste).toBeGreaterThanOrEqual(0);
+    for (const o of r.overlaps) {
+      expect(o.campaignA.id).toBeTruthy();
+      expect(o.campaignB.id).toBeTruthy();
+      expect(o.recommendation).toBeTruthy();
+    }
+  });
+});
+
+describe("AdsMarketingModule - crossPlatformAudienceSync", () => {
+  it("returns cross-platform sync analysis", () => {
+    const r = adsMarketingModule.crossPlatformAudienceSync(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.audiences.length).toBeGreaterThan(0);
+    expect(r.summary.totalAudiences).toBeGreaterThan(0);
+    expect(r.summary.avgMatchRate).toBeGreaterThan(0);
+  });
+});
+
+describe("AdsMarketingModule - creativePerformanceMatrix", () => {
+  it("returns creative performance matrix", () => {
+    const r = adsMarketingModule.creativePerformanceMatrix(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.creatives.length).toBeGreaterThan(0);
+    expect(r.summary.totalCreatives).toBeGreaterThan(0);
+    expect(r.summary.avgCTR).toBeGreaterThanOrEqual(0);
+    expect(r.summary.avgROAS).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("AdsMarketingModule - placementIntelligence", () => {
+  it("returns placement intelligence with recommendations", () => {
+    const r = adsMarketingModule.placementIntelligence(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.placements.length).toBeGreaterThan(0);
+    expect(r.summary.totalPlacements).toBeGreaterThan(0);
+    expect(r.topOpportunities.length).toBeGreaterThan(0);
+    for (const p of r.placements) {
+      expect(p.recommendation).toBeTruthy();
+    }
+  });
+});
+
+describe("AdsMarketingModule - channelAttributionSummary", () => {
+  it("returns channel attribution summary", () => {
+    const r = adsMarketingModule.channelAttributionSummary(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.channels.length).toBeGreaterThan(0);
+    expect(r.summary.totalRevenue).toBeGreaterThan(0);
+    expect(r.summary.primaryChannel.platform).toBeTruthy();
+  });
+});
+
+describe("AdsMarketingModule - portfolioScenarioPlanner", () => {
+  it("returns scenario plans with projections", () => {
+    const r = adsMarketingModule.portfolioScenarioPlanner(TEST_TENANT, []);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.baseline.totalROAS).toBeGreaterThan(0);
+    expect(r.scenarios.length).toBeGreaterThan(0);
+    expect(r.recommendedScenario).not.toBeNull();
+    for (const s of r.scenarios) {
+      expect(s.name).toBeTruthy();
+      expect(s.projectedROAS).toBeGreaterThan(0);
+      expect(["low", "medium", "high"]).toContain(s.riskLevel);
     }
   });
 });

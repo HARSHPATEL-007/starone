@@ -125,6 +125,7 @@ import n0va1oGatewayEnhancedRoutes from "./routes/n0va1o-gateway-enhanced";
 import recipeCompilationRoutes from "./routes/recipe-compilation";
 import securityModifierRoutes from "./routes/security-modifier";
 import campaignAlertOrchestratorRoutes from "./routes/campaign-alert-orchestrator";
+import campaignExperimentationRoutes from "./routes/campaign-experimentation";
 
 const app = express();
 const httpServer = createServer(app);
@@ -229,6 +230,7 @@ app.use("/api/v1/ab-test-statistics", authMiddleware, tenantMiddleware, abTestSt
 app.use("/api/v1/anomaly-detection", authMiddleware, tenantMiddleware, anomalyDetectionRoutes);
 app.use("/api/v1/portfolio-budget-optimizer", authMiddleware, tenantMiddleware, portfolioBudgetOptimizerRoutes);
 app.use("/api/v1/campaign-saturation", authMiddleware, tenantMiddleware, campaignSaturationRoutes);
+app.use("/api/v1/campaign-experimentation", authMiddleware, tenantMiddleware, campaignExperimentationRoutes);
 app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);

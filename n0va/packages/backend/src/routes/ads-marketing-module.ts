@@ -84,4 +84,35 @@ router.get("/executive-briefing", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/audience-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.audienceOverlapAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/cross-platform-audience-sync", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossPlatformAudienceSync(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/creative-performance-matrix", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativePerformanceMatrix(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/placement-intelligence", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementIntelligence(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/channel-attribution-summary", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.channelAttributionSummary(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/portfolio-scenario-planner", asyncHandler(async (req, res) => {
+  const scenarios = req.body.scenarios || [];
+  const result = adsMarketingModule.portfolioScenarioPlanner(req.user!.tenantId, scenarios);
+  sendSuccess(res, result);
+}));
+
 export default router;
