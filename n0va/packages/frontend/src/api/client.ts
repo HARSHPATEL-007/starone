@@ -2066,6 +2066,12 @@ export const api = {
     segmentComparison: () => request<any>("/ads-marketing-module/segment-comparison"),
     segmentTrends: () => request<any>("/ads-marketing-module/segment-trends"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),
+    goalProgress: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-progress`),
+    goalAttainment: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-attainment`),
+    goalAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-adjustments`),
+    goalConflicts: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-conflicts`),
+    goalComparison: () => request<any>("/ads-marketing-module/goal-performance-comparison"),
+    goalTrendForecast: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-trend-forecast`),
   },
 
   agentSwarm: {
@@ -2376,5 +2382,14 @@ export const api = {
     segmentComparison: () => request<any>("/campaign-segment-discovery/segment-comparison"),
     segmentTrends: () => request<any>("/campaign-segment-discovery/segment-trends"),
     segmentOverlap: () => request<any>("/campaign-segment-discovery/segment-overlap"),
+  },
+
+  campaignGoalTracker: {
+    progress: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/progress`),
+    attainment: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/attainment`),
+    adjustments: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/adjustments`),
+    conflicts: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/conflicts`),
+    compare: () => request<any>("/campaign-goal-tracker/compare"),
+    trendForecast: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/trend-forecast`),
   },
 };

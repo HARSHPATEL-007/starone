@@ -16,6 +16,7 @@ import { campaignCrossDeviceAnalyzer } from "./CampaignCrossDeviceAnalyzerServic
 import { campaignGeoPerformanceAnalyzer } from "./CampaignGeoPerformanceAnalyzerService";
 import { campaignFrequencyAnalyzer } from "./CampaignFrequencyAnalyzerService";
 import { campaignSegmentDiscovery } from "./CampaignSegmentDiscoveryService";
+import { campaignGoalTracker } from "./CampaignGoalTrackerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1843,6 +1844,30 @@ export class AdsMarketingModuleService {
 
   segmentOverlap(tenantId: string) {
     return campaignSegmentDiscovery.segmentOverlapAnalysis(tenantId);
+  }
+
+  goalProgress(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.trackGoalProgress(campaignId, tenantId);
+  }
+
+  goalAttainmentPrediction(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.predictGoalAttainment(campaignId, tenantId);
+  }
+
+  goalAdjustmentRecommendations(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.recommendGoalAdjustments(campaignId, tenantId);
+  }
+
+  goalConflictAnalysis(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.analyzeGoalConflicts(campaignId, tenantId);
+  }
+
+  goalPerformanceComparison(tenantId: string) {
+    return campaignGoalTracker.compareGoalPerformance(tenantId);
+  }
+
+  goalTrendForecast(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalTrendForecast(campaignId, tenantId);
   }
 }
 

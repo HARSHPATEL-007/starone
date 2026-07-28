@@ -459,4 +459,34 @@ router.get("/segment-overlap", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/goal-progress", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.goalProgress(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/goal-attainment", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.goalAttainmentPrediction(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-adjustments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.goalAdjustmentRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-conflicts", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.goalConflictAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/goal-performance-comparison", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.goalPerformanceComparison(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-trend-forecast", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.goalTrendForecast(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
