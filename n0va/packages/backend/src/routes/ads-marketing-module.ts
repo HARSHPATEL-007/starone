@@ -549,4 +549,34 @@ router.get("/campaign/:campaignId/format-trends", asyncHandler(async (req, res) 
   sendSuccess(res, result);
 }));
 
+router.get("/customer-journeys", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.customerJourneys(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-common-paths", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.journeyCommonPaths(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-segments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.journeySegments(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-optimizations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.journeyOptimizations(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-drop-offs", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.journeyDropOffs(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-time-buckets", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.journeyTimeBuckets(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

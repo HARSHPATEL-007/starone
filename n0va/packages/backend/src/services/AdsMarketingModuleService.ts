@@ -19,6 +19,7 @@ import { campaignSegmentDiscovery } from "./CampaignSegmentDiscoveryService";
 import { campaignGoalTracker } from "./CampaignGoalTrackerService";
 import { campaignAdPlacementAnalyzer } from "./CampaignAdPlacementAnalyzerService";
 import { campaignAdFormatAnalyzer } from "./CampaignAdFormatAnalyzerService";
+import { campaignCustomerJourney } from "./CampaignCustomerJourneyService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1918,6 +1919,31 @@ export class AdsMarketingModuleService {
 
   formatTrends(campaignId: string, tenantId: string) {
     return campaignAdFormatAnalyzer.analyzeFormatTrends(campaignId, tenantId);
+  }
+
+  customerJourneys(tenantId: string) {
+    return campaignCustomerJourney.analyzeCustomerJourneys(tenantId);
+  }
+
+  journeyCommonPaths(tenantId: string) {
+    const report = campaignCustomerJourney.analyzeCustomerJourneys(tenantId);
+    return report.commonPaths;
+  }
+
+  journeySegments(tenantId: string) {
+    return campaignCustomerJourney.analyzeJourneySegments(tenantId);
+  }
+
+  journeyOptimizations(tenantId: string) {
+    return campaignCustomerJourney.generateJourneyOptimizations(tenantId);
+  }
+
+  journeyDropOffs(tenantId: string) {
+    return campaignCustomerJourney.analyzeJourneyDropOffs(tenantId);
+  }
+
+  journeyTimeBuckets(tenantId: string) {
+    return campaignCustomerJourney.analyzeJourneyTimeBuckets(tenantId);
   }
 }
 

@@ -2422,4 +2422,13 @@ export const api = {
     audienceFormatPreference: () => request<any>("/campaign-ad-format-analyzer/audience-format-preference"),
     formatTrends: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-trends`),
   },
+
+  campaignCustomerJourney: {
+    journeys: () => request<any>("/campaign-customer-journey/journeys"),
+    journeySegments: () => request<any>("/campaign-customer-journey/journey-segments"),
+    journeyOptimizations: () => request<any>("/campaign-customer-journey/journey-optimizations"),
+    journeyDropOffs: () => request<any>("/campaign-customer-journey/journey-drop-offs"),
+    journeyTimeBuckets: () => request<any>("/campaign-customer-journey/journey-time-buckets"),
+    commonPaths: () => request<any>("/campaign-customer-journey/common-paths"),
+  },
 };
