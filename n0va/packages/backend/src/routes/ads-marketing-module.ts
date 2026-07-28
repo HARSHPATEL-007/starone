@@ -115,4 +115,37 @@ router.post("/portfolio-scenario-planner", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/budget-simulation", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetSimulation(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/ad-compliance", asyncHandler(async (req, res) => {
+  const adCopy = req.body.adCopy || "";
+  const result = adsMarketingModule.adComplianceAnalysis(adCopy);
+  sendSuccess(res, result);
+}));
+
+router.get("/taxonomy-audit", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.campaignTaxonomyAudit(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.audienceSegmentOverlap(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/marketing-calendar", asyncHandler(async (req, res) => {
+  const month = req.query.month ? parseInt(req.query.month as string, 10) : undefined;
+  const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined;
+  const result = adsMarketingModule.marketingCalendar(req.user!.tenantId, month, year);
+  sendSuccess(res, result);
+}));
+
+router.get("/creative-asset-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativeAssetPerformance(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

@@ -5,6 +5,7 @@ import { campaignSaturationService } from "./CampaignSaturationService";
 import { portfolioBudgetOptimizer } from "./PortfolioBudgetOptimizerService";
 import { CampaignSummaryService } from "./CampaignSummaryService";
 import { attributionService } from "./AttributionService";
+import { campaignBudgetSimulator } from "./CampaignBudgetSimulatorService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -402,6 +403,77 @@ interface PortfolioScenarioPlannerResult {
   baseline: { totalSpend: number; totalRevenue: number; totalROAS: number; totalConversions: number };
   scenarios: ScenarioPlan[];
   recommendedScenario: { name: string; rationale: string } | null;
+}
+
+interface BudgetSimAnalysis {
+  generatedAt: string;
+  campaigns: {
+    campaignId: string; campaignName: string; currentBudget: number;
+    recommendedBudget: number; budgetDelta: number;
+    simulatedMeanROAS: number; simulatedMedianROAS: number;
+    probabilityAboveTarget: number; volatility: "low" | "medium" | "high";
+    recommendation: string;
+  }[];
+  portfolio: { currentTotalBudget: number; recommendedTotalBudget: number; projectedMeanROAS: number; projectedP10ROAS: number; projectedP90ROAS: number };
+}
+
+interface AdComplianceResult {
+  generatedAt: string;
+  checks: {
+    category: string; check: string; status: "pass" | "warn" | "fail";
+    message: string; suggestion: string;
+  }[];
+  summary: { total: number; passed: number; warned: number; failed: number; score: number };
+  overallStatus: "compliant" | "needs_review" | "non_compliant";
+}
+
+interface TaxonomyAuditResult {
+  generatedAt: string;
+  campaigns: {
+    campaignId: string; campaignName: string;
+    nameValid: boolean; namingIssue: string | null;
+    hasType: boolean; hasPlatform: boolean; hasGoal: boolean;
+    platformConsistency: "consistent" | "inconsistent";
+    recommendation: string;
+  }[];
+  summary: { totalCampaigns: number; validNames: number; invalidNames: number; consistencyScore: number };
+}
+
+interface SegmentOverlapResult {
+  generatedAt: string;
+  overlaps: {
+    segmentA: string; segmentB: string;
+    overlapSize: number; overlapPercent: number;
+    uniqueA: number; uniqueB: number;
+    recommendation: string;
+  }[];
+  summary: { totalSegments: number; totalOverlaps: number; avgOverlap: number; totalUnique: number };
+}
+
+interface MarketingCalendarEntry {
+  campaignId: string; campaignName: string; campaignType: string;
+  status: string; startDate: string; endDate: string;
+  budget: number; platform: string;
+  duration: number; overlaps: string[];
+}
+
+interface MarketingCalendarResult {
+  generatedAt: string; month: number; year: number;
+  entries: MarketingCalendarEntry[];
+  conflicts: { campaignA: string; campaignB: string; overlapDays: number; severity: "low" | "medium" | "high" }[];
+  summary: { totalCampaigns: number; totalBudget: number; avgDuration: number; conflictCount: number };
+}
+
+interface CreativeAssetAnalysis {
+  generatedAt: string;
+  assets: {
+    creativeId: string; creativeName: string; type: string;
+    performanceScore: number; roas: number; ctr: number;
+    impressions: number; clicks: number; conversions: number;
+    fatigueScore: number; lifecycleStage: "new" | "growing" | "mature" | "declining" | "fatigued";
+    recommendation: string;
+  }[];
+  summary: { totalAssets: number; avgPerformanceScore: number; fatiguedCount: number; newCount: number; topAsset: string | null };
 }
 
 interface ExecutiveBriefing {
@@ -1240,6 +1312,286 @@ export class AdsMarketingModuleService {
       baseline: { totalSpend: baselineSpend, totalRevenue: baselineRevenue, totalROAS: Math.round(baselineROAS * 100) / 100, totalConversions: Math.round(baselineConversions) },
       scenarios: scenarioPlans,
       recommendedScenario: best ? { name: best.name, rationale: `Highest projected ROAS (${best.projectedROAS}x) with ${best.riskLevel} risk` } : null,
+    };
+  }
+
+  budgetSimulation(tenantId: string): BudgetSimAnalysis {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaigns = portfolio.analyses.map(a => {
+      const config = {
+        campaignId: a.campaignId, budget: a.performance.spend || 1000,
+        expectedROAS: a.performance.roas || 2, roasVariance: 0.3,
+        expectedConversions: a.performance.conversions || 50, convVariance: 0.2,
+      };
+      const result = campaignBudgetSimulator.simulateCampaign(config, 2000);
+      const vol = result.stats.stdDevRevenue / (result.stats.meanRevenue || 1);
+      const volatility: "low" | "medium" | "high" = vol < 0.2 ? "low" : vol < 0.4 ? "medium" : "high";
+      const delta = Math.round((a.performance.spend * 1.1 - a.performance.spend) * 100) / 100;
+      return {
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        currentBudget: a.performance.spend,
+        recommendedBudget: Math.round(a.performance.spend * 1.1 * 100) / 100,
+        budgetDelta: delta,
+        simulatedMeanROAS: result.stats.meanROAS,
+        simulatedMedianROAS: result.stats.medianROAS,
+        probabilityAboveTarget: result.stats.probabilityAboveTarget,
+        volatility,
+        recommendation: result.stats.probabilityAboveTarget > 70
+          ? "High confidence — consider increasing budget"
+          : result.stats.probabilityAboveTarget > 40
+          ? "Moderate confidence — monitor performance"
+          : "Low confidence — maintain current budget",
+      };
+    });
+    const totalBudget = campaigns.reduce((s, c) => s + c.currentBudget, 0);
+    const totalRec = campaigns.reduce((s, c) => s + c.recommendedBudget, 0);
+    const meanROAS = campaigns.reduce((s, c) => s + c.simulatedMeanROAS, 0) / (campaigns.length || 1);
+    const allResults = portfolio.analyses.map(a => campaignBudgetSimulator.simulateCampaign({
+      campaignId: a.campaignId, budget: a.performance.spend || 1000,
+      expectedROAS: a.performance.roas || 2, roasVariance: 0.3,
+      expectedConversions: a.performance.conversions || 50, convVariance: 0.2,
+    }, 2000));
+    const allRevs = allResults.flatMap(r => r.simulations.map(s => s.revenue)).sort((a, b) => a - b);
+    const n = allRevs.length;
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns,
+      portfolio: {
+        currentTotalBudget: totalBudget,
+        recommendedTotalBudget: Math.round(totalRec * 100) / 100,
+        projectedMeanROAS: Math.round(meanROAS * 100) / 100,
+        projectedP10ROAS: n > 0 ? Math.round(allRevs[Math.floor(n * 0.1)] / totalBudget * 100) / 100 : 0,
+        projectedP90ROAS: n > 0 ? Math.round(allRevs[Math.floor(n * 0.9)] / totalBudget * 100) / 100 : 0,
+      },
+    };
+  }
+
+  adComplianceAnalysis(adCopy: string): AdComplianceResult {
+    const checks: AdComplianceResult["checks"] = [];
+    const superlatives = ["best", "greatest", "amazing", "incredible", "perfect", "guaranteed", "unbeatable", "revolutionary"];
+    const pricing = ["free", "free trial", "no cost", "$0", "zero cost"];
+    const urgency = ["limited time", "act now", "hurry", "expires", "last chance", "don't miss"];
+    const competitor = ["vs ", "versus ", "better than", "unlike", "competitor"];
+    const claims = ["cure", "guaranteed results", "money back", "risk-free"];
+    const spacing = ["ALL CAPS", "MULTIPLE!!!", "excessive...", "spammy!!"];
+
+    const text = adCopy.toLowerCase();
+    const hasSuperlatives = superlatives.some(s => text.includes(s));
+    const hasPricing = pricing.some(p => text.includes(p));
+    const hasUrgency = urgency.some(u => text.includes(u));
+    const hasCompetitorRef = competitor.some(c => text.includes(c));
+    const hasClaim = claims.some(c => text.includes(c));
+    const hasSpacingIssue = adCopy.length > 0 && (adCopy === adCopy.toUpperCase() || (adCopy.match(/[!?]{2,}/g)?.length || 0) > 0);
+    const hasProfanity = /fuck|shit|damn|ass\b/i.test(adCopy);
+
+    checks.push({
+      category: "superlatives", check: "Unsubstantiated superlatives",
+      status: hasSuperlatives ? "warn" : "pass",
+      message: hasSuperlatives ? "Contains unsubstantiated superlatives" : "No superlatives detected",
+      suggestion: "Replace with specific, verifiable claims",
+    });
+    checks.push({
+      category: "pricing", check: "Pricing claims",
+      status: hasPricing ? "warn" : "pass",
+      message: hasPricing ? "Contains pricing claims that may require disclaimers" : "No pricing claims",
+      suggestion: "Add terms and conditions for pricing claims",
+    });
+    checks.push({
+      category: "urgency", check: "Urgency language",
+      status: hasUrgency ? "warn" : "pass",
+      message: hasUrgency ? "Urgency language detected" : "No urgency language",
+      suggestion: "Ensure urgency claims are genuine and time-bound",
+    });
+    checks.push({
+      category: "competitor", check: "Competitor references",
+      status: hasCompetitorRef ? "warn" : "pass",
+      message: hasCompetitorRef ? "Competitor references found" : "No competitor references",
+      suggestion: "Avoid direct competitor comparison without substantiation",
+    });
+    checks.push({
+      category: "claims", check: "Unsubstantiated claims",
+      status: hasClaim ? "fail" : "pass",
+      message: hasClaim ? "Unsubstantiated claims detected" : "No unsubstantiated claims",
+      suggestion: "Remove unverifiable claims or add supporting evidence",
+    });
+    checks.push({
+      category: "formatting", check: "Formatting compliance",
+      status: hasSpacingIssue ? "warn" : "pass",
+      message: hasSpacingIssue ? "Formatting issues detected (all caps or excessive punctuation)" : "Formatting compliant",
+      suggestion: "Use standard capitalization and punctuation",
+    });
+    checks.push({
+      category: "profanity", check: "Profanity check",
+      status: hasProfanity ? "fail" : "pass",
+      message: hasProfanity ? "Profanity detected" : "No profanity detected",
+      suggestion: "Remove profanity from ad copy",
+    });
+
+    const total = checks.length;
+    const passed = checks.filter(c => c.status === "pass").length;
+    const warned = checks.filter(c => c.status === "warn").length;
+    const failed = checks.filter(c => c.status === "fail").length;
+    const score = Math.round(passed / total * 100);
+    const overall: AdComplianceResult["overallStatus"] = failed > 0 ? "non_compliant" : warned > 2 ? "needs_review" : "compliant";
+    return { generatedAt: new Date().toISOString(), checks, summary: { total, passed, warned, failed, score }, overallStatus: overall };
+  }
+
+  campaignTaxonomyAudit(tenantId: string): TaxonomyAuditResult {
+    const mem = DataStore.mem();
+    const campaigns = mem.find("campaigns", (c: any) => c.tenantId === tenantId);
+    const knownTypes = ["performance", "brand", "retargeting", "prospecting", "awareness", "search", "display", "video", "shopping", "lead_gen"];
+    const knownPlatforms = ["meta", "google", "linkedin", "tiktok", "snapchat", "twitter", "pinterest", "reddit", "amazon"];
+    const results = campaigns.map((c: any) => {
+      const name = c.name || "";
+      const typeInName = knownTypes.some(t => name.toLowerCase().includes(t));
+      const platformInName = knownPlatforms.some(p => name.toLowerCase().includes(p));
+      const hasGoal = c.goal && c.goal.length > 0;
+      const namingIssue = !typeInName && !platformInName
+        ? "Missing type and platform in name"
+        : !typeInName
+        ? "Missing campaign type in name"
+        : !platformInName
+        ? "Missing platform in name"
+        : null;
+      return {
+        campaignId: c._id, campaignName: name,
+        nameValid: !namingIssue, namingIssue,
+        hasType: !!c.type,
+        hasPlatform: (c.platforms?.length || 0) > 0,
+        hasGoal,
+        platformConsistency: (c.platforms?.length || 0) <= 2 ? "consistent" as const : "inconsistent" as const,
+        recommendation: namingIssue || "Naming convention compliant",
+      };
+    });
+    const validCount = results.filter(r => r.nameValid).length;
+    const score = campaigns.length > 0 ? Math.round(validCount / campaigns.length * 100) : 100;
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: results,
+      summary: { totalCampaigns: campaigns.length, validNames: validCount, invalidNames: campaigns.length - validCount, consistencyScore: score },
+    };
+  }
+
+  audienceSegmentOverlap(tenantId: string): SegmentOverlapResult {
+    const mem = DataStore.mem();
+    const segments = mem.find("segments", (s: any) => s.tenantId === tenantId);
+    const overlaps: SegmentOverlapResult["overlaps"] = [];
+    for (let i = 0; i < segments.length; i++) {
+      for (let j = i + 1; j < segments.length; j++) {
+        const a = segments[i];
+        const b = segments[j];
+        const aCount = a.count || 1000;
+        const bCount = b.count || 1000;
+        const overlapEstimate = Math.round(Math.min(aCount, bCount) * (0.1 + Math.random() * 0.4));
+        const pct = aCount > 0 ? Math.round(overlapEstimate / aCount * 10000) / 100 : 0;
+        overlaps.push({
+          segmentA: a.name, segmentB: b.name,
+          overlapSize: overlapEstimate, overlapPercent: pct,
+          uniqueA: aCount - overlapEstimate, uniqueB: bCount - overlapEstimate,
+          recommendation: pct > 50
+            ? "High overlap — consider merging segments"
+            : pct > 25
+            ? "Moderate overlap — review targeting differentiation"
+            : "Low overlap — segments are well differentiated",
+        });
+      }
+    }
+    const avgOverlap = overlaps.length > 0 ? overlaps.reduce((s, o) => s + o.overlapPercent, 0) / overlaps.length : 0;
+    const totalUnique = new Set(segments.map((s: any) => s.name)).size;
+    return {
+      generatedAt: new Date().toISOString(),
+      overlaps,
+      summary: { totalSegments: segments.length, totalOverlaps: overlaps.length, avgOverlap: Math.round(avgOverlap * 100) / 100, totalUnique },
+    };
+  }
+
+  marketingCalendar(tenantId: string, month?: number, year?: number): MarketingCalendarResult {
+    const mem = DataStore.mem();
+    const now = new Date();
+    const m = month ?? (now.getMonth() + 1);
+    const y = year ?? now.getFullYear();
+    const campaigns = mem.find("campaigns", (c: any) => c.tenantId === tenantId);
+    const entries: MarketingCalendarEntry[] = [];
+    for (const c of campaigns) {
+      const sd = c.startDate ? new Date(c.startDate) : null;
+      const ed = c.endDate ? new Date(c.endDate) : null;
+      if (!sd || !ed) continue;
+      const inMonth = sd.getFullYear() === y && sd.getMonth() + 1 <= m && ed.getMonth() + 1 >= m;
+      if (!inMonth) continue;
+      const dur = Math.ceil((ed.getTime() - sd.getTime()) / (86400000));
+      const overlapping: string[] = [];
+      for (const other of campaigns) {
+        if (other._id === c._id) continue;
+        const osd = other.startDate ? new Date(other.startDate) : null;
+        const oed = other.endDate ? new Date(other.endDate) : null;
+        if (!osd || !oed) continue;
+        if (sd <= oed && ed >= osd) overlapping.push(other.name);
+      }
+      entries.push({
+        campaignId: c._id, campaignName: c.name, campaignType: c.type || "unknown",
+        status: c.status || "draft", startDate: c.startDate, endDate: c.endDate,
+        budget: c.budget?.daily || 0, platform: (c.platforms || [])[0] || "unknown",
+        duration: dur, overlaps: overlapping,
+      });
+    }
+    const conflicts = entries.flatMap(e => e.overlaps.map(o => ({
+      campaignA: e.campaignName, campaignB: o,
+      overlapDays: e.duration,
+      severity: (e.duration > 60 ? "high" : e.duration > 30 ? "medium" : "low") as "low" | "medium" | "high",
+    })));
+    const totalBudget = entries.reduce((s, e) => s + e.budget, 0);
+    const avgDur = entries.length > 0 ? Math.round(entries.reduce((s, e) => s + e.duration, 0) / entries.length) : 0;
+    return {
+      generatedAt: new Date().toISOString(), month: m, year: y,
+      entries, conflicts,
+      summary: { totalCampaigns: entries.length, totalBudget, avgDuration: avgDur, conflictCount: conflicts.length },
+    };
+  }
+
+  creativeAssetPerformance(tenantId: string): CreativeAssetAnalysis {
+    const mem = DataStore.mem();
+    const creatives = mem.find("creatives", (c: any) => c.tenantId === tenantId);
+    const assets = creatives.map((cr: any) => {
+      const perf = cr.performance || {};
+      const imps = perf.impressions || 0;
+      const clks = perf.clicks || 0;
+      const convs = perf.conversions || 0;
+      const spd = perf.spend || 1;
+      const rev = perf.revenue || 0;
+      const roas = rev / spd;
+      const ctr = imps > 0 ? clks / imps * 100 : 0;
+      const fatigueScore = cr.fatigueScore ?? (roas < 1.5 ? 35 : roas < 2 ? 20 : 10);
+      const perfScore = Math.round((roas * 30 + ctr * 10 + (convs > 0 ? 20 : 0)) / 1.5);
+      const lifecycleStage: CreativeAssetAnalysis["assets"][0]["lifecycleStage"] =
+        fatigueScore > 35 ? "fatigued" : fatigueScore > 25 ? "declining" : roas > 3 ? "mature" : imps > 10000 ? "growing" : "new";
+      return {
+        creativeId: cr._id, creativeName: cr.name, type: cr.type || "image",
+        performanceScore: Math.min(100, Math.max(0, perfScore)),
+        roas: Math.round(roas * 100) / 100, ctr: Math.round(ctr * 100) / 100,
+        impressions: imps, clicks: clks, conversions: convs,
+        fatigueScore, lifecycleStage,
+        recommendation: lifecycleStage === "fatigued"
+          ? "Creative fatigued — create replacement"
+          : lifecycleStage === "declining"
+          ? "Performance declining — consider refresh"
+          : lifecycleStage === "mature"
+          ? "Steady performer — monitor for fatigue"
+          : lifecycleStage === "growing"
+          ? "Promising performance — increase exposure"
+          : "New creative — allow time to accumulate data",
+      };
+    });
+    const sorted = [...assets].sort((a, b) => b.performanceScore - a.performanceScore);
+    return {
+      generatedAt: new Date().toISOString(),
+      assets: sorted,
+      summary: {
+        totalAssets: assets.length,
+        avgPerformanceScore: assets.length > 0 ? Math.round(assets.reduce((s, a) => s + a.performanceScore, 0) / assets.length) : 0,
+        fatiguedCount: assets.filter(a => a.lifecycleStage === "fatigued").length,
+        newCount: assets.filter(a => a.lifecycleStage === "new").length,
+        topAsset: sorted.length > 0 ? sorted[0].creativeName : null,
+      },
     };
   }
 }

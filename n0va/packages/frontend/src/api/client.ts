@@ -1994,6 +1994,13 @@ export const api = {
     channelAttributionSummary: () => request<any>("/ads-marketing-module/channel-attribution-summary"),
     portfolioScenarioPlanner: (scenarios: any[]) =>
       request<any>("/ads-marketing-module/portfolio-scenario-planner", { method: "POST", body: JSON.stringify({ scenarios }) }),
+    budgetSimulation: () => request<any>("/ads-marketing-module/budget-simulation"),
+    adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
+    taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
+    segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),
+    marketingCalendar: (month?: number, year?: number) =>
+      request<any>(`/ads-marketing-module/marketing-calendar${month ? `?month=${month}` : ""}${year ? `${month ? "&" : "?"}year=${year}` : ""}`),
+    creativeAssetPerformance: () => request<any>("/ads-marketing-module/creative-asset-performance"),
   },
 
   agentSwarm: {
@@ -2198,5 +2205,14 @@ export const api = {
     recordMetrics: (expId: string, variantId: string, date: string, metrics: any) =>
       request<any>(`/campaign-experimentation/experiments/${expId}/metrics`, { method: "POST", body: JSON.stringify({ variantId, date, metrics }) }),
     summary: () => request<any>("/campaign-experimentation/summary"),
+  },
+
+  campaignBudgetSimulator: {
+    simulate: (config: any, runs?: number) =>
+      request<any>("/campaign-budget-simulator/simulate", { method: "POST", body: JSON.stringify({ config, runs }) }),
+    scenario: (configs: any[], runs?: number) =>
+      request<any>("/campaign-budget-simulator/scenario", { method: "POST", body: JSON.stringify({ configs, runs }) }),
+    history: () => request<any>("/campaign-budget-simulator/history"),
+    summary: () => request<any>("/campaign-budget-simulator/summary"),
   },
 };

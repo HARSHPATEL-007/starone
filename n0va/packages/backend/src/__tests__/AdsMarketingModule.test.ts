@@ -333,3 +333,76 @@ describe("AdsMarketingModule - portfolioScenarioPlanner", () => {
     }
   });
 });
+
+describe("AdsMarketingModule - budgetSimulation", () => {
+  it("returns budget simulation with Monte Carlo analysis", () => {
+    const r = adsMarketingModule.budgetSimulation(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.campaigns.length).toBeGreaterThan(0);
+    expect(r.portfolio.currentTotalBudget).toBeGreaterThan(0);
+    expect(r.portfolio.projectedMeanROAS).toBeGreaterThan(0);
+    for (const c of r.campaigns) {
+      expect(c.simulatedMeanROAS).toBeGreaterThan(0);
+      expect(c.volatility).toMatch(/^(low|medium|high)$/);
+    }
+  });
+});
+
+describe("AdsMarketingModule - adComplianceAnalysis", () => {
+  it("flags problematic ad copy", () => {
+    const r = adsMarketingModule.adComplianceAnalysis("This is the BEST product EVER! GUARANTEED results!!! Free trial now!!!");
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.checks.length).toBeGreaterThan(0);
+    expect(r.summary.failed + r.summary.warned).toBeGreaterThan(0);
+    expect(r.overallStatus).toMatch(/^(compliant|needs_review|non_compliant)$/);
+  });
+
+  it("passes clean ad copy", () => {
+    const r = adsMarketingModule.adComplianceAnalysis("Discover how our platform helps marketing teams improve campaign performance");
+    expect(r.summary.score).toBeGreaterThanOrEqual(80);
+  });
+});
+
+describe("AdsMarketingModule - campaignTaxonomyAudit", () => {
+  it("audits campaign naming conventions", () => {
+    const r = adsMarketingModule.campaignTaxonomyAudit(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.campaigns.length).toBeGreaterThan(0);
+    expect(r.summary.totalCampaigns).toBeGreaterThan(0);
+    expect(r.summary.consistencyScore).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("AdsMarketingModule - audienceSegmentOverlap", () => {
+  it("finds segment overlaps", () => {
+    const r = adsMarketingModule.audienceSegmentOverlap(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.summary.totalSegments).toBeGreaterThanOrEqual(0);
+    expect(r.overlaps).toBeDefined();
+  });
+});
+
+describe("AdsMarketingModule - marketingCalendar", () => {
+  it("returns calendar entries and conflicts", () => {
+    const r = adsMarketingModule.marketingCalendar(TEST_TENANT, 7, 2025);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.month).toBe(7);
+    expect(r.year).toBe(2025);
+    expect(r.entries).toBeDefined();
+    expect(r.conflicts).toBeDefined();
+    expect(r.summary.totalCampaigns).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("AdsMarketingModule - creativeAssetPerformance", () => {
+  it("analyzes creative asset lifecycle", () => {
+    const r = adsMarketingModule.creativeAssetPerformance(TEST_TENANT);
+    expect(r.generatedAt).toBeTruthy();
+    expect(r.assets.length).toBeGreaterThan(0);
+    expect(r.summary.totalAssets).toBeGreaterThan(0);
+    expect(r.summary.avgPerformanceScore).toBeGreaterThanOrEqual(0);
+    for (const a of r.assets) {
+      expect(a.lifecycleStage).toMatch(/^(new|growing|mature|declining|fatigued)$/);
+    }
+  });
+});
