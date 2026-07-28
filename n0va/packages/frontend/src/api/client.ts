@@ -2459,4 +2459,13 @@ export const api = {
     mix: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/mix`),
     trends: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/trends`),
   },
+
+  campaignLandingPageAnalyzer: {
+    analysis: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/analysis`),
+    speedImpact: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/speed-impact`),
+    contentGaps: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/content-gaps`),
+    pageSegmentation: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/page-segmentation`),
+    layoutRecommendations: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/layout-recommendations`),
+    trends: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/trends`),
+  },
 };

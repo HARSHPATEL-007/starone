@@ -1,0 +1,41 @@
+import { Router, Request, Response, NextFunction } from "express";
+import { campaignLandingPageAnalyzer } from "../services/CampaignLandingPageAnalyzerService";
+import { sendSuccess } from "./route-utils";
+
+function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
+  return (req: Request, res: Response, next: NextFunction) => { fn(req, res, next).catch(next); };
+}
+
+const router = Router();
+
+router.get("/campaign/:campaignId/analysis", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.analyzeLandingPages(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/speed-impact", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.analyzeSpeedImpact(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/content-gaps", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.analyzeContentGaps(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/page-segmentation", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.analyzePageSegmentation(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/layout-recommendations", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.generateLayoutRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.analyzeLandingPageTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+export default router;

@@ -669,4 +669,34 @@ router.get("/campaign/:campaignId/creative-trends", asyncHandler(async (req, res
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/landing-page-analysis", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.landingPageAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/landing-page-speed-impact", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.pageSpeedImpact(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/landing-page-content-gaps", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.pageContentGaps(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/landing-page-segmentation", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.pageSegmentation(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/landing-page-layout-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.pageLayoutRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/landing-page-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.landingPageTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

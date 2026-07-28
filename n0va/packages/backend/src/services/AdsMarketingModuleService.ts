@@ -23,6 +23,7 @@ import { campaignCustomerJourney } from "./CampaignCustomerJourneyService";
 import { campaignConversionFunnelAnalyzer } from "./CampaignConversionFunnelAnalyzerService";
 import { campaignKeywordAnalyzer } from "./CampaignKeywordAnalyzerService";
 import { campaignCreativeOptimizer } from "./CampaignCreativeOptimizerService";
+import { campaignLandingPageAnalyzer } from "./CampaignLandingPageAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2019,6 +2020,30 @@ export class AdsMarketingModuleService {
 
   creativeTrends(campaignId: string, tenantId: string) {
     return campaignCreativeOptimizer.analyzeCreativeTrends(campaignId, tenantId);
+  }
+
+  landingPageAnalysis(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.analyzeLandingPages(campaignId, tenantId);
+  }
+
+  pageSpeedImpact(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.analyzeSpeedImpact(campaignId, tenantId);
+  }
+
+  pageContentGaps(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.analyzeContentGaps(campaignId, tenantId);
+  }
+
+  pageSegmentation(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.analyzePageSegmentation(campaignId, tenantId);
+  }
+
+  pageLayoutRecommendations(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.generateLayoutRecommendations(campaignId, tenantId);
+  }
+
+  landingPageTrends(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.analyzeLandingPageTrends(campaignId, tenantId);
   }
 }
 
