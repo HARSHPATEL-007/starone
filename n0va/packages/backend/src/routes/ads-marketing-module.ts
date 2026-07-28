@@ -609,4 +609,34 @@ router.get("/campaign/:campaignId/funnel-trends", asyncHandler(async (req, res) 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/keyword-analysis", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.keywordAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/keyword-gaps", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.keywordGaps(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/keyword-clusters", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.keywordClusters(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/keyword-bid-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.keywordBidRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/keyword-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.keywordTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/search-term-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.searchTermOverlap(req.body.campaignId, req.body.tenantIdA || req.user!.tenantId, req.body.tenantIdB || req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

@@ -142,6 +142,7 @@ import campaignAdPlacementAnalyzerRoutes from "./routes/campaign-ad-placement-an
 import campaignAdFormatAnalyzerRoutes from "./routes/campaign-ad-format-analyzer";
 import campaignCustomerJourneyRoutes from "./routes/campaign-customer-journey";
 import campaignConversionFunnelAnalyzerRoutes from "./routes/campaign-conversion-funnel-analyzer";
+import campaignKeywordAnalyzerRoutes from "./routes/campaign-keyword-analyzer";
 
 const app = express();
 const httpServer = createServer(app);
@@ -263,6 +264,7 @@ app.use("/api/v1/campaign-ad-placement-analyzer", authMiddleware, tenantMiddlewa
 app.use("/api/v1/campaign-ad-format-analyzer", authMiddleware, tenantMiddleware, campaignAdFormatAnalyzerRoutes);
 app.use("/api/v1/campaign-customer-journey", authMiddleware, tenantMiddleware, campaignCustomerJourneyRoutes);
 app.use("/api/v1/campaign-conversion-funnel-analyzer", authMiddleware, tenantMiddleware, campaignConversionFunnelAnalyzerRoutes);
+app.use("/api/v1/campaign-keyword-analyzer", authMiddleware, tenantMiddleware, campaignKeywordAnalyzerRoutes);
 app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);

@@ -2440,4 +2440,14 @@ export const api = {
     segments: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/segments`),
     trends: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/trends`),
   },
+
+  campaignKeywordAnalyzer: {
+    keywords: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/keywords`),
+    gaps: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/gaps`),
+    clusters: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/clusters`),
+    bidRecommendations: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/bid-recommendations`),
+    trends: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/trends`),
+    searchTermOverlap: (campaignId: string, tenantIdA?: string, tenantIdB?: string) =>
+      request<any>("/campaign-keyword-analyzer/search-term-overlap", { method: "POST", body: JSON.stringify({ campaignId, tenantIdA, tenantIdB }) }),
+  },
 };
