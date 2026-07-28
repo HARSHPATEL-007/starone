@@ -22,6 +22,7 @@ import { campaignAdFormatAnalyzer } from "./CampaignAdFormatAnalyzerService";
 import { campaignCustomerJourney } from "./CampaignCustomerJourneyService";
 import { campaignConversionFunnelAnalyzer } from "./CampaignConversionFunnelAnalyzerService";
 import { campaignKeywordAnalyzer } from "./CampaignKeywordAnalyzerService";
+import { campaignCreativeOptimizer } from "./CampaignCreativeOptimizerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1994,6 +1995,30 @@ export class AdsMarketingModuleService {
 
   searchTermOverlap(campaignId: string, tenantIdA: string, tenantIdB: string) {
     return campaignKeywordAnalyzer.analyzeSearchTermOverlap(campaignId, tenantIdA, tenantIdB);
+  }
+
+  creativePerformance(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.analyzeCreativePerformance(campaignId, tenantId);
+  }
+
+  creativeFatigue(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.analyzeCreativeFatigue(campaignId, tenantId);
+  }
+
+  creativeRecommendations(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.generateCreativeRecommendations(campaignId, tenantId);
+  }
+
+  creativeABTests(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.analyzeCreativeABTests(campaignId, tenantId);
+  }
+
+  creativeMix(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.analyzeCreativeMix(campaignId, tenantId);
+  }
+
+  creativeTrends(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.analyzeCreativeTrends(campaignId, tenantId);
   }
 }
 

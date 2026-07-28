@@ -2450,4 +2450,13 @@ export const api = {
     searchTermOverlap: (campaignId: string, tenantIdA?: string, tenantIdB?: string) =>
       request<any>("/campaign-keyword-analyzer/search-term-overlap", { method: "POST", body: JSON.stringify({ campaignId, tenantIdA, tenantIdB }) }),
   },
+
+  campaignCreativeOptimizer: {
+    performance: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/performance`),
+    fatigue: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/fatigue`),
+    recommendations: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/recommendations`),
+    abTests: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/ab-tests`),
+    mix: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/mix`),
+    trends: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/trends`),
+  },
 };

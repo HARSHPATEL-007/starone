@@ -639,4 +639,34 @@ router.post("/search-term-overlap", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/creative-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativePerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/creative-fatigue", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativeFatigue(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/creative-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativeRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/creative-ab-tests", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativeABTests(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/creative-mix", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativeMix(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/creative-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.creativeTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
