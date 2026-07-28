@@ -20,6 +20,7 @@ import { campaignGoalTracker } from "./CampaignGoalTrackerService";
 import { campaignAdPlacementAnalyzer } from "./CampaignAdPlacementAnalyzerService";
 import { campaignAdFormatAnalyzer } from "./CampaignAdFormatAnalyzerService";
 import { campaignCustomerJourney } from "./CampaignCustomerJourneyService";
+import { campaignConversionFunnelAnalyzer } from "./CampaignConversionFunnelAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1944,6 +1945,30 @@ export class AdsMarketingModuleService {
 
   journeyTimeBuckets(tenantId: string) {
     return campaignCustomerJourney.analyzeJourneyTimeBuckets(tenantId);
+  }
+
+  funnelAnalysis(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.analyzeFunnel(campaignId, tenantId);
+  }
+
+  funnelDropOffs(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.analyzeFunnelDropOffs(campaignId, tenantId);
+  }
+
+  funnelOptimizations(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.generateFunnelOptimizations(campaignId, tenantId);
+  }
+
+  funnelComparison(campaignIds: string[], tenantId: string) {
+    return campaignConversionFunnelAnalyzer.compareFunnels(campaignIds, tenantId);
+  }
+
+  funnelSegments(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.analyzeFunnelSegments(campaignId, tenantId);
+  }
+
+  funnelTrends(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.analyzeFunnelTrends(campaignId, tenantId);
   }
 }
 

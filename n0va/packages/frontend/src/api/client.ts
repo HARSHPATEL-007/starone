@@ -2431,4 +2431,13 @@ export const api = {
     journeyTimeBuckets: () => request<any>("/campaign-customer-journey/journey-time-buckets"),
     commonPaths: () => request<any>("/campaign-customer-journey/common-paths"),
   },
+
+  campaignConversionFunnelAnalyzer: {
+    funnel: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/funnel`),
+    dropOffs: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/drop-offs`),
+    optimizations: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/optimizations`),
+    compare: (campaignIds: string[]) => request<any>("/campaign-conversion-funnel-analyzer/compare", { method: "POST", body: JSON.stringify({ campaignIds }) }),
+    segments: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/segments`),
+    trends: (campaignId: string) => request<any>(`/campaign-conversion-funnel-analyzer/campaign/${campaignId}/trends`),
+  },
 };

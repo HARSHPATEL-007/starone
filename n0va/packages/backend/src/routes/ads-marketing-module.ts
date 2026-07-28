@@ -579,4 +579,34 @@ router.get("/journey-time-buckets", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/funnel-analysis", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-drop-offs", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelDropOffs(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-optimizations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelOptimizations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/funnel-comparison", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelComparison(req.body.campaignIds, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-segments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelSegments(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
