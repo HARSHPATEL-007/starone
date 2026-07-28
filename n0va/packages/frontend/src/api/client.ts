@@ -1982,4 +1982,175 @@ export const api = {
     portfolioOverview: () => request<any>("/ads-marketing-module/portfolio-overview"),
     report: () => request<any>("/ads-marketing-module/report"),
   },
+
+  agentSwarm: {
+    status: () => request<any>("/agent-swarm/status"),
+    execute: (agentName: string, agentType: string, action: string, platform: string, params?: Record<string, unknown>, hitlThreshold?: number) =>
+      request<any>("/agent-swarm/execute", { method: "POST", body: JSON.stringify({ agentName, agentType, action, platform, params, hitlThreshold }) }),
+    hitlQueue: () => request<any>("/agent-swarm/hitl"),
+    resolveHITL: (id: string, approved: boolean, approver: string) =>
+      request<any>(`/agent-swarm/hitl/${id}/resolve`, { method: "POST", body: JSON.stringify({ approved, approver }) }),
+  },
+
+  budgetOptimizerService: {
+    predictROAS: (platform: string, recentROAS?: number) =>
+      request<any>("/budget-optimizer-service/predict-roas", { method: "POST", body: JSON.stringify({ platform, recentROAS }) }),
+    optimize: (platforms: { name: string; currentBudget: number; recentROAS?: number }[], totalBudget: number, urgency?: string) =>
+      request<any>("/budget-optimizer-service/optimize", { method: "POST", body: JSON.stringify({ platforms, totalBudget, urgency }) }),
+    spendPacing: (dailyBudgets: Record<string, number>) =>
+      request<any>("/budget-optimizer-service/spend-pacing", { method: "POST", body: JSON.stringify({ dailyBudgets }) }),
+    optimizationAdvice: (platforms: { name: string; currentBudget: number; recentROAS?: number }[], totalBudget: number) =>
+      request<any>("/budget-optimizer-service/optimization-advice", { method: "POST", body: JSON.stringify({ platforms, totalBudget }) }),
+    forecast: (platforms: string[], totalBudget: number, days?: number) =>
+      request<any>("/budget-optimizer-service/forecast", { method: "POST", body: JSON.stringify({ platforms, totalBudget, days }) }),
+    kalmanPacing: (platform: string, dailyBudget: number, spentHistory: number[], observationNoise?: number, processNoise?: number) =>
+      request<any>("/budget-optimizer-service/kalman-pacing", { method: "POST", body: JSON.stringify({ platform, dailyBudget, spentHistory, observationNoise, processNoise }) }),
+    kellyAllocate: (platforms: { name: string; expectedROAS: number; winProbability: number }[], totalBudget: number) =>
+      request<any>("/budget-optimizer-service/kelly-allocate", { method: "POST", body: JSON.stringify({ platforms, totalBudget }) }),
+    efficientFrontier: (platforms: { name: string; expectedReturn: number; variance: number }[], covarianceMatrix?: number[][]) =>
+      request<any>("/budget-optimizer-service/efficient-frontier", { method: "POST", body: JSON.stringify({ platforms, covarianceMatrix }) }),
+    diminishingReturns: (channelHistory: { spend: number; revenue: number }[]) =>
+      request<any>("/budget-optimizer-service/diminishing-returns", { method: "POST", body: JSON.stringify({ channelHistory }) }),
+  },
+
+  crossModuleIntegration: {
+    matrix: (action?: string) => request<any>(`/cross-module-integration/matrix${action ? `?action=${action}` : ""}`),
+    moduleActions: (module: string) => request<any>(`/cross-module-integration/module/${module}/actions`),
+    actionTargets: (action: string) => request<any>(`/cross-module-integration/action/${action}/targets`),
+    execute: (sourceAction: string, sourceEntity: string) =>
+      request<any>("/cross-module-integration/execute", { method: "POST", body: JSON.stringify({ sourceAction, sourceEntity }) }),
+    history: () => request<any>("/cross-module-integration/history"),
+    dashboard: () => request<any>("/cross-module-integration/dashboard"),
+    actionSummary: (action: string) => request<any>(`/cross-module-integration/action/${action}/summary`),
+  },
+
+  enhancedAgent: {
+    definitions: () => request<any>("/enhanced-agent/definitions"),
+    definition: (type: string) => request<any>(`/enhanced-agent/definitions/${type}`),
+    schedules: () => request<any>("/enhanced-agent/schedules"),
+    status: () => request<any>("/enhanced-agent/status"),
+    compliance: () => request<any>("/enhanced-agent/compliance"),
+  },
+
+  enhancedAttribution: {
+    createPath: (conversionId: string, campaignIds: string[], touchpoints: any[], conversionValue: number, model?: string) =>
+      request<any>("/enhanced-attribution/path", { method: "POST", body: JSON.stringify({ conversionId, campaignIds, touchpoints, conversionValue, model }) }),
+    dashboard: (model: string) => request<any>(`/enhanced-attribution/dashboard/${model}`),
+    compare: () => request<any>("/enhanced-attribution/compare"),
+    simulate: (campaignId: string, testDays?: number) =>
+      request<any>("/enhanced-attribution/simulate", { method: "POST", body: JSON.stringify({ campaignId, testDays }) }),
+  },
+
+  n0va1oGatewayEnhanced: {
+    provisionJIT: (platform: string, scopes: string[]) =>
+      request<any>("/n0va1o-gateway-enhanced/jit/provision", { method: "POST", body: JSON.stringify({ platform, scopes }) }),
+    validateJIT: (sessionId: string) =>
+      request<any>("/n0va1o-gateway-enhanced/jit/validate", { method: "POST", body: JSON.stringify({ sessionId }) }),
+    revokeJIT: (sessionId: string) =>
+      request<any>("/n0va1o-gateway-enhanced/jit/revoke", { method: "POST", body: JSON.stringify({ sessionId }) }),
+    activeSessions: () => request<any>("/n0va1o-gateway-enhanced/jit/sessions"),
+    createSandbox: (script: string, runtime?: string) =>
+      request<any>("/n0va1o-gateway-enhanced/sandbox", { method: "POST", body: JSON.stringify({ script, runtime }) }),
+    getSandbox: (sandboxId: string) => request<any>(`/n0va1o-gateway-enhanced/sandbox/${sandboxId}`),
+    resolveIntent: (intent: string, platforms: string[]) =>
+      request<any>("/n0va1o-gateway-enhanced/intent/resolve", { method: "POST", body: JSON.stringify({ intent, platforms }) }),
+    availableIntents: (platform: string) => request<any>(`/n0va1o-gateway-enhanced/intents/${platform}`),
+    accounts: (platform?: string) => request<any>(`/n0va1o-gateway-enhanced/accounts${platform ? `?platform=${platform}` : ""}`),
+    switchAccount: (fromAccountId: string, toAccountId: string) =>
+      request<any>("/n0va1o-gateway-enhanced/accounts/switch", { method: "POST", body: JSON.stringify({ fromAccountId, toAccountId }) }),
+    registerWebhook: (source: string, eventType: string, callbackUrl: string) =>
+      request<any>("/n0va1o-gateway-enhanced/webhooks", { method: "POST", body: JSON.stringify({ source, eventType, callbackUrl }) }),
+    unregisterWebhook: (id: string) => request<void>(`/n0va1o-gateway-enhanced/webhooks/${id}`, { method: "DELETE" }),
+    triggerWebhook: (source: string, eventType: string, payload: Record<string, unknown>) =>
+      request<any>("/n0va1o-gateway-enhanced/webhooks/trigger", { method: "POST", body: JSON.stringify({ source, eventType, payload }) }),
+    webhooks: () => request<any>("/n0va1o-gateway-enhanced/webhooks"),
+    catalog: () => request<any>("/n0va1o-gateway-enhanced/catalog"),
+  },
+
+  recipeCompilation: {
+    compile: (recipe: any) => request<any>("/recipe-compilation/compile", { method: "POST", body: JSON.stringify({ recipe }) }),
+    evaluate: (recipeName: string, currentMetrics: Record<string, number>, skipHITL?: boolean) =>
+      request<any>("/recipe-compilation/evaluate", { method: "POST", body: JSON.stringify({ recipeName, currentMetrics, skipHITL }) }),
+    compiled: (name?: string) => name ? request<any>(`/recipe-compilation/compiled/${name}`) : request<any>("/recipe-compilation/compiled"),
+    history: (limit?: number) => request<any>(`/recipe-compilation/history${limit ? `?limit=${limit}` : ""}`),
+    recipe: (name: string) => request<any>(`/recipe-compilation/recipes/${name}`),
+    recipes: () => request<any>("/recipe-compilation/recipes"),
+  },
+
+  securityModifier: {
+    applySchema: (action: string, params: Record<string, unknown>) =>
+      request<any>("/security-modifier/apply-schema", { method: "POST", body: JSON.stringify({ action, params }) }),
+    createHook: (name: string, guardrails: string[], brandSafety: boolean, utmParams: boolean) =>
+      request<any>("/security-modifier/before-execution-hook", { method: "POST", body: JSON.stringify({ name, guardrails, brandSafety, utmParams }) }),
+    checkExecution: (hook: any, action: string, params: Record<string, unknown>) =>
+      request<any>("/security-modifier/check-execution", { method: "POST", body: JSON.stringify({ hook, action, params }) }),
+    afterExecution: (payload: any, maxSize?: number) =>
+      request<any>("/security-modifier/after-execution", { method: "POST", body: JSON.stringify({ payload, maxSize }) }),
+    createHITL: (actionId: string, actionDescription: string, value: number, threshold: number) =>
+      request<any>("/security-modifier/hitl", { method: "POST", body: JSON.stringify({ actionId, actionDescription, value, threshold }) }),
+    resolveHITL: (id: string, approved: boolean, digitalSignature: string) =>
+      request<any>(`/security-modifier/hitl/${id}/resolve`, { method: "POST", body: JSON.stringify({ approved, digitalSignature }) }),
+    escalateHITL: (id: string) => request<any>(`/security-modifier/hitl/${id}/escalate`, { method: "POST" }),
+    pendingHITL: () => request<any>("/security-modifier/hitl/pending"),
+    modifiers: () => request<any>("/security-modifier/modifiers"),
+  },
+
+  channelMixOptimizer: {
+    analyze: () => request<any>("/channel-mix-optimizer"),
+    orchestrate: () => request<any>("/channel-mix-optimizer/orchestrate"),
+  },
+
+  formAnalytics: {
+    analyze: () => request<any>("/form-analytics"),
+    orchestrate: () => request<any>("/form-analytics/orchestrate"),
+  },
+
+  keywordInsights: {
+    analyze: () => request<any>("/keyword-insights"),
+    orchestrate: () => request<any>("/keyword-insights/orchestrate"),
+  },
+
+  orchestratorRegistry: {
+    all: () => request<any>("/orchestrator-registry"),
+    health: () => request<any>("/orchestrator-registry/health"),
+    byDomain: (domain: string) => request<any>(`/orchestrator-registry/domain/${domain}`),
+  },
+
+  portfolio: {
+    health: () => request<any>("/portfolio/health"),
+    advice: () => request<any>("/portfolio/advice"),
+    budgetAlerts: () => request<any>("/portfolio/budget/alerts"),
+    criticalAlerts: () => request<any>("/portfolio/budget/alerts/critical"),
+  },
+
+  swarm: {
+    dashboard: () => request<any>("/swarm/orchestrate/dashboard"),
+    execute: (agentName: string, agentType: string, action: string, platform: string, params?: Record<string, unknown>, hitlThreshold?: number) =>
+      request<any>("/swarm/orchestrate/execute", { method: "POST", body: JSON.stringify({ agentName, agentType, action, platform, params, hitlThreshold }) }),
+    hitlQueue: () => request<any>("/swarm/orchestrate/hitl"),
+    resolveHITL: (id: string, approved: boolean, approver: string) =>
+      request<any>(`/swarm/orchestrate/hitl/${id}/resolve`, { method: "POST", body: JSON.stringify({ approved, approver }) }),
+    executions: () => request<any>("/swarm/orchestrate/executions"),
+  },
+
+  creativeAiEnhanced: {
+    mabSelect: (variants: any[]) => request<any>("/creative-ai/enhanced/mab/select", { method: "POST", body: JSON.stringify({ variants }) }),
+    mabRecord: (variantKey: string, converted: boolean) =>
+      request<any>("/creative-ai/enhanced/mab/record", { method: "POST", body: JSON.stringify({ variantKey, converted }) }),
+    mabVariants: () => request<any>("/creative-ai/enhanced/mab/variants"),
+    fatigue: (creativeHistory: any[]) =>
+      request<any>("/creative-ai/enhanced/fatigue", { method: "POST", body: JSON.stringify({ creativeHistory }) }),
+    abTestSimulate: (variants: any[], visitorsPerDay?: number, days?: number) =>
+      request<any>("/creative-ai/enhanced/ab-test-simulate", { method: "POST", body: JSON.stringify({ variants, visitorsPerDay, days }) }),
+  },
+
+  audienceInsightsEnhanced: {
+    pca: (data: number[][], nComponents?: number) =>
+      request<any>("/audience-insights/enhanced/pca", { method: "POST", body: JSON.stringify({ data, nComponents }) }),
+    gmm: (data: number[][], k?: number) =>
+      request<any>("/audience-insights/enhanced/gmm", { method: "POST", body: JSON.stringify({ data, k }) }),
+    rfm: (customers: any[]) => request<any>("/audience-insights/enhanced/rfm", { method: "POST", body: JSON.stringify({ customers }) }),
+    lookalike: (seedAudience: any[], candidatePool: any[], targetSize?: number) =>
+      request<any>("/audience-insights/enhanced/lookalike", { method: "POST", body: JSON.stringify({ seedAudience, candidatePool, targetSize }) }),
+  },
 };

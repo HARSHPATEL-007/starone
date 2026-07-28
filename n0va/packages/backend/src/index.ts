@@ -116,6 +116,14 @@ import searchIntelligenceRoutes from "./routes/search-intelligence";
 import anomalyDetectionEnhancedRoutes from "./routes/anomaly-detection-enhanced";
 import unifiedAdsPipelineRoutes from "./routes/unified-ads-pipeline";
 import adsMarketingModuleRoutes from "./routes/ads-marketing-module";
+import agentSwarmRoutes from "./routes/agent-swarm";
+import budgetOptimizerServiceRoutes from "./routes/budget-optimizer-service";
+import crossModuleIntegrationRoutes from "./routes/cross-module-integration";
+import enhancedAgentRoutes from "./routes/enhanced-agent";
+import enhancedAttributionRoutes from "./routes/enhanced-attribution";
+import n0va1oGatewayEnhancedRoutes from "./routes/n0va1o-gateway-enhanced";
+import recipeCompilationRoutes from "./routes/recipe-compilation";
+import securityModifierRoutes from "./routes/security-modifier";
 
 const app = express();
 const httpServer = createServer(app);
@@ -245,6 +253,14 @@ app.use("/api/v1/search-intelligence", authMiddleware, tenantMiddleware, searchI
 app.use("/api/v1/anomaly-detection/enhanced", authMiddleware, tenantMiddleware, anomalyDetectionEnhancedRoutes);
 app.use("/api/v1/unified-ads-pipeline", authMiddleware, tenantMiddleware, unifiedAdsPipelineRoutes);
 app.use("/api/v1/ads-marketing-module", authMiddleware, tenantMiddleware, adsMarketingModuleRoutes);
+app.use("/api/v1/agent-swarm", authMiddleware, tenantMiddleware, agentSwarmRoutes);
+app.use("/api/v1/budget-optimizer-service", authMiddleware, tenantMiddleware, budgetOptimizerServiceRoutes);
+app.use("/api/v1/cross-module-integration", authMiddleware, tenantMiddleware, crossModuleIntegrationRoutes);
+app.use("/api/v1/enhanced-agent", authMiddleware, tenantMiddleware, enhancedAgentRoutes);
+app.use("/api/v1/enhanced-attribution", authMiddleware, tenantMiddleware, enhancedAttributionRoutes);
+app.use("/api/v1/n0va1o-gateway-enhanced", authMiddleware, tenantMiddleware, n0va1oGatewayEnhancedRoutes);
+app.use("/api/v1/recipe-compilation", authMiddleware, tenantMiddleware, recipeCompilationRoutes);
+app.use("/api/v1/security-modifier", authMiddleware, tenantMiddleware, securityModifierRoutes);
 app.use("/api/v1/orchestrator-registry", authMiddleware, orchestratorRegistryRoutes);
 app.use("/api/v1", authMiddleware, tenantMiddleware, platformServicesRoutes);
 
