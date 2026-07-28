@@ -127,6 +127,7 @@ import securityModifierRoutes from "./routes/security-modifier";
 import campaignAlertOrchestratorRoutes from "./routes/campaign-alert-orchestrator";
 import campaignExperimentationRoutes from "./routes/campaign-experimentation";
 import campaignBudgetSimulatorRoutes from "./routes/campaign-budget-simulator";
+import campaignInsightsEngineRoutes from "./routes/campaign-insights-engine";
 
 const app = express();
 const httpServer = createServer(app);
@@ -233,6 +234,7 @@ app.use("/api/v1/portfolio-budget-optimizer", authMiddleware, tenantMiddleware, 
 app.use("/api/v1/campaign-saturation", authMiddleware, tenantMiddleware, campaignSaturationRoutes);
 app.use("/api/v1/campaign-experimentation", authMiddleware, tenantMiddleware, campaignExperimentationRoutes);
 app.use("/api/v1/campaign-budget-simulator", authMiddleware, tenantMiddleware, campaignBudgetSimulatorRoutes);
+app.use("/api/v1/campaign-insights-engine", authMiddleware, tenantMiddleware, campaignInsightsEngineRoutes);
 app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);

@@ -2001,6 +2001,12 @@ export const api = {
     marketingCalendar: (month?: number, year?: number) =>
       request<any>(`/ads-marketing-module/marketing-calendar${month ? `?month=${month}` : ""}${year ? `${month ? "&" : "?"}year=${year}` : ""}`),
     creativeAssetPerformance: () => request<any>("/ads-marketing-module/creative-asset-performance"),
+    insightsDashboard: () => request<any>("/ads-marketing-module/insights-dashboard"),
+    correlationAnalysis: () => request<any>("/ads-marketing-module/correlation-analysis"),
+    performanceTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/trends`),
+    budgetEfficiency: () => request<any>("/ads-marketing-module/budget-efficiency"),
+    crossCampaignAttribution: () => request<any>("/ads-marketing-module/cross-campaign-attribution"),
+    predictiveAlerts: () => request<any>("/ads-marketing-module/predictive-alerts"),
   },
 
   agentSwarm: {
@@ -2214,5 +2220,15 @@ export const api = {
       request<any>("/campaign-budget-simulator/scenario", { method: "POST", body: JSON.stringify({ configs, runs }) }),
     history: () => request<any>("/campaign-budget-simulator/history"),
     summary: () => request<any>("/campaign-budget-simulator/summary"),
+  },
+
+  campaignInsightsEngine: {
+    dashboard: () => request<any>("/campaign-insights-engine/dashboard"),
+    analyzeCampaign: (campaignId: string) => request<any>(`/campaign-insights-engine/campaign/${campaignId}/analyze`),
+    campaignTrends: (campaignId: string) => request<any>(`/campaign-insights-engine/campaign/${campaignId}/trends`),
+    correlations: () => request<any>("/campaign-insights-engine/correlations"),
+    budgetEfficiency: () => request<any>("/campaign-insights-engine/budget-efficiency"),
+    crossAttribution: () => request<any>("/campaign-insights-engine/cross-attribution"),
+    predictiveAlerts: () => request<any>("/campaign-insights-engine/predictive-alerts"),
   },
 };

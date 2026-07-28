@@ -6,6 +6,7 @@ import { portfolioBudgetOptimizer } from "./PortfolioBudgetOptimizerService";
 import { CampaignSummaryService } from "./CampaignSummaryService";
 import { attributionService } from "./AttributionService";
 import { campaignBudgetSimulator } from "./CampaignBudgetSimulatorService";
+import { campaignInsightsEngine, InsightsDashboard, CorrelationAnalysis, TrendAnalysis, BudgetEfficiencyScore, CrossCampaignAttribution, PredictiveAlertSummary } from "./CampaignInsightsEngineService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1593,6 +1594,30 @@ export class AdsMarketingModuleService {
         topAsset: sorted.length > 0 ? sorted[0].creativeName : null,
       },
     };
+  }
+
+  insightsDashboard(tenantId: string): InsightsDashboard {
+    return campaignInsightsEngine.generateDashboard(tenantId);
+  }
+
+  campaignCorrelationAnalysis(tenantId: string): CorrelationAnalysis {
+    return campaignInsightsEngine.findCorrelations(tenantId);
+  }
+
+  performanceTrendAnalysis(campaignId: string, tenantId: string): TrendAnalysis | null {
+    return campaignInsightsEngine.analyzeTrends(campaignId, tenantId);
+  }
+
+  budgetEfficiencyScore(tenantId: string): BudgetEfficiencyScore[] {
+    return campaignInsightsEngine.calculateBudgetEfficiency(tenantId);
+  }
+
+  crossCampaignAttribution(tenantId: string): CrossCampaignAttribution[] {
+    return campaignInsightsEngine.crossCampaignAttribution(tenantId);
+  }
+
+  predictiveAlertSummary(tenantId: string): PredictiveAlertSummary {
+    return campaignInsightsEngine.generatePredictiveAlerts(tenantId);
   }
 }
 

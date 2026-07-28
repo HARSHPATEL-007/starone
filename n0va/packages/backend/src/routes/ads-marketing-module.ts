@@ -148,4 +148,34 @@ router.get("/creative-asset-performance", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/insights-dashboard", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.insightsDashboard(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/correlation-analysis", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.campaignCorrelationAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.performanceTrendAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/budget-efficiency", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetEfficiencyScore(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/cross-campaign-attribution", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossCampaignAttribution(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/predictive-alerts", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.predictiveAlertSummary(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
