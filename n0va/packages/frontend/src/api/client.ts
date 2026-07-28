@@ -2072,6 +2072,12 @@ export const api = {
     goalConflicts: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-conflicts`),
     goalComparison: () => request<any>("/ads-marketing-module/goal-performance-comparison"),
     goalTrendForecast: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-trend-forecast`),
+    placementPerformance: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/placement-performance`),
+    placementRecommendations: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/placement-recommendations`),
+    placementOpportunities: () => request<any>("/ads-marketing-module/placement-opportunities"),
+    placementBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/placement-bid-adjustments`),
+    placementOverlap: () => request<any>("/ads-marketing-module/placement-overlap"),
+    placementTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/placement-trends`),
   },
 
   agentSwarm: {
@@ -2391,5 +2397,14 @@ export const api = {
     conflicts: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/conflicts`),
     compare: () => request<any>("/campaign-goal-tracker/compare"),
     trendForecast: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/trend-forecast`),
+  },
+
+  campaignAdPlacementAnalyzer: {
+    placementPerformance: (campaignId: string) => request<any>(`/campaign-ad-placement-analyzer/campaign/${campaignId}/placement-performance`),
+    placementRecommendations: (campaignId: string) => request<any>(`/campaign-ad-placement-analyzer/campaign/${campaignId}/placement-recommendations`),
+    placementOpportunities: () => request<any>("/campaign-ad-placement-analyzer/placement-opportunities"),
+    placementBidAdjustments: (campaignId: string) => request<any>(`/campaign-ad-placement-analyzer/campaign/${campaignId}/placement-bid-adjustments`),
+    placementOverlap: () => request<any>("/campaign-ad-placement-analyzer/placement-overlap"),
+    placementTrends: (campaignId: string) => request<any>(`/campaign-ad-placement-analyzer/campaign/${campaignId}/placement-trends`),
   },
 };

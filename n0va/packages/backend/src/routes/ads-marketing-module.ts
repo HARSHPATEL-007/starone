@@ -489,4 +489,34 @@ router.get("/campaign/:campaignId/goal-trend-forecast", asyncHandler(async (req,
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/placement-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementPerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/placement-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/placement-opportunities", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementOpportunities(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/placement-bid-adjustments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementBidAdjustments(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/placement-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementOverlap(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/placement-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.placementTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

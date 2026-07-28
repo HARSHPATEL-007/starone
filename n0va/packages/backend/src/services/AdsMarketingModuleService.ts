@@ -17,6 +17,7 @@ import { campaignGeoPerformanceAnalyzer } from "./CampaignGeoPerformanceAnalyzer
 import { campaignFrequencyAnalyzer } from "./CampaignFrequencyAnalyzerService";
 import { campaignSegmentDiscovery } from "./CampaignSegmentDiscoveryService";
 import { campaignGoalTracker } from "./CampaignGoalTrackerService";
+import { campaignAdPlacementAnalyzer } from "./CampaignAdPlacementAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1868,6 +1869,30 @@ export class AdsMarketingModuleService {
 
   goalTrendForecast(campaignId: string, tenantId: string) {
     return campaignGoalTracker.goalTrendForecast(campaignId, tenantId);
+  }
+
+  placementPerformance(campaignId: string, tenantId: string) {
+    return campaignAdPlacementAnalyzer.analyzePlacementPerformance(campaignId, tenantId);
+  }
+
+  placementRecommendations(campaignId: string, tenantId: string) {
+    return campaignAdPlacementAnalyzer.generatePlacementRecommendations(campaignId, tenantId);
+  }
+
+  placementOpportunities(tenantId: string) {
+    return campaignAdPlacementAnalyzer.identifyPlacementOpportunities(tenantId);
+  }
+
+  placementBidAdjustments(campaignId: string, tenantId: string) {
+    return campaignAdPlacementAnalyzer.calculatePlacementBidAdjustments(campaignId, tenantId);
+  }
+
+  placementOverlap(tenantId: string) {
+    return campaignAdPlacementAnalyzer.analyzePlacementOverlap(tenantId);
+  }
+
+  placementTrends(campaignId: string, tenantId: string) {
+    return campaignAdPlacementAnalyzer.analyzePlacementTrends(campaignId, tenantId);
   }
 }
 
