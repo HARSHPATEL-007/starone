@@ -369,4 +369,64 @@ router.get("/campaign/:campaignId/device-trends", asyncHandler(async (req, res) 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/geo-performance", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.geoPerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/geo-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.geoOptimizationRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/geo-expansion-opportunities", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.geoExpansionOpportunities(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-bid-adjustments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.geoBidAdjustments(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/geo-audience-overlap", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.geoAudienceOverlap(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.geoTrendAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/frequency-distribution", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.frequencyDistribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/frequency-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.frequencyRecommendations(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/wear-out-curve", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.wearOutAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/frequency-capping", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.frequencyCapping(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/cross-campaign-frequency", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossCampaignFrequency(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/frequency-impact", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.frequencyImpactPrediction(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

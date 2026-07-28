@@ -134,6 +134,8 @@ import campaignROIDecompositionRoutes from "./routes/campaign-roi-decomposition"
 import campaignAdQualityAnalyzerRoutes from "./routes/campaign-ad-quality-analyzer";
 import campaignAudienceExpansionRoutes from "./routes/campaign-audience-expansion";
 import campaignCrossDeviceAnalyzerRoutes from "./routes/campaign-cross-device-analyzer";
+import campaignGeoPerformanceAnalyzerRoutes from "./routes/campaign-geo-performance-analyzer";
+import campaignFrequencyAnalyzerRoutes from "./routes/campaign-frequency-analyzer";
 
 const app = express();
 const httpServer = createServer(app);
@@ -247,6 +249,8 @@ app.use("/api/v1/campaign-roi-decomposition", authMiddleware, tenantMiddleware, 
 app.use("/api/v1/campaign-ad-quality-analyzer", authMiddleware, tenantMiddleware, campaignAdQualityAnalyzerRoutes);
 app.use("/api/v1/campaign-audience-expansion", authMiddleware, tenantMiddleware, campaignAudienceExpansionRoutes);
 app.use("/api/v1/campaign-cross-device-analyzer", authMiddleware, tenantMiddleware, campaignCrossDeviceAnalyzerRoutes);
+app.use("/api/v1/campaign-geo-performance-analyzer", authMiddleware, tenantMiddleware, campaignGeoPerformanceAnalyzerRoutes);
+app.use("/api/v1/campaign-frequency-analyzer", authMiddleware, tenantMiddleware, campaignFrequencyAnalyzerRoutes);
 app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);

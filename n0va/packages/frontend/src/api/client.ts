@@ -2048,6 +2048,18 @@ export const api = {
     deviceBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/device-bid-adjustments`),
     deviceAudienceOverlap: () => request<any>("/ads-marketing-module/device-audience-overlap"),
     deviceTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/device-trends`),
+    geoPerformance: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/geo-performance`),
+    geoRecommendations: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/geo-recommendations`),
+    geoExpansion: () => request<any>("/ads-marketing-module/geo-expansion-opportunities"),
+    geoBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/geo-bid-adjustments`),
+    geoAudienceOverlap: () => request<any>("/ads-marketing-module/geo-audience-overlap"),
+    geoTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/geo-trends`),
+    frequencyDistribution: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/frequency-distribution`),
+    frequencyRecommendations: () => request<any>("/ads-marketing-module/frequency-recommendations"),
+    wearOutAnalysis: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/wear-out-curve`),
+    frequencyCapping: () => request<any>("/ads-marketing-module/frequency-capping"),
+    crossCampaignFrequency: () => request<any>("/ads-marketing-module/cross-campaign-frequency"),
+    frequencyImpactPrediction: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/frequency-impact`),
   },
 
   agentSwarm: {
@@ -2331,5 +2343,23 @@ export const api = {
     bidAdjustments: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/bid-adjustments`),
     audienceOverlap: () => request<any>("/campaign-cross-device-analyzer/audience-overlap"),
     deviceTrends: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/trends`),
+  },
+
+  campaignGeoPerformanceAnalyzer: {
+    geoPerformance: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-performance`),
+    geoRecommendations: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-recommendations`),
+    expansionOpportunities: () => request<any>("/campaign-geo-performance-analyzer/expansion-opportunities"),
+    geoBidAdjustments: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-bid-adjustments`),
+    geoAudienceOverlap: () => request<any>("/campaign-geo-performance-analyzer/geo-audience-overlap"),
+    geoTrends: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-trends`),
+  },
+
+  campaignFrequencyAnalyzer: {
+    frequencyDistribution: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/frequency-distribution`),
+    optimizationRecommendations: () => request<any>("/campaign-frequency-analyzer/optimization-recommendations"),
+    wearOutCurve: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/wear-out-curve`),
+    frequencyCapping: () => request<any>("/campaign-frequency-analyzer/frequency-capping"),
+    crossCampaignFrequency: () => request<any>("/campaign-frequency-analyzer/cross-campaign-frequency"),
+    frequencyImpact: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/frequency-impact`),
   },
 };

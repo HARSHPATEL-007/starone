@@ -13,6 +13,8 @@ import { campaignROIDecomposition } from "./CampaignROIDecompositionService";
 import { campaignAdQualityAnalyzer } from "./CampaignAdQualityAnalyzerService";
 import { campaignAudienceExpansion } from "./CampaignAudienceExpansionService";
 import { campaignCrossDeviceAnalyzer } from "./CampaignCrossDeviceAnalyzerService";
+import { campaignGeoPerformanceAnalyzer } from "./CampaignGeoPerformanceAnalyzerService";
+import { campaignFrequencyAnalyzer } from "./CampaignFrequencyAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -1768,6 +1770,54 @@ export class AdsMarketingModuleService {
 
   deviceTrendAnalysis(campaignId: string, tenantId: string) {
     return campaignCrossDeviceAnalyzer.analyzeDeviceTrends(campaignId, tenantId);
+  }
+
+  geoPerformance(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.analyzeGeoPerformance(campaignId, tenantId);
+  }
+
+  geoOptimizationRecommendations(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.generateGeoOptimizationRecommendations(campaignId, tenantId);
+  }
+
+  geoExpansionOpportunities(tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.identifyGeoExpansionOpportunities(tenantId);
+  }
+
+  geoBidAdjustments(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.calculateGeoBidAdjustments(campaignId, tenantId);
+  }
+
+  geoAudienceOverlap(tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.analyzeGeoAudienceOverlap(tenantId);
+  }
+
+  geoTrendAnalysis(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.analyzeGeoTrends(campaignId, tenantId);
+  }
+
+  frequencyDistribution(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.analyzeFrequencyDistribution(campaignId, tenantId);
+  }
+
+  frequencyRecommendations(tenantId: string) {
+    return campaignFrequencyAnalyzer.generateFrequencyOptimizationRecommendations(tenantId);
+  }
+
+  wearOutAnalysis(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.analyzeWearOutCurve(campaignId, tenantId);
+  }
+
+  frequencyCapping(tenantId: string) {
+    return campaignFrequencyAnalyzer.calculateFrequencyCapping(tenantId);
+  }
+
+  crossCampaignFrequency(tenantId: string) {
+    return campaignFrequencyAnalyzer.analyzeCrossCampaignFrequency(tenantId);
+  }
+
+  frequencyImpactPrediction(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.predictFrequencyImpact(campaignId, tenantId);
   }
 }
 
