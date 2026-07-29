@@ -2003,6 +2003,30 @@ export class AdsMarketingModuleService {
     return campaignConversionFunnelAnalyzer.analyzeFunnelTrends(campaignId, tenantId);
   }
 
+  funnelVelocity(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.funnelVelocityAnalysis(campaignId, tenantId);
+  }
+
+  funnelLeakagePrediction(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.funnelLeakagePrediction(campaignId, tenantId);
+  }
+
+  funnelAttribution(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.funnelAttribution(campaignId, tenantId);
+  }
+
+  funnelScenarioSimulation(campaignId: string, tenantId: string, targetStage?: string, improvementPct?: number) {
+    return campaignConversionFunnelAnalyzer.funnelScenarioSimulation(campaignId, tenantId, targetStage, improvementPct);
+  }
+
+  funnelChannelBreakdown(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.funnelChannelBreakdown(campaignId, tenantId);
+  }
+
+  funnelHealthScore(campaignId: string, tenantId: string) {
+    return campaignConversionFunnelAnalyzer.funnelHealthScore(campaignId, tenantId);
+  }
+
   keywordAnalysis(campaignId: string, tenantId: string) {
     return campaignKeywordAnalyzer.analyzeKeywords(campaignId, tenantId);
   }

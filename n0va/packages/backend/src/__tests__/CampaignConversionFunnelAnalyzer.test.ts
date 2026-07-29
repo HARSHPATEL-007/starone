@@ -110,4 +110,128 @@ describe("CampaignConversionFunnelAnalyzerService", () => {
       expect(b.suggestion).toContain(b.stage);
     });
   });
+
+  // ── Deep funnel methods ────────────────────────────────────────────
+
+  it("analyzes funnel velocity", () => {
+    const v = campaignConversionFunnelAnalyzer.funnelVelocityAnalysis(campaignId, tenantId);
+    expect(v.campaignId).toBe(campaignId);
+    expect(v.campaignName).toBeTruthy();
+    expect(v.overallThroughput).toBeGreaterThan(0);
+    expect(v.slowestStage).toBeTruthy();
+    expect(v.fastestStage).toBeTruthy();
+    expect(v.stages.length).toBeGreaterThanOrEqual(7);
+    v.stages.forEach(s => {
+      expect(s.name).toBeTruthy();
+      expect(s.avgTimeHours).toBeGreaterThan(0);
+      expect(s.velocity).toBeGreaterThanOrEqual(0);
+      expect(s.acceleration).toBeDefined();
+      expect(s.throughput).toBeGreaterThan(0);
+    });
+  });
+
+  it("predicts funnel leakage", () => {
+    const lp = campaignConversionFunnelAnalyzer.funnelLeakagePrediction(campaignId, tenantId);
+    expect(lp.campaignId).toBe(campaignId);
+    expect(lp.campaignName).toBeTruthy();
+    expect(lp.predictions.length).toBeGreaterThan(0);
+    lp.predictions.forEach(p => {
+      expect(p.stage).toBeTruthy();
+      expect(p.leakRate).toBeGreaterThanOrEqual(0);
+      expect(["high", "medium", "low"]).toContain(p.confidence);
+      expect(p.impact).toBeTruthy();
+    });
+    expect(lp.totalPredictedLeak).toBeGreaterThan(0);
+    expect(lp.highestLeakStage).toBeTruthy();
+  });
+
+  it("performs funnel attribution", () => {
+    const attr = campaignConversionFunnelAnalyzer.funnelAttribution(campaignId, tenantId);
+    expect(attr.campaignId).toBe(campaignId);
+    expect(attr.campaignName).toBeTruthy();
+    expect(attr.channels.length).toBeGreaterThanOrEqual(6);
+    expect(attr.totalConversions).toBeGreaterThan(0);
+    expect(attr.topChannel).toBeTruthy();
+    attr.channels.forEach(c => {
+      expect(c.name).toBeTruthy();
+      expect(c.assistedConversions).toBeGreaterThanOrEqual(0);
+      expect(c.creditedConversions).toBeGreaterThanOrEqual(0);
+      expect(c.assistRate).toBeGreaterThanOrEqual(0);
+      expect(c.role).toBeTruthy();
+    });
+  });
+
+  it("simulates funnel scenarios", () => {
+    const sim = campaignConversionFunnelAnalyzer.funnelScenarioSimulation(campaignId, tenantId, "Awareness", 0.15);
+    expect(sim.campaignId).toBe(campaignId);
+    expect(sim.campaignName).toBeTruthy();
+    expect(sim.currentConversionRate).toBeGreaterThan(0);
+    expect(sim.simulatedConversionRate).toBeGreaterThan(0);
+    expect(sim.improvement).toBeGreaterThan(0);
+    expect(sim.additionalConversions).toBeGreaterThan(0);
+    expect(sim.projectedRevenueLift).toBeGreaterThan(0);
+    expect(sim.stages.length).toBeGreaterThan(0);
+    sim.stages.forEach(s => {
+      expect(s.name).toBeTruthy();
+      expect(s.currentUsers).toBeGreaterThan(0);
+      expect(s.simulatedUsers).toBeGreaterThanOrEqual(s.currentUsers);
+    });
+  });
+
+  it("breaks down funnel by channel", () => {
+    const cb = campaignConversionFunnelAnalyzer.funnelChannelBreakdown(campaignId, tenantId);
+    expect(cb.campaignId).toBe(campaignId);
+    expect(cb.campaignName).toBeTruthy();
+    expect(cb.channels.length).toBeGreaterThanOrEqual(6);
+    expect(cb.topChannelPerStage.length).toBeGreaterThan(0);
+    cb.topChannelPerStage.forEach(ts => {
+      expect(ts.stage).toBeTruthy();
+      expect(ts.topChannel).toBeTruthy();
+    });
+    cb.channels.forEach(c => {
+      expect(c.name).toBeTruthy();
+      expect(c.stages.length).toBeGreaterThan(0);
+      expect(c.totalConversions).toBeGreaterThanOrEqual(0);
+      expect(c.bestStage).toBeTruthy();
+      c.stages.forEach(s => {
+        expect(s.stage).toBeTruthy();
+        expect(s.users).toBeGreaterThan(0);
+        expect(s.conversionRate).toBeGreaterThanOrEqual(0);
+      });
+    });
+  });
+
+  it("computes funnel health score", () => {
+    const hs = campaignConversionFunnelAnalyzer.funnelHealthScore(campaignId, tenantId);
+    expect(hs.campaignId).toBe(campaignId);
+    expect(hs.campaignName).toBeTruthy();
+    expect(hs.score).toBeGreaterThanOrEqual(0);
+    expect(hs.score).toBeLessThanOrEqual(100);
+    expect(["A", "B", "C", "D", "F"]).toContain(hs.grade);
+    expect(hs.dimensions.length).toBeGreaterThan(0);
+    expect(hs.bottlenecks.length).toBeGreaterThanOrEqual(0);
+    expect(hs.recommendations.length).toBeGreaterThan(0);
+    hs.dimensions.forEach(d => {
+      expect(d.name).toBeTruthy();
+      expect(d.score).toBeGreaterThanOrEqual(0);
+      expect(d.score).toBeLessThanOrEqual(100);
+      expect(["good", "fair", "poor"]).toContain(d.status);
+      expect(d.weight).toBeGreaterThan(0);
+    });
+  });
+
+  it("funnel velocity is deterministic", () => {
+    const v1 = campaignConversionFunnelAnalyzer.funnelVelocityAnalysis(campaignId, tenantId);
+    const v2 = campaignConversionFunnelAnalyzer.funnelVelocityAnalysis(campaignId, tenantId);
+    expect(v1.slowestStage).toBe(v2.slowestStage);
+    expect(v1.fastestStage).toBe(v2.fastestStage);
+    expect(v1.overallThroughput).toBe(v2.overallThroughput);
+  });
+
+  it("funnel health score is deterministic", () => {
+    const h1 = campaignConversionFunnelAnalyzer.funnelHealthScore(campaignId, tenantId);
+    const h2 = campaignConversionFunnelAnalyzer.funnelHealthScore(campaignId, tenantId);
+    expect(h1.score).toBe(h2.score);
+    expect(h1.grade).toBe(h2.grade);
+  });
 });

@@ -640,6 +640,37 @@ router.get("/campaign/:campaignId/funnel-trends", asyncHandler(async (req, res) 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/funnel-velocity", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelVelocity(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-leakage-prediction", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelLeakagePrediction(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-attribution", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelAttribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/campaign/:campaignId/funnel-scenario-simulation", asyncHandler(async (req, res) => {
+  const { targetStage, improvementPct } = req.body;
+  const result = adsMarketingModule.funnelScenarioSimulation(req.params.campaignId, req.user!.tenantId, targetStage, improvementPct);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-channel-breakdown", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelChannelBreakdown(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/funnel-health-score", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.funnelHealthScore(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 router.get("/campaign/:campaignId/keyword-analysis", asyncHandler(async (req, res) => {
   const result = adsMarketingModule.keywordAnalysis(req.params.campaignId, req.user!.tenantId);
   sendSuccess(res, result);

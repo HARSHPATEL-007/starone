@@ -231,6 +231,158 @@ export class CampaignConversionFunnelAnalyzerService {
     }
     return trends;
   }
+
+  funnelVelocityAnalysis(campaignId: string, tenantId: string): {
+    campaignId: string; campaignName: string; stages: { name: string; avgTimeHours: number; velocity: number; acceleration: number; throughput: number }[];
+    overallThroughput: number; fastestStage: string; slowestStage: string;
+  } {
+    const funnel = this.analyzeFunnel(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId);
+    let prevVelocity = 0;
+    const stages = funnel.stages.map((s, i) => {
+      const avgTimeHours = Math.round((2 + ((seed + i * 17) % 96)) * 100) / 100;
+      const velocity = s.users > 0 ? Math.round((s.conversions / s.users) * 10000) / 100 : 0;
+      const acceleration = i > 0 ? Math.round((velocity - prevVelocity) * 100) / 100 : 0;
+      const throughput = Math.round(s.conversions / Math.max(avgTimeHours, 0.01) * 100) / 100;
+      prevVelocity = velocity;
+      return { name: s.name, avgTimeHours, velocity, acceleration, throughput };
+    });
+    const sortedTime = [...stages].sort((a, b) => a.avgTimeHours - b.avgTimeHours);
+    const overallThroughput = stages[stages.length - 1]?.throughput || 0;
+    return { campaignId, campaignName: funnel.campaignName, stages, overallThroughput, fastestStage: sortedTime[0]?.name || "", slowestStage: sortedTime[sortedTime.length - 1]?.name || "" };
+  }
+
+  funnelLeakagePrediction(campaignId: string, tenantId: string): {
+    campaignId: string; campaignName: string; predictions: { stage: string; entering: number; predictedLeak: number; leakRate: number; confidence: string; impact: string }[];
+    totalPredictedLeak: number; highestLeakStage: string;
+  } {
+    const funnel = this.analyzeFunnel(campaignId, tenantId);
+    const seed = hashStr(campaignId + "leak" + tenantId);
+    const predictions = funnel.stages.slice(0, -1).map((s, i) => {
+      const entering = s.users;
+      const leakRate = Math.round((35 + ((seed + i * 19) % 50)) * 100) / 100;
+      const predictedLeak = Math.round(entering * leakRate / 100);
+      const confLevels = ["high", "medium", "low"] as const;
+      const confidence = confLevels[leakRate > 60 ? 2 : leakRate > 40 ? 1 : 0];
+      const nextStage = funnel.stages[i + 1];
+      const revPerUser = nextStage.conversions > 0 ? (funnel.stages[funnel.stages.length - 1].users * 10) / Math.max(entering, 1) : 0;
+      const impact = `$${Math.round(predictedLeak * revPerUser).toLocaleString()}`;
+      return { stage: s.name, entering, predictedLeak: Math.round(predictedLeak * 100) / 100, leakRate, confidence, impact };
+    });
+    const worst = predictions.reduce((a, b) => a.predictedLeak > b.predictedLeak ? a : b);
+    return { campaignId, campaignName: funnel.campaignName, predictions, totalPredictedLeak: Math.round(predictions.reduce((s, p) => s + p.predictedLeak, 0) * 100) / 100, highestLeakStage: worst.stage };
+  }
+
+  funnelAttribution(campaignId: string, tenantId: string): {
+    campaignId: string; campaignName: string; channels: { name: string; assistedConversions: number; creditedConversions: number; assistRate: number; role: string }[];
+    totalConversions: number; topChannel: string;
+  } {
+    const funnel = this.analyzeFunnel(campaignId, tenantId);
+    const seed = hashStr(campaignId + "attr" + tenantId);
+    const totalConvs = funnel.totalConversions;
+    const channels = [
+      { name: "Search", role: "Bottom-funnel — captures high-intent demand", baseShare: 0.3 },
+      { name: "Display", role: "Top-funnel — drives awareness and consideration", baseShare: 0.15 },
+      { name: "Social", role: "Mid-funnel — engages and nurtures prospects", baseShare: 0.2 },
+      { name: "Video", role: "Top/mid-funnel — educates and builds trust", baseShare: 0.15 },
+      { name: "Email", role: "Mid/bottom-funnel — retargets and converts warm leads", baseShare: 0.12 },
+      { name: "Direct", role: "Bottom-funnel — brand-driven conversions", baseShare: 0.08 },
+    ];
+    const result = channels.map((ch, i) => {
+      const shareAdjust = ((seed + i * 11) % 30) / 100;
+      const assistShare = ch.baseShare * (0.7 + shareAdjust);
+      const creditShare = ch.baseShare * (0.8 + ((seed + i * 23) % 20) / 100);
+      const assisted = Math.round(totalConvs * assistShare);
+      const credited = Math.round(totalConvs * creditShare);
+      return { name: ch.name, assistedConversions: assisted, creditedConversions: credited, assistRate: Math.round(assisted / Math.max(totalConvs, 1) * 10000) / 100, role: ch.role };
+    });
+    const top = result.reduce((a, b) => a.creditedConversions > b.creditedConversions ? a : b);
+    return { campaignId, campaignName: funnel.campaignName, channels: result, totalConversions: totalConvs, topChannel: top.name };
+  }
+
+  funnelScenarioSimulation(campaignId: string, tenantId: string, targetStage?: string, improvementPct?: number): {
+    campaignId: string; campaignName: string; currentConversionRate: number; simulatedConversionRate: number; improvement: number;
+    stages: { name: string; currentUsers: number; simulatedUsers: number; currentConvRate: number; simulatedConvRate: number }[];
+    additionalConversions: number; projectedRevenueLift: number;
+  } {
+    const funnel = this.analyzeFunnel(campaignId, tenantId);
+    const seed = hashStr(campaignId + "sim" + tenantId);
+    const improveStage = targetStage || funnel.stages[3]?.name || "Engagement";
+    const improvePct = improvementPct || 20;
+    const stageIdx = funnel.stages.findIndex(s => s.name === improveStage);
+    const simStages = funnel.stages.map((s, i) => {
+      let simUsers = s.users;
+      let simConvRate = s.conversionRate;
+      if (i >= stageIdx && stageIdx >= 0) {
+        const boost = i === stageIdx ? improvePct / 100 : (improvePct / 100) * (0.5 + ((seed * (i - stageIdx)) % 20) / 100);
+        simUsers = Math.round(s.users * (1 + boost));
+        simConvRate = Math.round(Math.min(100, s.conversionRate * (1 + boost * 0.3)) * 100) / 100;
+      }
+      return { name: s.name, currentUsers: s.users, simulatedUsers: simUsers, currentConvRate: s.conversionRate, simulatedConvRate: simConvRate };
+    });
+    const currentTotalConv = funnel.totalConversions;
+    const simTotalConv = simStages[simStages.length - 1]?.simulatedUsers || currentTotalConv;
+    const additional = Math.max(0, simTotalConv - currentTotalConv);
+    const revPerConv = 20 + ((seed * 13) % 80);
+    return { campaignId, campaignName: funnel.campaignName, currentConversionRate: funnel.overallConversionRate, simulatedConversionRate: currentTotalConv > 0 ? Math.round(simTotalConv / funnel.totalUsers * 10000) / 100 : 0, improvement: currentTotalConv > 0 ? Math.round((simTotalConv - currentTotalConv) / currentTotalConv * 10000) / 100 : 0, stages: simStages, additionalConversions: additional, projectedRevenueLift: Math.round(additional * revPerConv * 100) / 100 };
+  }
+
+  funnelChannelBreakdown(campaignId: string, tenantId: string): {
+    campaignId: string; campaignName: string; channels: { name: string; stages: { stage: string; users: number; conversions: number; conversionRate: number; contribution: number }[]; totalConversions: number; bestStage: string }[];
+    topChannelPerStage: { stage: string; topChannel: string }[];
+  } {
+    const funnel = this.analyzeFunnel(campaignId, tenantId);
+    const seed = hashStr(campaignId + "chbrk" + tenantId);
+    const channelNames = ["Search", "Display", "Social", "Video", "Email", "Direct"];
+    const channels = channelNames.map((chName, ci) => {
+      const stages = funnel.stages.map((s, si) => {
+        const share = 0.05 + ((seed + ci * 17 + si * 13) % 40) / 100;
+        const users = Math.round(s.users * share);
+        const convRate = Math.round((s.conversionRate * (0.7 + ((seed + ci * 23 + si * 19) % 40) / 100)) * 100) / 100;
+        const convs = Math.round(users * convRate / 100);
+        return { stage: s.name, users, conversions: convs, conversionRate: convRate, contribution: Math.round(share * 10000) / 100 };
+      });
+      const totalConvs = stages.reduce((s, st) => s + st.conversions, 0);
+      const bestStage = stages.reduce((a, b) => a.conversionRate > b.conversionRate ? a : b).stage;
+      return { name: chName, stages, totalConversions: totalConvs, bestStage };
+    });
+    const topPerStage = funnel.stages.map((s, si) => {
+      const top = channels.reduce((a, b) => a.stages[si].conversionRate > b.stages[si].conversionRate ? a : b);
+      return { stage: s.name, topChannel: top.name };
+    });
+    return { campaignId, campaignName: funnel.campaignName, channels, topChannelPerStage: topPerStage };
+  }
+
+  funnelHealthScore(campaignId: string, tenantId: string): {
+    campaignId: string; campaignName: string; score: number; grade: string;
+    dimensions: { name: string; score: number; weight: number; status: string }[];
+    bottlenecks: string[]; recommendations: string[];
+  } {
+    const funnel = this.analyzeFunnel(campaignId, tenantId);
+    const convRateScore = Math.min(100, Math.round(funnel.overallConversionRate * 10));
+    const leakScore = Math.max(0, Math.round(100 - funnel.leakageRate));
+    const bottleneckPenalty = Math.min(50, funnel.bottlenecks.filter(b => b.severity === "critical" || b.severity === "high").length * 15);
+    const stageHealth = funnel.stages.map(s => {
+      if (s.dropOffRate > 50) return 30;
+      if (s.dropOffRate > 35) return 50;
+      if (s.dropOffRate > 20) return 70;
+      return 90;
+    });
+    const avgStageScore = Math.round(stageHealth.reduce((s, v) => s + v, 0) / stageHealth.length);
+    const velocityDim = Math.min(100, Math.round(funnel.stages.reduce((s, st) => s + st.conversionRate, 0) / funnel.stages.length));
+    const rawScore = Math.round(convRateScore * 0.25 + leakScore * 0.2 + avgStageScore * 0.3 + velocityDim * 0.25 - bottleneckPenalty * 0.15);
+    const score = Math.max(0, Math.min(100, rawScore));
+    const grade = score >= 80 ? "A" : score >= 65 ? "B" : score >= 50 ? "C" : score >= 35 ? "D" : "F";
+    const dimensions = [
+      { name: "Conversion Rate", score: convRateScore, weight: 0.25, status: convRateScore >= 70 ? "good" : convRateScore >= 45 ? "fair" : "poor" },
+      { name: "Leakage Control", score: leakScore, weight: 0.2, status: leakScore >= 70 ? "good" : leakScore >= 45 ? "fair" : "poor" },
+      { name: "Stage Health", score: avgStageScore, weight: 0.3, status: avgStageScore >= 70 ? "good" : avgStageScore >= 45 ? "fair" : "poor" },
+      { name: "Velocity", score: velocityDim, weight: 0.25, status: velocityDim >= 70 ? "good" : velocityDim >= 45 ? "fair" : "poor" },
+    ];
+    const bottlenecks = funnel.bottlenecks.filter(b => b.severity === "critical" || b.severity === "high").map(b => `${b.stage} (${b.dropOffRate}% drop-off)`);
+    const recommendations = bottlenecks.length > 0 ? [`Address ${bottlenecks.length} critical bottlenecks`, "A/B test underperforming stages", "Implement retargeting for drop-off points"] : ["Maintain current funnel performance", "Test incremental improvements in mid-funnel stages", "Monitor for emerging bottlenecks"];
+    return { campaignId, campaignName: funnel.campaignName, score, grade, dimensions, bottlenecks, recommendations };
+  }
 }
 
 export const campaignConversionFunnelAnalyzer = new CampaignConversionFunnelAnalyzerService();

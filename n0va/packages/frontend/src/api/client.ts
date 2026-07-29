@@ -2090,6 +2090,13 @@ export const api = {
     formatBidAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/format-bid-adjustments`),
     formatAudiencePreference: () => request<any>("/ads-marketing-module/audience-format-preference"),
     formatTrends: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/format-trends`),
+    funnelVelocity: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-velocity`),
+    funnelLeakagePrediction: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-leakage-prediction`),
+    funnelAttribution: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-attribution`),
+    funnelScenarioSimulation: (campaignId: string, targetStage: string, improvementPct: number) =>
+      request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-scenario-simulation`, { method: "POST", body: JSON.stringify({ targetStage, improvementPct }) }),
+    funnelChannelBreakdown: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-channel-breakdown`),
+    funnelHealthScore: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-health-score`),
   },
 
   agentSwarm: {
