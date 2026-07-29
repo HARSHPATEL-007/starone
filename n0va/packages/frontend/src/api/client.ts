@@ -2001,6 +2001,15 @@ export const api = {
     portfolioScenarioPlanner: (scenarios: any[]) =>
       request<any>("/ads-marketing-module/portfolio-scenario-planner", { method: "POST", body: JSON.stringify({ scenarios }) }),
     budgetSimulation: () => request<any>("/ads-marketing-module/budget-simulation"),
+    budgetOptimizationAllocation: (totalBudget: number) =>
+      request<any>("/ads-marketing-module/budget-optimization-allocation", { method: "POST", body: JSON.stringify({ totalBudget }) }),
+    budgetScenarioComparison: () => request<any>("/ads-marketing-module/budget-scenario-comparison"),
+    budgetRiskAssessment: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/budget-risk-assessment`),
+    budgetSensitivity: (campaignId: string, minBudget?: number, maxBudget?: number, steps?: number) =>
+      request<any>(`/ads-marketing-module/campaign/${campaignId}/budget-sensitivity`, { method: "POST", body: JSON.stringify({ minBudget, maxBudget, steps }) }),
+    budgetWhatIf: (campaignId: string, whatIfBudget: number) =>
+      request<any>(`/ads-marketing-module/campaign/${campaignId}/budget-what-if`, { method: "POST", body: JSON.stringify({ whatIfBudget }) }),
+    budgetROICurve: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/budget-roi-curve`),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

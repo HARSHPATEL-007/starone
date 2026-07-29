@@ -151,6 +151,37 @@ router.get("/budget-simulation", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.post("/budget-optimization-allocation", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetOptimizationAllocation(req.user!.tenantId, req.body.totalBudget);
+  sendSuccess(res, result);
+}));
+
+router.get("/budget-scenario-comparison", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetScenarioComparison(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/budget-risk-assessment", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetRiskAssessment(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/campaign/:campaignId/budget-sensitivity", asyncHandler(async (req, res) => {
+  const { minBudget, maxBudget, steps } = req.body;
+  const result = adsMarketingModule.budgetSensitivityAnalysis(req.params.campaignId, req.user!.tenantId, minBudget, maxBudget, steps);
+  sendSuccess(res, result);
+}));
+
+router.post("/campaign/:campaignId/budget-what-if", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetWhatIfSimulation(req.params.campaignId, req.user!.tenantId, req.body.whatIfBudget);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/budget-roi-curve", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetROICurve(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 router.post("/ad-compliance", asyncHandler(async (req, res) => {
   const adCopy = req.body.adCopy || "";
   const result = adsMarketingModule.adComplianceAnalysis(adCopy);

@@ -1413,6 +1413,57 @@ export class AdsMarketingModuleService {
     };
   }
 
+  budgetOptimizationAllocation(tenantId: string, totalBudget: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaigns = portfolio.analyses.map(a => ({
+      campaignId: a.campaignId, budget: a.performance.spend || 1000,
+      expectedROAS: a.performance.roas || 2, roasVariance: 0.3,
+      expectedConversions: a.performance.conversions || 50, convVariance: 0.2,
+    }));
+    return campaignBudgetSimulator.budgetOptimizationAllocation(campaigns, totalBudget);
+  }
+
+  budgetScenarioComparison(tenantId: string, runs?: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const configs = portfolio.analyses.map((a, i) => ({
+      name: a.campaignName || `Campaign ${i + 1}`,
+      budget: a.performance.spend || 1000,
+      expectedROAS: a.performance.roas || 2, roasVariance: 0.3,
+      expectedConversions: a.performance.conversions || 50, convVariance: 0.2,
+    }));
+    return campaignBudgetSimulator.budgetScenarioComparison(configs, runs);
+  }
+
+  budgetRiskAssessment(campaignId: string, tenantId: string, runs?: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaign = portfolio.analyses.find((a: any) => a.campaignId === campaignId);
+    const config = { campaignId, budget: campaign?.performance.spend || 1000, expectedROAS: campaign?.performance.roas || 2, roasVariance: 0.3, expectedConversions: campaign?.performance.conversions || 50, convVariance: 0.2 };
+    return campaignBudgetSimulator.budgetRiskAssessment(config, runs);
+  }
+
+  budgetSensitivityAnalysis(campaignId: string, tenantId: string, minBudget?: number, maxBudget?: number, steps?: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaign = portfolio.analyses.find((a: any) => a.campaignId === campaignId);
+    const base = campaign?.performance.spend || 1000;
+    const config = { campaignId, budget: base, expectedROAS: campaign?.performance.roas || 2, roasVariance: 0.3, expectedConversions: campaign?.performance.conversions || 50, convVariance: 0.2 };
+    const budgetRange = { min: minBudget ?? Math.round(base * 0.5), max: maxBudget ?? Math.round(base * 2), steps: steps ?? 10 };
+    return campaignBudgetSimulator.budgetSensitivityAnalysis(config, budgetRange);
+  }
+
+  budgetWhatIfSimulation(campaignId: string, tenantId: string, whatIfBudget: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaign = portfolio.analyses.find((a: any) => a.campaignId === campaignId);
+    const config = { campaignId, budget: campaign?.performance.spend || 1000, expectedROAS: campaign?.performance.roas || 2, roasVariance: 0.3, expectedConversions: campaign?.performance.conversions || 50, convVariance: 0.2 };
+    return campaignBudgetSimulator.budgetWhatIfSimulation(config, whatIfBudget);
+  }
+
+  budgetROICurve(campaignId: string, tenantId: string, maxMultiplier?: number, steps?: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaign = portfolio.analyses.find((a: any) => a.campaignId === campaignId);
+    const config = { campaignId, budget: campaign?.performance.spend || 1000, expectedROAS: campaign?.performance.roas || 2, roasVariance: 0.3, expectedConversions: campaign?.performance.conversions || 50, convVariance: 0.2 };
+    return campaignBudgetSimulator.budgetROICurve(config, maxMultiplier, steps);
+  }
+
   adComplianceAnalysis(adCopy: string): AdComplianceResult {
     const checks: AdComplianceResult["checks"] = [];
     const superlatives = ["best", "greatest", "amazing", "incredible", "perfect", "guaranteed", "unbeatable", "revolutionary"];
