@@ -759,4 +759,34 @@ router.get("/campaign/:campaignId/retargeting-trends", asyncHandler(async (req, 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/live-metrics", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.liveMetrics(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/anomalies", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.anomalies(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/metric-velocity", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.metricVelocity(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/budget-pacing", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetPacing(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/live-alerts", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.liveAlerts(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/performance-forecast", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.performanceForecast(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

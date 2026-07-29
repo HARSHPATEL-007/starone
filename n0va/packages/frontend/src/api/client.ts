@@ -2486,4 +2486,13 @@ export const api = {
     crossChannel: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/cross-channel`),
     trends: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/trends`),
   },
+
+  campaignRealTimeMonitor: {
+    liveMetrics: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/live-metrics`),
+    anomalies: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/anomalies`),
+    velocity: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/velocity`),
+    budgetPacing: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/budget-pacing`),
+    liveAlerts: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/live-alerts`),
+    forecast: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/forecast`),
+  },
 };

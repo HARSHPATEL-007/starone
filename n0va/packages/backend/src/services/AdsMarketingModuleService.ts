@@ -26,6 +26,7 @@ import { campaignCreativeOptimizer } from "./CampaignCreativeOptimizerService";
 import { campaignLandingPageAnalyzer } from "./CampaignLandingPageAnalyzerService";
 import { campaignSocialSentimentAnalyzer } from "./CampaignSocialSentimentAnalyzerService";
 import { campaignRetargetingAnalyzer } from "./CampaignRetargetingAnalyzerService";
+import { campaignRealTimeMonitor } from "./CampaignRealTimeMonitorService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2094,6 +2095,30 @@ export class AdsMarketingModuleService {
 
   retargetingTrends(campaignId: string, tenantId: string) {
     return campaignRetargetingAnalyzer.analyzeRetargetingTrends(campaignId, tenantId);
+  }
+
+  liveMetrics(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getLiveMetrics(campaignId, tenantId);
+  }
+
+  anomalies(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.detectAnomalies(campaignId, tenantId);
+  }
+
+  metricVelocity(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.analyzeMetricVelocity(campaignId, tenantId);
+  }
+
+  budgetPacing(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getBudgetPacing(campaignId, tenantId);
+  }
+
+  liveAlerts(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.generateLiveAlerts(campaignId, tenantId);
+  }
+
+  performanceForecast(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getPerformanceForecast(campaignId, tenantId);
   }
 }
 
