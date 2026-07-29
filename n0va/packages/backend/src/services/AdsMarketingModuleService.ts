@@ -2119,7 +2119,7 @@ export class AdsMarketingModuleService {
     return campaignRealTimeMonitor.generateLiveAlerts(campaignId, tenantId);
   }
 
-  performanceForecast(campaignId: string, tenantId: string) {
+  campaignPerformanceForecast(campaignId: string, tenantId: string) {
     return campaignRealTimeMonitor.getPerformanceForecast(campaignId, tenantId);
   }
 

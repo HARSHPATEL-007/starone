@@ -785,7 +785,7 @@ router.get("/campaign/:campaignId/live-alerts", asyncHandler(async (req, res) =>
 }));
 
 router.get("/campaign/:campaignId/performance-forecast", asyncHandler(async (req, res) => {
-  const result = adsMarketingModule.performanceForecast(req.params.campaignId, req.user!.tenantId);
+  const result = adsMarketingModule.campaignPerformanceForecast(req.params.campaignId, req.user!.tenantId);
   sendSuccess(res, result);
 }));
 
