@@ -23,6 +23,37 @@ router.get("/campaign/:campaignId/health", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/health-detailed-breakdown", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.healthDetailedBreakdown(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/health-trend-forecast", asyncHandler(async (req, res) => {
+  const periods = req.query.periods ? parseInt(req.query.periods as string, 10) : 4;
+  const result = await adsMarketingModule.healthTrendForecast(req.params.campaignId, req.user!.tenantId, periods);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/health-benchmark", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.healthBenchmarkComparison(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/health-improvement-plan", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.healthImprovementPlan(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/health-driver-attribution", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.healthDriverAttribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/health-ranking", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.campaignHealthRanking(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 router.post("/campaign/:campaignId/optimize", asyncHandler(async (req, res) => {
   const result = adsMarketingModule.optimizationCycle(req.params.campaignId, req.user!.tenantId);
   sendSuccess(res, result || { error: "Campaign not found" });

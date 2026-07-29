@@ -195,6 +195,148 @@ export class CampaignHealthService {
       };
     });
   }
+
+  async detailedHealthBreakdown(campaignId: string, tenantId: string): Promise<{
+    campaignId: string; campaignName: string; generatedAt: string;
+    dimensions: { name: string; score: number; status: string; metrics: { label: string; value: number; unit: string }[] }[];
+    overall: number; trend: string;
+  } | null> {
+    const health = await this.score(campaignId, tenantId);
+    if (!health) return null;
+    const campaign = await DataStore.findCampaignById(campaignId, tenantId);
+    const metrics = await DataStore.findMetrics({ campaignId, tenantId });
+    const campaignMetrics = Array.isArray(metrics) ? metrics : [];
+    const totalImpressions = campaignMetrics.reduce((s: number, m: any) => s + (m.impressions || 0), 0);
+    const totalClicks = campaignMetrics.reduce((s: number, m: any) => s + (m.clicks || 0), 0);
+    const totalConversions = campaignMetrics.reduce((s: number, m: any) => s + (m.conversions || 0), 0);
+    const totalSpend = campaignMetrics.reduce((s: number, m: any) => s + (m.spend || 0), 0);
+    const totalRevenue = campaignMetrics.reduce((s: number, m: any) => s + (m.revenue || 0), 0);
+    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+    const cvr = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
+    const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+    const cpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
+    const budgetUtilization = campaign?.budget?.lifetime > 0 ? (campaign.budget.spent / campaign.budget.lifetime) * 100 : 0;
+    const statusFor = (s: number) => s >= 80 ? "good" : s >= 60 ? "fair" : s >= 40 ? "poor" : "critical";
+    return {
+      campaignId, campaignName: health.campaignName, generatedAt: new Date().toISOString(), overall: health.overall, trend: health.trend,
+      dimensions: [
+        { name: "Budget Health", score: health.budget, status: statusFor(health.budget), metrics: [{ label: "Utilization", value: Math.round(budgetUtilization * 100) / 100, unit: "%" }] },
+        { name: "Performance Health", score: health.performance, status: statusFor(health.performance), metrics: [{ label: "ROAS", value: Math.round(roas * 100) / 100, unit: "x" }, { label: "Revenue", value: Math.round(totalRevenue * 100) / 100, unit: "$" }] },
+        { name: "Engagement Health", score: health.engagement, status: statusFor(health.engagement), metrics: [{ label: "CTR", value: Math.round(ctr * 100) / 100, unit: "%" }, { label: "Impressions", value: totalImpressions, unit: "" }] },
+        { name: "Efficiency Health", score: health.efficiency, status: statusFor(health.efficiency), metrics: [{ label: "CPC", value: Math.round(cpc * 100) / 100, unit: "$" }, { label: "CVR", value: Math.round(cvr * 100) / 100, unit: "%" }] },
+        { name: "Saturation Health", score: health._saturation ? Math.max(0, 100 - health._saturation.penalty) : 100, status: "good", metrics: [{ label: "Beta", value: health._saturation ? Math.round(health._saturation.beta * 100) / 100 : 0.5, unit: "" }, { label: "Penalty", value: health._saturation?.penalty || 0, unit: "pts" }] },
+        { name: "Volatility Health", score: health._volatility ? Math.max(0, 100 - health._volatility.penalty) : 100, status: "good", metrics: [{ label: "CV", value: health._volatility ? Math.round(health._volatility.cv * 100) / 100 : 0, unit: "" }, { label: "Penalty", value: health._volatility?.penalty || 0, unit: "pts" }] },
+      ],
+    };
+  }
+
+  async healthTrendForecast(campaignId: string, tenantId: string, periods: number = 4): Promise<{
+    campaignId: string; campaignName: string; generatedAt: string; currentScore: number;
+    forecast: { period: number; projectedScore: number; confidenceLower: number; confidenceUpper: number }[];
+    trendDirection: string; volatility: number;
+  } | null> {
+    const health = await this.score(campaignId, tenantId);
+    if (!health) return null;
+    const rng = () => { let s = campaignId.length + tenantId.length; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; };
+    const rand = rng();
+    const base = health.overall;
+    const delta = health.trend === "up" ? rand() * 3 + 1 : health.trend === "down" ? -(rand() * 3 + 1) : (rand() - 0.5) * 3;
+    const volatility = health._volatility?.cv || 0.3;
+    const forecast = Array.from({ length: periods }, (_, i) => {
+      const projected = Math.max(0, Math.min(100, base + delta * (i + 1)));
+      const spread = volatility * 15 * (1 + i * 0.2);
+      return { period: i + 1, projectedScore: Math.round(projected * 100) / 100, confidenceLower: Math.max(0, Math.round((projected - spread) * 100) / 100), confidenceUpper: Math.min(100, Math.round((projected + spread) * 100) / 100) };
+    });
+    return { campaignId, campaignName: health.campaignName, generatedAt: new Date().toISOString(), currentScore: base, forecast, trendDirection: health.trend, volatility: Math.round(volatility * 100) / 100 };
+  }
+
+  async benchmarkComparison(campaignId: string, tenantId: string): Promise<{
+    campaignId: string; campaignName: string; percentile: number; portfolioAverage: number; gap: number;
+    dimensions: { name: string; score: number; avg: number; gap: number; status: string }[];
+    topWeakness: string; topStrength: string;
+  } | null> {
+    const health = await this.score(campaignId, tenantId);
+    if (!health) return null;
+    const allScores = await this.scoreAll(tenantId);
+    const scores = allScores.map(s => s.overall).sort((a, b) => a - b);
+    const rank = scores.filter(s => s <= health.overall).length;
+    const percentile = scores.length > 0 ? Math.round((rank / scores.length) * 100) : 50;
+    const portfolioAvg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const avgBudget = allScores.reduce((s, h) => s + h.budget, 0) / (allScores.length || 1);
+    const avgPerf = allScores.reduce((s, h) => s + h.performance, 0) / (allScores.length || 1);
+    const avgEng = allScores.reduce((s, h) => s + h.engagement, 0) / (allScores.length || 1);
+    const avgEff = allScores.reduce((s, h) => s + h.efficiency, 0) / (allScores.length || 1);
+    const dims = [
+      { name: "Budget", score: health.budget, avg: Math.round(avgBudget * 100) / 100, gap: Math.round((health.budget - avgBudget) * 100) / 100, status: health.budget >= avgBudget ? "above" : "below" },
+      { name: "Performance", score: health.performance, avg: Math.round(avgPerf * 100) / 100, gap: Math.round((health.performance - avgPerf) * 100) / 100, status: health.performance >= avgPerf ? "above" : "below" },
+      { name: "Engagement", score: health.engagement, avg: Math.round(avgEng * 100) / 100, gap: Math.round((health.engagement - avgEng) * 100) / 100, status: health.engagement >= avgEng ? "above" : "below" },
+      { name: "Efficiency", score: health.efficiency, avg: Math.round(avgEff * 100) / 100, gap: Math.round((health.efficiency - avgEff) * 100) / 100, status: health.efficiency >= avgEff ? "above" : "below" },
+    ];
+    const worst = dims.reduce((a, b) => a.gap < b.gap ? a : b);
+    const best = dims.reduce((a, b) => a.gap > b.gap ? a : b);
+    return { campaignId, campaignName: health.campaignName, percentile, portfolioAverage: Math.round(portfolioAvg * 100) / 100, gap: Math.round((health.overall - portfolioAvg) * 100) / 100, dimensions: dims, topWeakness: worst.name, topStrength: best.name };
+  }
+
+  async healthImprovementPlan(campaignId: string, tenantId: string): Promise<{
+    campaignId: string; campaignName: string; generatedAt: string; currentScore: number;
+    actions: { priority: number; dimension: string; issue: string; action: string; expectedImpact: string; effort: string }[];
+    totalActions: number; projectedScoreAfter: number;
+  } | null> {
+    const health = await this.score(campaignId, tenantId);
+    if (!health) return null;
+    const actions: { priority: number; dimension: string; issue: string; action: string; expectedImpact: string; effort: string }[] = [];
+    const pushAction = (priority: number, dimension: string, issue: string, action: string, impact: string, effort: string) => {
+      actions.push({ priority, dimension, issue, action, expectedImpact: impact, effort });
+    };
+    if (health.budget < 60) pushAction(1, "Budget", "Utilization issue", "Rebalance budget allocation across campaigns", "15-20% efficiency gain", "Medium");
+    if (health.performance < 60) pushAction(2, "Performance", "Low ROAS", "Optimize targeting and audience segments", "20-30% ROAS improvement", "High");
+    if (health.engagement < 60) pushAction(3, "Engagement", "Low CTR", "Refresh creative assets and ad copy", "25-40% CTR improvement", "Medium");
+    if (health.efficiency < 60) pushAction(4, "Efficiency", "High CPC or low CVR", "Optimize landing pages and conversion paths", "15-25% efficiency gain", "High");
+    if (health._saturation?.penalty && health._saturation.penalty >= 15) pushAction(5, "Saturation", "Diminishing returns", "Diversify channel mix and explore new audiences", "10-15% marginal ROI recovery", "Medium");
+    if (health._volatility?.penalty && health._volatility.penalty >= 10) pushAction(6, "Volatility", "Spend fluctuations", "Implement dayparting and budget pacing rules", "Reduce variance by 30-50%", "Low");
+    if (health.issues.length > 0) {
+      for (const issue of health.issues) {
+        if (!actions.some(a => a.issue === issue.message)) {
+          pushAction(actions.length + 1, "General", issue.message, "Investigate and address flagged issue", "Variable", "Medium");
+        }
+      }
+    }
+    const projectedGain = actions.reduce((s, a) => s + (a.effort === "Low" ? 3 : a.effort === "Medium" ? 5 : 7), 0);
+    return { campaignId, campaignName: health.campaignName, generatedAt: new Date().toISOString(), currentScore: health.overall, actions, totalActions: actions.length, projectedScoreAfter: Math.min(100, health.overall + projectedGain) };
+  }
+
+  async campaignHealthRanking(tenantId: string): Promise<{
+    generatedAt: string; totalCampaigns: number; rankings: { rank: number; campaignId: string; campaignName: string; score: number; trend: string; quartile: number }[];
+    quartileBreakdown: { q1: number; q2: number; q3: number; q4: number }; topCampaign: string; bottomCampaign: string;
+  }> {
+    const all = await this.scoreAll(tenantId);
+    const sorted = [...all].sort((a, b) => b.overall - a.overall);
+    const n = sorted.length;
+    const quartile = (i: number) => i < n / 4 ? 1 : i < n / 2 ? 2 : i < (3 * n) / 4 ? 3 : 4;
+    const rankings = sorted.map((s, i) => ({ rank: i + 1, campaignId: s.campaignId, campaignName: s.campaignName, score: s.overall, trend: s.trend, quartile: quartile(i) }));
+    return {
+      generatedAt: new Date().toISOString(), totalCampaigns: n, rankings,
+      quartileBreakdown: { q1: rankings.filter(r => r.quartile === 1).length, q2: rankings.filter(r => r.quartile === 2).length, q3: rankings.filter(r => r.quartile === 3).length, q4: rankings.filter(r => r.quartile === 4).length },
+      topCampaign: sorted[0]?.campaignName || "", bottomCampaign: sorted[n - 1]?.campaignName || "",
+    };
+  }
+
+  async healthDriverAttribution(campaignId: string, tenantId: string): Promise<{
+    campaignId: string; campaignName: string; generatedAt: string;
+    drivers: { name: string; contribution: number; description: string; direction: string }[];
+    totalScore: number; primaryDriver: string;
+  } | null> {
+    const health = await this.score(campaignId, tenantId);
+    if (!health) return null;
+    const drivers = [
+      { name: "Budget Health", contribution: Math.round((health.budget / 100) * 25 * 100) / 100, description: "Budget utilization and pacing", direction: health.budget >= 70 ? "positive" : health.budget >= 40 ? "neutral" : "negative" },
+      { name: "Performance Health", contribution: Math.round((health.performance / 100) * 35 * 100) / 100, description: "ROAS and revenue generation", direction: health.performance >= 70 ? "positive" : health.performance >= 40 ? "neutral" : "negative" },
+      { name: "Engagement Health", contribution: Math.round((health.engagement / 100) * 20 * 100) / 100, description: "CTR and audience resonance", direction: health.engagement >= 70 ? "positive" : health.engagement >= 40 ? "neutral" : "negative" },
+      { name: "Efficiency Health", contribution: Math.round((health.efficiency / 100) * 20 * 100) / 100, description: "CPC, CVR, and conversion efficiency", direction: health.efficiency >= 70 ? "positive" : health.efficiency >= 40 ? "neutral" : "negative" },
+    ];
+    const primary = drivers.reduce((a, b) => a.contribution > b.contribution ? a : b);
+    return { campaignId, campaignName: health.campaignName, generatedAt: new Date().toISOString(), drivers, totalScore: health.overall, primaryDriver: primary.name };
+  }
 }
 
 export const campaignHealthService = new CampaignHealthService();

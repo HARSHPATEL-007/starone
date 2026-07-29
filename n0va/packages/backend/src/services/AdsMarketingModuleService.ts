@@ -625,6 +625,30 @@ export class AdsMarketingModuleService {
     };
   }
 
+  async healthDetailedBreakdown(campaignId: string, tenantId: string) {
+    return campaignHealthService.detailedHealthBreakdown(campaignId, tenantId);
+  }
+
+  async healthTrendForecast(campaignId: string, tenantId: string, periods?: number) {
+    return campaignHealthService.healthTrendForecast(campaignId, tenantId, periods);
+  }
+
+  async healthBenchmarkComparison(campaignId: string, tenantId: string) {
+    return campaignHealthService.benchmarkComparison(campaignId, tenantId);
+  }
+
+  async healthImprovementPlan(campaignId: string, tenantId: string) {
+    return campaignHealthService.healthImprovementPlan(campaignId, tenantId);
+  }
+
+  async campaignHealthRanking(tenantId: string) {
+    return campaignHealthService.campaignHealthRanking(tenantId);
+  }
+
+  async healthDriverAttribution(campaignId: string, tenantId: string) {
+    return campaignHealthService.healthDriverAttribution(campaignId, tenantId);
+  }
+
   optimizationCycle(campaignId: string, tenantId: string): OptimizationCycleResult {
     const campaign = DataStore["mem"]().findOne("campaigns", (c: any) => c._id === campaignId && c.tenantId === tenantId);
     const campaignName = campaign?.name || campaignId;
