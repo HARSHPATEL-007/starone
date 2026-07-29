@@ -2495,4 +2495,16 @@ export const api = {
     liveAlerts: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/live-alerts`),
     forecast: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/forecast`),
   },
+
+  campaignAttributionModeling: {
+    attribution: (campaignId: string, model?: string) => {
+      const params = model ? `?model=${model}` : "";
+      return request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution${params}`);
+    },
+    shapley: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/shapley`),
+    markov: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/markov`),
+    compare: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/compare`),
+    channels: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/channels`),
+    insights: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/insights`),
+  },
 };

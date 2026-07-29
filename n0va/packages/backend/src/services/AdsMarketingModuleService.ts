@@ -27,6 +27,7 @@ import { campaignLandingPageAnalyzer } from "./CampaignLandingPageAnalyzerServic
 import { campaignSocialSentimentAnalyzer } from "./CampaignSocialSentimentAnalyzerService";
 import { campaignRetargetingAnalyzer } from "./CampaignRetargetingAnalyzerService";
 import { campaignRealTimeMonitor } from "./CampaignRealTimeMonitorService";
+import { campaignAttributionModeling } from "./CampaignAttributionModelingService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2119,6 +2120,30 @@ export class AdsMarketingModuleService {
 
   performanceForecast(campaignId: string, tenantId: string) {
     return campaignRealTimeMonitor.getPerformanceForecast(campaignId, tenantId);
+  }
+
+  attribution(campaignId: string, tenantId: string, model?: string) {
+    return campaignAttributionModeling.runAttribution(campaignId, tenantId, model as any);
+  }
+
+  attributionShapley(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.shapleyValueAttribution(campaignId, tenantId);
+  }
+
+  attributionMarkov(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.markovChainAttribution(campaignId, tenantId);
+  }
+
+  attributionCompare(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.compareAttributionModels(campaignId, tenantId);
+  }
+
+  attributionChannels(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.attributionByChannel(campaignId, tenantId);
+  }
+
+  attributionInsights(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.attributionInsights(campaignId, tenantId);
   }
 }
 

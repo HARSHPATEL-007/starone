@@ -789,4 +789,35 @@ router.get("/campaign/:campaignId/performance-forecast", asyncHandler(async (req
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/attribution", asyncHandler(async (req, res) => {
+  const model = (req.query.model as string) || "linear";
+  const result = adsMarketingModule.attribution(req.params.campaignId, req.user!.tenantId, model);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/shapley", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.attributionShapley(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/markov", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.attributionMarkov(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/compare", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.attributionCompare(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/channels", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.attributionChannels(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/insights", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.attributionInsights(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
