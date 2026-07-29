@@ -2468,4 +2468,13 @@ export const api = {
     layoutRecommendations: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/layout-recommendations`),
     trends: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/trends`),
   },
+
+  campaignSocialSentimentAnalyzer: {
+    sentiment: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/sentiment`),
+    trendingTopics: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/trending-topics`),
+    influencerImpact: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/influencer-impact`),
+    platformSentiment: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/platform-sentiment`),
+    emotionalTone: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/emotional-tone`),
+    sentimentTrends: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/sentiment-trends`),
+  },
 };

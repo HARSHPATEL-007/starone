@@ -699,4 +699,34 @@ router.get("/campaign/:campaignId/landing-page-trends", asyncHandler(async (req,
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/sentiment-analysis", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.sentimentAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/trending-topics", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.trendingTopics(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/influencer-impact", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.influencerImpact(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/platform-sentiment", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.platformSentiment(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/emotional-tone", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.emotionalTone(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/sentiment-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.sentimentTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

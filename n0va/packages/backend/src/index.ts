@@ -145,6 +145,7 @@ import campaignConversionFunnelAnalyzerRoutes from "./routes/campaign-conversion
 import campaignKeywordAnalyzerRoutes from "./routes/campaign-keyword-analyzer";
 import campaignCreativeOptimizerRoutes from "./routes/campaign-creative-optimizer";
 import campaignLandingPageAnalyzerRoutes from "./routes/campaign-landing-page-analyzer";
+import campaignSocialSentimentAnalyzerRoutes from "./routes/campaign-social-sentiment-analyzer";
 
 const app = express();
 const httpServer = createServer(app);
@@ -269,6 +270,7 @@ app.use("/api/v1/campaign-conversion-funnel-analyzer", authMiddleware, tenantMid
 app.use("/api/v1/campaign-keyword-analyzer", authMiddleware, tenantMiddleware, campaignKeywordAnalyzerRoutes);
 app.use("/api/v1/campaign-creative-optimizer", authMiddleware, tenantMiddleware, campaignCreativeOptimizerRoutes);
 app.use("/api/v1/campaign-landing-page-analyzer", authMiddleware, tenantMiddleware, campaignLandingPageAnalyzerRoutes);
+app.use("/api/v1/campaign-social-sentiment-analyzer", authMiddleware, tenantMiddleware, campaignSocialSentimentAnalyzerRoutes);
 app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);

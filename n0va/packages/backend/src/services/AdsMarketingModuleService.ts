@@ -24,6 +24,7 @@ import { campaignConversionFunnelAnalyzer } from "./CampaignConversionFunnelAnal
 import { campaignKeywordAnalyzer } from "./CampaignKeywordAnalyzerService";
 import { campaignCreativeOptimizer } from "./CampaignCreativeOptimizerService";
 import { campaignLandingPageAnalyzer } from "./CampaignLandingPageAnalyzerService";
+import { campaignSocialSentimentAnalyzer } from "./CampaignSocialSentimentAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2044,6 +2045,30 @@ export class AdsMarketingModuleService {
 
   landingPageTrends(campaignId: string, tenantId: string) {
     return campaignLandingPageAnalyzer.analyzeLandingPageTrends(campaignId, tenantId);
+  }
+
+  sentimentAnalysis(campaignId: string, tenantId: string) {
+    return campaignSocialSentimentAnalyzer.analyzeSentiment(campaignId, tenantId);
+  }
+
+  trendingTopics(campaignId: string, tenantId: string) {
+    return campaignSocialSentimentAnalyzer.analyzeTrendingTopics(campaignId, tenantId);
+  }
+
+  influencerImpact(campaignId: string, tenantId: string) {
+    return campaignSocialSentimentAnalyzer.analyzeInfluencerImpact(campaignId, tenantId);
+  }
+
+  platformSentiment(campaignId: string, tenantId: string) {
+    return campaignSocialSentimentAnalyzer.analyzePlatformSentiment(campaignId, tenantId);
+  }
+
+  emotionalTone(campaignId: string, tenantId: string) {
+    return campaignSocialSentimentAnalyzer.analyzeEmotionalTone(campaignId, tenantId);
+  }
+
+  sentimentTrends(campaignId: string, tenantId: string) {
+    return campaignSocialSentimentAnalyzer.analyzeSentimentTrends(campaignId, tenantId);
   }
 }
 
