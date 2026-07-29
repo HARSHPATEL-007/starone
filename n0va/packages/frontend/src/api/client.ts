@@ -2477,4 +2477,13 @@ export const api = {
     emotionalTone: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/emotional-tone`),
     sentimentTrends: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/sentiment-trends`),
   },
+
+  campaignRetargetingAnalyzer: {
+    audiences: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/audiences`),
+    funnel: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/funnel`),
+    channels: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/channels`),
+    bidRecommendations: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/bid-recommendations`),
+    crossChannel: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/cross-channel`),
+    trends: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/trends`),
+  },
 };

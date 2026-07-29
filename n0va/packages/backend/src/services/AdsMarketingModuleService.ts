@@ -25,6 +25,7 @@ import { campaignKeywordAnalyzer } from "./CampaignKeywordAnalyzerService";
 import { campaignCreativeOptimizer } from "./CampaignCreativeOptimizerService";
 import { campaignLandingPageAnalyzer } from "./CampaignLandingPageAnalyzerService";
 import { campaignSocialSentimentAnalyzer } from "./CampaignSocialSentimentAnalyzerService";
+import { campaignRetargetingAnalyzer } from "./CampaignRetargetingAnalyzerService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2069,6 +2070,30 @@ export class AdsMarketingModuleService {
 
   sentimentTrends(campaignId: string, tenantId: string) {
     return campaignSocialSentimentAnalyzer.analyzeSentimentTrends(campaignId, tenantId);
+  }
+
+  retargetingAudiences(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.analyzeRetargetingAudiences(campaignId, tenantId);
+  }
+
+  retargetingFunnel(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.analyzeRetargetingFunnel(campaignId, tenantId);
+  }
+
+  retargetingChannels(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.analyzeRetargetingChannels(campaignId, tenantId);
+  }
+
+  retargetingBidRecommendations(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.generateRetargetingBidRecommendations(campaignId, tenantId);
+  }
+
+  crossChannelRetargeting(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.analyzeCrossChannelRetargeting(campaignId, tenantId);
+  }
+
+  retargetingTrends(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.analyzeRetargetingTrends(campaignId, tenantId);
   }
 }
 

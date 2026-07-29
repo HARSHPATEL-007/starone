@@ -729,4 +729,34 @@ router.get("/campaign/:campaignId/sentiment-trends", asyncHandler(async (req, re
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/retargeting-audiences", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.retargetingAudiences(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/retargeting-funnel", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.retargetingFunnel(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/retargeting-channels", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.retargetingChannels(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/retargeting-bid-recommendations", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.retargetingBidRecommendations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/cross-channel-retargeting", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.crossChannelRetargeting(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/retargeting-trends", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.retargetingTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
