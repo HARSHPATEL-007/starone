@@ -2507,4 +2507,16 @@ export const api = {
     channels: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/channels`),
     insights: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/insights`),
   },
+
+  campaignAIBiddingAgent: {
+    biddingDashboard: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bidding-dashboard`),
+    auctionInsights: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/auction-insights`),
+    bidAdjustments: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-adjustments`),
+    bidScenario: (campaignId: string, scenario: any) => request.post(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-scenario`, scenario),
+    bidEfficiency: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-efficiency`),
+    bidStrategy: (campaignId: string, goal?: string) => {
+      const params = goal ? `?goal=${goal}` : "";
+      return request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-strategy${params}`);
+    },
+  },
 };

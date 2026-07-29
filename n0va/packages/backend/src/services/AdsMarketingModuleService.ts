@@ -28,6 +28,7 @@ import { campaignSocialSentimentAnalyzer } from "./CampaignSocialSentimentAnalyz
 import { campaignRetargetingAnalyzer } from "./CampaignRetargetingAnalyzerService";
 import { campaignRealTimeMonitor } from "./CampaignRealTimeMonitorService";
 import { campaignAttributionModeling } from "./CampaignAttributionModelingService";
+import { campaignAIBiddingAgent } from "./CampaignAIBiddingAgentService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2144,6 +2145,30 @@ export class AdsMarketingModuleService {
 
   attributionInsights(campaignId: string, tenantId: string) {
     return campaignAttributionModeling.attributionInsights(campaignId, tenantId);
+  }
+
+  biddingDashboard(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.getBiddingDashboard(campaignId, tenantId);
+  }
+
+  auctionInsights(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.analyzeAuctionInsights(campaignId, tenantId);
+  }
+
+  bidAdjustments(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.recommendBidAdjustments(campaignId, tenantId);
+  }
+
+  bidScenario(campaignId: string, tenantId: string, scenario: any) {
+    return campaignAIBiddingAgent.simulateBidScenario(campaignId, tenantId, scenario);
+  }
+
+  bidEfficiency(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.analyzeBidEfficiency(campaignId, tenantId);
+  }
+
+  bidStrategy(campaignId: string, tenantId: string, goal?: string) {
+    return campaignAIBiddingAgent.generateBidStrategy(campaignId, tenantId, goal);
   }
 }
 

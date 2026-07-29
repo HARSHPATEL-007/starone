@@ -149,6 +149,7 @@ import campaignSocialSentimentAnalyzerRoutes from "./routes/campaign-social-sent
 import campaignRetargetingAnalyzerRoutes from "./routes/campaign-retargeting-analyzer";
 import campaignRealTimeMonitorRoutes from "./routes/campaign-real-time-monitor";
 import campaignAttributionModelingRoutes from "./routes/campaign-attribution-modeling";
+import campaignAIBiddingAgentRoutes from "./routes/campaign-ai-bidding-agent";
 
 const app = express();
 const httpServer = createServer(app);
@@ -277,6 +278,7 @@ app.use("/api/v1/campaign-social-sentiment-analyzer", authMiddleware, tenantMidd
 app.use("/api/v1/campaign-retargeting-analyzer", authMiddleware, tenantMiddleware, campaignRetargetingAnalyzerRoutes);
 app.use("/api/v1/campaign-real-time-monitor", authMiddleware, tenantMiddleware, campaignRealTimeMonitorRoutes);
 app.use("/api/v1/campaign-attribution-modeling", authMiddleware, tenantMiddleware, campaignAttributionModelingRoutes);
+app.use("/api/v1/campaign-ai-bidding-agent", authMiddleware, tenantMiddleware, campaignAIBiddingAgentRoutes);
 app.use("/api/v1/autonomous-campaign-manager", authMiddleware, tenantMiddleware, autonomousCampaignManagerRoutes);
 app.use("/api/v1/channel-mix-optimizer", authMiddleware, tenantMiddleware, channelMixOptimizerRoutes);
 app.use("/api/v1/keyword-insights", authMiddleware, tenantMiddleware, keywordInsightsRoutes);

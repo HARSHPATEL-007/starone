@@ -820,4 +820,35 @@ router.get("/campaign/:campaignId/attribution/insights", asyncHandler(async (req
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/bidding-dashboard", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.biddingDashboard(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/auction-insights", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.auctionInsights(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/bid-adjustments", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.bidAdjustments(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/campaign/:campaignId/bid-scenario", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.bidScenario(req.params.campaignId, req.user!.tenantId, req.body);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/bid-efficiency", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.bidEfficiency(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/bid-strategy", asyncHandler(async (req, res) => {
+  const goal = req.query.goal as string;
+  const result = adsMarketingModule.bidStrategy(req.params.campaignId, req.user!.tenantId, goal);
+  sendSuccess(res, result);
+}));
+
 export default router;
