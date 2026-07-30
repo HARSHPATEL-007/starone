@@ -530,6 +530,24 @@ export const api = {
     compare: (id1: string, id2: string) => request<any>(`/snapshots/compare?id1=${id1}&id2=${id2}`),
     timeline: (campaignId: string) => request<any[]>(`/snapshots/timeline/${campaignId}`),
     autoCapture: () => request<any>("/snapshots/auto-capture", { method: "POST" }),
+    trend: (snapshotId: string, campaignId: string) =>
+      request<any>(`/snapshots/${snapshotId}/trend?campaignId=${campaignId}`),
+    anomalies: (snapshotId: string, campaignId: string) =>
+      request<any>(`/snapshots/${snapshotId}/anomalies?campaignId=${campaignId}`),
+    forecast: (snapshotId: string, campaignId: string) =>
+      request<any>(`/snapshots/${snapshotId}/forecast?campaignId=${campaignId}`),
+    health: (snapshotId: string, campaignId: string) =>
+      request<any>(`/snapshots/${snapshotId}/health?campaignId=${campaignId}`),
+    metrics: (snapshotId: string) =>
+      request<any>(`/snapshots/${snapshotId}/metrics`),
+    changeSummary: (id1: string, id2: string) =>
+      request<any>(`/snapshots/change-summary?id1=${id1}&id2=${id2}`),
+    benchmark: (snapshotId: string) =>
+      request<any>(`/snapshots/${snapshotId}/benchmark`),
+    regressionReport: (id1: string, id2: string) =>
+      request<any>(`/snapshots/regression-report?id1=${id1}&id2=${id2}`),
+    export: (snapshotId: string) =>
+      request<any>(`/snapshots/${snapshotId}/export`),
     delete: (id: string) => request<void>(`/snapshots/${id}`, { method: "DELETE" }),
   },
   reports: {
@@ -742,6 +760,28 @@ export const api = {
   campaignScorecard: {
     get: (campaignId?: string) =>
       request<any>(`/campaign-scorecard${campaignId ? `?campaignId=${campaignId}` : ""}`),
+    setWeights: (weights: Record<string, unknown>) =>
+      request<any>("/campaign-scorecard/weights", { method: "POST", body: JSON.stringify(weights) }),
+    trends: (campaignId: string) =>
+      request<any>(`/campaign-scorecard/${campaignId}/trends`),
+    dimensions: (campaignId: string) =>
+      request<any>(`/campaign-scorecard/${campaignId}/dimensions`),
+    anomalies: () =>
+      request<any>("/campaign-scorecard/anomalies"),
+    improvementPlan: (campaignId: string) =>
+      request<any>(`/campaign-scorecard/${campaignId}/improvement-plan`),
+    peerComparison: (campaignId: string) =>
+      request<any>(`/campaign-scorecard/${campaignId}/peer-comparison`),
+    benchmark: (campaignId: string) =>
+      request<any>(`/campaign-scorecard/${campaignId}/benchmark`),
+    distribution: (campaignId?: string) =>
+      request<any>(`/campaign-scorecard/distribution${campaignId ? `?campaignId=${campaignId}` : ""}`),
+    factorImportance: () =>
+      request<any>("/campaign-scorecard/factor-importance"),
+    weightSimulation: (campaignId: string) =>
+      request<any>(`/campaign-scorecard/${campaignId}/weight-simulation`),
+    historical: (campaignId?: string) =>
+      request<any>(`/campaign-scorecard/historical${campaignId ? `?campaignId=${campaignId}` : ""}`),
   },
   admin: {
     stats: () => request<any>("/admin/stats"),

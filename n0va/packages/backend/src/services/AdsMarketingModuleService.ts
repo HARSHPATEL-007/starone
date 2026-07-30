@@ -29,6 +29,8 @@ import { campaignRetargetingAnalyzer } from "./CampaignRetargetingAnalyzerServic
 import { campaignRealTimeMonitor } from "./CampaignRealTimeMonitorService";
 import { campaignAttributionModeling } from "./CampaignAttributionModelingService";
 import { campaignAIBiddingAgent } from "./CampaignAIBiddingAgentService";
+import { campaignScorecardService } from "./CampaignScorecardService";
+import { campaignSnapshotService } from "./CampaignSnapshotService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2596,6 +2598,98 @@ export class AdsMarketingModuleService {
 
   saturationTrendAnalysis(campaignId: string, tenantId: string) {
     return campaignSaturationService.saturationTrendAnalysis(campaignId, tenantId);
+  }
+
+  scorecardSetWeights(weights: Record<string, number>) {
+    return campaignScorecardService.setWeights(weights);
+  }
+
+  scorecardTrends(campaignId: string, tenantId: string) {
+    return campaignScorecardService.scorecardTrendAnalysis(campaignId, tenantId);
+  }
+
+  scorecardDimensions(campaignId: string, tenantId: string) {
+    return campaignScorecardService.scorecardDimensionBreakdown(campaignId, tenantId);
+  }
+
+  scorecardAnomalies(tenantId: string) {
+    return campaignScorecardService.scorecardAnomalyDetection(tenantId);
+  }
+
+  scorecardImprovementPlan(campaignId: string, tenantId: string) {
+    return campaignScorecardService.scorecardImprovementPlan(campaignId, tenantId);
+  }
+
+  scorecardPeerComparison(campaignId: string, tenantId: string) {
+    return campaignScorecardService.scorecardPeerComparison(campaignId, tenantId);
+  }
+
+  scorecardBenchmark(campaignId: string, tenantId: string) {
+    return campaignScorecardService.scorecardBenchmark(campaignId, tenantId);
+  }
+
+  scorecardDistribution(tenantId: string, campaignId?: string) {
+    return campaignScorecardService.scorecardDistributionAnalysis(tenantId, campaignId);
+  }
+
+  scorecardFactorImportance(tenantId: string) {
+    return campaignScorecardService.scorecardFactorImportance(tenantId);
+  }
+
+  scorecardWeightSimulation(campaignId: string, tenantId: string) {
+    return campaignScorecardService.scorecardCustomWeightsSimulation(campaignId, tenantId);
+  }
+
+  scorecardHistorical(tenantId: string, campaignId?: string) {
+    return campaignScorecardService.scorecardHistoricalComparison(tenantId, campaignId);
+  }
+
+  snapshotCapture(tenantId: string, campaignId: string, name: string, description?: string) {
+    return campaignSnapshotService.captureSnapshot(tenantId, campaignId, name, description);
+  }
+
+  snapshotCompare(id1: string, id2: string, tenantId: string) {
+    return campaignSnapshotService.compareSnapshots(id1, id2, tenantId);
+  }
+
+  snapshotTimeline(tenantId: string, campaignId: string) {
+    return campaignSnapshotService.getSnapshotTimeline(tenantId, campaignId);
+  }
+
+  snapshotTrend(tenantId: string, campaignId: string) {
+    return campaignSnapshotService.snapshotPerformanceTrend(tenantId, campaignId);
+  }
+
+  snapshotAnomalies(tenantId: string, campaignId: string) {
+    return campaignSnapshotService.snapshotAnomalyDetection(tenantId, campaignId);
+  }
+
+  snapshotForecast(tenantId: string, campaignId: string) {
+    return campaignSnapshotService.snapshotForecast(tenantId, campaignId);
+  }
+
+  snapshotHealth(tenantId: string, campaignId: string) {
+    return campaignSnapshotService.snapshotHealthScore(tenantId, campaignId);
+  }
+
+  snapshotMetrics(tenantId: string, snapshotId: string) {
+    return campaignSnapshotService.snapshotMetricBreakdown(tenantId, snapshotId);
+  }
+
+  snapshotChangeSummary(tenantId: string, id1: string, id2: string) {
+    return campaignSnapshotService.snapshotChangeSummary(tenantId, id1, id2);
+  }
+
+  snapshotBenchmark(tenantId: string, snapshotId: string) {
+    return campaignSnapshotService.snapshotBenchmark(tenantId, snapshotId);
+  }
+
+  snapshotRegressionReport(tenantId: string, id1: string, id2: string) {
+    return campaignSnapshotService.snapshotRegressionReport(tenantId, id1, id2);
+  }
+
+  snapshotExport(tenantId: string, snapshotId: string) {
+    return campaignSnapshotService.snapshotExport(tenantId, snapshotId);
   }
 }
 

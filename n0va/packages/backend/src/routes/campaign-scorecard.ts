@@ -31,4 +31,62 @@ router.get("/orchestrate", asyncHandler(async (req, res) => {
   sendSuccess(res, report);
 }));
 
+router.get("/:campaignId/trends", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardTrendAnalysis(req.params.campaignId, req.user!.tenantId);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:campaignId/dimensions", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardDimensionBreakdown(req.params.campaignId, req.user!.tenantId);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/anomalies", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardAnomalyDetection(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/:campaignId/improvement-plan", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardImprovementPlan(req.params.campaignId, req.user!.tenantId);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:campaignId/peer-comparison", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardPeerComparison(req.params.campaignId, req.user!.tenantId);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:campaignId/benchmark", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardBenchmark(req.params.campaignId, req.user!.tenantId);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/distribution", asyncHandler(async (req, res) => {
+  const { campaignId } = req.query;
+  const result = campaignScorecardService.scorecardDistributionAnalysis(req.user!.tenantId, campaignId as string);
+  sendSuccess(res, result);
+}));
+
+router.get("/factor-importance", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardFactorImportance(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/:campaignId/weight-simulation", asyncHandler(async (req, res) => {
+  const result = campaignScorecardService.scorecardCustomWeightsSimulation(req.params.campaignId, req.user!.tenantId);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/historical", asyncHandler(async (req, res) => {
+  const { campaignId } = req.query;
+  const result = campaignScorecardService.scorecardHistoricalComparison(req.user!.tenantId, campaignId as string);
+  sendSuccess(res, result);
+}));
+
 export default router;

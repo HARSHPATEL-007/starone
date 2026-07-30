@@ -79,6 +79,75 @@ router.get(
   })
 );
 
+router.get("/:snapshotId/trend", asyncHandler(async (req, res) => {
+  const { snapshotId } = req.params;
+  const { campaignId } = req.query;
+  if (!campaignId) throw new AppError(400, "Missing query param: campaignId");
+  const result = await campaignSnapshotService.snapshotPerformanceTrend(req.user!.tenantId, campaignId as string);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:snapshotId/anomalies", asyncHandler(async (req, res) => {
+  const { snapshotId } = req.params;
+  const { campaignId } = req.query;
+  if (!campaignId) throw new AppError(400, "Missing query param: campaignId");
+  const result = await campaignSnapshotService.snapshotAnomalyDetection(req.user!.tenantId, campaignId as string);
+  sendSuccess(res, result);
+}));
+
+router.get("/:snapshotId/forecast", asyncHandler(async (req, res) => {
+  const { snapshotId } = req.params;
+  const { campaignId } = req.query;
+  if (!campaignId) throw new AppError(400, "Missing query param: campaignId");
+  const result = await campaignSnapshotService.snapshotForecast(req.user!.tenantId, campaignId as string);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:snapshotId/health", asyncHandler(async (req, res) => {
+  const { snapshotId } = req.params;
+  const { campaignId } = req.query;
+  if (!campaignId) throw new AppError(400, "Missing query param: campaignId");
+  const result = await campaignSnapshotService.snapshotHealthScore(req.user!.tenantId, campaignId as string);
+  if (!result) throw new AppError(404, "Campaign not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:snapshotId/metrics", asyncHandler(async (req, res) => {
+  const result = await campaignSnapshotService.snapshotMetricBreakdown(req.user!.tenantId, req.params.snapshotId);
+  if (!result) throw new AppError(404, "Snapshot not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/change-summary", asyncHandler(async (req, res) => {
+  const { id1, id2 } = req.query;
+  if (!id1 || !id2) throw new AppError(400, "Missing query params: id1, id2");
+  const result = await campaignSnapshotService.snapshotChangeSummary(req.user!.tenantId, id1 as string, id2 as string);
+  if (!result) throw new AppError(404, "One or both snapshots not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:snapshotId/benchmark", asyncHandler(async (req, res) => {
+  const result = await campaignSnapshotService.snapshotBenchmark(req.user!.tenantId, req.params.snapshotId);
+  if (!result) throw new AppError(404, "Snapshot not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/regression-report", asyncHandler(async (req, res) => {
+  const { id1, id2 } = req.query;
+  if (!id1 || !id2) throw new AppError(400, "Missing query params: id1, id2");
+  const result = await campaignSnapshotService.snapshotRegressionReport(req.user!.tenantId, id1 as string, id2 as string);
+  if (!result) throw new AppError(404, "One or both snapshots not found");
+  sendSuccess(res, result);
+}));
+
+router.get("/:snapshotId/export", asyncHandler(async (req, res) => {
+  const result = await campaignSnapshotService.snapshotExport(req.user!.tenantId, req.params.snapshotId);
+  if (!result) throw new AppError(404, "Snapshot not found");
+  sendSuccess(res, result);
+}));
+
 router.delete(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
