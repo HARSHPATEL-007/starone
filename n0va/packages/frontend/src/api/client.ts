@@ -826,6 +826,26 @@ export const api = {
   campaignSaturation: {
     analyze: (campaignId: string) => request<any>(`/campaign-saturation/${campaignId}`),
     analyzeAll: () => request<any>("/campaign-saturation"),
+    saturationForecast: (campaignId: string, periods?: number) =>
+      request<any>(`/campaign-saturation/${campaignId}/forecast${periods ? `?periods=${periods}` : ""}`),
+    saturationByChannel: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/saturation-by-channel`),
+    saturationRecovery: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/recovery`),
+    saturationBenchmark: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/benchmark`),
+    saturationOptimizationSuggestions: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/optimization-suggestions`),
+    creativeFatigueAnalysis: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/creative-fatigue`),
+    fatiguePrediction: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/fatigue-prediction`),
+    audienceSaturation: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/audience-saturation`),
+    budgetReallocationSuggestions: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/budget-reallocation`),
+    saturationTrends: (campaignId: string) =>
+      request<any>(`/campaign-saturation/${campaignId}/trends`),
   },
   oauth: {
     configs: () => request<any[]>("/oauth/configs"),

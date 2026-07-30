@@ -2557,6 +2557,46 @@ export class AdsMarketingModuleService {
   bidStrategy(campaignId: string, tenantId: string, goal?: string) {
     return campaignAIBiddingAgent.generateBidStrategy(campaignId, tenantId, goal);
   }
+
+  saturationForecast(campaignId: string, tenantId: string, periods?: number) {
+    return campaignSaturationService.saturationForecast(campaignId, tenantId, periods);
+  }
+
+  saturationByChannel(campaignId: string, tenantId: string) {
+    return campaignSaturationService.saturationByChannel(campaignId, tenantId);
+  }
+
+  saturationRecovery(campaignId: string, tenantId: string) {
+    return campaignSaturationService.saturationRecoveryAnalysis(campaignId, tenantId);
+  }
+
+  saturationBenchmark(campaignId: string, tenantId: string) {
+    return campaignSaturationService.saturationBenchmark(campaignId, tenantId);
+  }
+
+  saturationOptimizationSuggestions(campaignId: string, tenantId: string) {
+    return campaignSaturationService.saturationOptimizationSuggestions(campaignId, tenantId);
+  }
+
+  creativeFatigueAnalysis(campaignId: string, tenantId: string) {
+    return campaignSaturationService.adCreativeFatigueAnalysis(campaignId, tenantId);
+  }
+
+  fatiguePrediction(campaignId: string, tenantId: string) {
+    return campaignSaturationService.fatiguePredictionModel(campaignId, tenantId);
+  }
+
+  audienceSaturationAnalysis(campaignId: string, tenantId: string) {
+    return campaignSaturationService.audienceSaturationAnalysis(campaignId, tenantId);
+  }
+
+  budgetReallocationSuggestions(campaignId: string, tenantId: string) {
+    return campaignSaturationService.budgetReallocationSuggestions(campaignId, tenantId);
+  }
+
+  saturationTrendAnalysis(campaignId: string, tenantId: string) {
+    return campaignSaturationService.saturationTrendAnalysis(campaignId, tenantId);
+  }
 }
 
 export const adsMarketingModule = new AdsMarketingModuleService();
