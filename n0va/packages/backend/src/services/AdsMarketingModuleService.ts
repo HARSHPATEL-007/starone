@@ -2732,6 +2732,34 @@ export class AdsMarketingModuleService {
   simulationSummary(channels: any[], scenarios: any[], seed?: number) {
     return campaignSimulationService.simulationSummary(channels, scenarios, seed);
   }
+
+  summarySnapshot(campaign: any) {
+    return campaignSummaryService.summaryPerformanceSnapshot(campaign);
+  }
+
+  summaryBudgetHealth(campaigns: any[]) {
+    return campaignSummaryService.summaryBudgetHealth(campaigns);
+  }
+
+  summaryPlatformComparison(campaigns: any[]) {
+    return campaignSummaryService.summaryPlatformComparison(campaigns);
+  }
+
+  summaryRiskAssessment(campaigns: any[]) {
+    return campaignSummaryService.summaryRiskAssessment(campaigns);
+  }
+
+  summaryOptimizationPriorities(campaigns: any[]) {
+    return campaignSummaryService.summaryOptimizationPriorities(campaigns);
+  }
+
+  summaryHistoricalComparison(campaigns: any[]) {
+    return campaignSummaryService.summaryHistoricalComparison(campaigns);
+  }
+
+  summaryAnomalyReport(campaigns: any[]) {
+    return campaignSummaryService.summaryAnomalyReport(campaigns);
+  }
 }
 
 export const adsMarketingModule = new AdsMarketingModuleService();

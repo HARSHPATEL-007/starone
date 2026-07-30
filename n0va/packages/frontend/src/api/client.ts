@@ -639,6 +639,13 @@ export const api = {
     list: () => request<any[]>("/summaries"),
     portfolio: () => request<any>("/summaries/portfolio"),
     campaign: (id: string) => request<any>(`/summaries/campaign/${id}`),
+    snapshot: (id: string) => request<any>(`/summaries/campaign/${id}/snapshot`),
+    budgetHealth: () => request<any>("/summaries/budget-health"),
+    platformComparison: () => request<any>("/summaries/platform-comparison"),
+    riskAssessment: () => request<any>("/summaries/risk-assessment"),
+    optimizationPriorities: () => request<any>("/summaries/optimization-priorities"),
+    historicalComparison: () => request<any>("/summaries/historical-comparison"),
+    anomalyReport: () => request<any>("/summaries/anomaly-report"),
   },
   exportData: {
     csv: (entityType: string, fields?: string[], filters?: Record<string, unknown>) => {

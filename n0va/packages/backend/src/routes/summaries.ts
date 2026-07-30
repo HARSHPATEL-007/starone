@@ -65,6 +65,63 @@ router.get(
   })
 );
 
+router.get("/campaign/:id/snapshot", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const c = await DataStore.findCampaignById(req.params.id, tenantId) as any;
+  if (!c) throw new AppError(404, "Campaign not found");
+  const metrics = (await DataStore.findMetrics({ tenantId, campaignId: req.params.id })) as any[];
+  const campaign = {
+    name: c.name, status: c.status, type: c.type || "performance",
+    platforms: c.platforms || [],
+    budget: c.budget || { daily: 0, lifetime: 0, spent: 0, remaining: 0 },
+    metrics: metrics[0], startDate: c.startDate, endDate: c.endDate, tags: c.tags,
+  };
+  const result = campaignSummary.summaryPerformanceSnapshot(campaign);
+  sendSuccess(res, result);
+}));
+
+router.get("/budget-health", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const campaigns = await loadCampaigns(tenantId);
+  const result = campaignSummary.summaryBudgetHealth(campaigns);
+  sendSuccess(res, result);
+}));
+
+router.get("/platform-comparison", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const campaigns = await loadCampaigns(tenantId);
+  const result = campaignSummary.summaryPlatformComparison(campaigns);
+  sendSuccess(res, result);
+}));
+
+router.get("/risk-assessment", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const campaigns = await loadCampaigns(tenantId);
+  const result = campaignSummary.summaryRiskAssessment(campaigns);
+  sendSuccess(res, result);
+}));
+
+router.get("/optimization-priorities", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const campaigns = await loadCampaigns(tenantId);
+  const result = campaignSummary.summaryOptimizationPriorities(campaigns);
+  sendSuccess(res, result);
+}));
+
+router.get("/historical-comparison", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const campaigns = await loadCampaigns(tenantId);
+  const result = campaignSummary.summaryHistoricalComparison(campaigns);
+  sendSuccess(res, result);
+}));
+
+router.get("/anomaly-report", asyncHandler(async (req, res) => {
+  const tenantId = req.user!.tenantId;
+  const campaigns = await loadCampaigns(tenantId);
+  const result = campaignSummary.summaryAnomalyReport(campaigns);
+  sendSuccess(res, result);
+}));
+
 router.get(
   "/orchestrate/executive",
   asyncHandler(async (req: Request, res: Response) => {

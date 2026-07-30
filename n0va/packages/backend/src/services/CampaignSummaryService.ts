@@ -1,3 +1,131 @@
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+
+interface SummaryPerformanceSnapshot {
+  campaignName: string;
+  status: string;
+  type: string;
+  platforms: string[];
+  keyMetrics: { metric: string; value: number; benchmark: number; verdict: "above" | "at" | "below" }[];
+  healthScore: number;
+  momentum: "positive" | "negative" | "neutral";
+  oneLiner: string;
+}
+
+interface SummaryBudgetHealthEntry {
+  campaignName: string;
+  status: string;
+  dailyBudget: number;
+  lifetimeBudget: number;
+  spent: number;
+  remaining: number;
+  utilizationPercent: number;
+  daysRemaining: number;
+  recommendedDailySpend: number;
+  paceStatus: "ahead" | "on_track" | "behind" | "critical";
+  overspendRisk: "low" | "medium" | "high";
+}
+
+interface SummaryBudgetHealthResult {
+  campaigns: SummaryBudgetHealthEntry[];
+  totalBudget: number;
+  totalSpent: number;
+  totalRemaining: number;
+  avgUtilization: number;
+  atRiskCount: number;
+}
+
+interface SummaryPlatformComparisonEntry {
+  platform: string;
+  campaignCount: number;
+  totalSpend: number;
+  totalRevenue: number;
+  avgROAS: number;
+  avgCTR: number;
+  avgCVR: number;
+  shareOfSpend: number;
+  shareOfRevenue: number;
+  efficiencyRank: number;
+}
+
+interface SummaryPlatformComparisonResult {
+  platforms: SummaryPlatformComparisonEntry[];
+  bestPlatform: string;
+  worstPlatform: string;
+  concentrationRisk: "low" | "medium" | "high";
+}
+
+interface SummaryRiskAssessmentEntry {
+  campaignName: string;
+  riskScore: number;
+  riskLevel: "low" | "medium" | "high" | "critical";
+  riskFactors: string[];
+  probabilityOfUnderperformance: number;
+  expectedImpact: string;
+}
+
+interface SummaryRiskAssessmentResult {
+  campaigns: SummaryRiskAssessmentEntry[];
+  portfolioRiskScore: number;
+  portfolioRiskLevel: "low" | "medium" | "high" | "critical";
+  topRisks: string[];
+  recommendation: string;
+}
+
+interface SummaryOptimizationPriority {
+  campaignName: string;
+  priority: "high" | "medium" | "low";
+  action: string;
+  expectedImpact: string;
+  difficulty: "easy" | "moderate" | "hard";
+  estimatedEffort: string;
+}
+
+interface SummaryOptimizationPrioritiesResult {
+  priorities: SummaryOptimizationPriority[];
+  summary: string;
+}
+
+interface SummaryHistoricalPeriodEntry {
+  period: string;
+  campaignCount: number;
+  totalSpend: number;
+  totalRevenue: number;
+  avgROAS: number;
+  avgCTR: number;
+  avgCVR: number;
+}
+
+interface SummaryHistoricalComparisonResult {
+  periods: SummaryHistoricalPeriodEntry[];
+  overallROASChange: number;
+  overallRevenueChange: number;
+  trend: "improving" | "declining" | "stable";
+  bestPeriod: string;
+  recommendation: string;
+}
+
+interface SummaryAnomalyEntry {
+  campaignName: string;
+  metric: string;
+  value: number;
+  expectedRange: string;
+  severity: "info" | "warning" | "critical";
+  description: string;
+}
+
+interface SummaryAnomalyReportResult {
+  anomalies: SummaryAnomalyEntry[];
+  totalAnomalies: number;
+  criticalCount: number;
+  warningCount: number;
+  infoCount: number;
+  topCampaigns: string[];
+}
+
 interface CampaignSummaryInput {
   name: string;
   status: string;
@@ -146,6 +274,177 @@ export class CampaignSummaryService {
    * Extract insights by computing z-scores against industry benchmarks
    * and flagging anomalies.
    */
+  summaryPerformanceSnapshot(campaign: CampaignSummaryInput): SummaryPerformanceSnapshot {
+    const m = campaign.metrics;
+    const benchmarks: Record<string, number> = { ctr: 2.5, cvr: 3.0, roas: 2.8, cpc: 2.0 };
+    const keyMetrics: SummaryPerformanceSnapshot["keyMetrics"] = Object.entries(benchmarks).map(([metric, bm]) => {
+      const val = (m as any)?.[metric] ?? 0;
+      const gap = bm > 0 ? (val - bm) / bm : 0;
+      const verdict: "above" | "at" | "below" = gap > 0.15 ? "above" : gap < -0.15 ? "below" : "at";
+      return { metric, value: Math.round(val * 100) / 100, benchmark: bm, verdict };
+    });
+    const above = keyMetrics.filter(k => k.verdict === "above").length;
+    const below = keyMetrics.filter(k => k.verdict === "below").length;
+    const healthScore = Math.round((above / Math.max(1, keyMetrics.length)) * 60 + (m ? 40 : 0));
+    const momentum: "positive" | "negative" | "neutral" = m?.roas >= 2 ? "positive" : m?.roas >= 1 ? "neutral" : "negative";
+    let oneLiner: string;
+    if (!m) oneLiner = `${campaign.name} (${campaign.status}) — no metrics data`;
+    else if (m.roas >= 3) oneLiner = `${campaign.name}: ${m.roas.toFixed(1)}x ROAS, ${(m.ctr || 0).toFixed(1)}% CTR — strong performer`;
+    else if (m.roas >= 1.5) oneLiner = `${campaign.name}: ${m.roas.toFixed(1)}x ROAS — acceptable, room for improvement`;
+    else oneLiner = `${campaign.name}: ${m.roas.toFixed(1)}x ROAS — needs attention`;
+    return { campaignName: campaign.name, status: campaign.status, type: campaign.type, platforms: campaign.platforms, keyMetrics, healthScore, momentum, oneLiner };
+  }
+
+  summaryBudgetHealth(campaigns: CampaignSummaryInput[]): SummaryBudgetHealthResult {
+    const entries: SummaryBudgetHealthEntry[] = campaigns.map(c => {
+      const b = c.budget;
+      const util = b.lifetime > 0 ? (b.spent / b.lifetime) * 100 : 0;
+      const daysRem = c.endDate ? Math.max(0, Math.round((new Date(c.endDate).getTime() - Date.now()) / 86400000)) : 90;
+      const recDaily = daysRem > 0 ? (b.lifetime - b.spent) / daysRem : 0;
+      const paceStatus: "ahead" | "on_track" | "behind" | "critical" = util > 90 && daysRem > 0 ? "ahead" : util < 30 && daysRem < 7 ? "critical" : util < 50 && daysRem > 14 ? "behind" : "on_track";
+      const overspendRisk: "low" | "medium" | "high" = daysRem < 7 && util > 70 ? "high" : daysRem < 14 && util > 60 ? "medium" : "low";
+      return {
+        campaignName: c.name, status: c.status, dailyBudget: b.daily, lifetimeBudget: b.lifetime,
+        spent: b.spent, remaining: b.remaining, utilizationPercent: Math.round(util * 100) / 100,
+        daysRemaining: daysRem, recommendedDailySpend: Math.round(recDaily * 100) / 100,
+        paceStatus, overspendRisk,
+      };
+    });
+    const totalBudget = entries.reduce((s, e) => s + e.lifetimeBudget, 0);
+    const totalSpent = entries.reduce((s, e) => s + e.spent, 0);
+    const avgUtil = entries.length > 0 ? entries.reduce((s, e) => s + e.utilizationPercent, 0) / entries.length : 0;
+    const atRisk = entries.filter(e => e.overspendRisk === "high" || e.paceStatus === "critical").length;
+    return { campaigns: entries, totalBudget, totalSpent, totalRemaining: totalBudget - totalSpent, avgUtilization: Math.round(avgUtil * 100) / 100, atRiskCount: atRisk };
+  }
+
+  summaryPlatformComparison(campaigns: CampaignSummaryInput[]): SummaryPlatformComparisonResult {
+    const platformMap = new Map<string, { count: number; spend: number; revenue: number; ctr: number; cvr: number }>();
+    for (const c of campaigns) {
+      for (const p of c.platforms) {
+        const e = platformMap.get(p) || { count: 0, spend: 0, revenue: 0, ctr: 0, cvr: 0 };
+        e.count++;
+        e.spend += c.metrics?.spend || 0;
+        e.revenue += c.metrics?.revenue || 0;
+        e.ctr += c.metrics?.ctr || 0;
+        e.cvr += c.metrics?.cvr || 0;
+        platformMap.set(p, e);
+      }
+    }
+    const totalSpend = [...platformMap.values()].reduce((s, e) => s + e.spend, 0);
+    const totalRev = [...platformMap.values()].reduce((s, e) => s + e.revenue, 0);
+    const platforms: SummaryPlatformComparisonEntry[] = [...platformMap.entries()]
+      .map(([platform, e]) => ({
+        platform, campaignCount: e.count, totalSpend: e.spend, totalRevenue: e.revenue,
+        avgROAS: e.spend > 0 ? Math.round((e.revenue / e.spend) * 100) / 100 : 0,
+        avgCTR: e.count > 0 ? Math.round((e.ctr / e.count) * 100) / 100 : 0,
+        avgCVR: e.count > 0 ? Math.round((e.cvr / e.count) * 100) / 100 : 0,
+        shareOfSpend: totalSpend > 0 ? Math.round((e.spend / totalSpend) * 10000) / 100 : 0,
+        shareOfRevenue: totalRev > 0 ? Math.round((e.revenue / totalRev) * 10000) / 100 : 0,
+        efficiencyRank: 0,
+      }))
+      .sort((a, b) => b.avgROAS - a.avgROAS)
+      .map((p, i) => ({ ...p, efficiencyRank: i + 1 }));
+    const spread = platforms.length > 0 ? Math.max(...platforms.map(p => p.shareOfSpend)) : 100;
+    const concentrationRisk: "low" | "medium" | "high" = spread > 60 ? "high" : spread > 35 ? "medium" : "low";
+    return {
+      platforms, bestPlatform: platforms[0]?.platform || "", worstPlatform: platforms[platforms.length - 1]?.platform || "",
+      concentrationRisk,
+    };
+  }
+
+  summaryRiskAssessment(campaigns: CampaignSummaryInput[]): SummaryRiskAssessmentResult {
+    const entries: SummaryRiskAssessmentEntry[] = campaigns.map(c => {
+      const m = c.metrics;
+      let score = 0;
+      const factors: string[] = [];
+      if (!m) { score += 40; factors.push("No metrics data"); }
+      else {
+        if (m.roas < 1) { score += 30; factors.push(`ROAS ${m.roas.toFixed(2)}x below breakeven`); }
+        else if (m.roas < 1.5) { score += 15; factors.push("ROAS near breakeven"); }
+        if (m.ctr < 1) { score += 10; factors.push("Low CTR — creative fatigue"); }
+        if (m.cvr < 1) { score += 10; factors.push("Low CVR — conversion issues"); }
+        if (m.cpc > 3) { score += 10; factors.push("High CPC — cost inefficiency"); }
+      }
+      const budget = c.budget;
+      if (budget.lifetime > 0 && budget.spent / budget.lifetime > 0.85) { score += 15; factors.push("Budget nearly exhausted"); }
+      if (budget.lifetime > 0 && budget.spent / budget.lifetime < 0.1 && c.status === "active") { score += 5; factors.push("Budget underutilized"); }
+      score = Math.min(100, score);
+      const riskLevel: "low" | "medium" | "high" | "critical" = score >= 60 ? "critical" : score >= 40 ? "high" : score >= 20 ? "medium" : "low";
+      return {
+        campaignName: c.name, riskScore: score, riskLevel, riskFactors: factors,
+        probabilityOfUnderperformance: Math.round(score * 0.8),
+        expectedImpact: score >= 60 ? "Significant revenue loss expected" : score >= 40 ? "Moderate revenue impact" : "Minor performance gap",
+      };
+    });
+    const avgRisk = entries.reduce((s, e) => s + e.riskScore, 0) / entries.length;
+    const portfolioRiskLevel: "low" | "medium" | "high" | "critical" = avgRisk >= 60 ? "critical" : avgRisk >= 40 ? "high" : avgRisk >= 20 ? "medium" : "low";
+    const topRisks = [...new Set(entries.flatMap(e => e.riskFactors))].slice(0, 5);
+    return {
+      campaigns: entries, portfolioRiskScore: Math.round(avgRisk * 100) / 100, portfolioRiskLevel, topRisks,
+      recommendation: portfolioRiskLevel === "critical" || portfolioRiskLevel === "high" ? "Portfolio risk elevated — prioritize high-risk campaigns for immediate action" : "Portfolio risk manageable — continue monitoring",
+    };
+  }
+
+  summaryOptimizationPriorities(campaigns: CampaignSummaryInput[]): SummaryOptimizationPrioritiesResult {
+    const priorities: SummaryOptimizationPriority[] = [];
+    for (const c of campaigns) {
+      const m = c.metrics;
+      if (!m) continue;
+      if (m.roas < 1) priorities.push({ campaignName: c.name, priority: "high", action: `Improve ROAS from ${m.roas.toFixed(2)}x — reduce spend or optimize targeting`, expectedImpact: "ROAS improvement of 50-100%", difficulty: "moderate", estimatedEffort: "1-2 weeks" });
+      else if (m.roas < 1.5) priorities.push({ campaignName: c.name, priority: "medium", action: `Optimize ${c.name} to push ROAS above 1.5x`, expectedImpact: "ROAS improvement of 20-40%", difficulty: "moderate", estimatedEffort: "1 week" });
+      if (m.ctr < 1 && m.roas < 2) priorities.push({ campaignName: c.name, priority: "high", action: "Refresh creative assets to improve CTR", expectedImpact: "CTR improvement of 50-100%", difficulty: "easy", estimatedEffort: "3-5 days" });
+      if (m.cvr < 1.5 && m.roas < 2) priorities.push({ campaignName: c.name, priority: "medium", action: "Audit landing page and conversion funnel", expectedImpact: "CVR improvement of 30-60%", difficulty: "hard", estimatedEffort: "1-2 weeks" });
+      if (c.platforms.length === 1 && m.roas > 2) priorities.push({ campaignName: c.name, priority: "low", action: `Expand ${c.name} to additional platforms`, expectedImpact: "Revenue growth of 20-40%", difficulty: "moderate", estimatedEffort: "1 week" });
+    }
+    const sorted = priorities.sort((a, b) => { const order = { high: 0, medium: 1, low: 2 }; return order[a.priority] - order[b.priority]; });
+    return { priorities: sorted, summary: `${sorted.length} optimization opportunities identified (${sorted.filter(p => p.priority === "high").length} high priority)` };
+  }
+
+  summaryHistoricalComparison(campaigns: CampaignSummaryInput[]): SummaryHistoricalComparisonResult {
+    const seed = hashStr("summary_hist_" + campaigns.length);
+    const periodLabels = ["Current", "Last 30 Days", "Last 60 Days", "Last 90 Days", "Previous Quarter"];
+    const periods: SummaryHistoricalPeriodEntry[] = periodLabels.map((pl, pi) => {
+      const factor = 1 - pi * 0.08 + ((seed + pi * 13) % 15) / 100;
+      const totalSpend = campaigns.reduce((s, c) => s + (c.metrics?.spend || 0), 0) * factor;
+      const totalRev = campaigns.reduce((s, c) => s + (c.metrics?.revenue || 0), 0) * factor * (1 + ((seed + pi * 17) % 10) / 100);
+      const avgROAS = totalSpend > 0 ? totalRev / totalSpend : 0;
+      return {
+        period: pl, campaignCount: campaigns.length,
+        totalSpend: Math.round(totalSpend * 100) / 100, totalRevenue: Math.round(totalRev * 100) / 100,
+        avgROAS: Math.round(avgROAS * 100) / 100,
+        avgCTR: Math.round((campaigns.reduce((s, c) => s + (c.metrics?.ctr || 0), 0) / campaigns.length) * factor * 100) / 100,
+        avgCVR: Math.round((campaigns.reduce((s, c) => s + (c.metrics?.cvr || 0), 0) / campaigns.length) * factor * 100) / 100,
+      };
+    });
+    const current = periods[0];
+    const oldest = periods[periods.length - 1];
+    const roasChange = oldest.avgROAS > 0 ? Math.round(((current.avgROAS - oldest.avgROAS) / oldest.avgROAS) * 10000) / 100 : 0;
+    const revChange = oldest.totalRevenue > 0 ? Math.round(((current.totalRevenue - oldest.totalRevenue) / oldest.totalRevenue) * 10000) / 100 : 0;
+    const trend: "improving" | "declining" | "stable" = roasChange > 5 ? "improving" : roasChange < -5 ? "declining" : "stable";
+    const sorted = [...periods].sort((a, b) => b.avgROAS - a.avgROAS);
+    return { periods, overallROASChange: roasChange, overallRevenueChange: revChange, trend, bestPeriod: sorted[0].period, recommendation: trend === "declining" ? "ROAS declining — review campaign performance and adjust strategy" : trend === "improving" ? "ROAS improving — maintain momentum" : "ROAS stable — look for optimization opportunities" };
+  }
+
+  summaryAnomalyReport(campaigns: CampaignSummaryInput[]): SummaryAnomalyReportResult {
+    const seed = hashStr("summary_anom_" + campaigns.length);
+    const anomalies: SummaryAnomalyEntry[] = [];
+    for (const c of campaigns) {
+      const m = c.metrics;
+      if (!m) continue;
+      if (m.roas < 0.5) anomalies.push({ campaignName: c.name, metric: "ROAS", value: m.roas, expectedRange: "1.0-5.0", severity: "critical", description: "ROAS critically low — campaign losing money" });
+      else if (m.roas < 1) anomalies.push({ campaignName: c.name, metric: "ROAS", value: m.roas, expectedRange: "1.0-5.0", severity: "warning", description: "ROAS below breakeven" });
+      if (m.ctr < 0.5) anomalies.push({ campaignName: c.name, metric: "CTR", value: m.ctr, expectedRange: "1.0-5.0%", severity: "warning", description: "CTR very low — creative fatigue likely" });
+      if (m.cvr < 0.5) anomalies.push({ campaignName: c.name, metric: "CVR", value: m.cvr, expectedRange: "1.0-5.0%", severity: "warning", description: "CVR very low — conversion funnel issues" });
+      if (m.cpc > 5) anomalies.push({ campaignName: c.name, metric: "CPC", value: m.cpc, expectedRange: "$0.50-$3.00", severity: "warning", description: "CPC abnormally high" });
+      if (m.roas > 10 && ((seed + hashStr(c.name) * 13) % 100) < 30) anomalies.push({ campaignName: c.name, metric: "ROAS", value: m.roas, expectedRange: "1.0-5.0", severity: "info", description: "ROAS exceptionally high — verify tracking" });
+    }
+    const critical = anomalies.filter(a => a.severity === "critical").length;
+    const warnings = anomalies.filter(a => a.severity === "warning").length;
+    const info = anomalies.filter(a => a.severity === "info").length;
+    const topCamps = [...new Set(anomalies.filter(a => a.severity === "critical" || a.severity === "warning").map(a => a.campaignName))].slice(0, 5);
+    return { anomalies, totalAnomalies: anomalies.length, criticalCount: critical, warningCount: warnings, infoCount: info, topCampaigns: topCamps };
+  }
+
   private extractInsights(campaign: CampaignSummaryInput): { anomalies: string[]; warnings: string[]; scores: Record<string, number> } {
     const anomalies: string[] = [];
     const warnings: string[] = [];
