@@ -2696,6 +2696,12 @@ export const api = {
     compare: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/compare`),
     channels: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/channels`),
     insights: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/insights`),
+    customModel: (campaignId: string, config: any) => request.post(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/custom`, { config }),
+    channelContribution: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/channel-contribution`),
+    roiDistribution: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/roi-distribution`),
+    timeToConvert: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/time-to-convert`),
+    crossCampaign: (campaignIds: string[]) => request.post("/campaign-attribution-modeling/attribution/cross-campaign", { campaignIds }),
+    whatIf: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/what-if`),
   },
 
   campaignAIBiddingAgent: {

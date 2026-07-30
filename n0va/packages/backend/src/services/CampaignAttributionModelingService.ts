@@ -61,6 +61,51 @@ interface AttributionInsight {
   recommendedAction?: string;
 }
 
+interface CustomAttributionConfig {
+  weights: { position: string; weight: number }[];
+  decayFactor?: number;
+}
+
+interface ChannelContribution {
+  channel: string;
+  directConversions: number;
+  assistedConversions: number;
+  assistedValue: number;
+  incrementalLift: number;
+  synergyScore: number;
+  role: "primary" | "assister" | "both" | "minor";
+}
+
+interface ROIDistribution {
+  model: string;
+  channels: { channel: string; conversions: number; spend: number; revenue: number; roas: number; share: number }[];
+  totalROAS: number;
+  concentration: number;
+}
+
+interface TimeToConvertAnalysis {
+  channel: string;
+  avgHoursToConvert: number;
+  medianHoursToConvert: number;
+  stdHours: number;
+  touchpointCount: number;
+  conversionWindow: { min: number; max: number };
+  efficiency: number;
+}
+
+interface CrossCampaignAttribution {
+  campaigns: { campaignId: string; channels: { channel: string; contribution: number; overlapWithOtherCampaigns: number }[] }[];
+  overlappingChannels: { channel: string; campaigns: string[]; totalContribution: number; doubleCounted: boolean }[];
+  deduplicatedTotal: number;
+  rawTotal: number;
+}
+
+interface AttributionWhatIf {
+  campaignId: string;
+  scenarios: { name: string; reallocation: { channel: string; newShare: number }[]; projectedConversions: number; projectedRevenue: number; projectedROAS: number; changeFromCurrent: number; risk: "low" | "medium" | "high" }[];
+  bestScenario: string;
+}
+
 export class CampaignAttributionModelingService {
   private getSeed(campaignId: string, tenantId: string): string {
     return `attr_${campaignId}_${tenantId}`;
@@ -410,6 +455,195 @@ export class CampaignAttributionModelingService {
       });
     }
     return insights;
+  }
+
+  attributionCustomModel(campaignId: string, tenantId: string, config: CustomAttributionConfig): AttributionResult {
+    const touchpoints = this.generateTouchpoints(campaignId, tenantId);
+    const conversions = touchpoints.filter(tp => tp.weight !== undefined);
+    const channels = [...new Set(touchpoints.map(tp => tp.channel))];
+    const totalConversions = conversions.length;
+    const totalValue = conversions.reduce((s, tp) => s + (tp.weight || 0), 0);
+    const channelAlloc: Record<string, number> = {};
+    channels.forEach(ch => { channelAlloc[ch] = 0; });
+    const decayFactor = config.decayFactor || 0.5;
+    const weightMap: Record<string, number> = {};
+    config.weights.forEach(w => { weightMap[w.position] = w.weight; });
+
+    for (const conv of conversions) {
+      const convTime = new Date(conv.timestamp).getTime();
+      const pathTps = touchpoints.filter(tp => tp !== conv && new Date(tp.timestamp).getTime() <= convTime && tp.campaignId === campaignId);
+      if (pathTps.length === 0) { channelAlloc[conv.channel] = (channelAlloc[conv.channel] || 0) + (conv.weight || 1); continue; }
+      const sorted = [...pathTps, conv].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      const totalWeight = sorted.reduce((s, tp, idx) => {
+        const pos = idx === 0 ? "first" : idx === sorted.length - 1 ? "last" : "middle";
+        const baseWeight = weightMap[pos] || 1;
+        const decay = Math.exp(-(sorted.length - 1 - idx) * decayFactor);
+        return s + baseWeight * decay;
+      }, 0);
+      sorted.forEach((tp, idx) => {
+        const pos = idx === 0 ? "first" : idx === sorted.length - 1 ? "last" : "middle";
+        const baseWeight = weightMap[pos] || 1;
+        const decay = Math.exp(-(sorted.length - 1 - idx) * decayFactor);
+        const alloc = totalWeight > 0 ? (conv.weight || 1) * baseWeight * decay / totalWeight : 0;
+        channelAlloc[tp.channel] = (channelAlloc[tp.channel] || 0) + alloc;
+      });
+    }
+
+    const maxConv = Math.max(...Object.values(channelAlloc), 1);
+    const allocations = channels.map(ch => ({
+      channel: ch,
+      conversions: Math.round(channelAlloc[ch] * 100) / 100,
+      share: Math.round((channelAlloc[ch] / maxConv) * 10000) / 100,
+      value: totalConversions > 0 ? Math.round(channelAlloc[ch] / totalConversions * totalValue * 100) / 100 : 0,
+    })).sort((a, b) => b.conversions - a.conversions);
+    return { campaignId, model: "custom", allocations, totalConversions, totalValue: Math.round(totalValue * 100) / 100 };
+  }
+
+  attributionChannelContribution(campaignId: string, tenantId: string): ChannelContribution[] {
+    const touchpoints = this.generateTouchpoints(campaignId, tenantId);
+    const conversions = touchpoints.filter(tp => tp.weight !== undefined);
+    const channels = [...new Set(touchpoints.map(tp => tp.channel))];
+    const seed = hashStr(campaignId + tenantId);
+    const rng = seededRandom(seed + "_cc");
+
+    const ft = this.runAttribution(campaignId, tenantId, "first_touch");
+    const lt = this.runAttribution(campaignId, tenantId, "last_touch");
+    const lin = this.runAttribution(campaignId, tenantId, "linear");
+
+    return channels.map(ch => {
+      const ftVal = ft.allocations.find(a => a.channel === ch)?.conversions || 0;
+      const ltVal = lt.allocations.find(a => a.channel === ch)?.conversions || 0;
+      const linVal = lin.allocations.find(a => a.channel === ch)?.conversions || 0;
+      const directConversions = Math.min(ftVal, ltVal);
+      const assistedConversions = Math.max(0, linVal - directConversions);
+      const assistedValue = Math.round(assistedConversions * (rng() * 20 + 10) * 100) / 100;
+      const incrementalLift = Math.round((linVal / Math.max(ftVal || ltVal || 1, 1) - 1) * 10000) / 100;
+      const synergyScore = Math.round(rng() * 100);
+      const role: "primary" | "assister" | "both" | "minor" = directConversions > assistedConversions * 1.5 ? "primary" : assistedConversions > directConversions * 1.5 ? "assister" : directConversions > 0 ? "both" : "minor";
+      return { channel: ch, directConversions: Math.round(directConversions * 100) / 100, assistedConversions: Math.round(assistedConversions * 100) / 100, assistedValue, incrementalLift, synergyScore, role };
+    }).sort((a, b) => b.directConversions + b.assistedConversions - (a.directConversions + a.assistedConversions));
+  }
+
+  attributionROIDistribution(campaignId: string, tenantId: string): ROIDistribution[] {
+    const models = ["first_touch", "last_touch", "linear", "time_decay", "position_based"] as const;
+    const seed = hashStr(campaignId + tenantId);
+    const rng = seededRandom(seed + "_roi");
+    return models.map(model => {
+      const result = this.runAttribution(campaignId, tenantId, model);
+      const totalSpend = 5000 + rng() * 5000;
+      const totalRevenue = result.totalValue || result.totalConversions * (rng() * 30 + 15);
+      const channels = result.allocations.map(a => {
+        const share = a.share / 100;
+        const chSpend = totalSpend * share;
+        const chRevenue = totalRevenue * share;
+        return {
+          channel: a.channel,
+          conversions: Math.round(a.conversions * 100) / 100,
+          spend: Math.round(chSpend * 100) / 100,
+          revenue: Math.round(chRevenue * 100) / 100,
+          roas: chSpend > 0 ? Math.round(chRevenue / chSpend * 100) / 100 : 0,
+          share: a.share,
+        };
+      });
+      const top3Share = channels.slice(0, 3).reduce((s, c) => s + c.share, 0);
+      return {
+        model,
+        channels,
+        totalROAS: totalSpend > 0 ? Math.round(totalRevenue / totalSpend * 100) / 100 : 0,
+        concentration: Math.round(top3Share * 10) / 10,
+      };
+    });
+  }
+
+  attributionTimeToConvert(campaignId: string, tenantId: string): TimeToConvertAnalysis[] {
+    const touchpoints = this.generateTouchpoints(campaignId, tenantId);
+    const conversions = touchpoints.filter(tp => tp.weight !== undefined);
+    const channels = [...new Set(touchpoints.map(tp => tp.channel))];
+    const seed = hashStr(campaignId + tenantId);
+    const rng = seededRandom(seed + "_ttc");
+
+    return channels.map(ch => {
+      const convs = conversions.filter(c => c.channel === ch);
+      const convTimes = convs.map(c => {
+        const convTime = new Date(c.timestamp).getTime();
+        const pathTps = touchpoints.filter(tp => tp !== c && new Date(tp.timestamp).getTime() <= convTime && tp.campaignId === campaignId);
+        const firstTp = pathTps.length > 0 ? new Date(pathTps[0].timestamp).getTime() : convTime;
+        return (convTime - firstTp) / 3600000;
+      });
+      const avg = convTimes.length > 0 ? convTimes.reduce((s, v) => s + v, 0) / convTimes.length : rng() * 72 + 1;
+      const sorted = [...convTimes].sort((a, b) => a - b);
+      const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : avg;
+      const variance = convTimes.length > 0 ? convTimes.reduce((s, v) => s + (v - avg) ** 2, 0) / convTimes.length : rng() * 100;
+      return {
+        channel: ch, avgHoursToConvert: Math.round(avg * 100) / 100,
+        medianHoursToConvert: Math.round(median * 100) / 100,
+        stdHours: Math.round(Math.sqrt(variance) * 100) / 100,
+        touchpointCount: convs.length || 1,
+        conversionWindow: { min: Math.round(Math.max(0, avg - Math.sqrt(variance)) * 100) / 100, max: Math.round((avg + Math.sqrt(variance)) * 100) / 100 },
+        efficiency: convs.length > 0 ? Math.round((1 / Math.max(avg, 1)) * 10000) / 100 : 0,
+      };
+    });
+  }
+
+  attributionCrossCampaign(campaignIds: string[], tenantId: string): CrossCampaignAttribution {
+    const allChannels = new Map<string, { campaigns: string[]; contributions: number[] }>();
+    let rawTotal = 0;
+    const campaignResults: CrossCampaignAttribution["campaigns"] = campaignIds.map(cid => {
+      const result = this.runAttribution(cid, tenantId, "linear");
+      rawTotal += result.totalConversions;
+      const channels = result.allocations.map(a => {
+        const existing = allChannels.get(a.channel) || { campaigns: [], contributions: [] };
+        if (!existing.campaigns.includes(cid)) existing.campaigns.push(cid);
+        existing.contributions.push(a.conversions);
+        allChannels.set(a.channel, existing);
+        return { channel: a.channel, contribution: a.conversions, overlapWithOtherCampaigns: 0 };
+      });
+      return { campaignId: cid, channels };
+    });
+    const overlappingChannels: CrossCampaignAttribution["overlappingChannels"] = [];
+    let deduplicatedTotal = rawTotal;
+    for (const [ch, data] of allChannels) {
+      if (data.campaigns.length > 1) {
+        const overlap = data.contributions.reduce((s, v) => s + v, 0) * 0.3;
+        deduplicatedTotal -= overlap;
+        overlappingChannels.push({ channel: ch, campaigns: [...data.campaigns], totalContribution: Math.round(data.contributions.reduce((s, v) => s + v, 0) * 100) / 100, doubleCounted: true });
+        for (const c of campaignResults) {
+          const chEntry = c.channels.find(c2 => c2.channel === ch);
+          if (chEntry) chEntry.overlapWithOtherCampaigns = Math.round(overlap / data.campaigns.length * 100) / 100;
+        }
+      }
+    }
+    return { campaigns: campaignResults, overlappingChannels, deduplicatedTotal: Math.round(deduplicatedTotal * 100) / 100, rawTotal: Math.round(rawTotal * 100) / 100 };
+  }
+
+  attributionWhatIf(campaignId: string, tenantId: string): AttributionWhatIf {
+    const current = this.runAttribution(campaignId, tenantId, "linear");
+    const channels = current.allocations.map(a => a.channel);
+    const seed = hashStr(campaignId + tenantId);
+    const rng = seededRandom(seed + "_wi");
+    const scenarios: AttributionWhatIf["scenarios"] = [
+      { name: "First-Touch Heavy", reallocation: channels.map(ch => ({ channel: ch, newShare: ch === channels[0] ? 0.4 : 0.6 / (channels.length - 1) })) },
+      { name: "Last-Touch Heavy", reallocation: channels.map(ch => ({ channel: ch, newShare: ch === channels[channels.length - 1] ? 0.4 : 0.6 / (channels.length - 1) })) },
+      { name: "Even Distribution", reallocation: channels.map(ch => ({ channel: ch, newShare: 1 / channels.length })) },
+      { name: "Top-Performer Focus", reallocation: channels.map(ch => ({ channel: ch, newShare: current.allocations.find(a => a.channel === ch)?.share || 0 })).map(a => { a.newShare = a.newShare > 20 ? a.newShare + 5 : Math.max(5, a.newShare - 3); return a; }) },
+    ];
+    const evaluated = scenarios.map(s => {
+      const totalShare = s.reallocation.reduce((sum, r) => sum + r.newShare, 0);
+      const normalized = s.reallocation.map(r => ({ ...r, newShare: r.newShare / totalShare }));
+      let projectedConversions = 0;
+      for (const r of normalized) {
+        const currentConv = current.allocations.find(a => a.channel === r.channel)?.conversions || 0;
+        projectedConversions += currentConv * (r.newShare / (current.allocations.find(a => a.channel === r.channel)?.share || 1) * 100) * (0.8 + rng() * 0.4);
+      }
+      projectedConversions = Math.round(projectedConversions * 100) / 100;
+      const projectedRevenue = Math.round(projectedConversions * (current.totalValue / Math.max(current.totalConversions, 1)) * 100) / 100;
+      const projectedROAS = current.totalValue > 0 ? Math.round((projectedRevenue / current.totalValue) * current.allocations.reduce((s, a) => s + a.share, 0) * 10) / 10 : 0;
+      const changeFromCurrent = current.totalConversions > 0 ? Math.round((projectedConversions - current.totalConversions) / current.totalConversions * 10000) / 100 : 0;
+      const risk: "low" | "medium" | "high" = Math.abs(changeFromCurrent) > 20 ? "high" : Math.abs(changeFromCurrent) > 10 ? "medium" : "low";
+      return { name: s.name, reallocation: normalized, projectedConversions, projectedRevenue, projectedROAS, changeFromCurrent, risk };
+    });
+    const best = evaluated.reduce((a, b) => a.projectedROAS > b.projectedROAS ? a : b);
+    return { campaignId, scenarios: evaluated, bestScenario: best.name };
   }
 }
 

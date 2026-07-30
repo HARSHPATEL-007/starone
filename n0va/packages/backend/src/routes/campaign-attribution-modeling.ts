@@ -39,4 +39,38 @@ router.get("/campaign/:campaignId/attribution/insights", asyncHandler(async (req
   sendSuccess(res, result);
 }));
 
+router.post("/campaign/:campaignId/attribution/custom", asyncHandler(async (req, res) => {
+  const { config } = req.body;
+  if (!config || !config.weights) return res.status(400).json({ error: "config with weights required" });
+  const result = campaignAttributionModeling.attributionCustomModel(req.params.campaignId, req.user!.tenantId, config);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/channel-contribution", asyncHandler(async (req, res) => {
+  const result = campaignAttributionModeling.attributionChannelContribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/roi-distribution", asyncHandler(async (req, res) => {
+  const result = campaignAttributionModeling.attributionROIDistribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/time-to-convert", asyncHandler(async (req, res) => {
+  const result = campaignAttributionModeling.attributionTimeToConvert(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/attribution/cross-campaign", asyncHandler(async (req, res) => {
+  const { campaignIds } = req.body;
+  if (!campaignIds || !Array.isArray(campaignIds)) return res.status(400).json({ error: "campaignIds array required" });
+  const result = campaignAttributionModeling.attributionCrossCampaign(campaignIds, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution/what-if", asyncHandler(async (req, res) => {
+  const result = campaignAttributionModeling.attributionWhatIf(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

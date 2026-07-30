@@ -2538,6 +2538,30 @@ export class AdsMarketingModuleService {
     return campaignAttributionModeling.attributionInsights(campaignId, tenantId);
   }
 
+  attributionCustomModel(campaignId: string, tenantId: string, config: any) {
+    return campaignAttributionModeling.attributionCustomModel(campaignId, tenantId, config);
+  }
+
+  attributionChannelContribution(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.attributionChannelContribution(campaignId, tenantId);
+  }
+
+  attributionROIDistribution(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.attributionROIDistribution(campaignId, tenantId);
+  }
+
+  attributionTimeToConvert(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.attributionTimeToConvert(campaignId, tenantId);
+  }
+
+  attributionCrossCampaign(campaignIds: string[], tenantId: string) {
+    return campaignAttributionModeling.attributionCrossCampaign(campaignIds, tenantId);
+  }
+
+  attributionWhatIf(campaignId: string, tenantId: string) {
+    return campaignAttributionModeling.attributionWhatIf(campaignId, tenantId);
+  }
+
   biddingDashboard(campaignId: string, tenantId: string) {
     return campaignAIBiddingAgent.getBiddingDashboard(campaignId, tenantId);
   }
