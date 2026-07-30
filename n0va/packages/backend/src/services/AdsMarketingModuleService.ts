@@ -655,6 +655,18 @@ export class AdsMarketingModuleService {
     return campaignHealthService.healthDriverAttribution(campaignId, tenantId);
   }
 
+  async healthStatusQuickView(tenantId: string) {
+    return campaignHealthService.healthStatusQuickView(tenantId);
+  }
+
+  async healthAlertDigest(tenantId: string) {
+    return campaignHealthService.healthAlertDigest(tenantId);
+  }
+
+  async healthBatchResolveIssues(tenantId: string, campaignIds: string[], issueTypes: string[]) {
+    return campaignHealthService.healthBatchResolveIssues(tenantId, campaignIds, issueTypes);
+  }
+
   optimizationCycle(campaignId: string, tenantId: string): OptimizationCycleResult {
     const campaign = DataStore["mem"]().findOne("campaigns", (c: any) => c._id === campaignId && c.tenantId === tenantId);
     const campaignName = campaign?.name || campaignId;
@@ -1468,6 +1480,17 @@ export class AdsMarketingModuleService {
     const campaign = portfolio.analyses.find((a: any) => a.campaignId === campaignId);
     const config = { campaignId, budget: campaign?.performance.spend || 1000, expectedROAS: campaign?.performance.roas || 2, roasVariance: 0.3, expectedConversions: campaign?.performance.conversions || 50, convVariance: 0.2 };
     return campaignBudgetSimulator.budgetROICurve(config, maxMultiplier, steps);
+  }
+
+  budgetQuickSimulation(tenantId: string, campaignId: string, percentageChange: number, runs?: number): any {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaign = portfolio.analyses.find((a: any) => a.campaignId === campaignId);
+    const config = { campaignId, budget: campaign?.performance.spend || 1000, expectedROAS: campaign?.performance.roas || 2, roasVariance: 0.3, expectedConversions: campaign?.performance.conversions || 50, convVariance: 0.2 };
+    return campaignBudgetSimulator.budgetQuickSimulation(config, percentageChange, runs);
+  }
+
+  budgetPortfolioOverview(tenantId: string): any {
+    return campaignBudgetSimulator.budgetPortfolioOverview(tenantId);
   }
 
   adComplianceAnalysis(adCopy: string): AdComplianceResult {

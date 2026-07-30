@@ -43,6 +43,34 @@ router.get(
 );
 
 router.get(
+  "/health/status-quick-view",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const result = await campaignHealthService.healthStatusQuickView(tenantId);
+    sendSuccess(res, result);
+  })
+);
+
+router.get(
+  "/health/alert-digest",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const result = await campaignHealthService.healthAlertDigest(tenantId);
+    sendSuccess(res, result);
+  })
+);
+
+router.post(
+  "/health/batch-resolve-issues",
+  asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.user!.tenantId;
+    const { campaignIds, issueTypes } = req.body;
+    const result = await campaignHealthService.healthBatchResolveIssues(tenantId, campaignIds || [], issueTypes || []);
+    sendSuccess(res, result);
+  })
+);
+
+router.get(
   "/lead-scoring/models/default",
   asyncHandler(async (_req: Request, res: Response) => {
     const model = leadScoringService.generateSampleModel();

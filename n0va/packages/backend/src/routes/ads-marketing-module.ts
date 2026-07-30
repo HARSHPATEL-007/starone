@@ -182,6 +182,17 @@ router.get("/campaign/:campaignId/budget-roi-curve", asyncHandler(async (req, re
   sendSuccess(res, result);
 }));
 
+router.post("/budget-quick-simulation", asyncHandler(async (req, res) => {
+  const { campaignId, percentageChange, runs } = req.body;
+  const result = adsMarketingModule.budgetQuickSimulation(req.user!.tenantId, campaignId, percentageChange, runs);
+  sendSuccess(res, result);
+}));
+
+router.get("/budget-portfolio-overview", asyncHandler(async (req, res) => {
+  const result = adsMarketingModule.budgetPortfolioOverview(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 router.post("/ad-compliance", asyncHandler(async (req, res) => {
   const adCopy = req.body.adCopy || "";
   const result = adsMarketingModule.adComplianceAnalysis(adCopy);

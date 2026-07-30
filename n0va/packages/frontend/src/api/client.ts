@@ -288,6 +288,10 @@ export const api = {
       all: () => request<any[]>("/insights/health"),
       get: (campaignId: string) => request<any>(`/insights/health/${campaignId}`),
       sample: () => request<any[]>("/insights/health/sample"),
+      statusQuickView: () => request<any>("/insights/health/status-quick-view"),
+      alertDigest: () => request<any>("/insights/health/alert-digest"),
+      batchResolveIssues: (campaignIds: string[], issueTypes: string[]) =>
+        request<any>("/insights/health/batch-resolve-issues", { method: "POST", body: JSON.stringify({ campaignIds, issueTypes }) }),
     },
     leadScoring: {
       defaultModel: () => request<any>("/insights/lead-scoring/models/default"),
@@ -2115,6 +2119,9 @@ export const api = {
     budgetWhatIf: (campaignId: string, whatIfBudget: number) =>
       request<any>(`/ads-marketing-module/campaign/${campaignId}/budget-what-if`, { method: "POST", body: JSON.stringify({ whatIfBudget }) }),
     budgetROICurve: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/budget-roi-curve`),
+    budgetQuickSimulation: (campaignId: string, percentageChange: number, runs?: number) =>
+      request<any>("/ads-marketing-module/budget-quick-simulation", { method: "POST", body: JSON.stringify({ campaignId, percentageChange, runs }) }),
+    budgetPortfolioOverview: () => request<any>("/ads-marketing-module/budget-portfolio-overview"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

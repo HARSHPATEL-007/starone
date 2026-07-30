@@ -339,6 +339,32 @@ export class CampaignBudgetSimulatorService {
     const maxProfit = curve.reduce((a, b) => a.profit > b.profit ? a : b);
     return { curve, optimalBudget: optimal.budget, saturationPoint: satPoint, diminishingReturnsThreshold: diminishing, maxProfitBudget: maxProfit.budget };
   }
+
+  budgetQuickSimulation(config: SimulationConfig, percentageChange: number, runs: number = 3000): { direction: string; changeAmount: number; original: SimulationResult; simulated: SimulationResult } {
+    const original = this.simulateCampaign(config, runs);
+    const modifiedConfig = { ...config, budget: Math.round(config.budget * (1 + percentageChange / 100) * 100) / 100 };
+    const simulated = this.simulateCampaign(modifiedConfig, runs);
+    const direction = percentageChange > 0 ? "increase" : percentageChange < 0 ? "decrease" : "unchanged";
+    const changeAmount = simulated.stats.meanRevenue - original.stats.meanRevenue;
+    return { direction, changeAmount: Math.round(changeAmount * 100) / 100, original, simulated };
+  }
+
+  budgetPortfolioOverview(tenantId: string): { totalCampaigns: number; simulationsRun: number; topRecommendation: string; budgetDistribution: { underfunded: number; optimal: number; overfunded: number }; summary: string } {
+    const campaigns = DataStore.mem().find("campaigns", (c: any) => c.tenantId === tenantId);
+    const history = this.getHistory(tenantId);
+    const lastSim = history.length > 0 ? history[history.length - 1] : null;
+    const underfunded = lastSim ? lastSim.outcomes.filter((o: any) => o.currentSpend < o.recommendedBudget * 0.8).length : 0;
+    const overfunded = lastSim ? lastSim.outcomes.filter((o: any) => o.currentSpend > o.recommendedBudget * 1.2).length : 0;
+    const optimal = lastSim ? lastSim.outcomes.length - underfunded - overfunded : 0;
+    const topRec = lastSim ? `Increase budget on campaign achieving ${(lastSim.outcomes.reduce((max: any, o: any) => o.projectedROAS > max.projectedROAS ? o : max, lastSim.outcomes[0])).campaignId} for highest ROAS` : "Run a portfolio simulation first";
+    return {
+      totalCampaigns: campaigns.length,
+      simulationsRun: history.length,
+      topRecommendation: topRec,
+      budgetDistribution: { underfunded, optimal, overfunded },
+      summary: lastSim ? `Portfolio shows ${underfunded} underfunded, ${optimal} optimal, ${overfunded} overfunded campaigns` : "No simulation data available",
+    };
+  }
 }
 
 export const campaignBudgetSimulator = new CampaignBudgetSimulatorService();

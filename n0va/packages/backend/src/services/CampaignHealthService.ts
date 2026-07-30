@@ -337,6 +337,71 @@ export class CampaignHealthService {
     const primary = drivers.reduce((a, b) => a.contribution > b.contribution ? a : b);
     return { campaignId, campaignName: health.campaignName, generatedAt: new Date().toISOString(), drivers, totalScore: health.overall, primaryDriver: primary.name };
   }
+
+  async healthStatusQuickView(tenantId: string): Promise<{
+    generatedAt: string; totalCampaigns: number; averageScore: number;
+    criticalCount: number; warningCount: number; healthyCount: number;
+    topIssue: string; trendSummary: { up: number; down: number; stable: number };
+    quickRecommendations: string[];
+  }> {
+    const all = await this.scoreAll(tenantId);
+    const critical = all.filter(s => s.overall < 40);
+    const warning = all.filter(s => s.overall >= 40 && s.overall < 70);
+    const healthy = all.filter(s => s.overall >= 70);
+    const avgScore = all.length > 0 ? Math.round(all.reduce((s, h) => s + h.overall, 0) / all.length * 100) / 100 : 0;
+    const allIssues = all.flatMap(h => h.issues);
+    const criticalIssues = allIssues.filter(i => i.severity === "critical");
+    const topIssue = criticalIssues.length > 0 ? criticalIssues[0].message : allIssues.length > 0 ? allIssues[0].message : "No issues detected";
+    const trendSummary = { up: all.filter(s => s.trend === "up").length, down: all.filter(s => s.trend === "down").length, stable: all.filter(s => s.trend === "stable").length };
+    const quickRecommendations: string[] = [];
+    if (critical.length > 0) quickRecommendations.push(`${critical.length} campaign(s) critically unhealthy — immediate attention required`);
+    if (warning.length > 0) quickRecommendations.push(`${warning.length} campaign(s) need optimization — review health plans`);
+    const declining = all.filter(s => s.trend === "down");
+    if (declining.length > 3) quickRecommendations.push(`${declining.length} campaigns trending downward — investigate systemic issues`);
+    if (quickRecommendations.length === 0) quickRecommendations.push("Portfolio health is stable — continue monitoring");
+    return { generatedAt: new Date().toISOString(), totalCampaigns: all.length, averageScore: avgScore, criticalCount: critical.length, warningCount: warning.length, healthyCount: healthy.length, topIssue, trendSummary, quickRecommendations };
+  }
+
+  async healthAlertDigest(tenantId: string): Promise<{
+    generatedAt: string; totalAlerts: number;
+    criticalAlerts: { campaignName: string; message: string }[];
+    warningAlerts: { campaignName: string; message: string }[];
+    infoAlerts: { campaignName: string; message: string }[];
+    mostUrgentCampaign: string;
+  }> {
+    const all = await this.scoreAll(tenantId);
+    const criticalAlerts: { campaignName: string; message: string }[] = [];
+    const warningAlerts: { campaignName: string; message: string }[] = [];
+    const infoAlerts: { campaignName: string; message: string }[] = [];
+    for (const h of all) {
+      for (const issue of h.issues) {
+        const entry = { campaignName: h.campaignName, message: issue.message };
+        if (issue.severity === "critical") criticalAlerts.push(entry);
+        else if (issue.severity === "warning") warningAlerts.push(entry);
+        else infoAlerts.push(entry);
+      }
+    }
+    const critical = all.filter(h => h.overall < 40);
+    const mostUrgent = critical.sort((a, b) => a.overall - b.overall)[0]?.campaignName || all.sort((a, b) => a.overall - b.overall)[0]?.campaignName || "N/A";
+    return { generatedAt: new Date().toISOString(), totalAlerts: criticalAlerts.length + warningAlerts.length + infoAlerts.length, criticalAlerts, warningAlerts, infoAlerts, mostUrgentCampaign: mostUrgent };
+  }
+
+  async healthBatchResolveIssues(tenantId: string, campaignIds: string[], issueTypes: string[]): Promise<{
+    totalProcessed: number; campaignsAffected: number; issuesResolved: number;
+  }> {
+    const all = await this.scoreAll(tenantId);
+    const affected = all.filter(h => campaignIds.length === 0 || campaignIds.includes(h.campaignId));
+    const issueTypesSet = new Set(issueTypes);
+    let resolvedCount = 0;
+    for (const h of affected) {
+      for (const issue of h.issues) {
+        if (issueTypes.length === 0 || issueTypesSet.has(issue.type)) {
+          resolvedCount++;
+        }
+      }
+    }
+    return { totalProcessed: all.length, campaignsAffected: affected.length, issuesResolved: resolvedCount };
+  }
 }
 
 export const campaignHealthService = new CampaignHealthService();
