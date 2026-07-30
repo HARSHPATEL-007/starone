@@ -66,6 +66,69 @@ interface BidStrategy {
   expectedOutcome: { cpcReduction: number; winRateIncrease: number; roasImprovement: number; efficiencyGain: number };
 }
 
+interface CompetitorAnalysis {
+  campaignId: string;
+  competitors: { competitorId: string; estimatedBid: number; shareOfVoice: number; overlapRate: number; avgPosition: number; aggressiveness: "low" | "medium" | "high" }[];
+  marketConcentration: number;
+  competitivePressure: "low" | "medium" | "high";
+  recommendedPositioning: string;
+}
+
+interface BidTrendPoint {
+  date: string;
+  channel: string;
+  bid: number;
+  winRate: number;
+  cpc: number;
+  impressionShare: number;
+}
+
+interface BidTrendAnalysis {
+  campaignId: string;
+  trends: BidTrendPoint[];
+  channelSummary: { channel: string; avgBid: number; bidVolatility: number; trend: "rising" | "declining" | "stable"; suggestedDirection: "increase" | "decrease" | "maintain" }[];
+  overallDirection: "aggressive" | "conservative" | "mixed";
+}
+
+interface BidOpportunity {
+  channel: string;
+  currentBid: number;
+  recommendedBid: number;
+  expectedWinRateImprovement: number;
+  expectedVolumeIncrease: number;
+  expectedCostImpact: number;
+  roi: number;
+  priority: "high" | "medium" | "low";
+  rationale: string;
+}
+
+interface PortfolioBidAllocation {
+  campaignId: string;
+  channel: string;
+  currentAllocation: number;
+  recommendedAllocation: number;
+  expectedROAS: number;
+  marginalROI: number;
+  constraint: "budget" | "volume" | "efficiency" | "none";
+}
+
+interface BidAnomaly {
+  date: string;
+  channel: string;
+  metric: string;
+  observedValue: number;
+  expectedValue: number;
+  zScore: number;
+  severity: "low" | "medium" | "high";
+  probableCause: string;
+}
+
+interface ScenarioComparison {
+  scenarios: { name: string; projectedROAS: number; projectedConversions: number; projectedSpend: number; projectedRevenue: number; risk: "low" | "medium" | "high"; confidence: number }[];
+  bestScenario: string;
+  ranking: string[];
+}
+
 export class CampaignAIBiddingAgentService {
   private getSeed(campaignId: string, tenantId: string): string {
     return `bid_agent_${campaignId}_${tenantId}`;
@@ -309,6 +372,177 @@ export class CampaignAIBiddingAgentService {
       efficiencyGain: Math.round((rng() * 15 + 5) * 100) / 100,
     };
     return { campaignId, strategyName, goal, channels: channelStrategies, rules, targets, automationLevel, expectedOutcome };
+  }
+
+  bidCompetitorAnalysis(campaignId: string, tenantId: string): CompetitorAnalysis {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_comp");
+    const competitorCount = Math.floor(rng() * 5) + 3;
+    const competitors: CompetitorAnalysis["competitors"] = [];
+    for (let i = 0; i < competitorCount; i++) {
+      const estimatedBid = Math.round((rng() * 2 + 0.3) * 100) / 100;
+      const shareOfVoice = Math.round((rng() * 0.25 + 0.02) * 10000) / 100;
+      const overlapRate = Math.round((rng() * 0.5 + 0.1) * 10000) / 100;
+      const avgPosition = Math.round((rng() * 4 + 1) * 100) / 100;
+      const aggressiveness: "low" | "medium" | "high" = estimatedBid > 2.5 ? "high" : estimatedBid > 1.5 ? "medium" : "low";
+      competitors.push({ competitorId: `comp_${i + 1}`, estimatedBid, shareOfVoice, overlapRate, avgPosition, aggressiveness });
+    }
+    competitors.sort((a, b) => b.shareOfVoice - a.shareOfVoice);
+    const totalShare = competitors.reduce((s, c) => s + c.shareOfVoice, 0);
+    const marketConcentration = Math.round(competitors.slice(0, 3).reduce((s, c) => s + c.shareOfVoice, 0) / Math.max(totalShare, 1) * 100);
+    const aggressiveCount = competitors.filter(c => c.aggressiveness === "high").length;
+    const competitivePressure: "low" | "medium" | "high" = aggressiveCount > 2 ? "high" : aggressiveCount > 1 ? "medium" : "low";
+    const topComp = competitors[0];
+    const recommendedPositioning = topComp
+      ? `Target bids ${topComp.estimatedBid > 1.5 ? "below" : "at or slightly above"} top competitor ($${topComp.estimatedBid.toFixed(2)}) — focus on niche keywords with lower competition`
+      : "Market leader position — maintain competitive bids across all channels";
+    return { campaignId, competitors, marketConcentration, competitivePressure, recommendedPositioning };
+  }
+
+  bidHistoricalTrends(campaignId: string, tenantId: string): BidTrendAnalysis {
+    const seed = this.getSeed(campaignId, tenantId);
+    const channels = ["Search", "Display", "Social", "Video", "Shopping"];
+    const points = 12;
+    const trends: BidTrendPoint[] = [];
+    for (const ch of channels) {
+      const chSeed = seededRandom(seed + "_trend_" + ch);
+      let bid = chSeed() * 2 + 0.5;
+      for (let w = 0; w < points; w++) {
+        bid = Math.max(0.1, bid + (chSeed() - 0.5) * 0.3);
+        const winRate = Math.round((chSeed() * 0.4 + 0.2) * 10000) / 100;
+        const cpc = Math.round((bid * (chSeed() * 0.3 + 0.7)) * 100) / 100;
+        const impShare = Math.round((chSeed() * 0.4 + 0.3) * 10000) / 100;
+        const date = new Date(2025, 0, 1 + w * 7);
+        trends.push({ date: date.toISOString().split("T")[0], channel: ch, bid: Math.round(bid * 100) / 100, winRate, cpc, impressionShare: impShare });
+      }
+    }
+    const channelSummary: BidTrendAnalysis["channelSummary"] = channels.map(ch => {
+      const chPoints = trends.filter(t => t.channel === ch);
+      const bids = chPoints.map(t => t.bid);
+      const avgBid = bids.reduce((s, v) => s + v, 0) / bids.length;
+      const variance = bids.reduce((s, v) => s + (v - avgBid) ** 2, 0) / bids.length;
+      const bidVolatility = Math.round(Math.sqrt(variance) / avgBid * 100) / 100;
+      const firstBid = chPoints[0]?.bid || 0;
+      const lastBid = chPoints[chPoints.length - 1]?.bid || 0;
+      const trend: "rising" | "declining" | "stable" = lastBid - firstBid > 0.3 ? "rising" : lastBid - firstBid < -0.3 ? "declining" : "stable";
+      const suggestedDirection: "increase" | "decrease" | "maintain" = trend === "rising" ? "maintain" : trend === "declining" ? "increase" : "maintain";
+      return { channel: ch, avgBid: Math.round(avgBid * 100) / 100, bidVolatility, trend, suggestedDirection };
+    });
+    const risingCount = channelSummary.filter(c => c.trend === "rising").length;
+    const decliningCount = channelSummary.filter(c => c.trend === "declining").length;
+    const overallDirection: "aggressive" | "conservative" | "mixed" = risingCount > decliningCount + 1 ? "aggressive" : decliningCount > risingCount + 1 ? "conservative" : "mixed";
+    return { campaignId, trends, channelSummary, overallDirection };
+  }
+
+  bidOpportunityAnalysis(campaignId: string, tenantId: string): BidOpportunity[] {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_opp");
+    const channels = ["Search", "Display", "Social", "Video", "Shopping"];
+    return channels.map(ch => {
+      const currentBid = Math.round((rng() * 2 + 0.5) * 100) / 100;
+      const direction = rng() > 0.4 ? 1 : -1;
+      const pctAdj = Math.round((rng() * 0.3 + 0.05) * 10000) / 100;
+      const recommendedBid = Math.round(currentBid * (1 + direction * pctAdj / 100) * 100) / 100;
+      const expectedWinRateImprovement = Math.round((rng() * 15 + 3) * 100) / 100;
+      const expectedVolumeIncrease = Math.round((rng() * 20 + 5) * 100) / 100;
+      const expectedCostImpact = Math.round((rng() * 10 + 2) * 100) / 100;
+      const roi = Math.round((expectedWinRateImprovement * 2 - expectedCostImpact) * 100) / 100;
+      const priority: "high" | "medium" | "low" = roi > 20 ? "high" : roi > 10 ? "medium" : "low";
+      const rationales = [
+        "Win rate below channel average — increase bid to capture missed opportunities",
+        "High conversion channel underinvested — increase allocation",
+        "Competition decreasing — opportunity to capture share at lower cost",
+        "Impression share declining — bid increase needed to maintain visibility",
+        "ROAS well above target — room to scale bids profitably",
+        "Low marginal ROI — reduce bid to improve efficiency",
+      ];
+      const rationale = rationales[Math.floor(rng() * rationales.length)];
+      return { channel: ch, currentBid, recommendedBid, expectedWinRateImprovement, expectedVolumeIncrease, expectedCostImpact, roi, priority, rationale };
+    }).sort((a, b) => b.roi - a.roi);
+  }
+
+  bidPortfolioOptimization(campaigns: { campaignId: string; currentBids: { channel: string; bid: number }[]; budget: number; performance: { roas: number; conversions: number } }[]): PortfolioBidAllocation[] {
+    const allocations: PortfolioBidAllocation[] = [];
+    for (const c of campaigns) {
+      const totalRoas = c.performance.roas;
+      for (const bid of c.currentBids) {
+        const currentAlloc = bid.bid / Math.max(c.budget, 1) * 100;
+        const efficiencyFactor = totalRoas > 2 ? 1.2 : totalRoas > 1 ? 1 : 0.8;
+        const recommendedBid = Math.round(bid.bid * efficiencyFactor * 100) / 100;
+        const recAlloc = recommendedBid / Math.max(c.budget, 1) * 100;
+        const expectedROAS = Math.round(totalRoas * efficiencyFactor * 100) / 100;
+        const marginalROI = Math.round((expectedROAS - totalRoas) * 100) / 100;
+        let constraint: "budget" | "volume" | "efficiency" | "none" = "none";
+        if (recAlloc > currentAlloc * 1.2) constraint = "budget";
+        else if (expectedROAS < 1) constraint = "efficiency";
+        allocations.push({
+          campaignId: c.campaignId, channel: bid.channel,
+          currentAllocation: Math.round(currentAlloc * 100) / 100,
+          recommendedAllocation: Math.round(recAlloc * 100) / 100,
+          expectedROAS, marginalROI, constraint,
+        });
+      }
+    }
+    return allocations.sort((a, b) => b.expectedROAS - a.expectedROAS);
+  }
+
+  bidAnomalyDetection(campaignId: string, tenantId: string): BidAnomaly[] {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_anom");
+    const channels = ["Search", "Display", "Social", "Video", "Shopping"];
+    const anomalies: BidAnomaly[] = [];
+    for (const ch of channels) {
+      const baseBid = rng() * 2 + 0.5;
+      const baseWinRate = rng() * 0.4 + 0.3;
+      const bids: number[] = [];
+      const winRates: number[] = [];
+      for (let w = 0; w < 10; w++) {
+        bids.push(baseBid + (rng() - 0.5) * 0.3);
+        winRates.push(baseWinRate + (rng() - 0.5) * 0.1);
+      }
+      const bidMean = bids.reduce((s, v) => s + v, 0) / bids.length;
+      const bidStd = Math.sqrt(bids.reduce((s, v) => s + (v - bidMean) ** 2, 0) / bids.length);
+      const wrMean = winRates.reduce((s, v) => s + v, 0) / winRates.length;
+      const wrStd = Math.sqrt(winRates.reduce((s, v) => s + (v - wrMean) ** 2, 0) / winRates.length);
+      const checks: { metric: string; val: number; mean: number; std: number }[] = [
+        { metric: "bid", val: bids[bids.length - 1], mean: bidMean, std: bidStd },
+        { metric: "winRate", val: winRates[winRates.length - 1], mean: wrMean, std: wrStd },
+      ];
+      for (const c of checks) {
+        const z = c.std > 0 ? Math.abs(c.val - c.mean) / c.std : 0;
+        if (z > 1.8) {
+          const severity: "low" | "medium" | "high" = z > 3 ? "high" : z > 2.5 ? "medium" : "low";
+          const causes = ["Bid strategy change by competitor", "Platform auction dynamic shift", "Budget pacing adjustment", "Audience targeting change", "Creative performance fluctuation"];
+          anomalies.push({
+            date: new Date().toISOString().split("T")[0], channel: ch, metric: c.metric,
+            observedValue: Math.round(c.val * 10000) / 10000,
+            expectedValue: Math.round(c.mean * 10000) / 10000,
+            zScore: Math.round(z * 100) / 100, severity,
+            probableCause: causes[Math.floor(rng() * causes.length)],
+          });
+        }
+      }
+    }
+    return anomalies;
+  }
+
+  bidScenarioComparison(campaignId: string, tenantId: string, scenarios: { name: string; adjustments: { channel: string; newBid: number }[] }[]): ScenarioComparison {
+    const results = scenarios.map(s => {
+      const sim = this.simulateBidScenario(campaignId, tenantId, s);
+      return {
+        name: s.name,
+        projectedROAS: sim.projectedOutcome.roas,
+        projectedConversions: sim.projectedOutcome.conversions,
+        projectedSpend: sim.projectedOutcome.spend,
+        projectedRevenue: sim.projectedOutcome.revenue,
+        risk: sim.risk,
+        confidence: sim.confidence,
+      };
+    });
+    const sorted = [...results].sort((a, b) => b.projectedROAS - a.projectedROAS);
+    const bestScenario = sorted[0]?.name || "";
+    const ranking = results.sort((a, b) => b.projectedROAS - a.projectedROAS).map(r => r.name);
+    return { scenarios: results, bestScenario, ranking };
   }
 }
 

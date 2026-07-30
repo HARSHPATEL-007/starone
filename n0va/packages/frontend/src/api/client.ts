@@ -2708,5 +2708,11 @@ export const api = {
       const params = goal ? `?goal=${goal}` : "";
       return request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-strategy${params}`);
     },
+    competitorAnalysis: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/competitor-analysis`),
+    historicalTrends: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/historical-trends`),
+    opportunityAnalysis: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/opportunity-analysis`),
+    portfolioOptimization: (campaigns: any[]) => request.post("/campaign-ai-bidding-agent/portfolio-optimization", { campaigns }),
+    bidAnomalies: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-anomalies`),
+    scenarioComparison: (campaignId: string, scenarios: any[]) => request.post(`/campaign-ai-bidding-agent/campaign/${campaignId}/scenario-comparison`, { scenarios }),
   },
 };

@@ -2562,6 +2562,30 @@ export class AdsMarketingModuleService {
     return campaignAIBiddingAgent.generateBidStrategy(campaignId, tenantId, goal);
   }
 
+  bidCompetitorAnalysis(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.bidCompetitorAnalysis(campaignId, tenantId);
+  }
+
+  bidHistoricalTrends(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.bidHistoricalTrends(campaignId, tenantId);
+  }
+
+  bidOpportunityAnalysis(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.bidOpportunityAnalysis(campaignId, tenantId);
+  }
+
+  bidPortfolioOptimization(campaigns: any[]) {
+    return campaignAIBiddingAgent.bidPortfolioOptimization(campaigns);
+  }
+
+  bidAnomalyDetection(campaignId: string, tenantId: string) {
+    return campaignAIBiddingAgent.bidAnomalyDetection(campaignId, tenantId);
+  }
+
+  bidScenarioComparison(campaignId: string, tenantId: string, scenarios: any[]) {
+    return campaignAIBiddingAgent.bidScenarioComparison(campaignId, tenantId, scenarios);
+  }
+
   saturationForecast(campaignId: string, tenantId: string, periods?: number) {
     return campaignSaturationService.saturationForecast(campaignId, tenantId, periods);
   }

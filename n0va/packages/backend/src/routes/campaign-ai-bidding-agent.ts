@@ -39,4 +39,38 @@ router.get("/campaign/:campaignId/bid-strategy", asyncHandler(async (req, res) =
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/competitor-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAIBiddingAgent.bidCompetitorAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/historical-trends", asyncHandler(async (req, res) => {
+  const result = campaignAIBiddingAgent.bidHistoricalTrends(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/opportunity-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAIBiddingAgent.bidOpportunityAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/portfolio-optimization", asyncHandler(async (req, res) => {
+  const { campaigns } = req.body;
+  if (!campaigns || !Array.isArray(campaigns)) return res.status(400).json({ error: "campaigns array required" });
+  const result = campaignAIBiddingAgent.bidPortfolioOptimization(campaigns);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/bid-anomalies", asyncHandler(async (req, res) => {
+  const result = campaignAIBiddingAgent.bidAnomalyDetection(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/campaign/:campaignId/scenario-comparison", asyncHandler(async (req, res) => {
+  const { scenarios } = req.body;
+  if (!scenarios || !Array.isArray(scenarios)) return res.status(400).json({ error: "scenarios array required" });
+  const result = campaignAIBiddingAgent.bidScenarioComparison(req.params.campaignId, req.user!.tenantId, scenarios);
+  sendSuccess(res, result);
+}));
+
 export default router;
