@@ -1721,6 +1721,110 @@ export class AdsMarketingModuleService {
     return campaignInsightsEngine.generatePredictiveAlerts(tenantId);
   }
 
+  alertOrchestratorRules(tenantId: string, status?: string) {
+    return campaignAlertOrchestrator.getRules(tenantId, status as any);
+  }
+
+  alertOrchestratorRule(ruleId: string, tenantId: string) {
+    return campaignAlertOrchestrator.getRule(ruleId, tenantId);
+  }
+
+  alertOrchestratorCreateRule(tenantId: string, rule: any) {
+    return campaignAlertOrchestrator.createRule(tenantId, rule);
+  }
+
+  alertOrchestratorUpdateRule(ruleId: string, tenantId: string, updates: any) {
+    return campaignAlertOrchestrator.updateRule(ruleId, tenantId, updates);
+  }
+
+  alertOrchestratorDeleteRule(ruleId: string, tenantId: string) {
+    return campaignAlertOrchestrator.deleteRule(ruleId, tenantId);
+  }
+
+  alertOrchestratorEvaluate(tenantId: string) {
+    return campaignAlertOrchestrator.evaluateRules(tenantId);
+  }
+
+  alertOrchestratorAlerts(tenantId: string, status?: string, limit?: number) {
+    return campaignAlertOrchestrator.getAlerts(tenantId, status as any, limit);
+  }
+
+  alertOrchestratorAcknowledge(alertId: string, tenantId: string, userId: string) {
+    return campaignAlertOrchestrator.acknowledgeAlert(alertId, tenantId, userId);
+  }
+
+  alertOrchestratorResolve(alertId: string, tenantId: string, userId: string) {
+    return campaignAlertOrchestrator.resolveAlert(alertId, tenantId, userId);
+  }
+
+  alertOrchestratorDismiss(alertId: string, tenantId: string) {
+    return campaignAlertOrchestrator.dismissAlert(alertId, tenantId);
+  }
+
+  alertOrchestratorSummary(tenantId: string) {
+    return campaignAlertOrchestrator.getAlertSummary(tenantId);
+  }
+
+  alertOrchestratorSuggestRules(tenantId: string) {
+    return campaignAlertOrchestrator.suggestAlertRules(tenantId);
+  }
+
+  alertOrchestratorBatchAction(alertIds: string[], tenantId: string, action: string, userId?: string) {
+    return campaignAlertOrchestrator.batchAlertAction(alertIds, tenantId, action, userId);
+  }
+
+  alertOrchestratorPriorityInbox(tenantId: string) {
+    return campaignAlertOrchestrator.getAlertPriorityInbox(tenantId);
+  }
+
+  alertOrchestratorSmartMute(tenantId: string) {
+    return campaignAlertOrchestrator.smartMuteNoisyAlerts(tenantId);
+  }
+
+  alertOrchestratorEscalate(tenantId: string, escalationContact: string) {
+    return campaignAlertOrchestrator.escalateUnresolvedAlerts(tenantId, escalationContact);
+  }
+
+  alertOrchestratorDailyDigest(tenantId: string) {
+    return campaignAlertOrchestrator.getAlertDailyDigest(tenantId);
+  }
+
+  optimizerGetPlatformConfigs() {
+    return campaignOptimizerService.getPlatformConfigs();
+  }
+
+  optimizerGenerateOptimizations(tenantId: string) {
+    return campaignOptimizerService.generateOptimizations(tenantId);
+  }
+
+  optimizerGetDashboard(tenantId: string) {
+    return campaignOptimizerService.getDashboard(tenantId);
+  }
+
+  optimizerQuickActions(tenantId: string) {
+    return campaignOptimizerService.quickOptimizationActions(tenantId);
+  }
+
+  optimizerAutoApply(tenantId: string, minConfidence?: number) {
+    return campaignOptimizerService.autoApplyHighConfidence(tenantId, minConfidence);
+  }
+
+  optimizerDismissLowValue(tenantId: string, maxImpact?: string) {
+    return campaignOptimizerService.dismissLowValueSuggestions(tenantId, maxImpact as any);
+  }
+
+  optimizerOneClickFix(tenantId: string) {
+    return campaignOptimizerService.oneClickFix(tenantId);
+  }
+
+  optimizerPortfolioSummary(tenantId: string) {
+    return campaignOptimizerService.optimizationPortfolioSummary(tenantId);
+  }
+
+  optimizerSchedule(tenantId: string, suggestionId: string, applyAt: string) {
+    return campaignOptimizerService.scheduleOptimization(tenantId, suggestionId, applyAt);
+  }
+
   diagnosticAnalysis(campaignId: string, tenantId: string) {
     return campaignPerformanceDiagnostics.diagnoseCampaign(campaignId, tenantId);
   }

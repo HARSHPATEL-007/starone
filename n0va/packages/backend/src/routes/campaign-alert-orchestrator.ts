@@ -68,4 +68,36 @@ router.get("/summary", asyncHandler(async (req, res) => {
   sendSuccess(res, summary);
 }));
 
+router.get("/suggest-rules", asyncHandler(async (req, res) => {
+  const suggestions = campaignAlertOrchestrator.suggestAlertRules(req.user!.tenantId);
+  sendSuccess(res, suggestions);
+}));
+
+router.post("/alerts/batch", asyncHandler(async (req, res) => {
+  const { alertIds, action, userId } = req.body;
+  const result = campaignAlertOrchestrator.batchAlertAction(alertIds, req.user!.tenantId, action, userId);
+  sendSuccess(res, result);
+}));
+
+router.get("/priority-inbox", asyncHandler(async (req, res) => {
+  const inbox = campaignAlertOrchestrator.getAlertPriorityInbox(req.user!.tenantId);
+  sendSuccess(res, inbox);
+}));
+
+router.post("/smart-mute", asyncHandler(async (req, res) => {
+  const muteRules = campaignAlertOrchestrator.smartMuteNoisyAlerts(req.user!.tenantId);
+  sendSuccess(res, muteRules);
+}));
+
+router.post("/escalate", asyncHandler(async (req, res) => {
+  const { escalationContact } = req.body;
+  const entries = campaignAlertOrchestrator.escalateUnresolvedAlerts(req.user!.tenantId, escalationContact || "manager@company.com");
+  sendSuccess(res, entries);
+}));
+
+router.get("/daily-digest", asyncHandler(async (req, res) => {
+  const digest = campaignAlertOrchestrator.getAlertDailyDigest(req.user!.tenantId);
+  sendSuccess(res, digest);
+}));
+
 export default router;

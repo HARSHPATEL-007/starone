@@ -86,4 +86,37 @@ router.get(
   })
 );
 
+router.get("/quick-actions", asyncHandler(async (req, res) => {
+  const result = campaignOptimizerService.quickOptimizationActions(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/auto-apply", asyncHandler(async (req, res) => {
+  const minConfidence = req.body.minConfidence || 85;
+  const result = campaignOptimizerService.autoApplyHighConfidence(req.user!.tenantId, minConfidence);
+  sendSuccess(res, result);
+}));
+
+router.post("/dismiss-low-value", asyncHandler(async (req, res) => {
+  const maxImpact = req.body.maxImpact || "low";
+  const result = campaignOptimizerService.dismissLowValueSuggestions(req.user!.tenantId, maxImpact);
+  sendSuccess(res, result);
+}));
+
+router.get("/one-click-fix", asyncHandler(async (req, res) => {
+  const result = campaignOptimizerService.oneClickFix(req.user!.tenantId);
+  sendSuccess(res, result || { error: "No quick fix available" });
+}));
+
+router.get("/portfolio-summary", asyncHandler(async (req, res) => {
+  const result = campaignOptimizerService.optimizationPortfolioSummary(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/schedule", asyncHandler(async (req, res) => {
+  const { suggestionId, applyAt } = req.body;
+  const result = campaignOptimizerService.scheduleOptimization(req.user!.tenantId, suggestionId, applyAt);
+  sendSuccess(res, result);
+}));
+
 export default router;

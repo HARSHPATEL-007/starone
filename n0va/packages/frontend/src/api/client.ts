@@ -841,6 +841,12 @@ export const api = {
     dismissSuggestion: (id: string) => request<any>(`/optimizer-v2/suggestions/${id}/dismiss`, { method: "POST" }),
     platforms: () => request<any[]>("/optimizer-v2/platforms"),
     portfolio: () => request<any>("/optimizer-v2/portfolio", { method: "POST" }),
+    quickActions: () => request<any>("/optimizer-v2/quick-actions"),
+    autoApply: (minConfidence?: number) => request<any>("/optimizer-v2/auto-apply", { method: "POST", body: JSON.stringify({ minConfidence }) }),
+    dismissLowValue: (maxImpact?: string) => request<any>("/optimizer-v2/dismiss-low-value", { method: "POST", body: JSON.stringify({ maxImpact }) }),
+    oneClickFix: () => request<any>("/optimizer-v2/one-click-fix"),
+    portfolioSummary: () => request<any>("/optimizer-v2/portfolio-summary"),
+    scheduleOptimization: (suggestionId: string, applyAt: string) => request<any>("/optimizer-v2/schedule", { method: "POST", body: JSON.stringify({ suggestionId, applyAt }) }),
   },
   predictiveForecasting: {
     forecast: (data: Record<string, unknown>) =>
@@ -2391,9 +2397,15 @@ export const api = {
     dismissAlert: (alertId: string) =>
       request<any>(`/campaign-alert-orchestrator/alerts/${alertId}/dismiss`, { method: "POST" }),
     summary: () => request<any>("/campaign-alert-orchestrator/summary"),
+    suggestRules: () => request<any>("/campaign-alert-orchestrator/suggest-rules"),
+    batchAlertAction: (alertIds: string[], action: string, userId?: string) =>
+      request<any>("/campaign-alert-orchestrator/alerts/batch", { method: "POST", body: JSON.stringify({ alertIds, action, userId }) }),
+    priorityInbox: () => request<any>("/campaign-alert-orchestrator/priority-inbox"),
+    smartMute: () => request<any>("/campaign-alert-orchestrator/smart-mute", { method: "POST" }),
+    escalate: (escalationContact?: string) =>
+      request<any>("/campaign-alert-orchestrator/escalate", { method: "POST", body: JSON.stringify({ escalationContact }) }),
+    dailyDigest: () => request<any>("/campaign-alert-orchestrator/daily-digest"),
   },
-
-  campaignExperimentation: {
     list: (status?: string) => request<any>(`/campaign-experimentation/experiments${status ? `?status=${status}` : ""}`),
     get: (expId: string) => request<any>(`/campaign-experimentation/experiments/${expId}`),
     create: (data: any) => request<any>("/campaign-experimentation/experiments", { method: "POST", body: JSON.stringify(data) }),

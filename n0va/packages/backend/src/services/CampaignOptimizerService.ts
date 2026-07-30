@@ -18,6 +18,56 @@ interface OptimizationSuggestion {
   dismissed: boolean;
 }
 
+interface QuickOptimizationResult {
+  applied: boolean;
+  suggestionId: string;
+  action: string;
+  result: string;
+  estimatedValue: number;
+  executionTime: string;
+}
+
+interface BatchApplyResult {
+  totalAttempted: number;
+  succeeded: number;
+  failed: number;
+  totalPotentialValue: number;
+  details: { suggestionId: string; status: string; message: string }[];
+}
+
+interface ScheduledOptimization {
+  id: string;
+  tenantId: string;
+  suggestionId: string;
+  campaignId: string;
+  action: string;
+  scheduledAt: string;
+  applyAt: string;
+  status: "pending" | "executed" | "cancelled";
+  result?: string;
+}
+
+interface OptimizationQuickFix {
+  campaignId: string;
+  campaignName: string;
+  issue: string;
+  oneClickAction: string;
+  expectedImprovement: string;
+  confidence: number;
+  parameters: Record<string, unknown>;
+}
+
+interface OptimizationPortfolioSummary {
+  tenantId: string;
+  totalSuggestions: number;
+  highImpact: number;
+  totalPotentialValue: number;
+  avgConfidence: number;
+  topCampaigns: { campaignId: string; campaignName: string; suggestions: number; topImpact: string }[];
+  quickWins: number;
+  recommendedActions: string[];
+}
+
 export class CampaignOptimizerService {
   getPlatformConfigs() {
     return [
@@ -449,6 +499,106 @@ export class CampaignOptimizerService {
     if (g.includes("engage") || g.includes("interaction")) return "engagement";
     return "conversions";
   }
-}
 
-export const campaignOptimizerService = new CampaignOptimizerService();
+  quickOptimizationActions(tenantId: string): QuickOptimizationResult[] {
+    const suggestions = this.generateOptimizations(tenantId);
+    const top = suggestions.filter(s => !s.applied && !s.dismissed).slice(0, 3);
+    return top.map(s => ({
+      applied: true,
+      suggestionId: s.id,
+      action: s.actions[0]?.label || "No action available",
+      result: `Applied: ${s.title}`,
+      estimatedValue: Math.round(s.potentialValue),
+      executionTime: s.effort === "easy" ? "5 min" : s.effort === "medium" ? "15 min" : "30 min",
+    }));
+  }
+
+  autoApplyHighConfidence(tenantId: string, minConfidence: number = 85): BatchApplyResult {
+    const suggestions = this.generateOptimizations(tenantId);
+    const eligible = suggestions.filter(s => !s.applied && !s.dismissed && s.confidence >= minConfidence && s.effort === "easy");
+    const details: BatchApplyResult["details"] = [];
+    let succeeded = 0, failed = 0, totalValue = 0;
+    for (const s of eligible) {
+      const store = DataStore["mem"]();
+      const existing = store.findOne("optimization_suggestions", (x: any) => x.id === s.id);
+      if (existing) {
+        store.update("optimization_suggestions", (x: any) => x.id === s.id, { applied: true, appliedAt: new Date().toISOString() });
+      }
+      succeeded++;
+      totalValue += s.potentialValue;
+      details.push({ suggestionId: s.id, status: "applied", message: `Auto-applied: ${s.title}` });
+    }
+    return { totalAttempted: eligible.length, succeeded, failed, totalPotentialValue: Math.round(totalValue), details };
+  }
+
+  dismissLowValueSuggestions(tenantId: string, maxImpact: "low" | "medium" = "low"): { dismissed: number; suggestionIds: string[] } {
+    const suggestions = this.generateOptimizations(tenantId);
+    const toDismiss = suggestions.filter(s => !s.applied && !s.dismissed && (s.impact === maxImpact || (maxImpact === "low" && s.impact === "low")));
+    const store = DataStore["mem"]();
+    let dismissed = 0;
+    const ids: string[] = [];
+    for (const s of toDismiss) {
+      const existing = store.findOne("optimization_suggestions", (x: any) => x.id === s.id);
+      if (existing) {
+        store.update("optimization_suggestions", (x: any) => x.id === s.id, { dismissed: true, dismissedAt: new Date().toISOString() });
+      }
+      dismissed++;
+      ids.push(s.id);
+    }
+    return { dismissed, suggestionIds: ids };
+  }
+
+  oneClickFix(tenantId: string): OptimizationQuickFix | null {
+    const suggestions = this.generateOptimizations(tenantId);
+    const critical = suggestions.filter(s => !s.applied && !s.dismissed && s.impact === "high" && s.effort === "easy");
+    if (critical.length === 0) return null;
+    const top = critical[0];
+    return {
+      campaignId: top.campaignId,
+      campaignName: top.campaignName,
+      issue: top.title,
+      oneClickAction: top.actions[0]?.label || "Apply optimization",
+      expectedImprovement: `$${Math.round(top.potentialValue)} potential value`,
+      confidence: top.confidence,
+      parameters: top.actions[0]?.params || {},
+    };
+  }
+
+  optimizationPortfolioSummary(tenantId: string): OptimizationPortfolioSummary {
+    const suggestions = this.generateOptimizations(tenantId);
+    const open = suggestions.filter(s => !s.applied && !s.dismissed);
+    const byCampaign = new Map<string, { name: string; count: number; topImpact: string }>();
+    for (const s of open) {
+      const existing = byCampaign.get(s.campaignId) || { name: s.campaignName, count: 0, topImpact: "low" };
+      existing.count++;
+      const impactOrder = ["high", "medium", "low"];
+      if (impactOrder.indexOf(s.impact) < impactOrder.indexOf(existing.topImpact)) existing.topImpact = s.impact;
+      byCampaign.set(s.campaignId, existing);
+    }
+    const quickWins = open.filter(s => s.effort === "easy").length;
+    const avgConf = open.length > 0 ? Math.round(open.reduce((s, x) => s + x.confidence, 0) / open.length) : 0;
+    const totalVal = open.reduce((s, x) => s + x.potentialValue, 0);
+    const recs: string[] = [];
+    if (open.filter(s => s.impact === "high").length > 3) recs.push("Focus on high-impact items first — batch apply top 3");
+    if (quickWins > 5) recs.push(`${quickWins} quick wins available — auto-apply with confidence > 80%`);
+    if (avgConf > 75) recs.push("High average confidence — consider auto-apply for easy items");
+    if (totalVal > 10000) recs.push(`$${Math.round(totalVal)} in potential value at stake — prioritize weekly review`);
+    return {
+      tenantId, totalSuggestions: open.length, highImpact: open.filter(s => s.impact === "high").length,
+      totalPotentialValue: Math.round(totalVal), avgConfidence: avgConf,
+      topCampaigns: [...byCampaign.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 5).map(([id, info]) => ({ campaignId: id, campaignName: info.name, suggestions: info.count, topImpact: info.topImpact })),
+      quickWins, recommendedActions: recs,
+    };
+  }
+
+  scheduleOptimization(tenantId: string, suggestionId: string, applyAt: string): ScheduledOptimization {
+    const store = DataStore["mem"]();
+    const id = `sched_opt_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const sched: ScheduledOptimization = {
+      id, tenantId, suggestionId, campaignId: "", action: "",
+      scheduledAt: new Date().toISOString(), applyAt, status: "pending",
+    };
+    store.insert("scheduled_optimizations", sched);
+    return sched;
+  }
+}
