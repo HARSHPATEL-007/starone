@@ -377,6 +377,74 @@ export class CampaignService {
     return anomalies.sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore));
   }
 
+  // ─── Day-to-Day Execution: Batch Operations & Daily Overview ──────────
+
+  async batchUpdateStatus(tenantId: string, updates: { id: string; status: CampaignStatus }[]): Promise<{ success: number; failed: number; errors: { id: string; error: string }[] }> {
+    const tenantOid = new mongoose.Types.ObjectId(tenantId);
+    let success = 0;
+    let failed = 0;
+    const errors: { id: string; error: string }[] = [];
+    for (const u of updates) {
+      try {
+        const result = await Campaign.findOneAndUpdate(
+          { _id: new mongoose.Types.ObjectId(u.id), tenantId: tenantOid },
+          { status: u.status, updatedAt: new Date() },
+          { new: true }
+        );
+        if (result) success++; else { failed++; errors.push({ id: u.id, error: "Campaign not found" }); }
+      } catch (e: any) {
+        failed++; errors.push({ id: u.id, error: e.message || "Update failed" });
+      }
+    }
+    return { success, failed, errors };
+  }
+
+  async batchUpdateBudget(tenantId: string, updates: { id: string; daily?: number; lifetime?: number }[]): Promise<{ success: number; failed: number; errors: { id: string; error: string }[] }> {
+    let success = 0;
+    let failed = 0;
+    const errors: { id: string; error: string }[] = [];
+    for (const u of updates) {
+      try {
+        const campaign = await Campaign.findOne({ _id: new mongoose.Types.ObjectId(u.id), tenantId: new mongoose.Types.ObjectId(tenantId) });
+        if (!campaign) { failed++; errors.push({ id: u.id, error: "Campaign not found" }); continue; }
+        if (u.daily !== undefined) campaign.budget.daily = u.daily;
+        if (u.lifetime !== undefined) { campaign.budget.lifetime = u.lifetime; campaign.budget.remaining = u.lifetime - campaign.budget.spent; }
+        campaign.markModified("budget");
+        await campaign.save();
+        success++;
+      } catch (e: any) {
+        failed++; errors.push({ id: u.id, error: e.message || "Update failed" });
+      }
+    }
+    return { success, failed, errors };
+  }
+
+  async getDailyOpsOverview(tenantId: string) {
+    const campaigns = await Campaign.find({ tenantId: new mongoose.Types.ObjectId(tenantId) });
+    const total = campaigns.length;
+    const active = campaigns.filter(c => c.status === CampaignStatus.Active).length;
+    const paused = campaigns.filter(c => c.status === CampaignStatus.Paused).length;
+    const draft = campaigns.filter(c => c.status === CampaignStatus.Draft).length;
+    const ended = campaigns.filter(c => c.status === CampaignStatus.Ended).length;
+    const totalBudget = campaigns.reduce((s, c) => s + c.budget.lifetime, 0);
+    const totalSpent = campaigns.reduce((s, c) => s + c.budget.spent, 0);
+    const atRiskBudget = campaigns.filter(c => c.budget.spent > c.budget.lifetime * 0.9).length;
+    const nearEnd = campaigns.filter(c => {
+      if (!c.endDate) return false;
+      const daysLeft = (new Date(c.endDate).getTime() - Date.now()) / 86400000;
+      return daysLeft > 0 && daysLeft < 7;
+    }).length;
+    const budgetUtilization = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 10000) / 100 : 0;
+    return {
+      generatedAt: new Date().toISOString(),
+      totalCampaigns: total,
+      byStatus: { active, paused, draft, ended },
+      budget: { totalBudget, totalSpent, remaining: totalBudget - totalSpent, utilizationPercent: budgetUtilization },
+      flags: { atRiskBudget: { count: atRiskBudget, label: "Campaigns >90% budget used" }, nearEndDate: { count: nearEnd, label: "Campaigns ending within 7 days" } },
+      needsAttention: atRiskBudget + nearEnd,
+    };
+  }
+
   // ─── Utilities ────────────────────────────────────────────────────────
 
   private zToScore(z: number, scale: number): number {

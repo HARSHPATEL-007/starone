@@ -2122,6 +2122,14 @@ export const api = {
     budgetQuickSimulation: (campaignId: string, percentageChange: number, runs?: number) =>
       request<any>("/ads-marketing-module/budget-quick-simulation", { method: "POST", body: JSON.stringify({ campaignId, percentageChange, runs }) }),
     budgetPortfolioOverview: () => request<any>("/ads-marketing-module/budget-portfolio-overview"),
+    batchUpdateStatus: (updates: { id: string; status: string }[]) =>
+      request<any>("/ads-marketing-module/batch-update-status", { method: "POST", body: JSON.stringify({ updates }) }),
+    batchUpdateBudget: (updates: { id: string; daily?: number; lifetime?: number }[]) =>
+      request<any>("/ads-marketing-module/batch-update-budget", { method: "POST", body: JSON.stringify({ updates }) }),
+    dailyOpsOverview: () => request<any>("/ads-marketing-module/daily-ops-overview"),
+    goalDashboard: () => request<any>("/ads-marketing-module/goal-dashboard"),
+    goalQuickCheck: () => request<any>("/ads-marketing-module/goal-quick-check"),
+    scorecardDailySnapshot: () => request<any>("/ads-marketing-module/scorecard-daily-snapshot"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

@@ -855,6 +855,33 @@ export class CampaignScorecardService {
       { threshold: 25, campaignCount: sorted.filter((c) => c.overall >= 25).length, percentile: 25 },
     ];
   }
+
+  scorecardDailySnapshot(tenantId: string): { generatedAt: string; averageScore: number; topCampaign: { name: string; score: number } | null; bottomCampaign: { name: string; score: number } | null; improving: number; declining: number; stable: number; needsAttention: string[]; distribution: { tier: string; count: number }[] } {
+    const result = this.getScorecard(tenantId);
+    const needsAttention = result.campaigns.filter(c => c.overall < 50).map(c => `${c.campaignName} (${c.overall})`);
+    const tierLabels = ["excellent (90+)", "good (75-89)", "fair (50-74)", "poor (25-49)", "critical (<25)"];
+    const counts = [0, 0, 0, 0, 0];
+    for (const c of result.campaigns) {
+      if (c.overall >= 90) counts[0]++;
+      else if (c.overall >= 75) counts[1]++;
+      else if (c.overall >= 50) counts[2]++;
+      else if (c.overall >= 25) counts[3]++;
+      else counts[4]++;
+    }
+    const distribution = tierLabels.map((label, i) => ({ tier: label, count: counts[i] }));
+    const sorted = [...result.campaigns].sort((a, b) => b.overall - a.overall);
+    return {
+      generatedAt: new Date().toISOString(),
+      averageScore: Math.round(result.summary.avgScore * 100) / 100,
+      topCampaign: sorted.length > 0 ? { name: sorted[0].campaignName, score: sorted[0].overall } : null,
+      bottomCampaign: sorted.length > 0 ? { name: sorted[sorted.length - 1].campaignName, score: sorted[sorted.length - 1].overall } : null,
+      improving: result.campaigns.filter(c => c.trend?.direction === "improving").length,
+      declining: result.campaigns.filter(c => c.trend?.direction === "declining").length,
+      stable: result.campaigns.filter(c => c.trend?.direction === "stable" || !c.trend).length,
+      needsAttention,
+      distribution,
+    };
+  }
 }
 
 function cpa(spend: number, conversions: number): number {

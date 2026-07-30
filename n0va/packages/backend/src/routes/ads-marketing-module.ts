@@ -955,4 +955,31 @@ router.get("/campaign/:campaignId/bid-strategy", asyncHandler(async (req, res) =
   sendSuccess(res, result);
 }));
 
+router.post("/batch-update-status", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.batchUpdateCampaignStatus(req.user!.tenantId, req.body.updates);
+  sendSuccess(res, result);
+}));
+
+router.post("/batch-update-budget", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.batchUpdateCampaignBudget(req.user!.tenantId, req.body.updates);
+  sendSuccess(res, result);
+}));
+
+router.get("/daily-ops-overview", asyncHandler(async (req, res) => {
+  const result = await adsMarketingModule.dailyOpsOverview(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/goal-dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.goalDashboard(req.user!.tenantId));
+}));
+
+router.get("/goal-quick-check", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.goalQuickCheck(req.user!.tenantId));
+}));
+
+router.get("/scorecard-daily-snapshot", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.scorecardDailySnapshot(req.user!.tenantId));
+}));
+
 export default router;

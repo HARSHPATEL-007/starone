@@ -466,6 +466,42 @@ export class CampaignGoalTrackerService {
       };
     });
   }
+
+  goalDashboard(tenantId: string): { campaigns: { campaignId: string; campaignName: string; overallStatus: string; compositeProgress: number; healthScore: number; goals: number; atRisk: number }[]; totals: { totalCampaigns: number; onTrack: number; atRisk: number; behind: number; averageProgress: number } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const campaignRows: any[] = [];
+    let onTrack = 0, atRisk = 0, behind = 0;
+    for (const a of portfolio.analyses) {
+      const report = this.trackGoalProgress(a.campaignId, tenantId);
+      if (!report) continue;
+      if (report.overallStatus === "ahead" || report.overallStatus === "on-track") onTrack++;
+      else if (report.overallStatus === "at-risk") atRisk++;
+      else behind++;
+      campaignRows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        overallStatus: report.overallStatus, compositeProgress: report.compositeProgress,
+        healthScore: report.healthScore, goals: report.goals.length,
+        atRisk: report.goals.filter(g => g.status === "behind" || g.status === "at-risk").length,
+      });
+    }
+    const avgProgress = campaignRows.length > 0 ? Math.round(campaignRows.reduce((s, r) => s + r.compositeProgress, 0) / campaignRows.length * 100) / 100 : 0;
+    return {
+      campaigns: campaignRows,
+      totals: { totalCampaigns: campaignRows.length, onTrack: onTrack + (campaignRows.filter(r => r.overallStatus === "ahead").length), atRisk, behind, averageProgress: avgProgress },
+    };
+  }
+
+  goalQuickCheck(tenantId: string): { totalGoals: number; onTrack: number; atRisk: number; behind: number; healthStatus: "good" | "fair" | "critical"; summary: string } {
+    const dashboard = this.goalDashboard(tenantId);
+    const totalGoals = dashboard.campaigns.reduce((s, c) => s + c.goals, 0);
+    const goalsBehind = dashboard.campaigns.reduce((s, c) => s + c.atRisk, 0);
+    const onTrack = totalGoals - goalsBehind;
+    const behind = goalsBehind;
+    const pctOnTrack = totalGoals > 0 ? Math.round(onTrack / totalGoals * 100) : 100;
+    const healthStatus: "good" | "fair" | "critical" = pctOnTrack >= 80 ? "good" : pctOnTrack >= 50 ? "fair" : "critical";
+    const summary = `${onTrack}/${totalGoals} goals on track (${pctOnTrack}%) — ${dashboard.totals.totalCampaigns} campaigns tracked`;
+    return { totalGoals, onTrack, atRisk: dashboard.totals.atRisk, behind, healthStatus, summary };
+  }
 }
 
 export const campaignGoalTracker = new CampaignGoalTrackerService();

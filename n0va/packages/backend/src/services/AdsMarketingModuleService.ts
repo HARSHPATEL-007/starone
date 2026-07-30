@@ -35,6 +35,7 @@ import { campaignScorecardService } from "./CampaignScorecardService";
 import { campaignSnapshotService } from "./CampaignSnapshotService";
 import { campaignSimulationService } from "./CampaignSimulationService";
 import { campaignIssueService } from "./CampaignIssueService";
+import { campaignService } from "./CampaignService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -3153,6 +3154,30 @@ export class AdsMarketingModuleService {
 
   issueAutoAssignment(tenantId: string) {
     return campaignIssueService.issueAutoAssignment(tenantId);
+  }
+
+  async batchUpdateCampaignStatus(tenantId: string, updates: { id: string; status: string }[]) {
+    return campaignService.batchUpdateStatus(tenantId, updates as any);
+  }
+
+  async batchUpdateCampaignBudget(tenantId: string, updates: { id: string; daily?: number; lifetime?: number }[]) {
+    return campaignService.batchUpdateBudget(tenantId, updates);
+  }
+
+  async dailyOpsOverview(tenantId: string) {
+    return campaignService.getDailyOpsOverview(tenantId);
+  }
+
+  goalDashboard(tenantId: string) {
+    return campaignGoalTracker.goalDashboard(tenantId);
+  }
+
+  goalQuickCheck(tenantId: string) {
+    return campaignGoalTracker.goalQuickCheck(tenantId);
+  }
+
+  scorecardDailySnapshot(tenantId: string) {
+    return campaignScorecardService.scorecardDailySnapshot(tenantId);
   }
 }
 
