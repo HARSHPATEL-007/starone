@@ -80,6 +80,80 @@ interface PlacementTrend {
   overallDirection: "improving" | "declining" | "stable";
 }
 
+interface PlacementDeviceEntry {
+  publisher: string;
+  mobileCtr: number;
+  mobileCvr: number;
+  desktopCtr: number;
+  desktopCvr: number;
+  tabletCtr: number;
+  tabletCvr: number;
+  bestDevice: string;
+  deviceImbalance: number;
+  recommendation: string;
+}
+
+interface PlacementAuditEntry {
+  publisher: string;
+  audienceFitScore: number;
+  targetingPrecision: number;
+  contextualRelevance: number;
+  brandSafety: number;
+  viewability: number;
+  overallHealth: number;
+  issues: string[];
+  recommendation: string;
+}
+
+interface PlacementCompetitiveEntry {
+  placement: string;
+  ourSpend: number;
+  competitorSpend: number;
+  ourCPC: number;
+  competitorCPC: number;
+  ourShare: number;
+  competitorShare: number;
+  competitiveIntensity: "low" | "medium" | "high";
+  shareOpportunity: number;
+  recommendation: string;
+}
+
+interface PlacementCostEntry {
+  publisher: string;
+  cpc: number;
+  cpm: number;
+  cpv: number;
+  cpa: number;
+  efficiencyScore: number;
+  benchmarkCPC: number;
+  costGap: number;
+  trend: "declining" | "stable" | "rising";
+  recommendation: string;
+}
+
+interface PlacementSeasonalityEntry {
+  publisher: string;
+  month: string;
+  projectedCTR: number;
+  projectedCVR: number;
+  projectedROAS: number;
+  seasonalityFactor: number;
+  optimalPeriod: string;
+  recommendedAction: string;
+}
+
+interface PlacementROIEntry {
+  publisher: string;
+  totalSpend: number;
+  totalRevenue: number;
+  directROAS: number;
+  incrementalROAS: number;
+  diminishingReturnFrequency: number;
+  marginalROI: number;
+  scalePotential: "low" | "medium" | "high";
+  recommendation: string;
+}
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -264,13 +338,153 @@ export class CampaignAdPlacementAnalyzerService {
       const seed = hashStr(pl.placementId + tenantId);
       const metrics = ["ctr", "cvr", "roas", "cpc"].map((m, mi) => {
         const val = (pl as any)[m] || 0;
-        const chg = Math.round((Math.random() * 22 - 11 + ((seed + mi * 17) % 20 - 10)) * 10) / 10;
+        const chg = Math.round((((seed + mi * 17) % 23 - 11) + ((seed + mi * 23) % 21 - 10)) * 10) / 10;
         const dir: "up" | "down" | "stable" = chg > 3 ? "up" : chg < -3 ? "down" : "stable";
         return { metric: m.toUpperCase(), value: val, change: chg, direction: dir };
       });
       const up = metrics.filter(m => m.direction === "up").length;
       const down = metrics.filter(m => m.direction === "down").length;
       return { publisher: pl.publisher, format: pl.format, metrics, overallDirection: up > down ? "improving" as const : down > up ? "declining" as const : "stable" as const };
+    });
+  }
+
+  placementDeviceAnalysis(campaignId: string, tenantId: string): PlacementDeviceEntry[] {
+    const report = this.analyzePlacementPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const devSeed = hashStr(campaignId + tenantId + "device");
+    return report.placements.slice(0, 12).map((pl, pi) => {
+      const baseCtr = pl.ctr;
+      const baseCvr = pl.cvr;
+      const mobileCtr = Math.round(baseCtr * (0.85 + ((devSeed + pi * 13) % 25) / 100) * 100) / 100;
+      const mobileCvr = Math.round(baseCvr * (0.8 + ((devSeed + pi * 17) % 25) / 100) * 100) / 100;
+      const desktopCtr = Math.round(baseCtr * (1.0 + ((devSeed + pi * 19) % 15) / 100) * 100) / 100;
+      const desktopCvr = Math.round(baseCvr * (1.05 + ((devSeed + pi * 23) % 20) / 100) * 100) / 100;
+      const tabletCtr = Math.round(baseCtr * (0.8 + ((devSeed + pi * 29) % 20) / 100) * 100) / 100;
+      const tabletCvr = Math.round(baseCvr * (0.85 + ((devSeed + pi * 31) % 20) / 100) * 100) / 100;
+      const ctrs = [mobileCtr, desktopCtr, tabletCtr];
+      const devices = ["Mobile", "Desktop", "Tablet"];
+      const best = devices[ctrs.indexOf(Math.max(...ctrs))];
+      const imbalance = Math.round((Math.max(...ctrs) - Math.min(...ctrs)) / Math.max(...ctrs) * 100);
+      return {
+        publisher: pl.publisher, mobileCtr, mobileCvr, desktopCtr, desktopCvr, tabletCtr, tabletCvr,
+        bestDevice: best, deviceImbalance: imbalance,
+        recommendation: imbalance > 40 ? `${pl.publisher} shows large device performance gap (${imbalance}%) — optimize for ${best.toLowerCase()} experience` : `${pl.publisher} device performance is balanced — maintain multi-device strategy`,
+      };
+    });
+  }
+
+  placementAudienceFit(campaignId: string, tenantId: string): PlacementAuditEntry[] {
+    const report = this.analyzePlacementPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const audSeed = hashStr(campaignId + tenantId + "audience");
+    return report.placements.slice(0, 12).map((pl, pi) => {
+      const audienceFit = 35 + ((audSeed + pi * 13) % 55);
+      const targeting = 40 + ((audSeed + pi * 17) % 50);
+      const contextual = 45 + ((audSeed + pi * 19) % 45);
+      const safety = 60 + ((audSeed + pi * 23) % 35);
+      const viewability = 50 + ((audSeed + pi * 29) % 40);
+      const health = Math.round((audienceFit + targeting + contextual + safety + viewability) / 5);
+      const issues: string[] = [];
+      if (audienceFit < 50) issues.push("Low audience-placement alignment");
+      if (targeting < 50) issues.push("Targeting precision below threshold");
+      if (contextual < 50) issues.push("Contextual relevance needs improvement");
+      if (safety < 70) issues.push("Brand safety score concerning");
+      if (viewability < 55) issues.push("Viewability below minimum standard");
+      if (issues.length === 0) issues.push("No critical issues detected");
+      return {
+        publisher: pl.publisher, audienceFitScore: audienceFit, targetingPrecision: targeting,
+        contextualRelevance: contextual, brandSafety: safety, viewability, overallHealth: health,
+        issues, recommendation: health < 50 ? `${pl.publisher} has critical health issues — review and optimize before scaling` : health < 70 ? `${pl.publisher} health acceptable — address ${issues.slice(0, 2).join(", ")}` : `${pl.publisher} healthy — maintain current strategy`,
+      };
+    });
+  }
+
+  placementCompetitiveAnalysis(tenantId: string): PlacementCompetitiveEntry[] {
+    const seed = hashStr(tenantId + "competitive");
+    const placements = [
+      { name: "Google Search", ourSpend: 5000, compSpend: 8000, ourCPC: 1.2, compCPC: 1.5, ourShare: 28, compShare: 35 },
+      { name: "Facebook Feed", ourSpend: 3500, compSpend: 4500, ourCPC: 0.8, compCPC: 0.9, ourShare: 22, compShare: 28 },
+      { name: "Instagram Feed", ourSpend: 2500, compSpend: 3200, ourCPC: 1.0, compCPC: 1.1, ourShare: 18, compShare: 22 },
+      { name: "YouTube", ourSpend: 2000, compSpend: 2800, ourCPC: 1.5, compCPC: 1.8, ourShare: 15, compShare: 20 },
+      { name: "TikTok", ourSpend: 1500, compSpend: 2200, ourCPC: 0.6, compCPC: 0.7, ourShare: 12, compShare: 16 },
+      { name: "LinkedIn", ourSpend: 1000, compSpend: 1800, ourCPC: 2.5, compCPC: 3.0, ourShare: 8, compShare: 12 },
+    ];
+    return placements.map((p, pi) => {
+      const intensity: "low" | "medium" | "high" = p.compShare > 25 ? "high" : p.compShare > 15 ? "medium" : "low";
+      const shareOpp = Math.max(0, Math.round((p.compShare - p.ourShare) * (0.5 + ((seed + pi * 13) % 30) / 100)));
+      return {
+        placement: p.name, ourSpend: p.ourSpend, competitorSpend: p.compSpend,
+        ourCPC: p.ourCPC, competitorCPC: p.compCPC, ourShare: p.ourShare,
+        competitorShare: p.compShare, competitiveIntensity: intensity,
+        shareOpportunity: shareOpp,
+        recommendation: shareOpp > 10 ? `${p.name} has ${shareOpp}% share opportunity — increase spend to capture competitor share` : `${p.name} share gap narrow — focus on efficiency and creative quality`,
+      };
+    });
+  }
+
+  placementCostEfficiency(campaignId: string, tenantId: string): PlacementCostEntry[] {
+    const report = this.analyzePlacementPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const costSeed = hashStr(campaignId + tenantId + "cost");
+    return report.placements.slice(0, 14).map((pl, pi) => {
+      const cpc = pl.cpc || 0.5 + ((costSeed + pi * 13) % 40) / 10;
+      const cpm = Math.round((cpc * 1000 * (0.3 + ((costSeed + pi * 17) % 30) / 100)) * 100) / 100;
+      const cpv = pl.category === "Video" ? Math.round(cpc * (0.3 + ((costSeed + pi * 19) % 20) / 100) * 100) / 100 : 0;
+      const cpa = pl.conversions > 0 ? Math.round(pl.spend / pl.conversions * 100) / 100 : 99.99;
+      const benchCpc = cpc * (0.8 + ((costSeed + pi * 23) % 40) / 100);
+      const gap = Math.round((cpc - benchCpc) / Math.max(0.01, benchCpc) * 100);
+      const score = Math.round(Math.max(0, 100 - cpa * 5 + cpc * 10 + (pl.roas * 20)));
+      const trend: "declining" | "stable" | "rising" = gap > 15 ? "rising" : gap < -10 ? "declining" : "stable";
+      return {
+        publisher: pl.publisher, cpc: Math.round(cpc * 100) / 100, cpm, cpv, cpa,
+        efficiencyScore: Math.min(100, score), benchmarkCPC: Math.round(benchCpc * 100) / 100,
+        costGap: gap, trend,
+        recommendation: trend === "rising" ? `${pl.publisher} costs rising (${gap}% above benchmark) — investigate and optimize` : trend === "declining" ? `${pl.publisher} costs below benchmark — efficient; scale if performance holds` : `${pl.publisher} costs stable — maintain current bidding strategy`,
+      };
+    });
+  }
+
+  placementSeasonalityAnalysis(campaignId: string, tenantId: string): PlacementSeasonalityEntry[] {
+    const report = this.analyzePlacementPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const seasSeed = hashStr(campaignId + tenantId + "seasonality");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const entries: PlacementSeasonalityEntry[] = [];
+    for (const pl of report.placements.slice(0, 6)) {
+      for (let mi = 0; mi < months.length; mi++) {
+        const pairSeed = seasSeed + hashStr(pl.publisher + months[mi]);
+        const seasonality = 0.5 + ((pairSeed * 17) % 100) / 100;
+        const ctr = Math.round(pl.ctr * seasonality * (0.85 + ((pairSeed * 13) % 25) / 100) * 100) / 100;
+        const cvr = Math.round(pl.cvr * seasonality * (0.85 + ((pairSeed * 19) % 25) / 100) * 100) / 100;
+        const roas = Math.round(pl.roas * seasonality * (0.9 + ((pairSeed * 23) % 20) / 100) * 100) / 100;
+        entries.push({
+          publisher: pl.publisher, month: months[mi],
+          projectedCTR: ctr, projectedCVR: cvr, projectedROAS: roas,
+          seasonalityFactor: Math.round(seasonality * 100) / 100,
+          optimalPeriod: seasonality > 1.2 ? months[mi] : "",
+          recommendedAction: seasonality > 1.2 ? `Increase ${pl.publisher} budget by ${Math.round((seasonality - 1) * 100)}% in ${months[mi]}` : seasonality < 0.7 ? `Reduce ${pl.publisher} spend in ${months[mi]} — off-peak period` : `Maintain ${pl.publisher} in ${months[mi]}`,
+        });
+      }
+    }
+    return entries;
+  }
+
+  placementROIAttribution(campaignId: string, tenantId: string): PlacementROIEntry[] {
+    const report = this.analyzePlacementPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const roiSeed = hashStr(campaignId + tenantId + "pl_roi");
+    return report.placements.slice(0, 14).map((pl, pi) => {
+      const directROAS = pl.roas;
+      const incremental = Math.round(directROAS * (1.15 + ((roiSeed + pi * 13) % 25) / 100) * 100) / 100;
+      const dimFreq = Math.round((3 + ((roiSeed + pi * 17) % 20)) * 100) / 100;
+      const marginalROI = Math.round(((roiSeed + pi * 19) % 25) / 10 * 100) / 100;
+      const scale: "low" | "medium" | "high" = pl.share < 2 ? "high" : pl.share < 5 ? "medium" : "low";
+      return {
+        publisher: pl.publisher, totalSpend: pl.spend, totalRevenue: pl.revenue,
+        directROAS, incrementalROAS: incremental, diminishingReturnFrequency: dimFreq,
+        marginalROI, scalePotential: scale,
+        recommendation: scale === "high" ? `${pl.publisher} has high scale potential — increase budget by 20-30%` : scale === "medium" ? `${pl.publisher} moderate scale potential — cautiously increase` : `${pl.publisher} at scale — focus on efficiency and creative refresh`,
+      };
     });
   }
 }
