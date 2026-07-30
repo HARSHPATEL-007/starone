@@ -112,6 +112,51 @@ interface PerformanceForecast {
   smoothedMetrics: { metric: string; alpha: number; lastSmoothedValue: number }[];
 }
 
+interface RealTimeComparison {
+  campaignId: string;
+  currentSnapshot: { metric: string; value: number; benchmark: number; deviation: number; status: string }[];
+  overallStatus: string;
+  comparisonPeriod: string;
+}
+
+interface SpikeDetection {
+  campaignId: string;
+  spikes: { metric: string; timestamp: string; value: number; expectedRange: { low: number; high: number }; magnitude: number; possibleCause: string }[];
+  spikeCount: number;
+}
+
+interface MetricCorrelation {
+  campaignId: string;
+  correlations: { metricA: string; metricB: string; pearsonR: number; lagMinutes: number; relationship: string }[];
+  strongestCorrelation: string;
+}
+
+interface RealTimeBreakdown {
+  campaignId: string;
+  dimensions: { dimension: string; value: string; impressions: number; clicks: number; conversions: number; spend: number; efficiency: number }[];
+  topDimension: string;
+  worstDimension: string;
+}
+
+interface AlertHistory {
+  campaignId: string;
+  alerts: { id: string; type: string; severity: string; title: string; timestamp: string; acknowledged: boolean; responseTime: number }[];
+  totalAlerts: number;
+  openAlerts: number;
+  avgResponseTime: number;
+}
+
+interface RealTimeDashboard {
+  campaignId: string;
+  metrics: Record<string, number>;
+  anomalyCount: number;
+  velocity: string;
+  pacingStatus: string;
+  forecastedROAS: number;
+  healthScore: number;
+  lastUpdated: string;
+}
+
 export class CampaignRealTimeMonitorService {
   private getSeed(campaignId: string, tenantId: string): string {
     return `rtm_${campaignId}_${tenantId}`;
@@ -433,6 +478,152 @@ export class CampaignRealTimeMonitorService {
         { metric: "spend", alpha, lastSmoothedValue: Math.round(smoothedSpend * 100) / 100 },
         { metric: "revenue", alpha, lastSmoothedValue: Math.round(smoothedRevenue * 100) / 100 },
       ],
+    };
+  }
+
+  getRealTimeComparison(campaignId: string, tenantId: string): RealTimeComparison {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_comparison");
+    const live = this.getLiveMetrics(campaignId, tenantId);
+    const benchmarkMetrics = [
+      { metric: "ctr", value: live.derived.ctr, benchmarkRef: rng() * 2 + 0.5 },
+      { metric: "cvr", value: live.derived.cvr, benchmarkRef: rng() * 5 + 1 },
+      { metric: "cpc", value: live.derived.cpc, benchmarkRef: rng() * 2 + 1 },
+      { metric: "roas", value: live.derived.roas, benchmarkRef: rng() * 1.5 + 1 },
+      { metric: "impression_share", value: rng() * 30 + 50, benchmarkRef: 75 },
+    ];
+    const snapshot = benchmarkMetrics.map(m => {
+      const deviation = m.benchmarkRef > 0 ? Math.round(((m.value - m.benchmarkRef) / m.benchmarkRef) * 10000) / 100 : 0;
+      const status = deviation > 10 ? "above" : deviation < -10 ? "below" : "on_par";
+      return { metric: m.metric, value: Math.round(m.value * 100) / 100, benchmark: Math.round(m.benchmarkRef * 100) / 100, deviation, status };
+    });
+    const avgDeviation = snapshot.reduce((s, m) => s + m.deviation, 0) / snapshot.length;
+    const overallStatus = avgDeviation > 5 ? "outperforming" : avgDeviation < -5 ? "underperforming" : "on_track";
+    return { campaignId, currentSnapshot: snapshot, overallStatus, comparisonPeriod: "last_30_days" };
+  }
+
+  detectSpikes(campaignId: string, tenantId: string): SpikeDetection {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_spikes");
+    const now = new Date();
+    const metrics = ["impressions", "clicks", "conversions", "spend", "revenue", "cpc"];
+    const causes = ["viral_content", "bot_traffic", "budget_change", "seasonal", "competitor_activity", "platform_change", "campaign_update"];
+    const spikes: SpikeDetection["spikes"] = [];
+    for (const metric of metrics) {
+      if (rng() > 0.5) {
+        const base = rng() * 1000 + 100;
+        const value = base * (1 + rng() * 3);
+        const low = Math.round(base * 0.8);
+        const high = Math.round(base * 1.2);
+        const magnitude = Math.round((value - base) / base * 100);
+        const ts = new Date(now.getTime() - Math.floor(rng() * 120) * 60000);
+        spikes.push({
+          metric, timestamp: ts.toISOString(), value: Math.round(value * 100) / 100,
+          expectedRange: { low, high },
+          magnitude, possibleCause: causes[Math.floor(rng() * causes.length)],
+        });
+      }
+    }
+    spikes.sort((a, b) => b.magnitude - a.magnitude);
+    return { campaignId, spikes, spikeCount: spikes.length };
+  }
+
+  analyzeMetricCorrelations(campaignId: string, tenantId: string): MetricCorrelation {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_corr");
+    const metricPairs = [
+      ["impressions", "clicks"], ["impressions", "conversions"], ["clicks", "conversions"],
+      ["spend", "revenue"], ["spend", "conversions"], ["impressions", "revenue"],
+    ];
+    const correlations: MetricCorrelation["correlations"] = [];
+    let strongest = { pair: "", absR: 0 };
+    for (const [a, b] of metricPairs) {
+      const pearsonR = Math.round((rng() * 1.6 - 0.8) * 100) / 100;
+      const absR = Math.abs(pearsonR);
+      const lagMinutes = Math.floor(rng() * 60);
+      const relationship = pearsonR > 0.5 ? "strong_positive" : pearsonR > 0.2 ? "weak_positive" : pearsonR < -0.5 ? "strong_negative" : pearsonR < -0.2 ? "weak_negative" : "neutral";
+      correlations.push({ metricA: a, metricB: b, pearsonR, lagMinutes, relationship });
+      if (absR > strongest.absR) strongest = { pair: `${a}_vs_${b}`, absR };
+    }
+    return { campaignId, correlations, strongestCorrelation: strongest.pair };
+  }
+
+  getRealTimeBreakdown(campaignId: string, tenantId: string): RealTimeBreakdown {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_breakdown");
+    const dims = ["device", "platform", "region", "audience", "placement"];
+    const dimValues: Record<string, string[]> = {
+      device: ["mobile", "desktop", "tablet"],
+      platform: ["google", "meta", "linkedin", "tiktok"],
+      region: ["north", "south", "east", "west", "central"],
+      audience: ["new", "retargeting", "lookalike", "custom"],
+      placement: ["feed", "sidebar", "search", "video"],
+    };
+    const dimensions: RealTimeBreakdown["dimensions"] = [];
+    let bestEff = -Infinity, worstEff = Infinity;
+    let topDim = "", worstDim = "";
+    for (const dim of dims) {
+      const values = dimValues[dim];
+      for (const val of values) {
+        const impressions = Math.floor(rng() * 10000) + 500;
+        const clicks = Math.floor(impressions * (rng() * 0.04 + 0.01));
+        const conversions = Math.floor(clicks * (rng() * 0.08 + 0.02));
+        const spend = Math.round((rng() * 200 + 50) * 100) / 100;
+        const efficiency = spend > 0 ? Math.round((conversions / spend) * 10000) / 100 : 0;
+        dimensions.push({ dimension: dim, value: val, impressions, clicks, conversions, spend, efficiency });
+        if (efficiency > bestEff) { bestEff = efficiency; topDim = `${dim}:${val}`; }
+        if (efficiency < worstEff && efficiency > 0) { worstEff = efficiency; worstDim = `${dim}:${val}`; }
+      }
+    }
+    return { campaignId, dimensions, topDimension: topDim, worstDimension: worstDim };
+  }
+
+  getAlertHistory(campaignId: string, tenantId: string): AlertHistory {
+    const seed = this.getSeed(campaignId, tenantId);
+    const rng = seededRandom(seed + "_alert_hist");
+    const types = ["budget", "performance", "anomaly", "pacing", "velocity"];
+    const severities = ["info", "warning", "critical"];
+    const now = new Date();
+    const totalAlerts = Math.floor(rng() * 30) + 10;
+    const alerts: AlertHistory["alerts"] = [];
+    for (let i = 0; i < totalAlerts; i++) {
+      const ts = new Date(now.getTime() - Math.floor(rng() * 7 * 86400000));
+      alerts.push({
+        id: `alert_${i}_${hashStr(seed + "_hist_" + i)}`,
+        type: types[Math.floor(rng() * types.length)],
+        severity: severities[Math.floor(rng() * severities.length)],
+        title: `Alert ${i}`,
+        timestamp: ts.toISOString(),
+        acknowledged: rng() > 0.3,
+        responseTime: Math.floor(rng() * 60),
+      });
+    }
+    const openAlerts = alerts.filter(a => !a.acknowledged).length;
+    const acknowledgedAlerts = alerts.filter(a => a.acknowledged);
+    const avgResponseTime = acknowledgedAlerts.length > 0
+      ? Math.round(acknowledgedAlerts.reduce((s, a) => s + a.responseTime, 0) / acknowledgedAlerts.length * 10) / 10
+      : 0;
+    return { campaignId, alerts, totalAlerts, openAlerts, avgResponseTime };
+  }
+
+  getRealTimeDashboard(campaignId: string, tenantId: string): RealTimeDashboard {
+    const live = this.getLiveMetrics(campaignId, tenantId);
+    const anomalyResult = this.detectAnomalies(campaignId, tenantId);
+    const velocityResult = this.analyzeMetricVelocity(campaignId, tenantId);
+    const pacing = this.getBudgetPacing(campaignId, tenantId);
+    const forecast = this.getPerformanceForecast(campaignId, tenantId);
+    const forecastedROAS = forecast.forecastPeriods.length > 0
+      ? Math.round(forecast.forecastPeriods.reduce((s, p) => s + (p.predictedRevenue / Math.max(p.predictedSpend, 1)), 0) / forecast.forecastPeriods.length * 100) / 100
+      : 0;
+    return {
+      campaignId,
+      metrics: live.derived,
+      anomalyCount: anomalyResult.anomalyCount,
+      velocity: velocityResult.overallMomentum,
+      pacingStatus: pacing.pacingStatus,
+      forecastedROAS,
+      healthScore: anomalyResult.overallHealthScore,
+      lastUpdated: live.timestamp,
     };
   }
 }

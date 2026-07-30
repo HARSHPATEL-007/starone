@@ -2702,9 +2702,13 @@ export const api = {
     budgetPacing: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/budget-pacing`),
     liveAlerts: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/live-alerts`),
     forecast: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/forecast`),
+    comparison: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/comparison`),
+    spikes: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/spikes`),
+    correlations: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/correlations`),
+    breakdown: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/breakdown`),
+    alertHistory: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/alert-history`),
+    dashboard: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/dashboard`),
   },
-
-  campaignAttributionModeling: {
     attribution: (campaignId: string, model?: string) => {
       const params = model ? `?model=${model}` : "";
       return request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution${params}`);

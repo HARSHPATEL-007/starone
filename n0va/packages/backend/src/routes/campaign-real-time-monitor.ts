@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/forecast", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/comparison", asyncHandler(async (req, res) => {
+  const result = campaignRealTimeMonitor.getRealTimeComparison(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/spikes", asyncHandler(async (req, res) => {
+  const result = campaignRealTimeMonitor.detectSpikes(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/correlations", asyncHandler(async (req, res) => {
+  const result = campaignRealTimeMonitor.analyzeMetricCorrelations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/breakdown", asyncHandler(async (req, res) => {
+  const result = campaignRealTimeMonitor.getRealTimeBreakdown(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/alert-history", asyncHandler(async (req, res) => {
+  const result = campaignRealTimeMonitor.getAlertHistory(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/dashboard", asyncHandler(async (req, res) => {
+  const result = campaignRealTimeMonitor.getRealTimeDashboard(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

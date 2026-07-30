@@ -2586,6 +2586,30 @@ export class AdsMarketingModuleService {
     return campaignRealTimeMonitor.getPerformanceForecast(campaignId, tenantId);
   }
 
+  realTimeComparison(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getRealTimeComparison(campaignId, tenantId);
+  }
+
+  realTimeSpikes(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.detectSpikes(campaignId, tenantId);
+  }
+
+  realTimeCorrelations(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.analyzeMetricCorrelations(campaignId, tenantId);
+  }
+
+  realTimeBreakdown(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getRealTimeBreakdown(campaignId, tenantId);
+  }
+
+  realTimeAlertHistory(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getAlertHistory(campaignId, tenantId);
+  }
+
+  realTimeDashboard(campaignId: string, tenantId: string) {
+    return campaignRealTimeMonitor.getRealTimeDashboard(campaignId, tenantId);
+  }
+
   attribution(campaignId: string, tenantId: string, model?: string) {
     return campaignAttributionModeling.runAttribution(campaignId, tenantId, model as any);
   }
