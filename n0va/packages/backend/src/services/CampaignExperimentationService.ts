@@ -169,6 +169,50 @@ export class CampaignExperimentationService {
     };
   }
 
+  experimentDashboard(tenantId: string): {
+    total: number; running: number; completed: number; draft: number;
+    avgLift: number; significantCount: number;
+    runningList: { id: string; name: string; type: string; daysRunning: number; primaryMetric: string }[];
+    pendingReview: { id: string; name: string; completedAt: string; lift: number; significant: boolean }[];
+  } {
+    const mem = DataStore.mem();
+    const all = mem.find("experiments", (e: any) => e.tenantId === tenantId);
+    const running = all.filter((e: any) => e.status === "running");
+    const completed = all.filter((e: any) => e.status === "completed");
+    const draft = all.filter((e: any) => e.status === "draft");
+    const sigCount = completed.filter((e: any) => e.results?.significant).length;
+    const avgLift = completed.length > 0 ? completed.reduce((s: number, e: any) => s + (e.results?.lift || 0), 0) / completed.length : 0;
+    const runningList = running.map((e: any) => ({
+      id: e.id, name: e.name, type: e.type,
+      daysRunning: e.startDate ? Math.round((Date.now() - new Date(e.startDate).getTime()) / 86400000) : 0,
+      primaryMetric: e.primaryMetric,
+    }));
+    const pendingReview = completed
+      .filter((e: any) => !e.results?.significant || !e.winner)
+      .slice(0, 10)
+      .map((e: any) => ({ id: e.id, name: e.name, completedAt: e.endDate || e.updatedAt, lift: e.results?.lift || 0, significant: e.results?.significant || false }));
+    return { total: all.length, running: running.length, completed: completed.length, draft: draft.length, avgLift: Math.round(avgLift * 100) / 100, significantCount: sigCount, runningList, pendingReview };
+  }
+
+  experimentQuickStart(tenantId: string, data: { name: string; description?: string; type?: string; hypothesis?: string; primaryMetric?: string; variants?: any[] }): Experiment | null {
+    const created = this.createExperiment(tenantId, data as any);
+    if (created) {
+      return this.startExperiment(created.id, tenantId);
+    }
+    return null;
+  }
+
+  experimentBatchComplete(tenantId: string, expIds: string[]): { total: number; succeeded: number; failed: number; errors: string[] } {
+    let succeeded = 0, failed = 0;
+    const errors: string[] = [];
+    for (const id of expIds) {
+      const result = this.completeExperiment(id, tenantId);
+      if (result) succeeded++;
+      else { failed++; errors.push(`Experiment ${id} not found or not running`); }
+    }
+    return { total: expIds.length, succeeded, failed, errors };
+  }
+
   private computeResults(exp: Experiment): ExperimentResults {
     const control = exp.variants.find(v => v.type === "control");
     const treatments = exp.variants.filter(v => v.type === "treatment");

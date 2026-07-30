@@ -68,4 +68,9 @@ router.get("/journey-sequence-analysis", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/journey-summary-dashboard", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeySummaryDashboard(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

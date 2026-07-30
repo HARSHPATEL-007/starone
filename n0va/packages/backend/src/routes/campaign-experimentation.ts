@@ -55,4 +55,20 @@ router.get("/summary", asyncHandler(async (req, res) => {
   sendSuccess(res, summary);
 }));
 
+router.get("/dashboard", asyncHandler(async (req, res) => {
+  const result = campaignExperimentation.experimentDashboard(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.post("/quick-start", asyncHandler(async (req, res) => {
+  const result = campaignExperimentation.experimentQuickStart(req.user!.tenantId, req.body);
+  sendSuccess(res, result || { error: "Failed to quick-start experiment" });
+}));
+
+router.post("/batch-complete", asyncHandler(async (req, res) => {
+  const { expIds } = req.body;
+  const result = campaignExperimentation.experimentBatchComplete(req.user!.tenantId, expIds || []);
+  sendSuccess(res, result);
+}));
+
 export default router;

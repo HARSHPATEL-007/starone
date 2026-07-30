@@ -2410,6 +2410,7 @@ export const api = {
       request<any>("/campaign-alert-orchestrator/escalate", { method: "POST", body: JSON.stringify({ escalationContact }) }),
     dailyDigest: () => request<any>("/campaign-alert-orchestrator/daily-digest"),
   },
+  campaignExperimentation: {
     list: (status?: string) => request<any>(`/campaign-experimentation/experiments${status ? `?status=${status}` : ""}`),
     get: (expId: string) => request<any>(`/campaign-experimentation/experiments/${expId}`),
     create: (data: any) => request<any>("/campaign-experimentation/experiments", { method: "POST", body: JSON.stringify(data) }),
@@ -2421,6 +2422,9 @@ export const api = {
     recordMetrics: (expId: string, variantId: string, date: string, metrics: any) =>
       request<any>(`/campaign-experimentation/experiments/${expId}/metrics`, { method: "POST", body: JSON.stringify({ variantId, date, metrics }) }),
     summary: () => request<any>("/campaign-experimentation/summary"),
+    dashboard: () => request<any>("/campaign-experimentation/dashboard"),
+    quickStart: (data: any) => request<any>("/campaign-experimentation/quick-start", { method: "POST", body: JSON.stringify(data) }),
+    batchComplete: (expIds: string[]) => request<any>("/campaign-experimentation/batch-complete", { method: "POST", body: JSON.stringify({ expIds }) }),
   },
 
   campaignBudgetSimulator: {
@@ -2440,6 +2444,17 @@ export const api = {
     budgetEfficiency: () => request<any>("/campaign-insights-engine/budget-efficiency"),
     crossAttribution: () => request<any>("/campaign-insights-engine/cross-attribution"),
     predictiveAlerts: () => request<any>("/campaign-insights-engine/predictive-alerts"),
+    acknowledgeBatch: (insightIds: string[], action?: string) =>
+      request<any>("/campaign-insights-engine/acknowledge-batch", { method: "POST", body: JSON.stringify({ insightIds, action: action || "acknowledge" }) }),
+    prioritySummary: () => request<any>("/campaign-insights-engine/priority-summary"),
+    exportInsights: (format?: string) => request<any>(`/campaign-insights-engine/export${format ? `?format=${format}` : ""}`),
+    trendForecast: (metric?: string, days?: number) => {
+      const params = new URLSearchParams();
+      if (metric) params.set("metric", metric);
+      if (days) params.set("days", String(days));
+      return request<any>(`/campaign-insights-engine/trend-forecast?${params.toString()}`);
+    },
+    campaignRanking: () => request<any>("/campaign-insights-engine/campaign-ranking"),
   },
 
   campaignPerformanceDiagnostics: {
@@ -2636,6 +2651,7 @@ export const api = {
     journeyLifecycleStages: () => request<any>("/campaign-customer-journey/journey-lifecycle-stages"),
     journeyTouchpointEffectiveness: () => request<any>("/campaign-customer-journey/journey-touchpoint-effectiveness"),
     journeySequenceAnalysis: () => request<any>("/campaign-customer-journey/journey-sequence-analysis"),
+    journeySummaryDashboard: () => request<any>("/campaign-customer-journey/journey-summary-dashboard"),
   },
 
   campaignConversionFunnelAnalyzer: {

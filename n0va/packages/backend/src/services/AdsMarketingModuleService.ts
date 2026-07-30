@@ -27,6 +27,7 @@ import { campaignCreativeOptimizer } from "./CampaignCreativeOptimizerService";
 import { campaignLandingPageAnalyzer } from "./CampaignLandingPageAnalyzerService";
 import { campaignSocialSentimentAnalyzer } from "./CampaignSocialSentimentAnalyzerService";
 import { campaignRetargetingAnalyzer } from "./CampaignRetargetingAnalyzerService";
+import { campaignExperimentation } from "./CampaignExperimentationService";
 import { campaignRealTimeMonitor } from "./CampaignRealTimeMonitorService";
 import { campaignAttributionModeling } from "./CampaignAttributionModelingService";
 import { campaignAIBiddingAgent } from "./CampaignAIBiddingAgentService";
@@ -2427,6 +2428,10 @@ export class AdsMarketingModuleService {
     return campaignCustomerJourney.journeySequenceAnalysis(tenantId);
   }
 
+  journeySummaryDashboard(tenantId: string) {
+    return campaignCustomerJourney.journeySummaryDashboard(tenantId);
+  }
+
   funnelAnalysis(campaignId: string, tenantId: string) {
     return campaignConversionFunnelAnalyzer.analyzeFunnel(campaignId, tenantId);
   }
@@ -2713,6 +2718,18 @@ export class AdsMarketingModuleService {
 
   retargetingPredictiveModeling(campaignId: string, tenantId: string) {
     return campaignRetargetingAnalyzer.retargetingPredictiveModeling(campaignId, tenantId);
+  }
+
+  experimentDashboard(tenantId: string) {
+    return campaignExperimentation.experimentDashboard(tenantId);
+  }
+
+  experimentQuickStart(tenantId: string, data: any) {
+    return campaignExperimentation.experimentQuickStart(tenantId, data);
+  }
+
+  experimentBatchComplete(tenantId: string, expIds: string[]) {
+    return campaignExperimentation.experimentBatchComplete(tenantId, expIds);
   }
 
   liveMetrics(campaignId: string, tenantId: string) {
@@ -3081,6 +3098,26 @@ export class AdsMarketingModuleService {
 
   healthBenchmark(metrics: any[], benchmarks?: any[]) {
     return campaignHealthPredictorService.healthBenchmark(metrics, benchmarks);
+  }
+
+  insightAcknowledgeBatch(tenantId: string, insightIds: string[], action: string) {
+    return campaignInsightsEngine.insightAcknowledgeBatch(tenantId, insightIds, action as any);
+  }
+
+  insightPrioritySummary(tenantId: string) {
+    return campaignInsightsEngine.insightPrioritySummary(tenantId);
+  }
+
+  insightExport(tenantId: string, format?: string) {
+    return campaignInsightsEngine.insightExport(tenantId, format as any);
+  }
+
+  insightTrendForecast(tenantId: string, metric?: string, days?: number) {
+    return campaignInsightsEngine.insightTrendForecast(tenantId, metric, days);
+  }
+
+  insightCampaignRanking(tenantId: string) {
+    return campaignInsightsEngine.insightCampaignRanking(tenantId);
   }
 
   issueBatchUpdate(tenantId: string, issueIds: string[], updates: any) {

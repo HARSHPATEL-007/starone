@@ -1,6 +1,17 @@
 import { DataStore } from "./DataStore";
 import { autonomousCampaignManager } from "./AutonomousCampaignManagerService";
 
+function hashStr(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); hash = ((hash << 5) - hash) + c; hash |= 0; }
+  return Math.abs(hash);
+}
+
+function seededRandom(seed: string): () => number {
+  let h = hashStr(seed);
+  return () => { h = (h * 16807) % 2147483647; return (h - 1) / 2147483646; };
+}
+
 type InsightCategory = "performance" | "health" | "trend" | "saturation" | "anomaly" | "budget" | "opportunity" | "risk";
 type InsightSeverity = "info" | "low" | "medium" | "high" | "critical";
 type InsightStatus = "active" | "acknowledged" | "resolved";
@@ -324,12 +335,13 @@ export class CampaignInsightsEngineService {
     const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
     const convTotal = portfolio.analyses.reduce((s, a) => s + a.performance.conversions, 0) || 100;
     return portfolio.analyses.map(a => {
+      const rng = seededRandom(a.campaignId + tenantId + "_attribution");
       const share = a.performance.conversions / convTotal;
-      const assist = Math.round(a.performance.conversions * (0.1 + Math.random() * 0.2));
+      const assist = Math.round(a.performance.conversions * (0.1 + rng() * 0.2));
       const crossover = portfolio.analyses
-        .filter(o => o.campaignId !== a.campaignId && Math.random() > 0.5)
+        .filter(o => o.campaignId !== a.campaignId && rng() > 0.5)
         .slice(0, 2)
-        .map(o => ({ campaignId: o.campaignId, campaignName: o.campaignName, overlapScore: Math.round(Math.random() * 40 + 10) }));
+        .map(o => ({ campaignId: o.campaignId, campaignName: o.campaignName, overlapScore: Math.round(rng() * 40 + 10) }));
       return {
         campaignId: a.campaignId, campaignName: a.campaignName, campaignType: a.status,
         directConversions: a.performance.conversions, assistedConversions: assist,
@@ -372,6 +384,118 @@ export class CampaignInsightsEngineService {
         mostUrgent: sorted[0] || null,
       },
     };
+  }
+
+  insightAcknowledgeBatch(tenantId: string, insightIds: string[], action: "acknowledge" | "resolve"): { total: number; succeeded: number; failed: number } {
+    const mem = DataStore.mem();
+    let succeeded = 0, failed = 0;
+    const now = new Date().toISOString();
+    for (const id of insightIds) {
+      const existing = mem.findOne("insights", (i: any) => i.id === id && i.tenantId === tenantId);
+      if (!existing) { failed++; continue; }
+      const updated = {
+        ...existing,
+        status: action === "acknowledge" ? "acknowledged" as const : "resolved" as const,
+        [action === "acknowledge" ? "acknowledgedAt" : "resolvedAt"]: now,
+      };
+      mem.update("insights", (i: any) => i.id === id, updated);
+      succeeded++;
+    }
+    return { total: insightIds.length, succeeded, failed };
+  }
+
+  insightPrioritySummary(tenantId: string): {
+    immediate: { id: string; title: string; campaignName: string; severity: string; category: string; recommendation: string }[];
+    today: { id: string; title: string; campaignName: string; severity: string; category: string }[];
+    thisWeek: { id: string; title: string; campaignName: string; severity: string; category: string }[];
+    resolved: number;
+  } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const allInsights: CampaignInsight[] = [];
+    for (const a of portfolio.analyses) {
+      const ins = this.analyzeCampaign(a.campaignId, tenantId);
+      allInsights.push(...ins);
+    }
+    const sevOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+    const sorted = [...allInsights].sort((a, b) => (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9));
+    const immediate = sorted.filter(i => i.severity === "critical").slice(0, 5).map(i => ({ id: i.id, title: i.title, campaignName: i.campaignName, severity: i.severity, category: i.category, recommendation: i.recommendation }));
+    const today = sorted.filter(i => i.severity === "high").slice(0, 5).map(i => ({ id: i.id, title: i.title, campaignName: i.campaignName, severity: i.severity, category: i.category }));
+    const thisWeek = sorted.filter(i => i.severity === "medium" || i.severity === "low").slice(0, 5).map(i => ({ id: i.id, title: i.title, campaignName: i.campaignName, severity: i.severity, category: i.category }));
+    return { immediate, today, thisWeek, resolved: allInsights.filter(i => i.status === "resolved").length };
+  }
+
+  insightExport(tenantId: string, format: "json" | "csv" = "json"): { generatedAt: string; campaignCount: number; totalInsights: number; data: any } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const allInsights: CampaignInsight[] = [];
+    for (const a of portfolio.analyses) {
+      const ins = this.analyzeCampaign(a.campaignId, tenantId);
+      allInsights.push(...ins);
+    }
+    const data = format === "csv"
+      ? ["id,campaignId,campaignName,category,severity,title,metricValue,confidence,recommendation"]
+        .concat(allInsights.map(i =>
+          `"${i.id}","${i.campaignId}","${i.campaignName}","${i.category}","${i.severity}","${i.title.replace(/"/g, '""')}",${i.metricValue},${i.confidence},"${i.recommendation.replace(/"/g, '""')}"`
+        )).join("\n")
+      : {
+          insights: allInsights.map(i => ({
+            id: i.id, campaignId: i.campaignId, campaignName: i.campaignName,
+            category: i.category, severity: i.severity, status: i.status,
+            title: i.title, message: i.message, metricValue: i.metricValue,
+            thresholdValue: i.thresholdValue, confidence: i.confidence,
+            recommendation: i.recommendation, generatedAt: i.generatedAt,
+          })),
+          summary: {
+            totalInsights: allInsights.length,
+            bySeverity: { critical: allInsights.filter(i => i.severity === "critical").length, high: allInsights.filter(i => i.severity === "high").length, medium: allInsights.filter(i => i.severity === "medium").length, low: allInsights.filter(i => i.severity === "low").length },
+            byCategory: [...new Set(allInsights.map(i => i.category))].reduce((acc, c) => ({ ...acc, [c]: allInsights.filter(i => i.category === c).length }), {} as Record<string, number>),
+          },
+        };
+    return { generatedAt: new Date().toISOString(), campaignCount: portfolio.analyses.length, totalInsights: allInsights.length, data };
+  }
+
+  insightTrendForecast(tenantId: string, metric: string = "roas", days: number = 30): {
+    metric: string; currentValue: number; projectedValue: number; direction: "up" | "down" | "stable";
+    confidence: number; campaignsAbove: number; campaignsBelow: number;
+  } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    let totalCur = 0, totalProj = 0, above = 0, below = 0, count = 0;
+    for (const a of portfolio.analyses) {
+      const curVal = (a.performance as any)[metric] || 0;
+      const trend = a.trends?.find((t: any) => t.metric === metric);
+      const changePct = trend?.changePercent || 0;
+      const projected = curVal * (1 + changePct / 100 * days / 30);
+      totalCur += curVal; totalProj += projected;
+      if (projected > curVal) above++; else if (projected < curVal) below++;
+      count++;
+    }
+    const curAvg = count > 0 ? totalCur / count : 0;
+    const projAvg = count > 0 ? totalProj / count : 0;
+    const direction: "up" | "down" | "stable" = projAvg > curAvg * 1.02 ? "up" : projAvg < curAvg * 0.98 ? "down" : "stable";
+    const confidence = count > 0 ? Math.round(90 - Math.abs(projAvg - curAvg) / (curAvg || 1) * 100) : 0;
+    return { metric, currentValue: Math.round(curAvg * 100) / 100, projectedValue: Math.round(projAvg * 100) / 100, direction, confidence: Math.max(10, Math.min(99, confidence)), campaignsAbove: above, campaignsBelow: below };
+  }
+
+  insightCampaignRanking(tenantId: string): {
+    rankings: { campaignId: string; campaignName: string; totalInsights: number; criticalCount: number; highCount: number; topCategory: string; priorityScore: number }[];
+    summary: { totalCampaigns: number; avgInsightsPerCampaign: number; mostCriticalCampaign: string | null };
+  } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rankings: { campaignId: string; campaignName: string; totalInsights: number; criticalCount: number; highCount: number; topCategory: string; priorityScore: number }[] = [];
+    for (const a of portfolio.analyses) {
+      const ins = this.analyzeCampaign(a.campaignId, tenantId);
+      const criticalCount = ins.filter(i => i.severity === "critical").length;
+      const highCount = ins.filter(i => i.severity === "high").length;
+      const catCount: Record<string, number> = {};
+      for (const i of ins) catCount[i.category] = (catCount[i.category] || 0) + 1;
+      const topCategory = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0]?.[0] || "none";
+      const priorityScore = criticalCount * 100 + highCount * 40 + ins.length * 10;
+      rankings.push({ campaignId: a.campaignId, campaignName: a.campaignName, totalInsights: ins.length, criticalCount, highCount, topCategory, priorityScore });
+    }
+    rankings.sort((a, b) => b.priorityScore - a.priorityScore);
+    const totalCampaigns = rankings.length;
+    const avgInsights = totalCampaigns > 0 ? Math.round(rankings.reduce((s, r) => s + r.totalInsights, 0) / totalCampaigns * 10) / 10 : 0;
+    const mostCritical = rankings.length > 0 && rankings[0].priorityScore > 0 ? rankings[0].campaignName : null;
+    return { rankings, summary: { totalCampaigns, avgInsightsPerCampaign: avgInsights, mostCriticalCampaign: mostCritical } };
   }
 
   private pearsonCorrelation(x: number[], y: number[]): number {

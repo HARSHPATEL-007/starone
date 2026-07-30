@@ -458,6 +458,36 @@ export class CampaignCustomerJourneyService {
     const highestConv = sequences.reduce((a, b) => a.conversionRate > b.conversionRate ? a : b, sequences[0]);
     return { sequences: sequences.slice(0, 15), mostCommonSequence: mostCommon ? mostCommon.sequence : "N/A", highestConvertingSequence: highestConv ? highestConv.sequence : "N/A", sequenceDiversity: Math.round(sequences.length / report.journeys.length * 10000) / 100 };
   }
+
+  journeySummaryDashboard(tenantId: string): {
+    totalJourneys: number; overallConversionRate: number; avgTouchpoints: number;
+    avgPathHours: number; topPath: { path: string; frequency: number; conversionRate: number } | null;
+    dropOffHotspots: { position: number; dropOffRate: number }[];
+    timeDistribution: { bucket: string; journeyCount: number; conversionRate: number }[];
+    quickActions: string[];
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const topPath = report.commonPaths.length > 0 ? report.commonPaths[0] : null;
+    const dropOffHotspots = this.analyzeJourneyDropOffs(tenantId)
+      .filter(d => d.significance === "high")
+      .slice(0, 3)
+      .map(d => ({ position: d.touchpointPosition, dropOffRate: d.dropOffRate }));
+    const timeDistribution = this.analyzeJourneyTimeBuckets(tenantId).map(b => ({
+      bucket: b.timeBucket, journeyCount: b.journeyCount, conversionRate: b.conversionRate,
+    }));
+    const quickActions: string[] = [];
+    if (report.overallConversionRate < 30) quickActions.push("CRO is critical — review funnel friction points");
+    if (report.averageTouchpoints > 4) quickActions.push("Path too long — implement accelerated conversion paths");
+    if (dropOffHotspots.length > 0) quickActions.push(`High drop-off at touchpoint ${dropOffHotspots[0].position} — add retargeting sequence`);
+    if (report.averagePathLengthHours > 168) quickActions.push("Journeys exceed 1 week — create time-decay audience segments");
+    if (quickActions.length === 0) quickActions.push("Journey metrics are healthy — continue monitoring");
+    return {
+      totalJourneys: report.journeys.length, overallConversionRate: report.overallConversionRate,
+      avgTouchpoints: report.averageTouchpoints, avgPathHours: report.averagePathLengthHours,
+      topPath: topPath ? { path: topPath.path, frequency: topPath.frequency, conversionRate: topPath.conversionRate } : null,
+      dropOffHotspots, timeDistribution, quickActions,
+    };
+  }
 }
 
 export const campaignCustomerJourney = new CampaignCustomerJourneyService();
