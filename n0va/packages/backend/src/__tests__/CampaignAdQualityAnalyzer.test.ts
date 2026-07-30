@@ -125,3 +125,111 @@ describe("CampaignAdQualityAnalyzer - trackQualityTrends", () => {
     expect(trends!.recommendation).toBeTruthy();
   });
 });
+
+describe("CampaignAdQualityAnalyzer - adCreativeQualityAnalysis", () => {
+  it("returns creative element quality scores", () => {
+    const results = campaignAdQualityAnalyzer.adCreativeQualityAnalysis(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("element");
+      expect(r).toHaveProperty("score");
+      expect(r).toHaveProperty("grade");
+      expect(r).toHaveProperty("strengths");
+      expect(Array.isArray(r.strengths)).toBe(true);
+      expect(r).toHaveProperty("improvements");
+      expect(Array.isArray(r.improvements)).toBe(true);
+      expect(r).toHaveProperty("bestPracticeCompliance");
+    }
+  });
+});
+
+describe("CampaignAdQualityAnalyzer - adLandingPageExperience", () => {
+  it("returns landing page experience components", () => {
+    const results = campaignAdQualityAnalyzer.adLandingPageExperience(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("component");
+      expect(r).toHaveProperty("score");
+      expect(r).toHaveProperty("weight");
+      expect(r).toHaveProperty("findings");
+      expect(Array.isArray(r.findings)).toBe(true);
+      expect(r).toHaveProperty("recommendations");
+      expect(Array.isArray(r.recommendations)).toBe(true);
+    }
+  });
+});
+
+describe("CampaignAdQualityAnalyzer - adQualityByDevice", () => {
+  it("returns quality breakdown by device", () => {
+    const results = campaignAdQualityAnalyzer.adQualityByDevice(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("device");
+      expect(r).toHaveProperty("overallScore");
+      expect(r).toHaveProperty("ctrQuality");
+      expect(r).toHaveProperty("cvrQuality");
+      expect(r).toHaveProperty("relevanceScore");
+      expect(r).toHaveProperty("userExperience");
+      expect(r).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignAdQualityAnalyzer - adQualityByPlacement", () => {
+  it("returns quality breakdown by placement", () => {
+    const results = campaignAdQualityAnalyzer.adQualityByPlacement(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("placement");
+      expect(r).toHaveProperty("qualityScore");
+      expect(r).toHaveProperty("impressionShare");
+      expect(r).toHaveProperty("conversionRate");
+      expect(r).toHaveProperty("competitiveCPC");
+      expect(r).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignAdQualityAnalyzer - adQualityPrediction", () => {
+  it("returns quality score prediction with key drivers", () => {
+    const pred = campaignAdQualityAnalyzer.adQualityPrediction(TEST_CAMPAIGN, TEST_TENANT);
+    expect(pred).toHaveProperty("campaignId");
+    expect(pred).toHaveProperty("currentScore");
+    expect(pred).toHaveProperty("predictedNextMonth");
+    expect(pred).toHaveProperty("predictedNextQuarter");
+    expect(pred).toHaveProperty("trajectory");
+    expect(pred).toHaveProperty("confidenceLevel");
+    expect(["high", "medium", "low"]).toContain(pred.confidenceLevel);
+    expect(Array.isArray(pred.keyDrivers)).toBe(true);
+    expect(pred.keyDrivers.length).toBeGreaterThan(0);
+    for (const kd of pred.keyDrivers) {
+      expect(kd).toHaveProperty("factor");
+      expect(kd).toHaveProperty("impact");
+      expect(kd).toHaveProperty("direction");
+    }
+    expect(pred).toHaveProperty("recommendation");
+  });
+});
+
+describe("CampaignAdQualityAnalyzer - adCompetitiveLandscape", () => {
+  it("returns competitive landscape with threat levels", () => {
+    const results = campaignAdQualityAnalyzer.adCompetitiveLandscape(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("competitor");
+      expect(r).toHaveProperty("overallQuality");
+      expect(r).toHaveProperty("ctrComparison");
+      expect(r).toHaveProperty("relevanceComparison");
+      expect(r).toHaveProperty("landingPageComparison");
+      expect(r).toHaveProperty("marketShare");
+      expect(r).toHaveProperty("threatLevel");
+      expect(["low", "medium", "high"]).toContain(r.threatLevel);
+      expect(r).toHaveProperty("weakness");
+    }
+  });
+});

@@ -79,6 +79,72 @@ interface QualityTrendTracking {
   recommendation: string;
 }
 
+interface CreativeQualityEntry {
+  element: string;
+  score: number;
+  grade: string;
+  strengths: string[];
+  improvements: string[];
+  bestPracticeCompliance: number;
+}
+
+interface LandingPageExperienceEntry {
+  component: string;
+  score: number;
+  weight: number;
+  findings: string[];
+  recommendations: string[];
+}
+
+interface DeviceQualityEntry {
+  device: string;
+  overallScore: number;
+  ctrQuality: number;
+  cvrQuality: number;
+  relevanceScore: number;
+  userExperience: number;
+  recommendation: string;
+}
+
+interface PlacementQualityEntry {
+  placement: string;
+  qualityScore: number;
+  impressionShare: number;
+  conversionRate: number;
+  ctr: number;
+  competitiveCPC: number;
+  recommendation: string;
+}
+
+interface QualityPrediction {
+  campaignId: string;
+  campaignName: string;
+  currentScore: number;
+  predictedNextMonth: number;
+  predictedNextQuarter: number;
+  trajectory: "improving" | "declining" | "stable";
+  confidenceLevel: "high" | "medium" | "low";
+  keyDrivers: { factor: string; impact: number; direction: "positive" | "negative" }[];
+  recommendation: string;
+}
+
+interface CompetitiveLandscapeEntry {
+  competitor: string;
+  overallQuality: number;
+  ctrComparison: number;
+  relevanceComparison: number;
+  landingPageComparison: number;
+  marketShare: number;
+  threatLevel: "low" | "medium" | "high";
+  weakness: string;
+}
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+
 function scoreToGrade(score: number): "excellent" | "good" | "average" | "poor" | "critical" {
   if (score >= 90) return "excellent";
   if (score >= 75) return "good";
@@ -191,7 +257,7 @@ export class CampaignAdQualityAnalyzerService {
     const a2l = Math.round((cvrDim?.score || 50) * 0.6 + (relDim?.score || 50) * 0.4);
     const k2l = Math.round((k2a + a2l) / 2);
     const overall = Math.round((k2a * 0.35 + a2l * 0.4 + k2l * 0.25));
-    const coverage = Math.min(100, Math.round(overall * 0.85 + Math.random() * 10));
+    const coverage = Math.min(100, Math.round(overall * 0.85 + (hashStr(campaignId + "coverage") % 11)));
     const recommendations: string[] = [];
     if (k2a < 70) recommendations.push("Ad copy should more closely reflect target keywords");
     if (a2l < 70) recommendations.push("Landing page content should directly continue the ad promise");
@@ -228,9 +294,10 @@ export class CampaignAdQualityAnalyzerService {
   competitiveAdQuality(campaignId: string, tenantId: string): AdQualityBenchmark | null {
     const report = this.analyzeAdQuality(campaignId, tenantId);
     if (!report) return null;
-    const competitorCount = 3 + Math.floor(Math.random() * 5);
-    const dims = report.dimensions.map(d => {
-      const compAvg = Math.max(20, Math.min(95, d.score + (Math.random() * 30 - 15)));
+    const compSeed = hashStr(campaignId + tenantId + "comp");
+    const competitorCount = 3 + (compSeed % 5);
+    const dims = report.dimensions.map((d, di) => {
+      const compAvg = Math.max(20, Math.min(95, d.score + ((compSeed + di * 19) % 30 - 15)));
       const percentile = d.score >= compAvg ? 50 + Math.round((d.score - compAvg) / (100 - compAvg) * 50) : Math.round(d.score / compAvg * 50);
       return { name: d.name, campaignScore: d.score, avgCompetitorScore: Math.round(compAvg), percentile: Math.min(99, Math.max(1, percentile)) };
     });
@@ -243,16 +310,17 @@ export class CampaignAdQualityAnalyzerService {
   trackQualityTrends(campaignId: string, tenantId: string): QualityTrendTracking | null {
     const report = this.analyzeAdQuality(campaignId, tenantId);
     if (!report) return null;
+    const trendSeed = hashStr(campaignId + tenantId + "trends");
     const trends: QualityTrend[] = [];
     for (let i = 7; i >= 0; i--) {
       const date = new Date(Date.now() - i * 7 * 86400000);
-      const variation = (Math.random() * 20 - 10) * (i / 7);
+      const variation = ((trendSeed + i * 17) % 21 - 10) * (i / 7);
       trends.push({
         date: date.toISOString().split("T")[0],
         overallScore: Math.min(100, Math.max(1, Math.round(report.overallScore + variation))),
-        dimensionScores: report.dimensions.map(d => ({
+        dimensionScores: report.dimensions.map((d, di) => ({
           name: d.name,
-          score: Math.min(100, Math.max(1, Math.round(d.score + variation * (0.5 + Math.random() * 0.5)))),
+          score: Math.min(100, Math.max(1, Math.round(d.score + variation * (0.5 + ((trendSeed + i * 13 + di * 7) % 10) / 20)))),
         })),
       });
     }
@@ -266,6 +334,141 @@ export class CampaignAdQualityAnalyzerService {
     const projectedNext = last + (last - first) / 7;
     const rec = trajectory === "improving" ? "Quality trend is positive — maintain current optimization strategy" : trajectory === "declining" ? "Quality declining — immediate intervention recommended. Review recent changes to targeting, creative, and landing pages." : "Quality is stable — continue monitoring and look for incremental improvements.";
     return { campaignId, campaignName: report.campaignName, trends, trajectory, volatility, projectedNextScore: Math.round(projectedNext), recommendation: rec };
+  }
+
+  adCreativeQualityAnalysis(campaignId: string, tenantId: string): CreativeQualityEntry[] {
+    const report = this.analyzeAdQuality(campaignId, tenantId);
+    if (!report) return [];
+    const crSeed = hashStr(campaignId + tenantId + "creative");
+    const elements = [
+      { name: "Headline Relevance", base: report.dimensions[0]?.score || 70 },
+      { name: "Description Clarity", base: report.dimensions[4]?.score || 65 },
+      { name: "Call-to-Action Strength", base: report.dimensions[1]?.score || 60 },
+      { name: "Display URL Quality", base: report.dimensions[2]?.score || 75 },
+      { name: "Ad Extensions Usage", base: 50 + (crSeed % 40) },
+      { name: "Responsive Ad Coverage", base: 45 + (crSeed * 7 % 45) },
+    ];
+    return elements.map((el, ei) => {
+      const score = Math.min(100, Math.max(1, Math.round(el.base + ((crSeed + ei * 13) % 20 - 10))));
+      const grade = scoreToGrade(score);
+      const strengths: string[] = score >= 70 ? [`${el.name} is adequate`] : [];
+      const improvements: string[] = score < 70 ? [`Improve ${el.name.toLowerCase()} — score ${score}/100`] : [`Maintain ${el.name.toLowerCase()}`];
+      const compliance = Math.min(100, Math.round(60 + ((crSeed + ei * 17) % 35)));
+      return { element: el.name, score, grade, strengths, improvements, bestPracticeCompliance: compliance };
+    });
+  }
+
+  adLandingPageExperience(campaignId: string, tenantId: string): LandingPageExperienceEntry[] {
+    const report = this.analyzeAdQuality(campaignId, tenantId);
+    if (!report) return [];
+    const lpSeed = hashStr(campaignId + tenantId + "landing");
+    const components = [
+      { name: "Page Load Speed", w: 0.2 },
+      { name: "Mobile Friendliness", w: 0.15 },
+      { name: "Content Relevance", w: 0.25 },
+      { name: "Navigation Clarity", w: 0.1 },
+      { name: "Trust Signals", w: 0.1 },
+      { name: "Form Ease", w: 0.1 },
+      { name: "Visual Appeal", w: 0.1 },
+    ];
+    const baseScore = report.dimensions[1]?.score || 65;
+    return components.map((c, ci) => {
+      const score = Math.min(100, Math.max(1, Math.round(baseScore * (0.5 + ((lpSeed + ci * 17) % 40) / 100))));
+      const findings: string[] = score < 50 ? [`Critical issue with ${c.name}`] : score < 70 ? [`${c.name} needs improvement`] : [`${c.name} meets standards`];
+      const recs: string[] = score < 70 ? [`Optimize ${c.name.toLowerCase()} to improve conversion rates`] : [`Current ${c.name.toLowerCase()} acceptable`];
+      return { component: c.name, score, weight: c.w, findings, recommendations: recs };
+    });
+  }
+
+  adQualityByDevice(campaignId: string, tenantId: string): DeviceQualityEntry[] {
+    const report = this.analyzeAdQuality(campaignId, tenantId);
+    if (!report) return [];
+    const devSeed = hashStr(campaignId + tenantId + "devices");
+    const devices = ["Mobile", "Desktop", "Tablet"];
+    return devices.map((dev, di) => {
+      const base = report.overallScore;
+      const devOffset = di === 0 ? -5 + (devSeed % 10) : di === 1 ? 3 + (devSeed % 7) : -2 + (devSeed % 8);
+      const overall = Math.min(100, Math.max(1, base + devOffset));
+      const ctrQ = Math.min(100, Math.max(1, Math.round((report.dimensions[0]?.score || 70) + devOffset * 0.8)));
+      const cvrQ = Math.min(100, Math.max(1, Math.round((report.dimensions[1]?.score || 60) + devOffset * 0.6)));
+      const relQ = Math.min(100, Math.max(1, Math.round((report.dimensions[4]?.score || 65) + devOffset * 0.7)));
+      const uxQ = Math.min(100, Math.max(1, Math.round(65 + ((devSeed + di * 13) % 30))));
+      return {
+        device: dev, overallScore: overall, ctrQuality: ctrQ, cvrQuality: cvrQ,
+        relevanceScore: relQ, userExperience: uxQ,
+        recommendation: overall < 60 ? `Significant quality issues on ${dev} — prioritize optimization` : overall < 75 ? `${dev} quality needs improvement — focus on CT${di === 0 ? 'R' : 'VR'}` : `${dev} quality is strong — maintain`,
+      };
+    });
+  }
+
+  adQualityByPlacement(campaignId: string, tenantId: string): PlacementQualityEntry[] {
+    const report = this.analyzeAdQuality(campaignId, tenantId);
+    if (!report) return [];
+    const plSeed = hashStr(campaignId + tenantId + "placements");
+    const placements = ["Search Network", "Display Network", "YouTube", "Gmail", "Discover"];
+    return placements.map((pl, pi) => {
+      const quality = Math.min(100, Math.max(1, Math.round(report.overallScore + ((plSeed + pi * 13) % 20 - 10))));
+      const impShare = 5 + ((plSeed + pi * 17) % 55);
+      const cvr = 0.5 + ((plSeed + pi * 19) % 40) / 10;
+      const ctr = 0.5 + ((plSeed + pi * 23) % 50) / 10;
+      const cpc = 0.3 + ((plSeed + pi * 29) % 40) / 10;
+      return {
+        placement: pl, qualityScore: quality, impressionShare: impShare,
+        conversionRate: Math.round(cvr * 100) / 100, ctr: Math.round(ctr * 100) / 100,
+        competitiveCPC: Math.round(cpc * 100) / 100,
+        recommendation: quality < 60 ? `Low quality on ${pl} — review ad relevance and landing page alignment` : `Acceptable quality on ${pl} — optimize for higher impression share`,
+      };
+    });
+  }
+
+  adQualityPrediction(campaignId: string, tenantId: string): QualityPrediction {
+    const report = this.analyzeAdQuality(campaignId, tenantId);
+    if (!report) return { campaignId, campaignName: "", currentScore: 0, predictedNextMonth: 0, predictedNextQuarter: 0, trajectory: "stable", confidenceLevel: "low", keyDrivers: [], recommendation: "" };
+    const predSeed = hashStr(campaignId + tenantId + "prediction");
+    const trends = this.trackQualityTrends(campaignId, tenantId);
+    const current = report.overallScore;
+    const trendDelta = trends ? (trends.projectedNextScore - current) : 0;
+    const nextMonth = Math.min(100, Math.max(1, Math.round(current + trendDelta * 0.3 + ((predSeed % 15) - 7))));
+    const nextQuarter = Math.min(100, Math.max(1, Math.round(current + trendDelta * 0.7 + ((predSeed * 7 % 20) - 10))));
+    const trajectory: "improving" | "declining" | "stable" = nextQuarter > current + 5 ? "improving" : nextQuarter < current - 5 ? "declining" : "stable";
+    const confidence: "high" | "medium" | "low" = Math.abs(trendDelta) < 3 ? "high" : Math.abs(trendDelta) < 8 ? "medium" : "low";
+    const keyDrivers = report.dimensions.slice(0, 3).map((d, di) => ({
+      factor: d.name,
+      impact: Math.round((d.score - 50) * d.weight * 10),
+      direction: (d.score >= 50 ? "positive" : "negative") as "positive" | "negative",
+    }));
+    return {
+      campaignId, campaignName: report.campaignName, currentScore: current,
+      predictedNextMonth: nextMonth, predictedNextQuarter: nextQuarter,
+      trajectory, confidenceLevel: confidence, keyDrivers,
+      recommendation: trajectory === "declining" ? "Quality projected to decline — intervene now with targeted improvements to ad relevance and landing page experience" : trajectory === "improving" ? "Quality trending upward — continue current optimization efforts" : "Quality stable — focus on incremental gains",
+    };
+  }
+
+  adCompetitiveLandscape(campaignId: string, tenantId: string): CompetitiveLandscapeEntry[] {
+    const report = this.analyzeAdQuality(campaignId, tenantId);
+    if (!report) return [];
+    const compSeed = hashStr(campaignId + tenantId + "landscape");
+    const competitors = ["Competitor A", "Competitor B", "Competitor C", "Competitor D", "Competitor E"];
+    return competitors.map((comp, ci) => {
+      const overall = Math.min(100, Math.max(1, Math.round(report.overallScore + ((compSeed + ci * 17) % 30 - 15))));
+      const ctrCmp = Math.round((report.dimensions[0]?.score || 70) + ((compSeed + ci * 19) % 25 - 12));
+      const relCmp = Math.round((report.dimensions[4]?.score || 65) + ((compSeed + ci * 23) % 25 - 12));
+      const lpCmp = Math.round((report.dimensions[1]?.score || 60) + ((compSeed + ci * 29) % 25 - 12));
+      const share = 5 + ((compSeed + ci * 31) % 35);
+      const threat: "low" | "medium" | "high" = overall > report.overallScore + 15 ? "high" : overall > report.overallScore + 5 ? "medium" : "low";
+      const weaknesses = ["CTR", "Relevance", "Landing Page", "Ad Extensions", "Keyword Coverage"];
+      return {
+        competitor: comp,
+        overallQuality: Math.min(100, Math.max(1, overall)),
+        ctrComparison: Math.min(100, Math.max(1, ctrCmp)),
+        relevanceComparison: Math.min(100, Math.max(1, relCmp)),
+        landingPageComparison: Math.min(100, Math.max(1, lpCmp)),
+        marketShare: share,
+        threatLevel: threat,
+        weakness: weaknesses[ci % weaknesses.length],
+      };
+    });
   }
 }
 

@@ -1813,6 +1813,30 @@ export class AdsMarketingModuleService {
     return campaignAdQualityAnalyzer.trackQualityTrends(campaignId, tenantId);
   }
 
+  adCreativeQualityAnalysis(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.adCreativeQualityAnalysis(campaignId, tenantId);
+  }
+
+  adLandingPageExperience(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.adLandingPageExperience(campaignId, tenantId);
+  }
+
+  adQualityByDevice(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.adQualityByDevice(campaignId, tenantId);
+  }
+
+  adQualityByPlacement(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.adQualityByPlacement(campaignId, tenantId);
+  }
+
+  adQualityPrediction(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.adQualityPrediction(campaignId, tenantId);
+  }
+
+  adCompetitiveLandscape(campaignId: string, tenantId: string) {
+    return campaignAdQualityAnalyzer.adCompetitiveLandscape(campaignId, tenantId);
+  }
+
   audienceExpansion(tenantId: string, seedAudienceId?: string) {
     return campaignAudienceExpansion.findLookalikeAudiences(tenantId, seedAudienceId);
   }

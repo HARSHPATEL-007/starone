@@ -39,4 +39,34 @@ router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result || { error: "Campaign not found" });
 }));
 
+router.get("/campaign/:campaignId/creative-quality", asyncHandler(async (req, res) => {
+  const result = campaignAdQualityAnalyzer.adCreativeQualityAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/landing-page-experience", asyncHandler(async (req, res) => {
+  const result = campaignAdQualityAnalyzer.adLandingPageExperience(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/quality-by-device", asyncHandler(async (req, res) => {
+  const result = campaignAdQualityAnalyzer.adQualityByDevice(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/quality-by-placement", asyncHandler(async (req, res) => {
+  const result = campaignAdQualityAnalyzer.adQualityByPlacement(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/quality-prediction", asyncHandler(async (req, res) => {
+  const result = campaignAdQualityAnalyzer.adQualityPrediction(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/competitive-landscape", asyncHandler(async (req, res) => {
+  const result = campaignAdQualityAnalyzer.adCompetitiveLandscape(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

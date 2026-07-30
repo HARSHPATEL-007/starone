@@ -2367,6 +2367,12 @@ export const api = {
       request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/improvement-plan${target ? `?target=${target}` : ""}`),
     competitive: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/competitive`),
     trends: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/trends`),
+    creativeQuality: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/creative-quality`),
+    landingPageExperience: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/landing-page-experience`),
+    qualityByDevice: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/quality-by-device`),
+    qualityByPlacement: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/quality-by-placement`),
+    qualityPrediction: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/quality-prediction`),
+    competitiveLandscape: (campaignId: string) => request<any>(`/campaign-ad-quality-analyzer/campaign/${campaignId}/competitive-landscape`),
   },
 
   campaignAudienceExpansion: {
