@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/format-trends", asyncHandler(async (req, res) 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/format-cross-device", asyncHandler(async (req, res) => {
+  const result = campaignAdFormatAnalyzer.formatCrossDeviceAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/format-creative-effectiveness", asyncHandler(async (req, res) => {
+  const result = campaignAdFormatAnalyzer.formatCreativeEffectiveness(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/format-segment-mapping", asyncHandler(async (req, res) => {
+  const result = campaignAdFormatAnalyzer.formatAudienceSegmentMapping(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/format-competitive-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAdFormatAnalyzer.formatCompetitiveAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/format-roi-attribution", asyncHandler(async (req, res) => {
+  const result = campaignAdFormatAnalyzer.formatROIAttribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/format-lifecycle-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAdFormatAnalyzer.formatLifecycleAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

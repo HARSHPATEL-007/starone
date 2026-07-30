@@ -2486,6 +2486,12 @@ export const api = {
     formatBidAdjustments: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-bid-adjustments`),
     audienceFormatPreference: () => request<any>("/campaign-ad-format-analyzer/audience-format-preference"),
     formatTrends: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-trends`),
+    formatCrossDevice: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-cross-device`),
+    formatCreativeEffectiveness: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-creative-effectiveness`),
+    formatSegmentMapping: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-segment-mapping`),
+    formatCompetitiveAnalysis: () => request<any>("/campaign-ad-format-analyzer/format-competitive-analysis"),
+    formatROIAttribution: (campaignId: string) => request<any>(`/campaign-ad-format-analyzer/campaign/${campaignId}/format-roi-attribution`),
+    formatLifecycleAnalysis: () => request<any>("/campaign-ad-format-analyzer/format-lifecycle-analysis"),
   },
 
   campaignCustomerJourney: {

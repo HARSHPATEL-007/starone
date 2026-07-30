@@ -130,3 +130,106 @@ describe("CampaignAdFormatAnalyzer - analyzeFormatTrends", () => {
     }
   });
 });
+
+describe("CampaignAdFormatAnalyzer - formatCrossDeviceAnalysis", () => {
+  it("returns cross-device performance per format", () => {
+    const results = campaignAdFormatAnalyzer.formatCrossDeviceAnalysis(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("format");
+      expect(r).toHaveProperty("mobileCtr");
+      expect(r).toHaveProperty("desktopCtr");
+      expect(r).toHaveProperty("bestDevice");
+      expect(r).toHaveProperty("crossDeviceConsistency");
+      expect(r).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignAdFormatAnalyzer - formatCreativeEffectiveness", () => {
+  it("returns creative effectiveness per format", () => {
+    const results = campaignAdFormatAnalyzer.formatCreativeEffectiveness(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("format");
+      expect(r).toHaveProperty("creativeVersions");
+      expect(r).toHaveProperty("topPerformerVersion");
+      expect(Array.isArray(r.avgCtrByVersion)).toBe(true);
+      expect(r.avgCtrByVersion.length).toBeGreaterThan(0);
+      expect(r).toHaveProperty("creativeFatigueIndex");
+      expect(r).toHaveProperty("refreshRecommended");
+    }
+  });
+});
+
+describe("CampaignAdFormatAnalyzer - formatAudienceSegmentMapping", () => {
+  it("returns format-to-segment affinity scores", () => {
+    const results = campaignAdFormatAnalyzer.formatAudienceSegmentMapping(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("format");
+      expect(r).toHaveProperty("segment");
+      expect(r).toHaveProperty("affinityScore");
+      expect(r).toHaveProperty("conversionRate");
+      expect(r).toHaveProperty("engagementRate");
+      expect(r).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignAdFormatAnalyzer - formatCompetitiveAnalysis", () => {
+  it("returns competitive format comparison", () => {
+    const results = campaignAdFormatAnalyzer.formatCompetitiveAnalysis(TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("format");
+      expect(r).toHaveProperty("ourUsage");
+      expect(r).toHaveProperty("competitorAvgUsage");
+      expect(r).toHaveProperty("usageGap");
+      expect(r).toHaveProperty("ourROAS");
+      expect(r).toHaveProperty("competitorAvgROAS");
+      expect(r).toHaveProperty("competitiveAdvantage");
+      expect(r).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignAdFormatAnalyzer - formatROIAttribution", () => {
+  it("returns ROI attribution per format", () => {
+    const results = campaignAdFormatAnalyzer.formatROIAttribution(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("format");
+      expect(r).toHaveProperty("totalSpend");
+      expect(r).toHaveProperty("totalRevenue");
+      expect(r).toHaveProperty("directROAS");
+      expect(r).toHaveProperty("attributedROAS");
+      expect(r).toHaveProperty("diminishingReturnPoint");
+      expect(r).toHaveProperty("efficiencyGrade");
+      expect(["A", "B", "C", "D", "F"]).toContain(r.efficiencyGrade);
+    }
+  });
+});
+
+describe("CampaignAdFormatAnalyzer - formatLifecycleAnalysis", () => {
+  it("returns format lifecycle stage analysis", () => {
+    const results = campaignAdFormatAnalyzer.formatLifecycleAnalysis(TEST_TENANT);
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    for (const r of results) {
+      expect(r).toHaveProperty("format");
+      expect(r).toHaveProperty("lifecycleStage");
+      expect(["introduction", "growth", "maturity", "decline"]).toContain(r.lifecycleStage);
+      expect(r).toHaveProperty("marketAdoption");
+      expect(r).toHaveProperty("yearOverYearChange");
+      expect(r).toHaveProperty("projectedRelevance");
+      expect(r).toHaveProperty("investmentStrategy");
+      expect(r).toHaveProperty("riskLevel");
+    }
+  });
+});

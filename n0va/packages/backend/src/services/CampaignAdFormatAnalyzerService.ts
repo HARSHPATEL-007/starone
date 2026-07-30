@@ -77,6 +77,72 @@ interface FormatTrend {
   overallDirection: "improving" | "declining" | "stable";
 }
 
+interface FormatCrossDeviceEntry {
+  format: string;
+  mobileCtr: number;
+  mobileCvr: number;
+  desktopCtr: number;
+  desktopCvr: number;
+  tabletCtr: number;
+  tabletCvr: number;
+  bestDevice: string;
+  crossDeviceConsistency: number;
+  recommendation: string;
+}
+
+interface FormatCreativeEntry {
+  format: string;
+  creativeVersions: number;
+  topPerformerVersion: string;
+  avgCtrByVersion: { version: string; ctr: number }[];
+  creativeFatigueIndex: number;
+  refreshRecommended: boolean;
+  recommendation: string;
+}
+
+interface FormatSegmentEntry {
+  format: string;
+  segment: string;
+  affinityScore: number;
+  conversionRate: number;
+  engagementRate: number;
+  shareOfWallet: number;
+  recommendation: string;
+}
+
+interface FormatCompetitiveEntry {
+  format: string;
+  ourUsage: number;
+  competitorAvgUsage: number;
+  usageGap: number;
+  ourROAS: number;
+  competitorAvgROAS: number;
+  roasGap: number;
+  competitiveAdvantage: "strong_advantage" | "slight_advantage" | "parity" | "slight_disadvantage" | "strong_disadvantage";
+  recommendation: string;
+}
+
+interface FormatROIEntry {
+  format: string;
+  totalSpend: number;
+  totalRevenue: number;
+  directROAS: number;
+  attributedROAS: number;
+  diminishingReturnPoint: number;
+  marginalROI: number;
+  efficiencyGrade: "A" | "B" | "C" | "D" | "F";
+}
+
+interface FormatLifecycleEntry {
+  format: string;
+  lifecycleStage: "introduction" | "growth" | "maturity" | "decline";
+  marketAdoption: number;
+  yearOverYearChange: number;
+  projectedRelevance: number;
+  investmentStrategy: string;
+  riskLevel: "low" | "medium" | "high";
+}
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -261,13 +327,151 @@ export class CampaignAdFormatAnalyzerService {
       const seed = hashStr(f.format + tenantId);
       const metrics = ["ctr", "cvr", "roas", "cpc"].map((m, mi) => {
         const val = (f as any)[m] || 0;
-        const chg = Math.round((Math.random() * 20 - 10 + ((seed + mi * 17) % 18 - 9)) * 10) / 10;
+        const chg = Math.round((((seed + mi * 17) % 21 - 10) + ((seed + mi * 23) % 18 - 9)) * 10) / 10;
         const dir: "up" | "down" | "stable" = chg > 3 ? "up" : chg < -3 ? "down" : "stable";
         return { metric: m.toUpperCase(), value: val, change: chg, direction: dir };
       });
       const up = metrics.filter(m => m.direction === "up").length;
       const down = metrics.filter(m => m.direction === "down").length;
       return { format: f.format, category: f.category, metrics, overallDirection: up > down ? "improving" as const : down > up ? "declining" as const : "stable" as const };
+    });
+  }
+
+  formatCrossDeviceAnalysis(campaignId: string, tenantId: string): FormatCrossDeviceEntry[] {
+    const report = this.analyzeFormatPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const devSeed = hashStr(campaignId + tenantId + "crossdev");
+    const devices = ["Mobile", "Desktop", "Tablet"];
+    return report.formats.slice(0, 10).map((f, fi) => {
+      const baseCtr = f.ctr;
+      const baseCvr = f.cvr;
+      const mobileCtr = Math.round(baseCtr * (0.9 + ((devSeed + fi * 13) % 20) / 100) * 100) / 100;
+      const mobileCvr = Math.round(baseCvr * (0.8 + ((devSeed + fi * 17) % 25) / 100) * 100) / 100;
+      const desktopCtr = Math.round(baseCtr * (1.0 + ((devSeed + fi * 19) % 15) / 100) * 100) / 100;
+      const desktopCvr = Math.round(baseCvr * (1.1 + ((devSeed + fi * 23) % 15) / 100) * 100) / 100;
+      const tabletCtr = Math.round(baseCtr * (0.85 + ((devSeed + fi * 29) % 20) / 100) * 100) / 100;
+      const tabletCvr = Math.round(baseCvr * (0.9 + ((devSeed + fi * 31) % 20) / 100) * 100) / 100;
+      const devCtrs = [mobileCtr, desktopCtr, tabletCtr];
+      const bestDev = devices[devCtrs.indexOf(Math.max(...devCtrs))];
+      const consistency = Math.round((100 - Math.max(mobileCtr, desktopCtr, tabletCtr) + Math.min(mobileCtr, desktopCtr, tabletCtr)) * 10) / 10;
+      return {
+        format: f.format, mobileCtr, mobileCvr, desktopCtr, desktopCvr, tabletCtr, tabletCvr,
+        bestDevice: bestDev, crossDeviceConsistency: Math.max(0, consistency),
+        recommendation: consistency > 85 ? `${f.format} performs consistently across devices — use unified strategy` : `${f.format} performs best on ${bestDev} — optimize creatives for ${bestDev.toLowerCase()} experience`,
+      };
+    });
+  }
+
+  formatCreativeEffectiveness(campaignId: string, tenantId: string): FormatCreativeEntry[] {
+    const report = this.analyzeFormatPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const crSeed = hashStr(campaignId + tenantId + "creative");
+    return report.formats.slice(0, 10).map((f, fi) => {
+      const versions = 2 + ((crSeed + fi * 13) % 5);
+      const versions_list = Array.from({ length: versions }, (_, vi) => `v${vi + 1}`);
+      const avgCtrs = versions_list.map((v, vi) => ({ version: v, ctr: Math.round(f.ctr * (0.7 + ((crSeed + fi * 17 + vi * 13) % 40) / 100) * 100) / 100 }));
+      const topVersion = avgCtrs.reduce((best, curr) => curr.ctr > best.ctr ? curr : best, avgCtrs[0]);
+      const fatigue = 20 + ((crSeed + fi * 19) % 60);
+      return {
+        format: f.format, creativeVersions: versions, topPerformerVersion: topVersion.version,
+        avgCtrByVersion: avgCtrs, creativeFatigueIndex: fatigue,
+        refreshRecommended: fatigue > 60,
+        recommendation: fatigue > 60 ? `${f.format} creative fatigue high (${fatigue}%) — refresh creatives to prevent CTR decline` : `${f.format} fatigue manageable (${fatigue}%) — rotate creatives every 2-3 weeks`,
+      };
+    });
+  }
+
+  formatAudienceSegmentMapping(campaignId: string, tenantId: string): FormatSegmentEntry[] {
+    const report = this.analyzeFormatPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const segSeed = hashStr(campaignId + tenantId + "segments");
+    const segments = ["High-Value Buyers", "Mobile-First", "Young Adults", "Professionals", "Budget Shoppers", "Loyal Customers"];
+    const entries: FormatSegmentEntry[] = [];
+    for (const f of report.formats.slice(0, 8)) {
+      for (const seg of segments) {
+        const pairSeed = segSeed + hashStr(f.format + seg);
+        const affinity = 20 + ((pairSeed * 17) % 70);
+        const cvr = (0.5 + ((pairSeed * 13) % 80) / 20 * f.cvr / 100) * f.cvr;
+        const engagement = 15 + ((pairSeed * 19) % 70);
+        const sow = 3 + ((pairSeed * 23) % 30);
+        entries.push({
+          format: f.format, segment: seg, affinityScore: affinity,
+          conversionRate: Math.round(cvr * 100) / 100,
+          engagementRate: Math.round(engagement * 100) / 100,
+          shareOfWallet: sow,
+          recommendation: affinity > 70 ? `${f.format} has strong ${seg} affinity (${affinity}) — increase allocation by ${Math.round(sow * 0.5)}%` : `${f.format} moderate fit for ${seg} — test creative variations to improve relevance`,
+        });
+      }
+    }
+    return entries.sort((a, b) => b.affinityScore - a.affinityScore);
+  }
+
+  formatCompetitiveAnalysis(tenantId: string): FormatCompetitiveEntry[] {
+    const seed = hashStr(tenantId + "competitive");
+    const formatCategories = [
+      { format: "Text Ad", ourUsage: 85, compUsage: 78, ourROAS: 2.1, compROAS: 1.9 },
+      { format: "Video", ourUsage: 45, compUsage: 55, ourROAS: 2.8, compROAS: 2.2 },
+      { format: "Display Banner", ourUsage: 60, compUsage: 72, ourROAS: 1.5, compROAS: 1.8 },
+      { format: "Social", ourUsage: 55, compUsage: 65, ourROAS: 2.3, compROAS: 2.0 },
+      { format: "Audio", ourUsage: 15, compUsage: 22, ourROAS: 1.8, compROAS: 1.6 },
+      { format: "Native", ourUsage: 25, compUsage: 30, ourROAS: 2.5, compROAS: 2.1 },
+    ];
+    return formatCategories.map((fc, ci) => {
+      const usageGap = fc.ourUsage - fc.compUsage;
+      const roasGap = fc.ourROAS - fc.compROAS;
+      const adv: FormatCompetitiveEntry["competitiveAdvantage"] = roasGap > 0.4 ? "strong_advantage" : roasGap > 0.1 ? "slight_advantage" : roasGap > -0.1 ? "parity" : roasGap > -0.4 ? "slight_disadvantage" : "strong_disadvantage";
+      return {
+        format: fc.format, ourUsage: fc.ourUsage, competitorAvgUsage: fc.compUsage, usageGap,
+        ourROAS: fc.ourROAS, competitorAvgROAS: fc.compROAS, roasGap: Math.round(roasGap * 100) / 100,
+        competitiveAdvantage: adv,
+        recommendation: adv === "strong_advantage" ? `${fc.format} is a competitive moat — invest aggressively to widen gap` : adv === "slight_advantage" ? `${fc.format} has marginal edge — optimize to maintain advantage` : adv === "parity" ? `${fc.format} at competitive parity — differentiate through creative quality` : `${fc.format} behind competitors — analyze competitor approach and close gap`,
+      };
+    });
+  }
+
+  formatROIAttribution(campaignId: string, tenantId: string): FormatROIEntry[] {
+    const report = this.analyzeFormatPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const roiSeed = hashStr(campaignId + tenantId + "roi");
+    return report.formats.slice(0, 12).map((f, fi) => {
+      const directROAS = f.roas;
+      const attrROAS = Math.round(directROAS * (1.1 + ((roiSeed + fi * 13) % 30) / 100) * 100) / 100;
+      const dimPoint = Math.round((5 + ((roiSeed + fi * 17) % 25)) * 100) / 100;
+      const marginal = Math.round(((roiSeed + fi * 19) % 30) / 10 * 100) / 100;
+      const efficiency: FormatROIEntry["efficiencyGrade"] = attrROAS > 3 ? "A" : attrROAS > 2 ? "B" : attrROAS > 1.5 ? "C" : attrROAS > 1 ? "D" : "F";
+      return {
+        format: f.format, totalSpend: f.spend, totalRevenue: f.revenue,
+        directROAS, attributedROAS: attrROAS, diminishingReturnPoint: dimPoint,
+        marginalROI: marginal, efficiencyGrade: efficiency,
+      };
+    });
+  }
+
+  formatLifecycleAnalysis(tenantId: string): FormatLifecycleEntry[] {
+    const seed = hashStr(tenantId + "lifecycle");
+    const lifecycleFormats = [
+      { format: "Text Ad", stage: "maturity" as const, adopt: 95, yoy: -3 },
+      { format: "Responsive Search", stage: "maturity" as const, adopt: 88, yoy: 5 },
+      { format: "Display Banner", stage: "maturity" as const, adopt: 92, yoy: -2 },
+      { format: "Native Ad", stage: "growth" as const, adopt: 65, yoy: 12 },
+      { format: "Video (6-15s)", stage: "growth" as const, adopt: 72, yoy: 18 },
+      { format: "Video (15-30s)", stage: "maturity" as const, adopt: 80, yoy: 3 },
+      { format: "Story Ad", stage: "growth" as const, adopt: 55, yoy: 22 },
+      { format: "Audio Ad", stage: "growth" as const, adopt: 35, yoy: 25 },
+      { format: "AR Ad", stage: "introduction" as const, adopt: 12, yoy: 40 },
+      { format: "Connected TV", stage: "growth" as const, adopt: 28, yoy: 30 },
+      { format: "Interactive Ad", stage: "introduction" as const, adopt: 18, yoy: 35 },
+      { format: "Digital Out-of-Home", stage: "introduction" as const, adopt: 8, yoy: 20 },
+    ];
+    return lifecycleFormats.map((lf, li) => {
+      const relevance = Math.min(100, Math.max(1, Math.round(lf.adopt * (0.5 + ((seed + li * 17) % 30) / 100))));
+      const risk: "low" | "medium" | "high" = lf.stage === "introduction" ? "high" : lf.stage === "growth" ? "medium" : lf.stage === "maturity" ? "low" : "high";
+      const strategy = lf.stage === "introduction" ? "Experiment with small budget — monitor metrics before scaling" : lf.stage === "growth" ? "Increase investment — growing formats offer first-mover advantage" : lf.stage === "maturity" ? "Optimize for efficiency — mature formats require precise targeting" : "Reduce exposure — declining formats need replacement strategy";
+      return {
+        format: lf.format, lifecycleStage: lf.stage, marketAdoption: lf.adopt,
+        yearOverYearChange: lf.yoy, projectedRelevance: relevance,
+        investmentStrategy: strategy, riskLevel: risk,
+      };
     });
   }
 }

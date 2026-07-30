@@ -2173,6 +2173,30 @@ export class AdsMarketingModuleService {
     return campaignAdFormatAnalyzer.analyzeFormatTrends(campaignId, tenantId);
   }
 
+  formatCrossDeviceAnalysis(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.formatCrossDeviceAnalysis(campaignId, tenantId);
+  }
+
+  formatCreativeEffectiveness(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.formatCreativeEffectiveness(campaignId, tenantId);
+  }
+
+  formatAudienceSegmentMapping(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.formatAudienceSegmentMapping(campaignId, tenantId);
+  }
+
+  formatCompetitiveAnalysis(tenantId: string) {
+    return campaignAdFormatAnalyzer.formatCompetitiveAnalysis(tenantId);
+  }
+
+  formatROIAttribution(campaignId: string, tenantId: string) {
+    return campaignAdFormatAnalyzer.formatROIAttribution(campaignId, tenantId);
+  }
+
+  formatLifecycleAnalysis(tenantId: string) {
+    return campaignAdFormatAnalyzer.formatLifecycleAnalysis(tenantId);
+  }
+
   customerJourneys(tenantId: string) {
     return campaignCustomerJourney.analyzeCustomerJourneys(tenantId);
   }
