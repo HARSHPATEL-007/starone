@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/geo-trends", asyncHandler(async (req, res) => 
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/geo-region-clustering", asyncHandler(async (req, res) => {
+  const result = campaignGeoPerformanceAnalyzer.geoRegionClustering(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-timezone-analysis", asyncHandler(async (req, res) => {
+  const result = campaignGeoPerformanceAnalyzer.geoTimeZoneAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-localization-scores", asyncHandler(async (req, res) => {
+  const result = campaignGeoPerformanceAnalyzer.geoLocalizationScore(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-cross-border", asyncHandler(async (req, res) => {
+  const result = campaignGeoPerformanceAnalyzer.geoCrossBorderAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-predictive-expansion", asyncHandler(async (req, res) => {
+  const result = campaignGeoPerformanceAnalyzer.geoPredictiveExpansion(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/geo-competitive-landscape", asyncHandler(async (req, res) => {
+  const result = campaignGeoPerformanceAnalyzer.geoCompetitiveLandscape(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

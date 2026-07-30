@@ -1933,6 +1933,30 @@ export class AdsMarketingModuleService {
     return campaignGeoPerformanceAnalyzer.analyzeGeoTrends(campaignId, tenantId);
   }
 
+  geoRegionClustering(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.geoRegionClustering(campaignId, tenantId);
+  }
+
+  geoTimeZoneAnalysis(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.geoTimeZoneAnalysis(campaignId, tenantId);
+  }
+
+  geoLocalizationScores(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.geoLocalizationScore(campaignId, tenantId);
+  }
+
+  geoCrossBorder(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.geoCrossBorderAnalysis(campaignId, tenantId);
+  }
+
+  geoPredictiveExpansion(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.geoPredictiveExpansion(campaignId, tenantId);
+  }
+
+  geoCompetitiveLandscape(campaignId: string, tenantId: string) {
+    return campaignGeoPerformanceAnalyzer.geoCompetitiveLandscape(campaignId, tenantId);
+  }
+
   frequencyDistribution(campaignId: string, tenantId: string) {
     return campaignFrequencyAnalyzer.analyzeFrequencyDistribution(campaignId, tenantId);
   }

@@ -129,3 +129,134 @@ describe("CampaignGeoPerformanceAnalyzer - analyzeGeoTrends", () => {
     }
   });
 });
+
+describe("CampaignGeoPerformanceAnalyzer - geoRegionClustering", () => {
+  it("returns region clusters with performance profiles", () => {
+    const clusters = campaignGeoPerformanceAnalyzer.geoRegionClustering(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(clusters)).toBe(true);
+    expect(clusters.length).toBeGreaterThan(0);
+    for (const c of clusters) {
+      expect(c).toHaveProperty("clusterId");
+      expect(c).toHaveProperty("name");
+      expect(c).toHaveProperty("regions");
+      expect(Array.isArray(c.regions)).toBe(true);
+      expect(c.regions.length).toBeGreaterThan(0);
+      expect(c).toHaveProperty("avgCtr");
+      expect(c).toHaveProperty("avgCvr");
+      expect(c).toHaveProperty("avgRoas");
+      expect(c).toHaveProperty("performanceProfile");
+      expect(Array.isArray(c.recommendations)).toBe(true);
+    }
+    expect(clusters[0].avgRoas).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("CampaignGeoPerformanceAnalyzer - geoTimeZoneAnalysis", () => {
+  it("returns timezone-based performance analysis", () => {
+    const tz = campaignGeoPerformanceAnalyzer.geoTimeZoneAnalysis(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(tz)).toBe(true);
+    expect(tz.length).toBeGreaterThan(0);
+    for (const t of tz) {
+      expect(t).toHaveProperty("timezone");
+      expect(t).toHaveProperty("countries");
+      expect(Array.isArray(t.countries)).toBe(true);
+      expect(t.countries.length).toBeGreaterThan(0);
+      expect(t).toHaveProperty("bestPerformanceHour");
+      expect(t).toHaveProperty("avgCtrByHour");
+      expect(t.avgCtrByHour.length).toBe(24);
+      expect(t).toHaveProperty("optimalAdSchedule");
+      expect(Array.isArray(t.optimalAdSchedule)).toBe(true);
+      expect(t.optimalAdSchedule.length).toBeGreaterThan(0);
+      expect(Array.isArray(t.recommendations)).toBe(true);
+      expect(t.recommendations.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("CampaignGeoPerformanceAnalyzer - geoLocalizationScore", () => {
+  it("returns localization scores per region sorted ascending", () => {
+    const scores = campaignGeoPerformanceAnalyzer.geoLocalizationScore(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(scores)).toBe(true);
+    expect(scores.length).toBeGreaterThan(0);
+    for (const s of scores) {
+      expect(s).toHaveProperty("country");
+      expect(s).toHaveProperty("region");
+      expect(s).toHaveProperty("overallScore");
+      expect(s).toHaveProperty("adCopyLocalization");
+      expect(s).toHaveProperty("landingPageLocalization");
+      expect(s).toHaveProperty("culturalRelevance");
+      expect(s).toHaveProperty("languageAccuracy");
+      expect(s).toHaveProperty("imageryRelevance");
+      expect(Array.isArray(s.improvementSuggestions)).toBe(true);
+      expect(s.improvementSuggestions.length).toBeGreaterThan(0);
+    }
+    for (let i = 1; i < scores.length; i++) {
+      expect(scores[i - 1].overallScore).toBeLessThanOrEqual(scores[i].overallScore);
+    }
+  });
+});
+
+describe("CampaignGeoPerformanceAnalyzer - geoCrossBorderAnalysis", () => {
+  it("returns cross-border analysis between country pairs", () => {
+    const cb = campaignGeoPerformanceAnalyzer.geoCrossBorderAnalysis(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(cb)).toBe(true);
+    expect(cb.length).toBeGreaterThan(0);
+    for (const e of cb) {
+      expect(e).toHaveProperty("countryPair");
+      expect(e).toHaveProperty("originatingCountry");
+      expect(e).toHaveProperty("targetCountry");
+      expect(e).toHaveProperty("crossBorderTraffic");
+      expect(e).toHaveProperty("crossBorderConversions");
+      expect(e).toHaveProperty("conversionRate");
+      expect(e).toHaveProperty("averageOrderValue");
+      expect(Array.isArray(e.recommendations)).toBe(true);
+      expect(e.recommendations.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("CampaignGeoPerformanceAnalyzer - geoPredictiveExpansion", () => {
+  it("returns predictive expansion entries sorted by ROAS", () => {
+    const pred = campaignGeoPerformanceAnalyzer.geoPredictiveExpansion(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(pred)).toBe(true);
+    expect(pred.length).toBeGreaterThan(0);
+    for (const p of pred) {
+      expect(p).toHaveProperty("country");
+      expect(p).toHaveProperty("region");
+      expect(p).toHaveProperty("currentSimilarityScore");
+      expect(p).toHaveProperty("predictedCtr");
+      expect(p).toHaveProperty("predictedCvr");
+      expect(p).toHaveProperty("predictedRoas");
+      expect(p).toHaveProperty("confidenceLevel");
+      expect(["high", "medium", "low"]).toContain(p.confidenceLevel);
+      expect(p).toHaveProperty("recommendedBudget");
+      expect(p).toHaveProperty("riskLevel");
+      expect(["low", "medium", "high"]).toContain(p.riskLevel);
+    }
+    for (let i = 1; i < pred.length; i++) {
+      expect(pred[i - 1].predictedRoas).toBeGreaterThanOrEqual(pred[i].predictedRoas);
+    }
+  });
+});
+
+describe("CampaignGeoPerformanceAnalyzer - geoCompetitiveLandscape", () => {
+  it("returns competitive landscape per region", () => {
+    const comp = campaignGeoPerformanceAnalyzer.geoCompetitiveLandscape(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(comp)).toBe(true);
+    expect(comp.length).toBeGreaterThan(0);
+    for (const c of comp) {
+      expect(c).toHaveProperty("country");
+      expect(c).toHaveProperty("region");
+      expect(c).toHaveProperty("competitiveDensity");
+      expect(["low", "medium", "high"]).toContain(c.competitiveDensity);
+      expect(c).toHaveProperty("estimatedCompetitors");
+      expect(c).toHaveProperty("marketShare");
+      expect(c).toHaveProperty("adPriceIndex");
+      expect(c).toHaveProperty("saturationLevel");
+      expect(["low", "medium", "high"]).toContain(c.saturationLevel);
+      expect(Array.isArray(c.barriersToEntry)).toBe(true);
+      expect(c.barriersToEntry.length).toBeGreaterThan(0);
+      expect(c).toHaveProperty("strategicPosition");
+    }
+  });
+});

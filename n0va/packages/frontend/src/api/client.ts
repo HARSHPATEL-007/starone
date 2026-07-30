@@ -2410,6 +2410,12 @@ export const api = {
     geoBidAdjustments: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-bid-adjustments`),
     geoAudienceOverlap: () => request<any>("/campaign-geo-performance-analyzer/geo-audience-overlap"),
     geoTrends: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-trends`),
+    geoRegionClustering: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-region-clustering`),
+    geoTimeZoneAnalysis: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-timezone-analysis`),
+    geoLocalizationScores: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-localization-scores`),
+    geoCrossBorder: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-cross-border`),
+    geoPredictiveExpansion: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-predictive-expansion`),
+    geoCompetitiveLandscape: (campaignId: string) => request<any>(`/campaign-geo-performance-analyzer/campaign/${campaignId}/geo-competitive-landscape`),
   },
 
   campaignFrequencyAnalyzer: {

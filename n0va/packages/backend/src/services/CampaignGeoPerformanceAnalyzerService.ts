@@ -77,6 +77,74 @@ interface GeoTrend {
   overallDirection: "improving" | "declining" | "stable";
 }
 
+interface GeoRegionCluster {
+  clusterId: string;
+  name: string;
+  regions: string[];
+  avgCtr: number;
+  avgCvr: number;
+  avgRoas: number;
+  performanceProfile: string;
+  recommendations: string[];
+}
+
+interface GeoTimeZoneEntry {
+  timezone: string;
+  countries: string[];
+  bestPerformanceHour: number;
+  avgCtrByHour: { hour: number; ctr: number }[];
+  optimalAdSchedule: { startHour: number; endHour: number; bidMultiplier: number }[];
+  recommendations: string[];
+}
+
+interface GeoLocalizationScore {
+  country: string;
+  region: string;
+  overallScore: number;
+  adCopyLocalization: number;
+  landingPageLocalization: number;
+  culturalRelevance: number;
+  languageAccuracy: number;
+  imageryRelevance: number;
+  improvementSuggestions: string[];
+}
+
+interface GeoCrossBorderEntry {
+  countryPair: string;
+  originatingCountry: string;
+  targetCountry: string;
+  crossBorderTraffic: number;
+  crossBorderConversions: number;
+  crossBorderRevenue: number;
+  conversionRate: number;
+  averageOrderValue: number;
+  recommendations: string[];
+}
+
+interface GeoPredictiveEntry {
+  country: string;
+  region: string;
+  currentSimilarityScore: number;
+  predictedCtr: number;
+  predictedCvr: number;
+  predictedRoas: number;
+  confidenceLevel: "high" | "medium" | "low";
+  recommendedBudget: number;
+  riskLevel: "low" | "medium" | "high";
+}
+
+interface GeoCompetitiveEntry {
+  country: string;
+  region: string;
+  competitiveDensity: "low" | "medium" | "high";
+  estimatedCompetitors: number;
+  marketShare: number;
+  adPriceIndex: number;
+  saturationLevel: "low" | "medium" | "high";
+  barriersToEntry: string[];
+  strategicPosition: string;
+}
+
 const COUNTRIES = [
   { country: "US", regions: [{ region: "Northeast", cities: ["New York", "Boston", "Philadelphia"] }, { region: "Southeast", cities: ["Atlanta", "Miami", "Charlotte"] }, { region: "Midwest", cities: ["Chicago", "Detroit", "Minneapolis"] }, { region: "West", cities: ["Los Angeles", "San Francisco", "Seattle"] }, { region: "Southwest", cities: ["Dallas", "Phoenix", "Houston"] }] },
   { country: "UK", regions: [{ region: "London & South East", cities: ["London", "Brighton", "Reading"] }, { region: "North West", cities: ["Manchester", "Liverpool", "Leeds"] }, { region: "Scotland", cities: ["Edinburgh", "Glasgow", "Aberdeen"] }, { region: "Midlands", cities: ["Birmingham", "Nottingham", "Leicester"] }] },
@@ -280,13 +348,16 @@ export class CampaignGeoPerformanceAnalyzerService {
     if (!report) return [];
     const seen = new Set<string>();
     const trends: GeoTrend[] = [];
+    const trendSeed = hashStr(campaignId + tenantId + "trends");
+    let idx = 0;
     for (const loc of report.locations) {
       const key = loc.country + loc.region;
       if (seen.has(key)) continue;
       seen.add(key);
-      const metrics = ["ctr", "cvr", "roas", "cpc"].map(m => {
+      const metrics = ["ctr", "cvr", "roas", "cpc"].map((m, mi) => {
         const val = (loc as any)[m] || 0;
-        const chg = Math.round((Math.random() * 24 - 12) * 10) / 10;
+        const chg = Math.round(((trendSeed + idx * 7 + mi * 13) % 25 - 12) * 10) / 10;
+        idx++;
         const dir: "up" | "down" | "stable" = chg > 3 ? "up" : chg < -3 ? "down" : "stable";
         return { metric: m.toUpperCase(), value: val, change: chg, direction: dir };
       });
@@ -301,6 +372,239 @@ export class CampaignGeoPerformanceAnalyzerService {
       });
     }
     return trends;
+  }
+
+  geoRegionClustering(campaignId: string, tenantId: string): GeoRegionCluster[] {
+    const report = this.analyzeGeoPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const seen = new Set<string>();
+    const clusters: GeoRegionCluster[] = [];
+    const regionProfiles: { region: string; country: string; ctr: number; cvr: number; roas: number }[] = [];
+    for (const loc of report.locations) {
+      const key = loc.country + loc.region;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      regionProfiles.push({ region: `${loc.region}, ${loc.country}`, country: loc.country, ctr: loc.ctr, cvr: loc.cvr, roas: loc.roas });
+    }
+    const clusterSeed = hashStr(campaignId + tenantId + "clusters");
+    const clustersRaw = [
+      { name: "High Performers", minCtr: 4, minCvr: 5, minRoas: 2.5 },
+      { name: "Volume Drivers", minCtr: 2, minCvr: 2, minRoas: 1.2 },
+      { name: "Conversion Focused", minCtr: 0, minCvr: 4, minRoas: 1.5 },
+      { name: "Growth Opportunities", minCtr: 0, minCvr: 0, minRoas: 0 },
+    ];
+    for (let ci = 0; ci < clustersRaw.length; ci++) {
+      const c = clustersRaw[ci];
+      const members = regionProfiles.filter(r => r.ctr >= c.minCtr && r.cvr >= c.minCvr && r.roas >= c.minRoas);
+      if (members.length === 0) continue;
+      const avgCtr = Math.round(members.reduce((s, r) => s + r.ctr, 0) / members.length * 100) / 100;
+      const avgCvr = Math.round(members.reduce((s, r) => s + r.cvr, 0) / members.length * 100) / 100;
+      const avgRoas = Math.round(members.reduce((s, r) => s + r.roas, 0) / members.length * 100) / 100;
+      const recs: string[] = [];
+      if (ci === 0) recs.push("Increase budgets in these regions to maximize ROAS");
+      if (ci === 1) recs.push("Optimize creative to improve conversion rates in high-volume regions");
+      if (ci === 2) recs.push("Expand lookalike audiences from these conversion-rich regions");
+      if (ci === 3) recs.push("Apply learnings from high-performers to boost CTR and CVR");
+      clusters.push({
+        clusterId: `cluster_${ci}_${clusterSeed % 1000}`,
+        name: c.name,
+        regions: members.map(r => r.region),
+        avgCtr, avgCvr, avgRoas,
+        performanceProfile: ci === 0 ? "Star" : ci === 1 ? "Volume" : ci === 2 ? "Converter" : "Developing",
+        recommendations: recs,
+      });
+    }
+    return clusters;
+  }
+
+  geoTimeZoneAnalysis(campaignId: string, tenantId: string): GeoTimeZoneEntry[] {
+    const report = this.analyzeGeoPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const tzSeed = hashStr(campaignId + tenantId + "timezone");
+    const timezones = [
+      { tz: "America/New_York", countries: ["US (East)", "CA (East)"], offset: -5 },
+      { tz: "America/Chicago", countries: ["US (Central)"], offset: -6 },
+      { tz: "America/Denver", countries: ["US (Mountain)"], offset: -7 },
+      { tz: "America/Los_Angeles", countries: ["US (West)", "CA (West)"], offset: -8 },
+      { tz: "Europe/London", countries: ["UK"], offset: 0 },
+      { tz: "Europe/Berlin", countries: ["DE"], offset: 1 },
+      { tz: "Australia/Sydney", countries: ["AU"], offset: 11 },
+    ];
+    const entries: GeoTimeZoneEntry[] = [];
+    for (let ti = 0; ti < timezones.length; ti++) {
+      const tz = timezones[ti];
+      const baseHour = 8 + ((tzSeed + ti * 17) % 12);
+      const hours: { hour: number; ctr: number }[] = [];
+      for (let h = 0; h < 24; h++) {
+        const dist = Math.abs(h - baseHour);
+        const ctr = Math.round((2.5 - dist * 0.08 + ((tzSeed + ti * 31 + h * 7) % 30) / 50) * 100) / 100;
+        hours.push({ hour: h, ctr: Math.max(0.1, ctr) });
+      }
+      const sorted = [...hours].sort((a, b) => b.ctr - a.ctr);
+      const peakHour = sorted[0].hour;
+      const schedule = [
+        { startHour: Math.max(0, peakHour - 3), endHour: Math.min(23, peakHour + 3), bidMultiplier: 1.3 },
+        { startHour: Math.max(0, peakHour - 6), endHour: peakHour - 3, bidMultiplier: 1.1 },
+        { startHour: peakHour + 3, endHour: Math.min(23, peakHour + 6), bidMultiplier: 1.1 },
+      ];
+      entries.push({
+        timezone: tz.tz,
+        countries: tz.countries,
+        bestPerformanceHour: peakHour,
+        avgCtrByHour: hours,
+        optimalAdSchedule: schedule,
+        recommendations: [
+          `Schedule 70% of daily budget between ${peakHour - 3}:00-${peakHour + 3}:00 for ${tz.tz}`,
+          `Reduce bids by 20% during off-peak hours (${peakHour + 6}:00-${peakHour - 6 < 0 ? peakHour + 18 : peakHour - 6}:00)`,
+        ],
+      });
+    }
+    return entries;
+  }
+
+  geoLocalizationScore(campaignId: string, tenantId: string): GeoLocalizationScore[] {
+    const report = this.analyzeGeoPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const seen = new Set<string>();
+    const scores: GeoLocalizationScore[] = [];
+    for (const loc of report.locations) {
+      const key = loc.country + loc.region;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const seed = hashStr(campaignId + tenantId + loc.country + loc.region);
+      const adCopyLoc = 40 + ((seed * 13) % 55);
+      const lpLoc = 35 + ((seed * 17) % 50);
+      const cultural = 45 + ((seed * 19) % 40);
+      const language = 50 + ((seed * 23) % 40);
+      const imagery = 40 + ((seed * 29) % 50);
+      const overall = Math.round((adCopyLoc + lpLoc + cultural + language + imagery) / 5);
+      const suggestions: string[] = [];
+      if (adCopyLoc < 60) suggestions.push("Localize ad copy with region-specific idioms and references");
+      if (lpLoc < 60) suggestions.push("Create dedicated landing pages with local imagery and testimonials");
+      if (cultural < 60) suggestions.push("Review cultural references for relevance in this region");
+      if (language < 60) suggestions.push("Improve language accuracy — consider native translator");
+      if (imagery < 60) suggestions.push("Use region-representative imagery and color schemes");
+      if (suggestions.length === 0) suggestions.push("Localization is strong — maintain current approach");
+      scores.push({
+        country: loc.country,
+        region: loc.region,
+        overallScore: overall,
+        adCopyLocalization: adCopyLoc,
+        landingPageLocalization: lpLoc,
+        culturalRelevance: cultural,
+        languageAccuracy: language,
+        imageryRelevance: imagery,
+        improvementSuggestions: suggestions,
+      });
+    }
+    return scores.sort((a, b) => a.overallScore - b.overallScore);
+  }
+
+  geoCrossBorderAnalysis(campaignId: string, tenantId: string): GeoCrossBorderEntry[] {
+    const report = this.analyzeGeoPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const countries = [...new Set(report.locations.map(l => l.country))];
+    const entries: GeoCrossBorderEntry[] = [];
+    const cbSeed = hashStr(campaignId + tenantId + "crossborder");
+    for (let i = 0; i < countries.length; i++) {
+      for (let j = i + 1; j < countries.length; j++) {
+        const pairSeed = cbSeed + hashStr(countries[i] + countries[j]);
+        const traffic = 500 + ((pairSeed * 31) % 9500);
+        const cvr = 1.5 + ((pairSeed * 13) % 60) / 20;
+        const convs = Math.round(traffic * cvr / 100);
+        const aov = 40 + ((pairSeed * 17) % 160);
+        const rev = convs * aov;
+        entries.push({
+          countryPair: `${countries[i]} ↔ ${countries[j]}`,
+          originatingCountry: countries[i],
+          targetCountry: countries[j],
+          crossBorderTraffic: traffic,
+          crossBorderConversions: convs,
+          crossBorderRevenue: rev,
+          conversionRate: Math.round(cvr * 100) / 100,
+          averageOrderValue: aov,
+          recommendations: [
+            cvr > 4 ? `High cross-border conversion — create ${countries[j]}-specific landing pages for ${countries[i]} traffic` : `Optimize cross-border experience — ${countries[i]} to ${countries[j]} conversion rate is ${cvr}%`,
+            traffic > 5000 ? `Significant traffic volume — consider dedicated ${countries[j]} campaigns targeting ${countries[i]} audience` : `Test ${countries[j]} offers with ${countries[i]} audience to gauge demand`,
+          ],
+        });
+      }
+    }
+    return entries;
+  }
+
+  geoPredictiveExpansion(campaignId: string, tenantId: string): GeoPredictiveEntry[] {
+    const report = this.analyzeGeoPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const expansionTargets = [
+      { country: "JP", region: "Tokyo Metro" }, { country: "JP", region: "Kansai" },
+      { country: "BR", region: "Sao Paulo State" }, { country: "BR", region: "Rio de Janeiro" },
+      { country: "IN", region: "Maharashtra" }, { country: "IN", region: "Karnataka" },
+      { country: "MX", region: "Mexico City Area" }, { country: "FR", region: "Ile-de-France" },
+      { country: "ES", region: "Madrid Area" }, { country: "IT", region: "Lombardy" },
+      { country: "KR", region: "Seoul Capital" },
+    ];
+    const predSeed = hashStr(campaignId + tenantId + "predictive");
+    const results: GeoPredictiveEntry[] = [];
+    const existingPerf = report.locations.reduce((acc, l) => { acc[l.country] = l.roas; return acc; }, {} as Record<string, number>);
+    for (let ti = 0; ti < expansionTargets.length; ti++) {
+      const t = expansionTargets[ti];
+      const similarity = 20 + ((predSeed + ti * 13) % 65);
+      const baseRoas = existingPerf[t.country] || 1.5;
+      const predictedRoas = Math.round((baseRoas * (similarity / 100) + ((predSeed + ti * 17) % 100) / 100) * 100) / 100;
+      const predictedCtr = Math.round((2 + ((predSeed + ti * 19) % 40) / 10 + similarity / 50) * 100) / 100;
+      const predictedCvr = Math.round((1.5 + ((predSeed + ti * 23) % 30) / 10 + similarity / 80) * 100) / 100;
+      const confidence: "high" | "medium" | "low" = similarity > 60 ? "high" : similarity > 35 ? "medium" : "low";
+      const budget = 500 + ((predSeed + ti * 29) % 4500);
+      const risk: "low" | "medium" | "high" = similarity > 60 ? "low" : similarity > 35 ? "medium" : "high";
+      results.push({
+        country: t.country,
+        region: t.region,
+        currentSimilarityScore: similarity,
+        predictedCtr, predictedCvr, predictedRoas,
+        confidenceLevel: confidence,
+        recommendedBudget: budget,
+        riskLevel: risk,
+      });
+    }
+    return results.sort((a, b) => b.predictedRoas - a.predictedRoas);
+  }
+
+  geoCompetitiveLandscape(campaignId: string, tenantId: string): GeoCompetitiveEntry[] {
+    const report = this.analyzeGeoPerformance(campaignId, tenantId);
+    if (!report) return [];
+    const seen = new Set<string>();
+    const entries: GeoCompetitiveEntry[] = [];
+    const compSeed = hashStr(campaignId + tenantId + "competitive");
+    for (const loc of report.locations) {
+      const key = loc.country + loc.region;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const ci = hashStr(loc.country + loc.region + "ci") % 100;
+      const density: "low" | "medium" | "high" = ci > 66 ? "high" : ci > 33 ? "medium" : "low";
+      const competitors = density === "high" ? 15 + (ci % 20) : density === "medium" ? 6 + (ci % 10) : 2 + (ci % 5);
+      const share = 1 + ((compSeed + hashStr(loc.country + loc.region)) % 20);
+      const priceIdx = 80 + ((compSeed + loc.performanceScore * 7) % 60);
+      const saturation: "low" | "medium" | "high" = priceIdx > 120 ? "high" : priceIdx > 100 ? "medium" : "low";
+      const barriers: string[] = [];
+      if (density === "high") barriers.push("Strong incumbent presence with established brand loyalty");
+      if (priceIdx > 110) barriers.push("High CPC environment — requires competitive budgeting");
+      if (saturation === "high") barriers.push("Market is saturated with similar offerings");
+      if (barriers.length === 0) barriers.push("Low barriers — favorable entry conditions");
+      const pos = density === "low" ? "First-mover advantage possible" : density === "medium" ? "Differentiation through niche positioning" : "Compete on quality score and ad relevance";
+      entries.push({
+        country: loc.country,
+        region: loc.region,
+        competitiveDensity: density,
+        estimatedCompetitors: competitors,
+        marketShare: share,
+        adPriceIndex: priceIdx,
+        saturationLevel: saturation,
+        barriersToEntry: barriers,
+        strategicPosition: pos,
+      });
+    }
+    return entries;
   }
 }
 
