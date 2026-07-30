@@ -88,6 +88,42 @@ function hashStr(s: string): number {
   return Math.abs(h);
 }
 
+interface CreativeForecast {
+  campaignId: string;
+  forecasts: { date: string; predictedCTR: number; predictedCVR: number; predictedROAS: number; predictedFatigueRate: number; confidence: number }[];
+  recommendations: string[];
+}
+
+interface AudienceAlignment {
+  campaignId: string;
+  segments: { segmentName: string; audienceSize: number; creativeFit: number; ctr: number; cvr: number; relevanceScore: number; alignmentGap: number; recommendation: string }[];
+  overallAlignment: number;
+}
+
+interface CreativeCompetitiveAnalysis {
+  campaignId: string;
+  competitors: { competitorId: string; headlineStyle: string; ctaStyle: string; visualType: string; avgCTR: number; estimatedSpend: number }[];
+  gaps: { area: string; ownScore: number; competitorAvg: number; gap: number; priority: "high" | "medium" | "low" }[];
+  positioningAdvice: string;
+}
+
+interface CreativeLifecycle {
+  campaignId: string;
+  assets: { assetId: string; name: string; type: string; ageDays: number; stage: "new" | "growth" | "maturity" | "decline" | "fatigued"; ctr: number; roas: number; remainingDays: number }[];
+  portfolioStageDistribution: { stage: string; count: number; percentage: number }[];
+}
+
+interface CreativeROI {
+  assetId: string; name: string; type: string; totalSpend: number; totalRevenue: number; roas: number;
+  costPerConversion: number; profitMargin: number; breakEvenDays: number; efficiencyGrade: "A" | "B" | "C" | "D" | "F";
+}
+
+interface OptimizationHistory {
+  assetId: string; name: string; type: string;
+  changes: { date: string; action: string; metric: string; before: number; after: number; improvement: number }[];
+  totalImprovement: number; currentStatus: string;
+}
+
 export class CampaignCreativeOptimizerService {
   analyzeCreativePerformance(campaignId: string, tenantId: string): CreativeAnalysis {
     const seed = hashStr(campaignId + tenantId);
@@ -326,6 +362,149 @@ export class CampaignCreativeOptimizerService {
       });
     }
     return trends;
+  }
+
+  creativePerformanceForecast(campaignId: string, tenantId: string): CreativeForecast {
+    const analysis = this.analyzeCreativePerformance(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "forecast");
+    const forecasts: CreativeForecast["forecasts"] = [];
+    let ctr = analysis.averageCTR;
+    let cvr = analysis.averageCVR;
+    let roas = analysis.averageROAS;
+    let fatigue = analysis.fatiguedAssets.length / Math.max(analysis.assets.length, 1) * 100;
+    for (let w = 1; w <= 6; w++) {
+      const noise = ((seed * w * 7) % 100) / 500 - 0.1;
+      ctr = Math.max(0.1, ctr + noise * ctr * 0.1);
+      cvr = Math.max(0.1, cvr + noise * 0.05);
+      roas = Math.max(0.1, roas + noise * roas * 0.08);
+      fatigue = Math.min(100, fatigue + 2 + ((seed * w * 13) % 100) / 50);
+      const date = new Date();
+      date.setDate(date.getDate() + w * 7);
+      forecasts.push({
+        date: date.toISOString().split("T")[0],
+        predictedCTR: Math.round(ctr * 100) / 100,
+        predictedCVR: Math.round(cvr * 100) / 100,
+        predictedROAS: Math.round(roas * 100) / 100,
+        predictedFatigueRate: Math.round(fatigue * 100) / 100,
+        confidence: Math.max(30, 90 - w * 10),
+      });
+    }
+    const recommendations: string[] = [];
+    if (forecasts[forecasts.length - 1]?.predictedROAS < 1.5) recommendations.push("ROAS projected to drop below 1.5x within 6 weeks — plan creative refresh");
+    if (forecasts.some(f => f.predictedFatigueRate > 60)) recommendations.push("Fatigue rate projected to exceed 60% — rotate creatives proactively");
+    if (forecasts[0]?.predictedCTR < 1) recommendations.push("CTR forecast remains below 1% — test new headline and CTA variants");
+    recommendations.push("Monitor weekly and adjust creative rotation based on fatigue signals");
+    return { campaignId, forecasts, recommendations };
+  }
+
+  creativeAudienceAlignment(campaignId: string, tenantId: string): AudienceAlignment {
+    const analysis = this.analyzeCreativePerformance(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "align");
+    const segments = ["18-24 Professionals", "25-34 Decision Makers", "35-44 Managers", "45-54 Executives", "55+ Retirees", "SMB Owners", "Enterprise Buyers"];
+    const segmentData: AudienceAlignment["segments"] = segments.map((seg, i) => {
+      const sSeed = seed + i * 17;
+      const audienceSize = 5000 + (sSeed % 45000);
+      const creativeFit = Math.round((50 + (sSeed % 45)) * 100) / 100;
+      const ctr = Math.round((analysis.averageCTR * (0.6 + ((sSeed * 3) % 40) / 100)) * 100) / 100;
+      const cvr = Math.round((analysis.averageCVR * (0.5 + ((sSeed * 5) % 50) / 100)) * 100) / 100;
+      const relevanceScore = Math.round((creativeFit + ctr * 10 + cvr * 5) / 3 * 100) / 100;
+      const alignmentGap = Math.round(Math.max(0, 90 - relevanceScore) * 100) / 100;
+      const recommendation = alignmentGap > 30 ? `Create new creative variants targeting ${seg} — relevance score below threshold` : alignmentGap > 15 ? `Optimize existing creatives for ${seg} with tailored messaging` : `Current creatives align well with ${seg}`;
+      return { segmentName: seg, audienceSize, creativeFit, ctr, cvr, relevanceScore, alignmentGap, recommendation };
+    });
+    const overallAlignment = Math.round(segmentData.reduce((s, seg) => s + seg.relevanceScore, 0) / segmentData.length * 100) / 100;
+    return { campaignId, segments: segmentData, overallAlignment };
+  }
+
+  creativeCompetitiveAnalysis(campaignId: string, tenantId: string): CreativeCompetitiveAnalysis {
+    const seed = hashStr(campaignId + tenantId + "comp");
+    const competitorCount = 3 + (seed % 3);
+    const competitors: CreativeCompetitiveAnalysis["competitors"] = [];
+    const headlineStyles = ["Benefit-driven", "Question-based", "Number-focused", "Emotional appeal", "How-to format"];
+    const ctaStyles = ["Action-oriented", "Urgency-based", "Free-offer", "Social-proof", "Risk-reversal"];
+    const visualTypes = ["Product shot", "Lifestyle", "Illustration", "User-generated", "Animation"];
+    for (let i = 0; i < competitorCount; i++) {
+      const cSeed = seed + i * 29;
+      competitors.push({
+        competitorId: `competitor_${i + 1}`,
+        headlineStyle: headlineStyles[(cSeed * 7) % headlineStyles.length],
+        ctaStyle: ctaStyles[(cSeed * 11) % ctaStyles.length],
+        visualType: visualTypes[(cSeed * 13) % visualTypes.length],
+        avgCTR: Math.round((1 + (cSeed % 300) / 100) * 100) / 100,
+        estimatedSpend: Math.round((5000 + (cSeed % 15000)) * 100) / 100,
+      });
+    }
+    const competitorAvgCTR = competitors.reduce((s, c) => s + c.avgCTR, 0) / competitors.length;
+    const analysis = this.analyzeCreativePerformance(campaignId, tenantId);
+    const gaps: CreativeCompetitiveAnalysis["gaps"] = [
+      { area: "CTR", ownScore: analysis.averageCTR, competitorAvg: Math.round(competitorAvgCTR * 100) / 100, gap: Math.round((competitorAvgCTR - analysis.averageCTR) * 100) / 100, priority: analysis.averageCTR < competitorAvgCTR ? "high" : "low" },
+      { area: "Creative Diversity", ownScore: analysis.assets.length, competitorAvg: 12, gap: analysis.assets.length - 12, priority: analysis.assets.length < 8 ? "high" : "medium" },
+      { area: "Headline Variety", ownScore: analysis.assets.filter(a => a.type === "headline").length, competitorAvg: 4, gap: analysis.assets.filter(a => a.type === "headline").length - 4, priority: "medium" },
+    ];
+    const positioningAdvice = analysis.averageCTR < competitorAvgCTR
+      ? `Your CTR (${analysis.averageCTR}%) is below competitor average (${Math.round(competitorAvgCTR * 100) / 100}%). Focus on benefit-driven headlines and urgency-based CTAs to close the gap.`
+      : `Your CTR (${analysis.averageCTR}%) is competitive. Maintain current performance and explore new creative formats for incremental gains.`;
+    return { campaignId, competitors, gaps, positioningAdvice };
+  }
+
+  creativeLifecycleAnalysis(campaignId: string, tenantId: string): CreativeLifecycle {
+    const analysis = this.analyzeCreativePerformance(campaignId, tenantId);
+    const assets: CreativeLifecycle["assets"] = analysis.assets.map(a => {
+      const stage: "new" | "growth" | "maturity" | "decline" | "fatigued" =
+        a.ageDays < 7 ? "new" : a.ageDays < 14 ? "growth" : a.ageDays < 30 ? "maturity" : a.ageDays < 45 ? "decline" : "fatigued";
+      const remainingDays = stage === "new" ? 45 : stage === "growth" ? 30 : stage === "maturity" ? 15 : stage === "decline" ? 7 : 0;
+      return { assetId: a.id, name: a.name, type: a.type, ageDays: a.ageDays, stage, ctr: a.ctr, roas: a.roas, remainingDays };
+    });
+    const stageCounts: Record<string, number> = {};
+    assets.forEach(a => { stageCounts[a.stage] = (stageCounts[a.stage] || 0) + 1; });
+    const portfolioStageDistribution = Object.entries(stageCounts).map(([stage, count]) => ({
+      stage, count, percentage: Math.round(count / assets.length * 10000) / 100,
+    }));
+    return { campaignId, assets, portfolioStageDistribution };
+  }
+
+  creativeROIAnalysis(campaignId: string, tenantId: string): CreativeROI[] {
+    const analysis = this.analyzeCreativePerformance(campaignId, tenantId);
+    return analysis.assets.map(a => {
+      const costPerConversion = a.conversions > 0 ? a.spend / a.conversions : Infinity;
+      const profitMargin = a.revenue > 0 ? (a.revenue - a.spend) / a.revenue * 100 : 0;
+      const breakEvenDays = a.revenue > 0 && a.spend > a.revenue ? Math.round(a.ageDays * a.spend / Math.max(a.revenue, 0.01)) : 0;
+      const efficiencyGrade: "A" | "B" | "C" | "D" | "F" = a.roas >= 400 ? "A" : a.roas >= 250 ? "B" : a.roas >= 150 ? "C" : a.roas >= 100 ? "D" : "F";
+      return {
+        assetId: a.id, name: a.name, type: a.type, totalSpend: a.spend, totalRevenue: a.revenue, roas: a.roas,
+        costPerConversion: isFinite(costPerConversion) ? Math.round(costPerConversion * 100) / 100 : 0,
+        profitMargin: Math.round(profitMargin * 100) / 100,
+        breakEvenDays, efficiencyGrade,
+      };
+    });
+  }
+
+  creativeOptimizationHistory(campaignId: string, tenantId: string): OptimizationHistory[] {
+    const analysis = this.analyzeCreativePerformance(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "opt_hist");
+    return analysis.assets.slice(0, 6).map(a => {
+      const aSeed = seed + hashStr(a.id);
+      const changeCount = 2 + (aSeed % 4);
+      const changes: OptimizationHistory["changes"] = [];
+      let totalImprovement = 0;
+      let ctr = a.ctr * 0.7;
+      let roas = a.roas * 0.75;
+      for (let c = 0; c < changeCount; c++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (changeCount - c) * 14);
+        const actions = ["Headline rewrite", "CTA change", "Image replacement", "Description update", "Landing page A/B test", "Audience refinement"];
+        const action = actions[(aSeed + c * 13) % actions.length];
+        const metric = c % 2 === 0 ? "CTR" : "ROAS";
+        const before = metric === "CTR" ? ctr : roas;
+        ctr += (aSeed * c * 7 % 100) / 500;
+        roas += (aSeed * c * 11 % 200) / 100;
+        const after = metric === "CTR" ? ctr : roas;
+        const improvement = before > 0 ? Math.round((after - before) / before * 10000) / 100 : 0;
+        totalImprovement += improvement;
+        changes.push({ date: date.toISOString().split("T")[0], action, metric, before: Math.round(before * 100) / 100, after: Math.round(after * 100) / 100, improvement });
+      }
+      return { assetId: a.id, name: a.name, type: a.type, changes, totalImprovement: Math.round(totalImprovement * 100) / 100, currentStatus: a.status };
+    });
   }
 }
 

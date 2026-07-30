@@ -2370,6 +2370,30 @@ export class AdsMarketingModuleService {
     return campaignCreativeOptimizer.analyzeCreativeTrends(campaignId, tenantId);
   }
 
+  creativePerformanceForecast(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.creativePerformanceForecast(campaignId, tenantId);
+  }
+
+  creativeAudienceAlignment(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.creativeAudienceAlignment(campaignId, tenantId);
+  }
+
+  creativeCompetitiveAnalysis(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.creativeCompetitiveAnalysis(campaignId, tenantId);
+  }
+
+  creativeLifecycleAnalysis(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.creativeLifecycleAnalysis(campaignId, tenantId);
+  }
+
+  creativeROIAnalysis(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.creativeROIAnalysis(campaignId, tenantId);
+  }
+
+  creativeOptimizationHistory(campaignId: string, tenantId: string) {
+    return campaignCreativeOptimizer.creativeOptimizationHistory(campaignId, tenantId);
+  }
+
   landingPageAnalysis(campaignId: string, tenantId: string) {
     return campaignLandingPageAnalyzer.analyzeLandingPages(campaignId, tenantId);
   }

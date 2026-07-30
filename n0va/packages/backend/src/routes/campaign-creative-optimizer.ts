@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/performance-forecast", asyncHandler(async (req, res) => {
+  const result = campaignCreativeOptimizer.creativePerformanceForecast(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/audience-alignment", asyncHandler(async (req, res) => {
+  const result = campaignCreativeOptimizer.creativeAudienceAlignment(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/competitive-analysis", asyncHandler(async (req, res) => {
+  const result = campaignCreativeOptimizer.creativeCompetitiveAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/lifecycle", asyncHandler(async (req, res) => {
+  const result = campaignCreativeOptimizer.creativeLifecycleAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/roi-analysis", asyncHandler(async (req, res) => {
+  const result = campaignCreativeOptimizer.creativeROIAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/optimization-history", asyncHandler(async (req, res) => {
+  const result = campaignCreativeOptimizer.creativeOptimizationHistory(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

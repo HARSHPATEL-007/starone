@@ -2636,6 +2636,12 @@ export const api = {
     abTests: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/ab-tests`),
     mix: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/mix`),
     trends: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/trends`),
+    performanceForecast: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/performance-forecast`),
+    audienceAlignment: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/audience-alignment`),
+    competitiveAnalysis: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/competitive-analysis`),
+    lifecycle: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/lifecycle`),
+    roiAnalysis: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/roi-analysis`),
+    optimizationHistory: (campaignId: string) => request<any>(`/campaign-creative-optimizer/campaign/${campaignId}/optimization-history`),
   },
 
   campaignLandingPageAnalyzer: {
