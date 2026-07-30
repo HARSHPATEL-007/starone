@@ -119,7 +119,7 @@ export class CampaignCustomerJourneyService {
 
       const totalHrs = touchpoints.length > 0 ? touchpoints[touchpoints.length - 1].hoursFromStart : 0;
       const conv = touchpoints.length > 0 && touchpoints[touchpoints.length - 1].converted;
-      const convVal = conv ? Math.round(20 + Math.random() * 180) : 0;
+      const convVal = conv ? Math.round(20 + ((jSeed * 37) % 180)) : 0;
 
       journeys.push({ journeyId: `jny_${i}`, touchpoints, totalTouchpoints: numTps, uniqueCampaigns: usedCamps.size, totalHours: totalHrs, converted: conv, conversionValue: convVal, path: pathStr });
 
@@ -247,6 +247,216 @@ export class CampaignCustomerJourneyService {
         recommendation: b.label === "Same Session" ? "Optimize for instant conversions with fast-loading pages and clear CTAs" : b.label === "Same Day" ? "Implement same-day retargeting with time-sensitive offers" : b.label === "One Month+" ? "Create re-engagement campaigns with 'we miss you' messaging for long-cycle prospects" : `Build ${b.label.toLowerCase()} retargeting sequences to nurture prospects`,
       };
     });
+  }
+
+  // ── Deep methods ──────────────────────────────────────────────────
+
+  journeyPathClustering(tenantId: string): {
+    clusters: { name: string; description: string; pathPattern: string; journeyCount: number; conversionRate: number; avgValue: number; commonFirstTouch: string; commonLastTouch: string }[];
+    totalJourneys: number; dominantCluster: string; clusterDiversity: number;
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const seed = hashStr(tenantId + "clust");
+    const clusterDefs = [
+      { name: "Direct Converters", desc: "Short 1-2 touchpoint journeys via direct/referral channels", pattern: "Direct|Referral", minTps: 1, maxTps: 2 },
+      { name: "Search Researchers", desc: "Multi-touch journeys starting with Search", pattern: "Search", minTps: 2, maxTps: 5 },
+      { name: "Social Engagers", desc: "Social-driven journeys with brand discovery", pattern: "Social", minTps: 2, maxTps: 4 },
+      { name: "Email Nurtured", desc: "Email-heavy journeys typical of nurtured leads", pattern: "Email", minTps: 2, maxTps: 6 },
+      { name: "Display+Awareness", desc: "Display-initiated journeys building awareness", pattern: "Display", minTps: 3, maxTps: 7 },
+      { name: "Multi-Channel", desc: "Complex journeys across 3+ channels", pattern: "Multi", minTps: 4, maxTps: 8 },
+    ];
+    const clusters = clusterDefs.map((cd, ci) => {
+      const journeys = report.journeys.filter(j => {
+        const channels = j.touchpoints.map(t => t.channel);
+        if (j.totalTouchpoints < cd.minTps || j.totalTouchpoints > cd.maxTps) return false;
+        if (cd.name === "Multi-Channel") return new Set(channels).size >= 3;
+        if (cd.name === "Direct Converters") return channels.every(ch => ch === "Direct" || ch === "Referral") || j.totalTouchpoints <= 2;
+        return channels.some(ch => ch === cd.pattern);
+      });
+      const convs = journeys.filter(j => j.converted);
+      const rate = journeys.length > 0 ? Math.round(convs.length / journeys.length * 10000) / 100 : 0;
+      const avgVal = convs.length > 0 ? Math.round(convs.reduce((s, j) => s + j.conversionValue, 0) / convs.length) : 0;
+      const firstTouches = journeys.flatMap(j => j.touchpoints.filter(t => t.position === 0).map(t => t.channel));
+      const lastTouches = journeys.flatMap(j => j.touchpoints.filter(t => t.position === j.totalTouchpoints - 1).map(t => t.channel));
+      const ftCounts = new Map<string, number>();
+      firstTouches.forEach(ch => ftCounts.set(ch, (ftCounts.get(ch) || 0) + 1));
+      const ltCounts = new Map<string, number>();
+      lastTouches.forEach(ch => ltCounts.set(ch, (ltCounts.get(ch) || 0) + 1));
+      const commonFirst = ftCounts.size > 0 ? Array.from(ftCounts.entries()).sort((a, b) => b[1] - a[1])[0][0] : "N/A";
+      const commonLast = ltCounts.size > 0 ? Array.from(ltCounts.entries()).sort((a, b) => b[1] - a[1])[0][0] : "N/A";
+      return { name: cd.name, description: cd.desc, pathPattern: cd.pattern, journeyCount: journeys.length, conversionRate: rate, avgValue: avgVal, commonFirstTouch: commonFirst, commonLastTouch: commonLast };
+    });
+    const dominant = clusters.reduce((a, b) => a.journeyCount > b.journeyCount ? a : b);
+    const nonEmpty = clusters.filter(c => c.journeyCount > 0).length;
+    return { clusters, totalJourneys: report.journeys.length, dominantCluster: dominant.name, clusterDiversity: Math.round(nonEmpty / clusters.length * 10000) / 100 };
+  }
+
+  journeyAttributionModeling(tenantId: string): {
+    channels: { name: string; firstTouch: number; lastTouch: number; linear: number; timeDecay: number; positionBased: number; assistedConversions: number; role: string }[];
+    totalConversions: number; primaryChannel: string; attributionConsensus: string;
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const convJourneys = report.journeys.filter(j => j.converted);
+    const totalConvs = convJourneys.length;
+    const seed = hashStr(tenantId + "attr");
+    const channelData = new Map<string, { first: number; last: number; linear: number; assisted: number; roles: string[] }>();
+    CHANNELS.forEach(ch => channelData.set(ch, { first: 0, last: 0, linear: 0, assisted: 0, roles: [] }));
+
+    for (const j of convJourneys) {
+      const tps = j.touchpoints;
+      const n = tps.length;
+      const channelSet = new Set<string>();
+      tps.forEach((t, i) => {
+        channelSet.add(t.channel);
+        const d = channelData.get(t.channel)!;
+        if (i === 0) d.first++;
+        if (i === n - 1) d.last++;
+        d.linear++;
+        if (i > 0 && i < n - 1) d.assisted++;
+      });
+      channelSet.forEach(ch => {
+        const d = channelData.get(ch)!;
+        d.roles.push(n <= 2 ? "closer" : tps.find(t => t.channel === ch)?.position === 0 ? "initiator" : "influencer");
+      });
+    }
+
+    const channels = CHANNELS.map((ch, ci) => {
+      const d = channelData.get(ch)!;
+      const linearShare = totalConvs > 0 ? Math.round(d.linear / totalConvs * 10000) / 100 : 0;
+      const timeDecay = totalConvs > 0 ? Math.round(d.last * 0.4 + d.first * 0.3 + d.assisted * 0.3) / totalConvs * 100 : 0;
+      const positionBased = totalConvs > 0 ? Math.round((d.first * 0.3 + d.last * 0.4 + d.assisted * 0.3) / totalConvs * 10000) / 100 : 0;
+      const dominantRole = d.roles.length > 0 ? d.roles.sort((a, b) => d.roles.filter(r => r === a).length - d.roles.filter(r => r === b).length).pop()! : "unknown";
+      return { name: ch, firstTouch: Math.round(d.first / Math.max(totalConvs, 1) * 10000) / 100, lastTouch: Math.round(d.last / Math.max(totalConvs, 1) * 10000) / 100, linear: linearShare, timeDecay: Math.round(timeDecay * 100) / 100, positionBased, assistedConversions: d.assisted, role: dominantRole };
+    });
+    const primary = channels.reduce((a, b) => a.lastTouch > b.lastTouch ? a : b);
+    const bestFirst = channels.reduce((a, b) => a.firstTouch > b.firstTouch ? a : b);
+    const bestLinear = channels.reduce((a, b) => a.linear > b.linear ? a : b);
+    const consensus = primary.name === bestFirst.name && primary.name === bestLinear.name ? "strong" : primary.name === bestFirst.name || primary.name === bestLinear.name ? "moderate" : "fragmented";
+    return { channels, totalConversions: totalConvs, primaryChannel: primary.name, attributionConsensus: consensus };
+  }
+
+  journeyChurnPrediction(tenantId: string): {
+    touchpointRisk: { position: number; channel: string; churnRisk: number; churnReason: string; retentionAction: string }[];
+    overallChurnRate: number; highestRiskTouchpoint: string; recommendation: string;
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const seed = hashStr(tenantId + "churn");
+    const nonConv = report.journeys.filter(j => !j.converted);
+    const overallChurnRate = report.journeys.length > 0 ? Math.round(nonConv.length / report.journeys.length * 10000) / 100 : 0;
+    const maxTps = Math.max(...report.journeys.map(j => j.totalTouchpoints), 3);
+    const touchpointRisk: { position: number; channel: string; churnRisk: number; churnReason: string; retentionAction: string }[] = [];
+    for (let pos = 0; pos < Math.min(maxTps, 6); pos++) {
+      const entering = report.journeys.filter(j => j.totalTouchpoints > pos).length;
+      const churning = nonConv.filter(j => j.totalTouchpoints === pos + 1).length;
+      const baseRisk = entering > 0 ? churning / entering : 0;
+      const noise = ((seed + pos * 17) % 20) / 100;
+      const risk = Math.min(100, Math.round((baseRisk + noise) * 10000) / 100);
+      const ch = pos < CHANNELS.length ? CHANNELS[pos] : "Mixed";
+      const reasons = ["Low engagement with content", "Weak call-to-action at this stage", "Information overload without clear next step", "Missing personalization in follow-up", "No urgency or time-sensitive element"];
+      const reason = reasons[(seed + pos * 13) % reasons.length];
+      const actions = ["Add personalized retargeting with tailored offer", "Simplify the next step with a single CTA", "Introduce social proof and testimonials", "Create urgency with limited-time incentive", "Implement progressive profiling to reduce friction"];
+      const action = actions[(seed + pos * 19) % actions.length];
+      touchpointRisk.push({ position: pos + 1, channel: ch, churnRisk: risk, churnReason: reason, retentionAction: action });
+    }
+    const highest = touchpointRisk.reduce((a, b) => a.churnRisk > b.churnRisk ? a : b);
+    const rec = highest.churnRisk > 50 ? `Critical churn risk at touchpoint ${highest.position} (${highest.channel}) — ${highest.retentionAction}` : `Monitor touchpoint ${highest.position} (${highest.channel}) with ${highest.churnRisk}% churn risk`;
+    return { touchpointRisk, overallChurnRate, highestRiskTouchpoint: `Touchpoint ${highest.position} — ${highest.channel}`, recommendation: rec };
+  }
+
+  journeyLifecycleStageMapping(tenantId: string): {
+    stages: { name: string; description: string; journeyCount: number; conversionRate: number; avgTouchpoints: number; avgHours: number; topChannels: string[] }[];
+    primaryStage: string; lifecycleProgression: string;
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const stages = [
+      { name: "Awareness", desc: "First exposure — single touchpoint, no prior interaction", minTps: 1, maxTps: 1, maxHrs: 24 },
+      { name: "Interest", desc: "Exploring options — 2-3 touchpoints across 1-3 days", minTps: 2, maxTps: 3, maxHrs: 72 },
+      { name: "Consideration", desc: "Evaluating — 3-5 touchpoints over a week", minTps: 3, maxTps: 5, maxHrs: 168 },
+      { name: "Intent", desc: "Ready to convert — multiple touches with high engagement", minTps: 4, maxTps: 6, maxHrs: 336 },
+      { name: "Conversion", desc: "Completed purchase or desired action", minTps: 1, maxTps: 8, maxHrs: 720, mustConvert: true },
+      { name: "Advocacy", desc: "Post-conversion engagement and referrals", minTps: 1, maxTps: 8, maxHrs: 720, mustConvert: true, highValue: true },
+    ] as any[];
+    const results = stages.map(s => {
+      const journeys = report.journeys.filter(j => {
+        if (j.totalTouchpoints < s.minTps || j.totalTouchpoints > s.maxTps) return false;
+        if (j.totalHours > s.maxHrs) return false;
+        if (s.mustConvert && !j.converted) return false;
+        if (s.highValue && (!j.converted || j.conversionValue < 100)) return false;
+        return true;
+      });
+      const convs = journeys.filter(j => j.converted);
+      const rate = journeys.length > 0 ? Math.round(convs.length / journeys.length * 10000) / 100 : 0;
+      const avgTps = journeys.length > 0 ? journeys.reduce((sum, j) => sum + j.totalTouchpoints, 0) / journeys.length : 0;
+      const avgHrs = journeys.length > 0 ? journeys.reduce((sum, j) => sum + j.totalHours, 0) / journeys.length : 0;
+      const chCounts = new Map<string, number>();
+      journeys.forEach(j => j.touchpoints.forEach(t => chCounts.set(t.channel, (chCounts.get(t.channel) || 0) + 1)));
+      const topChs = Array.from(chCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+      return { name: s.name, description: s.desc, journeyCount: journeys.length, conversionRate: rate, avgTouchpoints: Math.round(avgTps * 100) / 100, avgHours: Math.round(avgHrs * 100) / 100, topChannels: topChs };
+    });
+    const primary = results.reduce((a, b) => a.journeyCount > b.journeyCount ? a : b);
+    const stagesWithJourneys = results.filter(s => s.journeyCount > 0);
+    const progression = stagesWithJourneys.length >= 3 ? `Users progress through ${stagesWithJourneys.length} lifecycle stages — ${stagesWithJourneys.map(s => `${s.name} (${s.journeyCount} journeys)`).join(" → ")}` : "Limited lifecycle variation — most users cluster in early stages";
+    return { stages: results, primaryStage: primary.name, lifecycleProgression: progression };
+  }
+
+  journeyTouchpointEffectiveness(tenantId: string): {
+    touchpointTypes: { channel: string; position: string; occurrenceCount: number; conversionRate: number; avgValue: number; influenceScore: number; recommendation: string }[];
+    mostEffective: string; leastEffective: string;
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const seed = hashStr(tenantId + "tpeff");
+    const positions = ["first", "middle", "last"];
+    const tpMap = new Map<string, { count: number; convs: number; totalVal: number }>();
+    for (const j of report.journeys) {
+      for (let i = 0; i < j.touchpoints.length; i++) {
+        const t = j.touchpoints[i];
+        const pos = i === 0 ? "first" : i === j.touchpoints.length - 1 ? "last" : "middle";
+        const key = `${t.channel}|${pos}`;
+        const d = tpMap.get(key) || { count: 0, convs: 0, totalVal: 0 };
+        d.count++;
+        if (j.converted) { d.convs++; d.totalVal += j.conversionValue; }
+        tpMap.set(key, d);
+      }
+    }
+    const touchpointTypes = Array.from(tpMap.entries()).map(([key, d]) => {
+      const [channel, pos] = key.split("|");
+      const rate = d.count > 0 ? Math.round(d.convs / d.count * 10000) / 100 : 0;
+      const avgVal = d.convs > 0 ? Math.round(d.totalVal / d.convs) : 0;
+      const baseScore = rate * 0.4 + (avgVal / 200) * 100 * 0.3 + (d.count / report.journeys.length) * 100 * 0.3;
+      const noise = ((seed + hashStr(key)) % 10) / 100;
+      const influenceScore = Math.min(100, Math.round(baseScore * (1 + noise)));
+      const rec = influenceScore > 70 ? `Strong performer — allocate more budget to ${channel} at ${pos} touch` : influenceScore > 40 ? `Moderate effectiveness — A/B test ${channel} creative at ${pos} touch` : `Low impact — consider reducing ${channel} spend at ${pos} touch or test alternative approaches`;
+      return { channel, position: pos, occurrenceCount: d.count, conversionRate: rate, avgValue: avgVal, influenceScore, recommendation: rec };
+    }).sort((a, b) => b.influenceScore - a.influenceScore);
+    const most = touchpointTypes[0];
+    const least = touchpointTypes[touchpointTypes.length - 1];
+    return { touchpointTypes, mostEffective: `${most.channel} (${most.position} touch) — ${most.influenceScore}`, leastEffective: `${least.channel} (${least.position} touch) — ${least.influenceScore}` };
+  }
+
+  journeySequenceAnalysis(tenantId: string): {
+    sequences: { sequence: string; frequency: number; conversionRate: number; avgValue: number; avgTouchpoints: number; commonality: string }[];
+    mostCommonSequence: string; highestConvertingSequence: string; sequenceDiversity: number;
+  } {
+    const report = this.analyzeCustomerJourneys(tenantId);
+    const seqMap = new Map<string, { journeys: CustomerJourney[] }>();
+    for (const j of report.journeys) {
+      const seq = j.touchpoints.map(t => t.channel).join(" → ");
+      const d = seqMap.get(seq) || { journeys: [] };
+      d.journeys.push(j);
+      seqMap.set(seq, d);
+    }
+    const sequences = Array.from(seqMap.entries()).map(([seq, d]) => {
+      const convs = d.journeys.filter(j => j.converted);
+      const rate = d.journeys.length > 0 ? Math.round(convs.length / d.journeys.length * 10000) / 100 : 0;
+      const avgVal = convs.length > 0 ? Math.round(convs.reduce((s, j) => s + j.conversionValue, 0) / convs.length) : 0;
+      const avgTps = d.journeys.reduce((s, j) => s + j.totalTouchpoints, 0) / d.journeys.length;
+      const segments = seq.split(" → ");
+      const commonality = d.journeys.length > 5 ? "high" : d.journeys.length > 2 ? "medium" : "low";
+      return { sequence: seq, frequency: d.journeys.length, conversionRate: rate, avgValue: avgVal, avgTouchpoints: Math.round(avgTps * 100) / 100, commonality };
+    }).sort((a, b) => b.frequency - a.frequency);
+    const mostCommon = sequences[0];
+    const highestConv = sequences.reduce((a, b) => a.conversionRate > b.conversionRate ? a : b, sequences[0]);
+    return { sequences: sequences.slice(0, 15), mostCommonSequence: mostCommon ? mostCommon.sequence : "N/A", highestConvertingSequence: highestConv ? highestConv.sequence : "N/A", sequenceDiversity: Math.round(sequences.length / report.journeys.length * 10000) / 100 };
   }
 }
 

@@ -2452,6 +2452,12 @@ export const api = {
     journeyDropOffs: () => request<any>("/campaign-customer-journey/journey-drop-offs"),
     journeyTimeBuckets: () => request<any>("/campaign-customer-journey/journey-time-buckets"),
     commonPaths: () => request<any>("/campaign-customer-journey/common-paths"),
+    journeyPathClusters: () => request<any>("/campaign-customer-journey/journey-path-clusters"),
+    journeyAttributionModeling: () => request<any>("/campaign-customer-journey/journey-attribution-modeling"),
+    journeyChurnPrediction: () => request<any>("/campaign-customer-journey/journey-churn-prediction"),
+    journeyLifecycleStages: () => request<any>("/campaign-customer-journey/journey-lifecycle-stages"),
+    journeyTouchpointEffectiveness: () => request<any>("/campaign-customer-journey/journey-touchpoint-effectiveness"),
+    journeySequenceAnalysis: () => request<any>("/campaign-customer-journey/journey-sequence-analysis"),
   },
 
   campaignConversionFunnelAnalyzer: {

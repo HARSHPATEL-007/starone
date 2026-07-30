@@ -38,4 +38,34 @@ router.get("/common-paths", asyncHandler(async (req, res) => {
   sendSuccess(res, report.commonPaths);
 }));
 
+router.get("/journey-path-clusters", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeyPathClustering(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-attribution-modeling", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeyAttributionModeling(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-churn-prediction", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeyChurnPrediction(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-lifecycle-stages", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeyLifecycleStageMapping(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-touchpoint-effectiveness", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeyTouchpointEffectiveness(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/journey-sequence-analysis", asyncHandler(async (req, res) => {
+  const result = campaignCustomerJourney.journeySequenceAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

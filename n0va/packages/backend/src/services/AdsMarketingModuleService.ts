@@ -2030,6 +2030,30 @@ export class AdsMarketingModuleService {
     return campaignCustomerJourney.analyzeJourneyTimeBuckets(tenantId);
   }
 
+  journeyPathClustering(tenantId: string) {
+    return campaignCustomerJourney.journeyPathClustering(tenantId);
+  }
+
+  journeyAttributionModeling(tenantId: string) {
+    return campaignCustomerJourney.journeyAttributionModeling(tenantId);
+  }
+
+  journeyChurnPrediction(tenantId: string) {
+    return campaignCustomerJourney.journeyChurnPrediction(tenantId);
+  }
+
+  journeyLifecycleStageMapping(tenantId: string) {
+    return campaignCustomerJourney.journeyLifecycleStageMapping(tenantId);
+  }
+
+  journeyTouchpointEffectiveness(tenantId: string) {
+    return campaignCustomerJourney.journeyTouchpointEffectiveness(tenantId);
+  }
+
+  journeySequenceAnalysis(tenantId: string) {
+    return campaignCustomerJourney.journeySequenceAnalysis(tenantId);
+  }
+
   funnelAnalysis(campaignId: string, tenantId: string) {
     return campaignConversionFunnelAnalyzer.analyzeFunnel(campaignId, tenantId);
   }
