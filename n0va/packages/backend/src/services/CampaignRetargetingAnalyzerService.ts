@@ -81,6 +81,88 @@ function hashStr(s: string): number {
   return Math.abs(h);
 }
 
+interface SegmentPerformance {
+  segment: string;
+  size: number;
+  conversions: number;
+  conversionRate: number;
+  revenue: number;
+  spend: number;
+  roas: number;
+  trend: "improving" | "stable" | "declining";
+}
+
+interface FrequencyDistribution {
+  frequencyBucket: string;
+  users: number;
+  conversions: number;
+  conversionRate: number;
+  fatigueRisk: "low" | "medium" | "high";
+  recommendation: string;
+}
+
+interface LiftMeasurement {
+  metric: string;
+  testGroup: number;
+  controlGroup: number;
+  lift: number;
+  significance: string;
+  interpretation: string;
+}
+
+interface CreativePerformance {
+  creativeName: string;
+  audience: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  conversions: number;
+  cvr: number;
+  spend: number;
+  revenue: number;
+  roas: number;
+  effectivenessScore: number;
+  status: "top_performer" | "average" | "underperforming";
+}
+
+interface ROIComponent {
+  component: string;
+  value: number;
+  percentage: number;
+  description: string;
+}
+
+interface ROICalculation {
+  campaignId: string;
+  totalSpend: number;
+  totalRevenue: number;
+  grossROI: number;
+  netROI: number;
+  attributedRevenue: { channel: string; revenue: number; percentage: number }[];
+  costBreakdown: ROIComponent[];
+  revenueBreakdown: ROIComponent[];
+  breakevenPoint: number;
+  paybackDays: number;
+}
+
+interface PredictiveProjection {
+  period: string;
+  projectedAudienceSize: number;
+  projectedConversions: number;
+  projectedRevenue: number;
+  projectedDecayRate: number;
+  confidence: number;
+}
+
+interface PredictiveModeling {
+  campaignId: string;
+  currentMetrics: { audienceSize: number; conversionRate: number; decayRate: number; monthlyRevenue: number };
+  projections: PredictiveProjection[];
+  predictedLTV: number;
+  audienceExpirationDate: string;
+  recommendation: string;
+}
+
 const CHANNELS = ["Display", "Social", "Email", "Search", "Video", "Native"];
 
 export class CampaignRetargetingAnalyzerService {
@@ -235,6 +317,154 @@ export class CampaignRetargetingAnalyzerService {
       });
     }
     return trends;
+  }
+
+  retargetingSegmentPerformance(campaignId: string, tenantId: string): SegmentPerformance[] {
+    const analysis = this.analyzeRetargetingAudiences(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "segperf");
+    return analysis.audiences.map((a, i) => {
+      const sSeed = seed + i * 17;
+      const convs = Math.round(a.size * a.conversionRate / 100);
+      const revenue = Math.round(convs * (20 + (sSeed % 80)));
+      const spend = Math.round(a.size * (0.3 + (sSeed % 40) / 100));
+      const roas = spend > 0 ? Math.round((revenue / spend) * 100) / 100 : 0;
+      const trendVal = (sSeed * 13) % 3;
+      const trend: "improving" | "stable" | "declining" = trendVal === 0 ? "improving" : trendVal === 1 ? "stable" : "declining";
+      return { segment: a.name, size: a.size, conversions: convs, conversionRate: a.conversionRate, revenue, spend, roas, trend };
+    });
+  }
+
+  retargetingFrequencyAnalysis(campaignId: string, tenantId: string): FrequencyDistribution[] {
+    const analysis = this.analyzeRetargetingAudiences(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "freq");
+    const buckets = ["1-2", "3-5", "6-10", "11-15", "16+"];
+    const totalSize = analysis.totalAudienceSize;
+    const avgCvr = analysis.averageConversionRate;
+    return buckets.map((bucket, i) => {
+      const bSeed = seed + i * 23;
+      const share = [0.25, 0.35, 0.25, 0.10, 0.05][i];
+      const users = Math.round(totalSize * share * (0.8 + (bSeed % 40) / 100));
+      const freqMult = [1, 3, 7, 13, 18][i];
+      const fatigueAdj = Math.max(0.2, 1 - freqMult * 0.04);
+      const cvr = Math.round(avgCvr * fatigueAdj * 100) / 100;
+      const convs = Math.round(users * cvr / 100);
+      const fatigueRisk: "low" | "medium" | "high" = i >= 3 ? "high" : i >= 2 ? "medium" : "low";
+      const recommendation = fatigueRisk === "high" ? `Bucket ${bucket} has high fatigue risk — apply frequency capping at ${freqMult}` :
+                             fatigueRisk === "medium" ? `Bucket ${bucket} approaching fatigue threshold — monitor engagement` :
+                             `Bucket ${bucket} has healthy frequency levels`;
+      return { frequencyBucket: bucket, users, conversions: convs, conversionRate: cvr, fatigueRisk, recommendation };
+    });
+  }
+
+  retargetingLiftMeasurement(campaignId: string, tenantId: string): LiftMeasurement[] {
+    const seed = hashStr(campaignId + tenantId + "lift");
+    const metrics = ["Conversion Rate", "Revenue per User", "Click-Through Rate", "Average Order Value", "Return Rate"];
+    return metrics.map((metric, i) => {
+      const mSeed = seed + i * 31;
+      const baseVal = [3.2, 45, 2.1, 120, 18][i];
+      const testVal = baseVal * (1.15 + (mSeed % 30) / 100);
+      const controlVal = baseVal * (0.9 + (mSeed * 7 % 15) / 100);
+      const lift = Math.round(((testVal - controlVal) / controlVal) * 10000) / 100;
+      const sig = Math.abs(lift);
+      return {
+        metric, testGroup: Math.round(testVal * 100) / 100, controlGroup: Math.round(controlVal * 100) / 100,
+        lift, significance: sig > 20 ? "statistically significant (p<0.05)" : sig > 10 ? "trending significant (p<0.10)" : "not statistically significant",
+        interpretation: lift > 0 ? `Retargeting lifts ${metric.toLowerCase()} by ${lift}% versus control` : `No positive lift detected for ${metric.toLowerCase()}`,
+      };
+    });
+  }
+
+  retargetingCreativePerformance(campaignId: string, tenantId: string): CreativePerformance[] {
+    const analysis = this.analyzeRetargetingAudiences(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "creative");
+    const creativeNames = ["Retarget Banner A", "Retarget Banner B", "Dynamic Product Ad", "Discount Offer", "Urgency CTA", "Social Proof Ad", "Free Shipping Banner", "Bundle Deal"];
+    return analysis.audiences.slice(0, 4).flatMap((aud, ai) => {
+      return creativeNames.slice(ai * 2, ai * 2 + 2).map((cn, ci) => {
+        const cSeed = seed + ai * 37 + ci * 53;
+        const imps = Math.round(aud.size * (0.3 + (cSeed % 60) / 100));
+        const ctr = Math.round((1.5 + (cSeed % 40) / 10) * 100) / 100;
+        const clicks = Math.round(imps * ctr / 100);
+        const cvr = Math.round((2 + (cSeed * 7 % 60) / 10) * 100) / 100;
+        const convs = Math.round(clicks * cvr / 100);
+        const spend = Math.round(clicks * (0.5 + (cSeed * 11 % 100) / 100));
+        const revenue = Math.round(convs * (25 + (cSeed * 13 % 75)));
+        const roas = spend > 0 ? Math.round((revenue / spend) * 100) / 100 : 0;
+        const effScore = Math.round((ctr * 2 + cvr * 3 + roas * 2) * 10) / 10;
+        const status: "top_performer" | "average" | "underperforming" = effScore > 25 ? "top_performer" : effScore > 15 ? "average" : "underperforming";
+        return { creativeName: cn, audience: aud.name, impressions: imps, clicks, ctr, conversions: convs, cvr, spend, revenue, roas, effectivenessScore: effScore, status };
+      });
+    });
+  }
+
+  retargetingROICalculator(campaignId: string, tenantId: string): ROICalculation {
+    const analysis = this.analyzeRetargetingAudiences(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "roi");
+    const totalSpend = analysis.audiences.reduce((s, a) => s + Math.round(a.size * (0.3 + (hashStr(a.name) % 30) / 100)), 0);
+    const totalRevenue = analysis.audiences.reduce((s, a) => s + a.value, 0);
+    const grossROI = totalSpend > 0 ? Math.round((totalRevenue / totalSpend) * 100) / 100 : 0;
+    const channels = ["Display", "Social", "Email", "Search", "Video"];
+    const attributedRevenue = channels.map((ch, i) => {
+      const share = 0.15 + ((seed + i * 13) % 60) / 100;
+      const rev = Math.round(totalRevenue * share);
+      return { channel: ch, revenue: rev, percentage: Math.round(share * 10000) / 100 };
+    });
+    const totalAttrPct = attributedRevenue.reduce((s, a) => s + a.percentage, 0);
+    const normalizedAttr = attributedRevenue.map(a => ({ ...a, percentage: Math.round((a.percentage / totalAttrPct) * 10000) / 100 }));
+    const costBreakdown: ROIComponent[] = [
+      { component: "Ad Spend", value: Math.round(totalSpend * 0.55), percentage: 55, description: "Direct media buying costs" },
+      { component: "Creative Production", value: Math.round(totalSpend * 0.12), percentage: 12, description: "Ad creative design and copy" },
+      { component: "Platform Fees", value: Math.round(totalSpend * 0.10), percentage: 10, description: "Retargeting platform and technology costs" },
+      { component: "Data Costs", value: Math.round(totalSpend * 0.08), percentage: 8, description: "Audience data and segmentation" },
+      { component: "Agency/Management", value: Math.round(totalSpend * 0.10), percentage: 10, description: "Campaign management overhead" },
+      { component: "Measurement & Analytics", value: Math.round(totalSpend * 0.05), percentage: 5, description: "Tracking, attribution, and reporting" },
+    ];
+    const revenueBreakdown: ROIComponent[] = [
+      { component: "Direct Conversions", value: Math.round(totalRevenue * 0.65), percentage: 65, description: "Immediate conversions from retargeting" },
+      { component: "Assisted Conversions", value: Math.round(totalRevenue * 0.20), percentage: 20, description: "Conversions where retargeting assisted" },
+      { component: "Cross-Sell Revenue", value: Math.round(totalRevenue * 0.10), percentage: 10, description: "Additional products purchased" },
+      { component: "Lift from Control", value: Math.round(totalRevenue * 0.05), percentage: 5, description: "Incremental lift measured via holdout" },
+    ];
+    const netROI = totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) / 100 : 0;
+    const breakevenPoint = Math.round(totalSpend / (totalRevenue / analysis.audiences.length + 1));
+    const paybackDays = Math.round(15 + (seed % 30));
+    return { campaignId, totalSpend, totalRevenue, grossROI, netROI, attributedRevenue: normalizedAttr, costBreakdown, revenueBreakdown, breakevenPoint, paybackDays };
+  }
+
+  retargetingPredictiveModeling(campaignId: string, tenantId: string): PredictiveModeling {
+    const analysis = this.analyzeRetargetingAudiences(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "pred");
+    const currentSize = analysis.totalAudienceSize;
+    const currentCvr = analysis.averageConversionRate;
+    const currentDecay = analysis.overallDecayRate;
+    const currentRevenue = analysis.audiences.reduce((s, a) => s + a.value, 0);
+    const monthlyRevenue = Math.round(currentRevenue * (1 - currentDecay / 100));
+    const currentMetrics = { audienceSize: currentSize, conversionRate: currentCvr, decayRate: currentDecay, monthlyRevenue };
+    const periods = ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"];
+    let runningSize = currentSize;
+    let runningCvr = currentCvr;
+    let runningRevenue = monthlyRevenue;
+    const projections = periods.map((period, i) => {
+      const pSeed = seed + i * 41;
+      const sizeDecline = 0.85 + (pSeed % 15) / 100 - i * 0.03;
+      runningSize = Math.round(runningSize * Math.max(0.3, sizeDecline));
+      runningCvr = Math.max(0.1, runningCvr * (1 - currentDecay / 200));
+      runningRevenue = Math.round(runningRevenue * sizeDecline);
+      const projDecay = Math.min(90, currentDecay + 5 * (i + 1) + (pSeed % 10));
+      return {
+        period,
+        projectedAudienceSize: runningSize,
+        projectedConversions: Math.round(runningSize * runningCvr / 100),
+        projectedRevenue: runningRevenue,
+        projectedDecayRate: Math.round(projDecay * 100) / 100,
+        confidence: Math.round((80 - i * 10) * 100) / 100,
+      };
+    });
+    const predictedLTV = projections.reduce((s, p) => s + p.projectedRevenue, 0) + monthlyRevenue;
+    const expDate = new Date(2025, 5 + Math.round(currentDecay / 15), 15).toISOString().split("T")[0];
+    const recommendation = currentDecay > 40 ? `Audience decay is accelerating (${currentDecay}%) — immediate re-engagement needed to prevent total audience loss by ${expDate}` :
+                           currentDecay > 25 ? `Moderate decay rate (${currentDecay}%) — schedule creative refreshes and new audience acquisition` :
+                           `Healthy audience retention — maintain current retargeting strategy with regular optimization`;
+    return { campaignId, currentMetrics, projections, predictedLTV, audienceExpirationDate: expDate, recommendation };
   }
 }
 

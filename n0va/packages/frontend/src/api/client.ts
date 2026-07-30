@@ -2526,6 +2526,12 @@ export const api = {
     bidRecommendations: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/bid-recommendations`),
     crossChannel: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/cross-channel`),
     trends: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/trends`),
+    segmentPerformance: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/segment-performance`),
+    frequencyAnalysis: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/frequency-analysis`),
+    liftMeasurement: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/lift-measurement`),
+    creativePerformance: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/creative-performance`),
+    roiCalculator: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/roi-calculator`),
+    predictiveModeling: (campaignId: string) => request<any>(`/campaign-retargeting-analyzer/campaign/${campaignId}/predictive-modeling`),
   },
 
   campaignRealTimeMonitor: {

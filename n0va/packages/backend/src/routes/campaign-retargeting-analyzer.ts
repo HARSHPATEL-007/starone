@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/segment-performance", asyncHandler(async (req, res) => {
+  const result = campaignRetargetingAnalyzer.retargetingSegmentPerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/frequency-analysis", asyncHandler(async (req, res) => {
+  const result = campaignRetargetingAnalyzer.retargetingFrequencyAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/lift-measurement", asyncHandler(async (req, res) => {
+  const result = campaignRetargetingAnalyzer.retargetingLiftMeasurement(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/creative-performance", asyncHandler(async (req, res) => {
+  const result = campaignRetargetingAnalyzer.retargetingCreativePerformance(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/roi-calculator", asyncHandler(async (req, res) => {
+  const result = campaignRetargetingAnalyzer.retargetingROICalculator(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/predictive-modeling", asyncHandler(async (req, res) => {
+  const result = campaignRetargetingAnalyzer.retargetingPredictiveModeling(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

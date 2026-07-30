@@ -2270,6 +2270,30 @@ export class AdsMarketingModuleService {
     return campaignRetargetingAnalyzer.analyzeRetargetingTrends(campaignId, tenantId);
   }
 
+  retargetingSegmentPerformance(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.retargetingSegmentPerformance(campaignId, tenantId);
+  }
+
+  retargetingFrequencyAnalysis(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.retargetingFrequencyAnalysis(campaignId, tenantId);
+  }
+
+  retargetingLiftMeasurement(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.retargetingLiftMeasurement(campaignId, tenantId);
+  }
+
+  retargetingCreativePerformance(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.retargetingCreativePerformance(campaignId, tenantId);
+  }
+
+  retargetingROICalculator(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.retargetingROICalculator(campaignId, tenantId);
+  }
+
+  retargetingPredictiveModeling(campaignId: string, tenantId: string) {
+    return campaignRetargetingAnalyzer.retargetingPredictiveModeling(campaignId, tenantId);
+  }
+
   liveMetrics(campaignId: string, tenantId: string) {
     return campaignRealTimeMonitor.getLiveMetrics(campaignId, tenantId);
   }
