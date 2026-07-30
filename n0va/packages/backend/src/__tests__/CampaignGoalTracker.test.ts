@@ -124,3 +124,107 @@ describe("CampaignGoalTracker - goalTrendForecast", () => {
     }
   });
 });
+
+describe("CampaignGoalTracker - goalCascadingAnalysis", () => {
+  it("returns cascading analysis across levels and metrics", () => {
+    const cascade = campaignGoalTracker.goalCascadingAnalysis(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(cascade)).toBe(true);
+    expect(cascade.length).toBeGreaterThan(0);
+    for (const c of cascade) {
+      expect(c).toHaveProperty("level");
+      expect(c).toHaveProperty("metric");
+      expect(c).toHaveProperty("alignmentScore");
+      expect(c).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignGoalTracker - goalAttributionModeling", () => {
+  it("returns channel attribution for goal progress", () => {
+    const attr = campaignGoalTracker.goalAttributionModeling(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(attr)).toBe(true);
+    expect(attr.length).toBeGreaterThan(0);
+    for (const a of attr) {
+      expect(a).toHaveProperty("channel");
+      expect(a).toHaveProperty("contributionPercent");
+      expect(a).toHaveProperty("efficiency");
+      expect(a).toHaveProperty("marginalImpact");
+      expect(a).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignGoalTracker - goalStressTesting", () => {
+  it("returns stress scenarios with impacted metrics", () => {
+    const stress = campaignGoalTracker.goalStressTesting(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(stress)).toBe(true);
+    expect(stress.length).toBeGreaterThan(0);
+    for (const s of stress) {
+      expect(s).toHaveProperty("scenario");
+      expect(s).toHaveProperty("probability");
+      expect(s).toHaveProperty("impactedMetrics");
+      expect(Array.isArray(s.impactedMetrics)).toBe(true);
+      expect(s.impactedMetrics.length).toBeGreaterThan(0);
+      expect(s).toHaveProperty("overallRisk");
+      expect(["low", "medium", "high"]).toContain(s.overallRisk);
+      expect(Array.isArray(s.recommendedActions)).toBe(true);
+      expect(s.recommendedActions.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("CampaignGoalTracker - goalOptimizationSuggestions", () => {
+  it("returns optimization suggestions per metric", () => {
+    const opts = campaignGoalTracker.goalOptimizationSuggestions(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(opts)).toBe(true);
+    expect(opts.length).toBeGreaterThan(0);
+    for (const o of opts) {
+      expect(o).toHaveProperty("metric");
+      expect(o).toHaveProperty("currentProgress");
+      expect(o).toHaveProperty("target");
+      expect(Array.isArray(o.suggestedActions)).toBe(true);
+      expect(o.suggestedActions.length).toBeGreaterThan(0);
+      for (const a of o.suggestedActions) {
+        expect(a).toHaveProperty("action");
+        expect(a).toHaveProperty("expectedLift");
+        expect(a).toHaveProperty("effort");
+      }
+      expect(o).toHaveProperty("compositePotential");
+      expect(o).toHaveProperty("priority");
+    }
+  });
+});
+
+describe("CampaignGoalTracker - goalDependencyGraph", () => {
+  it("returns dependency relationships between goals", () => {
+    const deps = campaignGoalTracker.goalDependencyGraph(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(deps)).toBe(true);
+    expect(deps.length).toBeGreaterThan(0);
+    for (const d of deps) {
+      expect(d).toHaveProperty("goalA");
+      expect(d).toHaveProperty("goalB");
+      expect(d).toHaveProperty("relationship");
+      expect(["reinforcing", "conflicting", "neutral"]).toContain(d.relationship);
+      expect(d).toHaveProperty("strength");
+      expect(d).toHaveProperty("description");
+      expect(d).toHaveProperty("managementStrategy");
+    }
+  });
+});
+
+describe("CampaignGoalTracker - goalHistoricalBenchmarking", () => {
+  it("returns historical benchmarks per metric", () => {
+    const bench = campaignGoalTracker.goalHistoricalBenchmarking(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(bench)).toBe(true);
+    expect(bench.length).toBeGreaterThan(0);
+    for (const b of bench) {
+      expect(b).toHaveProperty("metric");
+      expect(b).toHaveProperty("ourProgress");
+      expect(b).toHaveProperty("benchmarkAvgProgress");
+      expect(b).toHaveProperty("benchmarkTopQuartile");
+      expect(b).toHaveProperty("percentile");
+      expect(b).toHaveProperty("gapToTopQuartile");
+      expect(b).toHaveProperty("recommendation");
+    }
+  });
+});

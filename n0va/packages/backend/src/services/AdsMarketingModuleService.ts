@@ -2077,6 +2077,30 @@ export class AdsMarketingModuleService {
     return campaignGoalTracker.goalTrendForecast(campaignId, tenantId);
   }
 
+  goalCascadingAnalysis(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalCascadingAnalysis(campaignId, tenantId);
+  }
+
+  goalAttributionModeling(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalAttributionModeling(campaignId, tenantId);
+  }
+
+  goalStressTesting(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalStressTesting(campaignId, tenantId);
+  }
+
+  goalOptimizationSuggestions(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalOptimizationSuggestions(campaignId, tenantId);
+  }
+
+  goalDependencyGraph(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalDependencyGraph(campaignId, tenantId);
+  }
+
+  goalHistoricalBenchmarking(campaignId: string, tenantId: string) {
+    return campaignGoalTracker.goalHistoricalBenchmarking(campaignId, tenantId);
+  }
+
   placementPerformance(campaignId: string, tenantId: string) {
     return campaignAdPlacementAnalyzer.analyzePlacementPerformance(campaignId, tenantId);
   }

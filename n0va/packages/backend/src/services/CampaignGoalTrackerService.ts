@@ -81,6 +81,65 @@ interface GoalTrendForecast {
   willMeetDeadline: boolean;
 }
 
+interface GoalCascadeEntry {
+  level: string;
+  metric: string;
+  target: number;
+  current: number;
+  progress: number;
+  alignmentScore: number;
+  gapToParent: number;
+  recommendation: string;
+}
+
+interface GoalAttributionEntry {
+  channel: string;
+  attributedProgress: number;
+  attributedValue: number;
+  contributionPercent: number;
+  efficiency: number;
+  marginalImpact: number;
+  recommendation: string;
+}
+
+interface GoalStressScenario {
+  scenario: string;
+  probability: number;
+  impactedMetrics: { metric: string; baseProjection: number; stressedProjection: number; deviation: number }[];
+  overallRisk: "low" | "medium" | "high";
+  recommendedActions: string[];
+}
+
+interface GoalOptimizationSuggestion {
+  metric: string;
+  currentProgress: number;
+  target: number;
+  suggestedActions: { action: string; expectedLift: number; effort: "low" | "medium" | "high"; timeframe: string }[];
+  compositePotential: number;
+  priority: "high" | "medium" | "low";
+}
+
+interface GoalDependencyEntry {
+  goalA: string;
+  goalB: string;
+  relationship: "reinforcing" | "conflicting" | "neutral";
+  strength: number;
+  description: string;
+  managementStrategy: string;
+}
+
+interface GoalBenchmarkEntry {
+  metric: string;
+  ourTarget: number;
+  ourCurrent: number;
+  ourProgress: number;
+  benchmarkAvgProgress: number;
+  benchmarkTopQuartile: number;
+  percentile: number;
+  gapToTopQuartile: number;
+  recommendation: string;
+}
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -245,6 +304,165 @@ export class CampaignGoalTrackerService {
         campaignId: report.campaignId, campaignName: report.campaignName, metric: g.metric, target: g.target,
         historicalValues: histValues, projectedValues: projValues, weeklyGrowthRate,
         projectedCompletionWeek: projectionWeeks, willMeetDeadline: projectionWeeks <= deadlineWeeks,
+      };
+    });
+  }
+
+  goalCascadingAnalysis(campaignId: string, tenantId: string): GoalCascadeEntry[] {
+    const report = this.trackGoalProgress(campaignId, tenantId);
+    if (!report) return [];
+    const cascadeSeed = hashStr(campaignId + tenantId + "cascade");
+    const levels = ["Campaign", "Ad Group", "Keyword", "Creative", "Placement"];
+    const entries: GoalCascadeEntry[] = [];
+    for (const g of report.goals) {
+      for (let li = 0; li < levels.length; li++) {
+        const level = levels[li];
+        const alignment = 60 + ((cascadeSeed + li * 13 + entries.length * 7) % 35);
+        const parentProgress = li > 0 ? entries[entries.length - 1]?.progress || g.progress : g.progress;
+        const gap = li > 0 ? Math.round((parentProgress - alignment) * 10) / 10 : 0;
+        entries.push({
+          level, metric: g.metric,
+          target: Math.round(g.target * (0.5 + li * 0.1) * 100) / 100,
+          current: Math.round(g.current * (0.4 + li * 0.12) * 100) / 100,
+          progress: Math.round(alignment * 100) / 100,
+          alignmentScore: alignment,
+          gapToParent: gap,
+          recommendation: alignment < 70 ? `${level} ${g.metric} alignment needs improvement — review targeting and execution at this level` : alignment < 85 ? `${level} ${g.metric} adequately aligned — minor optimization possible` : `${level} ${g.metric} well aligned — continue current approach`,
+        });
+      }
+    }
+    return entries;
+  }
+
+  goalAttributionModeling(campaignId: string, tenantId: string): GoalAttributionEntry[] {
+    const report = this.trackGoalProgress(campaignId, tenantId);
+    if (!report) return [];
+    const attrSeed = hashStr(campaignId + tenantId + "attribution");
+    const channels = ["Search", "Display", "Social", "Email", "Direct", "Referral"];
+    const totalProgress = report.goals.reduce((s, g) => s + g.progress, 0);
+    return channels.map((ch, ci) => {
+      const contribution = 5 + ((attrSeed + ci * 13) % 35);
+      const attributedVal = Math.round(totalProgress * contribution / 100 * 100) / 100;
+      const eff = 60 + ((attrSeed + ci * 17) % 35);
+      const marginal = ((attrSeed + ci * 19) % 30) / 10;
+      return {
+        channel: ch,
+        attributedProgress: attributedVal,
+        attributedValue: Math.round((report.goals[0]?.current || 1000) * contribution / 100),
+        contributionPercent: contribution,
+        efficiency: eff,
+        marginalImpact: Math.round(marginal * 100) / 100,
+        recommendation: contribution > 25 ? `${ch} is primary driver (${contribution}%) — increase investment to accelerate goal achievement` : contribution > 10 ? `${ch} contributes ${contribution}% — maintain or incrementally increase` : `${ch} contribution low (${contribution}%) — optimize or reallocate to higher-impact channels`,
+      };
+    });
+  }
+
+  goalStressTesting(campaignId: string, tenantId: string): GoalStressScenario[] {
+    const report = this.trackGoalProgress(campaignId, tenantId);
+    if (!report) return [];
+    const stressSeed = hashStr(campaignId + tenantId + "stress");
+    const scenarios = [
+      { name: "Budget Cut (20%)", prob: 0.15, multiplier: 0.8 },
+      { name: "Market Downturn", prob: 0.1, multiplier: 0.65 },
+      { name: "Competitor Entry", prob: 0.2, multiplier: 0.85 },
+      { name: "Seasonal Uplift", prob: 0.25, multiplier: 1.3 },
+      { name: "Channel Expansion", prob: 0.15, multiplier: 1.2 },
+      { name: "Best Case", prob: 0.15, multiplier: 1.4 },
+    ];
+    return scenarios.map((sc, si) => {
+      const metrics = report.goals.map(g => {
+        const baseProj = g.projected;
+        const stressed = Math.round(baseProj * sc.multiplier * (0.9 + ((stressSeed + si * 13) % 20) / 100) * 100) / 100;
+        return {
+          metric: g.metric,
+          baseProjection: baseProj,
+          stressedProjection: stressed,
+          deviation: Math.round((stressed - baseProj) / Math.max(1, baseProj) * 10000) / 100,
+        };
+      });
+      const risk: "low" | "medium" | "high" = sc.multiplier < 0.8 ? "high" : sc.multiplier < 1.0 ? "medium" : "low";
+      return {
+        scenario: sc.name,
+        probability: sc.prob,
+        impactedMetrics: metrics,
+        overallRisk: risk,
+        recommendedActions: risk === "high" ? ["Build contingency budget reserve", "Identify quick-win optimization levers", "Set early warning triggers at 60% of target"] : risk === "medium" ? ["Monitor closely", "Prepare mitigating actions for top 3 metrics"] : ["Continue current trajectory", "Capture upside with aggressive targets"],
+      };
+    });
+  }
+
+  goalOptimizationSuggestions(campaignId: string, tenantId: string): GoalOptimizationSuggestion[] {
+    const report = this.trackGoalProgress(campaignId, tenantId);
+    if (!report) return [];
+    const optSeed = hashStr(campaignId + tenantId + "optimization");
+    return report.goals.map((g, gi) => {
+      const actions: GoalOptimizationSuggestion["suggestedActions"] = [];
+      if (g.status === "behind" || g.status === "at-risk") {
+        actions.push({ action: `Increase ${g.metric} bid by 15%`, expectedLift: 8 + ((optSeed + gi * 7) % 15), effort: "low", timeframe: "1 week" });
+        actions.push({ action: `Expand targeting for ${g.metric}`, expectedLift: 12 + ((optSeed + gi * 13) % 20), effort: "medium", timeframe: "2 weeks" });
+        actions.push({ action: `Refresh creative for ${g.metric} focus`, expectedLift: 10 + ((optSeed + gi * 17) % 15), effort: "high", timeframe: "3 weeks" });
+      } else {
+        actions.push({ action: `Maintain current ${g.metric} strategy`, expectedLift: 3 + ((optSeed + gi * 7) % 8), effort: "low", timeframe: "ongoing" });
+        actions.push({ action: `A/B test ${g.metric} optimizations`, expectedLift: 5 + ((optSeed + gi * 13) % 10), effort: "medium", timeframe: "2 weeks" });
+      }
+      const composite = actions.reduce((s, a) => s + a.expectedLift, 0) / actions.length;
+      return {
+        metric: g.metric, currentProgress: g.progress, target: g.target,
+        suggestedActions: actions,
+        compositePotential: Math.round(composite * 100) / 100,
+        priority: g.status === "behind" ? "high" : g.status === "at-risk" ? "medium" : "low",
+      };
+    });
+  }
+
+  goalDependencyGraph(campaignId: string, tenantId: string): GoalDependencyEntry[] {
+    const report = this.trackGoalProgress(campaignId, tenantId);
+    if (!report) return [];
+    const depSeed = hashStr(campaignId + tenantId + "deps");
+    const pairs = [
+      { a: "impressions", b: "clicks", rel: "reinforcing" as const },
+      { a: "clicks", b: "conversions", rel: "reinforcing" as const },
+      { a: "impressions", b: "ctr", rel: "conflicting" as const },
+      { a: "conversions", b: "revenue", rel: "reinforcing" as const },
+      { a: "revenue", b: "roas", rel: "conflicting" as const },
+      { a: "clicks", b: "ctr", rel: "conflicting" as const },
+      { a: "conversions", b: "roas", rel: "conflicting" as const },
+      { a: "impressions", b: "roas", rel: "conflicting" as const },
+    ];
+    return pairs.map((p, pi) => {
+      const strength = 40 + ((depSeed + pi * 13) % 55);
+      const goalA = report.goals.find(g => g.metric === p.a);
+      const goalB = report.goals.find(g => g.metric === p.b);
+      const aBehind = goalA && (goalA.status === "behind" || goalA.status === "at-risk");
+      const bBehind = goalB && (goalB.status === "behind" || goalB.status === "at-risk");
+      const bothStruggling = aBehind && bBehind;
+      return {
+        goalA: p.a, goalB: p.b, relationship: p.rel, strength,
+        description: p.rel === "reinforcing" ? `Improving ${p.a} directly benefits ${p.b} — align strategies` : `Optimizing ${p.a} may reduce ${p.b} — use dual-KPI approach`,
+        managementStrategy: p.rel === "reinforcing" ? `Jointly optimize ${p.a} and ${p.b} with shared investment` : bothStruggling ? `Critical tension — set ${p.a} floor and ${p.b} target with trade-off analysis` : `Apply weighted scoring to balance ${p.a} and ${p.b}`,
+      };
+    });
+  }
+
+  goalHistoricalBenchmarking(campaignId: string, tenantId: string): GoalBenchmarkEntry[] {
+    const report = this.trackGoalProgress(campaignId, tenantId);
+    if (!report) return [];
+    const bmSeed = hashStr(campaignId + tenantId + "benchmark");
+    return report.goals.map((g, gi) => {
+      const benchAvg = 40 + ((bmSeed + gi * 13) % 40);
+      const benchTop = 70 + ((bmSeed + gi * 17) % 25);
+      const percentile = 20 + ((bmSeed + gi * 19) % 60);
+      const gap = Math.round((benchTop - g.progress) * 100) / 100;
+      return {
+        metric: g.metric,
+        ourTarget: g.target,
+        ourCurrent: g.current,
+        ourProgress: g.progress,
+        benchmarkAvgProgress: benchAvg,
+        benchmarkTopQuartile: benchTop,
+        percentile,
+        gapToTopQuartile: Math.max(0, gap),
+        recommendation: percentile >= 75 ? `${g.metric} performance is top quartile — maintain strategy and document best practices` : percentile >= 50 ? `${g.metric} at median — incremental optimizations can close gap to top quartile (${Math.round(gap)} pts)` : `${g.metric} below median — significant opportunity: review targeting, creative, and budget allocation`,
       };
     });
   }

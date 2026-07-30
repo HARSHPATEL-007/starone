@@ -2456,6 +2456,12 @@ export const api = {
     conflicts: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/conflicts`),
     compare: () => request<any>("/campaign-goal-tracker/compare"),
     trendForecast: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/trend-forecast`),
+    goalCascading: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/goal-cascading`),
+    goalAttribution: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/goal-attribution`),
+    goalStressTesting: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/goal-stress-testing`),
+    goalOptimization: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/goal-optimization`),
+    goalDependencyGraph: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/goal-dependency-graph`),
+    goalBenchmarking: (campaignId: string) => request<any>(`/campaign-goal-tracker/campaign/${campaignId}/goal-benchmarking`),
   },
 
   campaignAdPlacementAnalyzer: {

@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/trend-forecast", asyncHandler(async (req, res)
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/goal-cascading", asyncHandler(async (req, res) => {
+  const result = campaignGoalTracker.goalCascadingAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-attribution", asyncHandler(async (req, res) => {
+  const result = campaignGoalTracker.goalAttributionModeling(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-stress-testing", asyncHandler(async (req, res) => {
+  const result = campaignGoalTracker.goalStressTesting(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-optimization", asyncHandler(async (req, res) => {
+  const result = campaignGoalTracker.goalOptimizationSuggestions(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-dependency-graph", asyncHandler(async (req, res) => {
+  const result = campaignGoalTracker.goalDependencyGraph(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/goal-benchmarking", asyncHandler(async (req, res) => {
+  const result = campaignGoalTracker.goalHistoricalBenchmarking(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
