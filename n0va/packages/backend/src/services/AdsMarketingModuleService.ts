@@ -1981,6 +1981,30 @@ export class AdsMarketingModuleService {
     return campaignFrequencyAnalyzer.predictFrequencyImpact(campaignId, tenantId);
   }
 
+  frequencySegmentAnalysis(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.frequencySegmentAnalysis(campaignId, tenantId);
+  }
+
+  frequencyAttributionModeling(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.frequencyAttributionModeling(campaignId, tenantId);
+  }
+
+  frequencyDiminishingReturns(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.frequencyDiminishingReturns(campaignId, tenantId);
+  }
+
+  frequencyCompetitiveBenchmark(tenantId: string) {
+    return campaignFrequencyAnalyzer.frequencyCompetitiveBenchmark(tenantId);
+  }
+
+  frequencyAdFormatInteraction(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.frequencyAdFormatInteraction(campaignId, tenantId);
+  }
+
+  frequencyDeviceBreakdown(campaignId: string, tenantId: string) {
+    return campaignFrequencyAnalyzer.frequencyDeviceBreakdown(campaignId, tenantId);
+  }
+
   discoveredSegments(tenantId: string) {
     return campaignSegmentDiscovery.discoverSegments(tenantId);
   }

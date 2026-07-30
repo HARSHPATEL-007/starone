@@ -2425,6 +2425,12 @@ export const api = {
     frequencyCapping: () => request<any>("/campaign-frequency-analyzer/frequency-capping"),
     crossCampaignFrequency: () => request<any>("/campaign-frequency-analyzer/cross-campaign-frequency"),
     frequencyImpact: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/frequency-impact`),
+    segmentFrequency: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/segment-frequency`),
+    attributionFrequency: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/attribution-frequency`),
+    diminishingReturns: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/diminishing-returns`),
+    competitiveBenchmarks: () => request<any>("/campaign-frequency-analyzer/competitive-benchmarks"),
+    formatFrequency: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/format-frequency`),
+    deviceFrequency: (campaignId: string) => request<any>(`/campaign-frequency-analyzer/campaign/${campaignId}/device-frequency`),
   },
 
   campaignSegmentDiscovery: {

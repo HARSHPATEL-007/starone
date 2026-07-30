@@ -123,3 +123,110 @@ describe("CampaignFrequencyAnalyzer - predictFrequencyImpact", () => {
     }
   });
 });
+
+describe("CampaignFrequencyAnalyzer - frequencySegmentAnalysis", () => {
+  it("returns segment-level frequency breakdown", () => {
+    const segments = campaignFrequencyAnalyzer.frequencySegmentAnalysis(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(segments)).toBe(true);
+    expect(segments.length).toBeGreaterThan(0);
+    for (const s of segments) {
+      expect(s).toHaveProperty("segment");
+      expect(s).toHaveProperty("userCount");
+      expect(s).toHaveProperty("avgFrequency");
+      expect(s).toHaveProperty("conversionRate");
+      expect(s).toHaveProperty("status");
+      expect(["under-exposed", "optimal", "over-exposed"]).toContain(s.status);
+      expect(s).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignFrequencyAnalyzer - frequencyAttributionModeling", () => {
+  it("returns attribution-weighted frequency analysis per model", () => {
+    const attr = campaignFrequencyAnalyzer.frequencyAttributionModeling(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(attr)).toBe(true);
+    expect(attr.length).toBeGreaterThan(0);
+    for (const a of attr) {
+      expect(a).toHaveProperty("model");
+      expect(a).toHaveProperty("attributedConversions");
+      expect(a).toHaveProperty("attributedRevenue");
+      expect(a).toHaveProperty("avgFrequency");
+      expect(a).toHaveProperty("frequencyEfficiency");
+      expect(a).toHaveProperty("recommendedCap");
+    }
+  });
+});
+
+describe("CampaignFrequencyAnalyzer - frequencyDiminishingReturns", () => {
+  it("returns diminishing returns curve with saturation point", () => {
+    const curve = campaignFrequencyAnalyzer.frequencyDiminishingReturns(TEST_CAMPAIGN, TEST_TENANT);
+    expect(curve).toHaveProperty("campaignId");
+    expect(curve).toHaveProperty("curvePoints");
+    expect(Array.isArray(curve.curvePoints)).toBe(true);
+    expect(curve.curvePoints.length).toBeGreaterThan(0);
+    expect(curve).toHaveProperty("saturationPoint");
+    expect(curve).toHaveProperty("optimalFrequency");
+    expect(curve).toHaveProperty("wearOutFrequency");
+    for (const p of curve.curvePoints) {
+      expect(p).toHaveProperty("frequency");
+      expect(p).toHaveProperty("marginalConversionRate");
+      expect(p).toHaveProperty("cumulativeROAS");
+    }
+  });
+});
+
+describe("CampaignFrequencyAnalyzer - frequencyCompetitiveBenchmark", () => {
+  it("returns competitive benchmarks per channel", () => {
+    const bench = campaignFrequencyAnalyzer.frequencyCompetitiveBenchmark(TEST_TENANT);
+    expect(Array.isArray(bench)).toBe(true);
+    expect(bench.length).toBeGreaterThan(0);
+    for (const b of bench) {
+      expect(b).toHaveProperty("channel");
+      expect(b).toHaveProperty("ourAvgFrequency");
+      expect(b).toHaveProperty("benchmarkAvgFrequency");
+      expect(b).toHaveProperty("ourConversionRate");
+      expect(b).toHaveProperty("benchmarkConversionRate");
+      expect(b).toHaveProperty("percentile");
+      expect(b).toHaveProperty("gap");
+      expect(b).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignFrequencyAnalyzer - frequencyAdFormatInteraction", () => {
+  it("returns frequency analysis per ad format", () => {
+    const formats = campaignFrequencyAnalyzer.frequencyAdFormatInteraction(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(formats)).toBe(true);
+    expect(formats.length).toBeGreaterThan(0);
+    for (const f of formats) {
+      expect(f).toHaveProperty("format");
+      expect(f).toHaveProperty("avgFrequency");
+      expect(f).toHaveProperty("userCount");
+      expect(f).toHaveProperty("impressions");
+      expect(f).toHaveProperty("conversionRate");
+      expect(f).toHaveProperty("saturationPoint");
+      expect(f).toHaveProperty("interactionScore");
+      expect(f).toHaveProperty("crossFormatWaste");
+      expect(f).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignFrequencyAnalyzer - frequencyDeviceBreakdown", () => {
+  it("returns frequency breakdown by device type", () => {
+    const devices = campaignFrequencyAnalyzer.frequencyDeviceBreakdown(TEST_CAMPAIGN, TEST_TENANT);
+    expect(Array.isArray(devices)).toBe(true);
+    expect(devices.length).toBeGreaterThan(0);
+    for (const d of devices) {
+      expect(d).toHaveProperty("device");
+      expect(d).toHaveProperty("avgFrequency");
+      expect(d).toHaveProperty("userShare");
+      expect(d).toHaveProperty("impressionShare");
+      expect(d).toHaveProperty("conversionShare");
+      expect(d).toHaveProperty("conversionRate");
+      expect(d).toHaveProperty("optimalFrequency");
+      expect(d).toHaveProperty("frequencyCap");
+      expect(d).toHaveProperty("recommendation");
+    }
+  });
+});

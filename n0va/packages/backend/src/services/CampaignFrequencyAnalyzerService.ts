@@ -78,6 +78,76 @@ interface FrequencyImpactPrediction {
   confidence: number;
 }
 
+interface SegmentFrequencyEntry {
+  segment: string;
+  userCount: number;
+  avgFrequency: number;
+  totalImpressions: number;
+  conversions: number;
+  conversionRate: number;
+  efficiency: number;
+  optimalFrequency: number;
+  status: "under-exposed" | "optimal" | "over-exposed";
+  recommendation: string;
+}
+
+interface AttributionFrequencyEntry {
+  model: string;
+  attributedConversions: number;
+  attributedRevenue: number;
+  avgFrequency: number;
+  frequencyEfficiency: number;
+  optimalFrequencyRange: string;
+  recommendedCap: number;
+}
+
+interface DiminishingReturnCurve {
+  campaignId: string;
+  campaignName: string;
+  curvePoints: { frequency: number; marginalConversionRate: number; cumulativeROAS: number }[];
+  saturationPoint: number;
+  optimalFrequency: number;
+  wearOutFrequency: number;
+  elasticityAtOptimal: number;
+  diminishingStart: number;
+}
+
+interface FrequencyCompetitiveEntry {
+  channel: string;
+  ourAvgFrequency: number;
+  benchmarkAvgFrequency: number;
+  ourConversionRate: number;
+  benchmarkConversionRate: number;
+  percentile: number;
+  gap: number;
+  recommendation: string;
+}
+
+interface FormatFrequencyEntry {
+  format: string;
+  avgFrequency: number;
+  userCount: number;
+  impressions: number;
+  conversions: number;
+  conversionRate: number;
+  saturationPoint: number;
+  interactionScore: number;
+  crossFormatWaste: number;
+  recommendation: string;
+}
+
+interface DeviceFrequencyEntry {
+  device: string;
+  avgFrequency: number;
+  userShare: number;
+  impressionShare: number;
+  conversionShare: number;
+  conversionRate: number;
+  optimalFrequency: number;
+  frequencyCap: number;
+  recommendation: string;
+}
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -282,6 +352,157 @@ export class CampaignFrequencyAnalyzerService {
         currentFrequency: report.averageFrequency, proposedFrequency: proposedFreq,
         predictedImpressionChange: impChange, predictedConversionChange: convChange,
         predictedRevenueChange: revChange, confidence,
+      };
+    });
+  }
+
+  frequencySegmentAnalysis(campaignId: string, tenantId: string): SegmentFrequencyEntry[] {
+    const report = this.analyzeFrequencyDistribution(campaignId, tenantId);
+    if (!report) return [];
+    const segSeed = hashStr(campaignId + tenantId + "segments");
+    const segments = ["New Users", "Returning Users", "High-Value", "Mid-Value", "Low-Value", "Cart Abandoners", "Past Purchasers"];
+    return segments.map((seg, si) => {
+      const userShare = si === 0 ? 0.25 : si === 1 ? 0.2 : si === 2 ? 0.08 : si === 3 ? 0.15 : si === 4 ? 0.22 : si === 5 ? 0.05 : 0.05;
+      const users = Math.round(report.frequencyBuckets.reduce((s, b) => s + b.userCount, 0) * userShare);
+      const freqOffset = si === 0 ? -0.5 : si === 1 ? 0.3 : si === 2 ? 0.8 : si === 3 ? 0.2 : si === 4 ? -0.3 : si === 5 ? 0.5 : 0.4;
+      const avgFreq = Math.max(0.5, report.averageFrequency + freqOffset);
+      const imps = Math.round(users * avgFreq);
+      const crBase = si === 0 ? 0.3 : si === 1 ? 1.5 : si === 2 ? 2.5 : si === 3 ? 1.2 : si === 4 ? 0.4 : si === 5 ? 1.8 : 2.0;
+      const cr = crBase * (0.85 + ((segSeed + si * 17) % 30) / 100);
+      const convs = Math.round(users * cr * 0.01);
+      const eff = imps > 0 ? Math.round(convs / imps * 10000) / 100 : 0;
+      const optFreq = Math.round((report.optimalFrequency + (si === 2 ? 2 : si === 4 ? -1 : 0)) * 10) / 10;
+      const gap = avgFreq - optFreq;
+      const status: "under-exposed" | "optimal" | "over-exposed" = gap < -1 ? "under-exposed" : gap > 1 ? "over-exposed" : "optimal";
+      return {
+        segment: seg, userCount: users, avgFrequency: Math.round(avgFreq * 10) / 10,
+        totalImpressions: imps, conversions: convs, conversionRate: Math.round(cr * 100) / 100,
+        efficiency: eff, optimalFrequency: optFreq, status,
+        recommendation: status === "under-exposed" ? `Increase targeting frequency for ${seg} by ${Math.round(Math.abs(gap))} to reach optimal range` : status === "over-exposed" ? `Reduce frequency for ${seg} by ${Math.round(gap)} to minimize waste` : `Current frequency optimal for ${seg} — maintain strategy`,
+      };
+    });
+  }
+
+  frequencyAttributionModeling(campaignId: string, tenantId: string): AttributionFrequencyEntry[] {
+    const report = this.analyzeFrequencyDistribution(campaignId, tenantId);
+    if (!report) return [];
+    const attrSeed = hashStr(campaignId + tenantId + "attribution");
+    const models = ["Last Click", "First Click", "Linear", "Time Decay", "Position Based", "Data Driven"];
+    return models.map((model, mi) => {
+      const convShare = model === "Last Click" ? 0.35 : model === "First Click" ? 0.15 : model === "Linear" ? 0.2 : model === "Time Decay" ? 0.12 : model === "Position Based" ? 0.1 : 0.08;
+      const totalConvs = report.frequencyBuckets.reduce((s, b) => s + b.conversions, 0);
+      const attributedConvs = Math.round(totalConvs * convShare * (0.9 + ((attrSeed + mi * 13) % 20) / 100));
+      const totalRev = report.frequencyBuckets.reduce((s, b) => s + b.revenue, 0);
+      const attributedRev = Math.round(totalRev * convShare * (0.85 + ((attrSeed + mi * 17) % 30) / 100));
+      const avgFreq = report.averageFrequency + ((attrSeed + mi * 19) % 20 - 10) / 10;
+      const freqEff = Math.round((60 + ((attrSeed + mi * 23) % 35)) * 100) / 100;
+      const cap = Math.round((report.optimalFrequency + (mi < 2 ? 2 : 0)) * 10) / 10;
+      return {
+        model, attributedConversions: attributedConvs, attributedRevenue: attributedRev,
+        avgFrequency: Math.round(avgFreq * 10) / 10, frequencyEfficiency: freqEff,
+        optimalFrequencyRange: report.optimalFrequencyRange, recommendedCap: cap,
+      };
+    });
+  }
+
+  frequencyDiminishingReturns(campaignId: string, tenantId: string): DiminishingReturnCurve {
+    const report = this.analyzeFrequencyDistribution(campaignId, tenantId);
+    if (!report) {
+      return { campaignId, campaignName: "", curvePoints: [], saturationPoint: 0, optimalFrequency: 0, wearOutFrequency: 0, elasticityAtOptimal: 0, diminishingStart: 0 };
+    }
+    const curvePoints: { frequency: number; marginalConversionRate: number; cumulativeROAS: number }[] = [];
+    let prevCr = 0;
+    for (const b of report.frequencyBuckets) {
+      const freq = (b.minFrequency + b.maxFrequency) / 2;
+      const marginal = b.conversionRate - prevCr;
+      prevCr = b.conversionRate;
+      const cumRoas = b.impressions > 0 ? b.revenue / (b.impressions * 0.05) : 0;
+      curvePoints.push({ frequency: Math.round(freq * 10) / 10, marginalConversionRate: Math.round(marginal * 100) / 100, cumulativeROAS: Math.round(cumRoas * 100) / 100 });
+    }
+    const diminishingStart = curvePoints.length > 2 ? curvePoints.findIndex((p, i) => i > 0 && p.marginalConversionRate < curvePoints[i - 1].marginalConversionRate) : 0;
+    const elasticity = curvePoints.length > 0 ? Math.round((curvePoints[curvePoints.length - 1].cumulativeROAS - curvePoints[0].cumulativeROAS) / Math.max(1, curvePoints.length) * 10) / 10 : 0;
+    return {
+      campaignId, campaignName: report.campaignName, curvePoints,
+      saturationPoint: report.saturationPoint, optimalFrequency: report.optimalFrequency,
+      wearOutFrequency: report.wearOutFrequency, elasticityAtOptimal: elasticity,
+      diminishingStart: Math.max(0, diminishingStart),
+    };
+  }
+
+  frequencyCompetitiveBenchmark(tenantId: string): FrequencyCompetitiveEntry[] {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const channels = ["Search", "Display", "Social", "Video", "Email"];
+    const bmSeed = hashStr(tenantId + "competitive");
+    return channels.map((ch, ci) => {
+      const ourFreq = 3 + ((bmSeed + ci * 7) % 50) / 10;
+      const benchFreq = 3.5 + ((bmSeed * 13 + ci * 11) % 50) / 10;
+      const ourCr = 1.5 + ((bmSeed + ci * 17) % 40) / 10;
+      const benchCr = 1.8 + ((bmSeed * 19 + ci * 13) % 35) / 10;
+      const percentile = 30 + ((bmSeed + ci * 23) % 55);
+      const gap = ourFreq - benchFreq;
+      return {
+        channel: ch, ourAvgFrequency: Math.round(ourFreq * 10) / 10,
+        benchmarkAvgFrequency: Math.round(benchFreq * 10) / 10,
+        ourConversionRate: Math.round(ourCr * 100) / 100,
+        benchmarkConversionRate: Math.round(benchCr * 100) / 100,
+        percentile, gap: Math.round(gap * 10) / 10,
+        recommendation: gap > 1 ? `Frequency ${gap}x above benchmark — reduce ${ch} frequency to improve efficiency` : gap < -1 ? `Frequency ${Math.abs(gap)}x below benchmark — increase ${ch} frequency to capture untapped conversions` : `Frequency in line with benchmark — maintain current ${ch} strategy`,
+      };
+    });
+  }
+
+  frequencyAdFormatInteraction(campaignId: string, tenantId: string): FormatFrequencyEntry[] {
+    const report = this.analyzeFrequencyDistribution(campaignId, tenantId);
+    if (!report) return [];
+    const formats = ["Text", "Display", "Video", "Carousel", "Native"];
+    const fmtSeed = hashStr(campaignId + tenantId + "format");
+    return formats.map((fmt, fi) => {
+      const freqBase = fmt === "Text" ? 4 : fmt === "Display" ? 3 : fmt === "Video" ? 2.5 : fmt === "Carousel" ? 3.5 : 2;
+      const avgFreq = freqBase + ((fmtSeed + fi * 13) % 30) / 10;
+      const userShare = 0.1 + ((fmtSeed + fi * 17) % 50) / 100;
+      const totalUsers = report.frequencyBuckets.reduce((s, b) => s + b.userCount, 0);
+      const users = Math.round(totalUsers * userShare);
+      const imps = Math.round(users * avgFreq);
+      const crBase = fmt === "Text" ? 1.2 : fmt === "Display" ? 0.5 : fmt === "Video" ? 1.5 : fmt === "Carousel" ? 1.8 : 0.8;
+      const cr = crBase * (0.85 + ((fmtSeed + fi * 19) % 30) / 100);
+      const convs = Math.round(users * cr * 0.01);
+      const sat = fmt === "Text" ? 8 : fmt === "Display" ? 5 : fmt === "Video" ? 4 : fmt === "Carousel" ? 7 : 4;
+      const interact = 30 + ((fmtSeed + fi * 23) % 55);
+      const waste = 5 + ((fmtSeed + fi * 29) % 35);
+      return {
+        format: fmt, avgFrequency: Math.round(avgFreq * 10) / 10, userCount: users,
+        impressions: imps, conversions: convs, conversionRate: Math.round(cr * 100) / 100,
+        saturationPoint: sat, interactionScore: Math.round(interact * 10) / 10,
+        crossFormatWaste: waste,
+        recommendation: avgFreq > sat ? `Reduce ${fmt} frequency — above saturation point of ${sat}` : `Current ${fmt} frequency (${Math.round(avgFreq * 10) / 10}) is below saturation (${sat}) — room for increase`,
+      };
+    });
+  }
+
+  frequencyDeviceBreakdown(campaignId: string, tenantId: string): DeviceFrequencyEntry[] {
+    const report = this.analyzeFrequencyDistribution(campaignId, tenantId);
+    if (!report) return [];
+    const devSeed = hashStr(campaignId + tenantId + "device");
+    const devices = [
+      { device: "Mobile", share: 0.55, baseFreq: 4.5 },
+      { device: "Desktop", share: 0.3, baseFreq: 3.0 },
+      { device: "Tablet", share: 0.15, baseFreq: 2.0 },
+    ];
+    return devices.map((dev, di) => {
+      const avgFreq = dev.baseFreq + ((devSeed + di * 13) % 30) / 10;
+      const impShare = dev.share * (0.9 + ((devSeed + di * 17) % 20) / 100);
+      const convShare = dev.share * (0.85 + ((devSeed + di * 19) % 30) / 100);
+      const cr = 1.0 + ((devSeed + di * 23) % 50) / 10;
+      const opt = Math.round((report.optimalFrequency + (di === 0 ? 1 : di === 2 ? -0.5 : 0)) * 10) / 10;
+      const cap = Math.round((opt + 2) * 10) / 10;
+      return {
+        device: dev.device, avgFrequency: Math.round(avgFreq * 10) / 10,
+        userShare: Math.round(dev.share * 10000) / 100,
+        impressionShare: Math.round(impShare * 10000) / 100,
+        conversionShare: Math.round(convShare * 10000) / 100,
+        conversionRate: Math.round(cr * 100) / 100,
+        optimalFrequency: opt, frequencyCap: cap,
+        recommendation: avgFreq > cap ? `Reduce ${dev.device} frequency — cap at ${cap} to prevent over-exposure` : avgFreq < opt - 1 ? `Increase ${dev.device} frequency to reach optimal range (${opt})` : `${dev.device} frequency is optimal — maintain current strategy`,
       };
     });
   }

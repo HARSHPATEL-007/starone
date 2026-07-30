@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/frequency-impact", asyncHandler(async (req, re
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/segment-frequency", asyncHandler(async (req, res) => {
+  const result = campaignFrequencyAnalyzer.frequencySegmentAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution-frequency", asyncHandler(async (req, res) => {
+  const result = campaignFrequencyAnalyzer.frequencyAttributionModeling(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/diminishing-returns", asyncHandler(async (req, res) => {
+  const result = campaignFrequencyAnalyzer.frequencyDiminishingReturns(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/competitive-benchmarks", asyncHandler(async (req, res) => {
+  const result = campaignFrequencyAnalyzer.frequencyCompetitiveBenchmark(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/format-frequency", asyncHandler(async (req, res) => {
+  const result = campaignFrequencyAnalyzer.frequencyAdFormatInteraction(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/device-frequency", asyncHandler(async (req, res) => {
+  const result = campaignFrequencyAnalyzer.frequencyDeviceBreakdown(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
