@@ -2246,6 +2246,30 @@ export class AdsMarketingModuleService {
     return campaignLandingPageAnalyzer.analyzeLandingPageTrends(campaignId, tenantId);
   }
 
+  landingPageABTestAnalysis(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.landingPageABTestAnalysis(campaignId, tenantId);
+  }
+
+  landingPageFormAnalysis(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.landingPageFormAnalysis(campaignId, tenantId);
+  }
+
+  landingPageHeatmapPrediction(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.landingPageHeatmapPrediction(campaignId, tenantId);
+  }
+
+  landingPageAccessibilityAudit(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.landingPageAccessibilityAudit(campaignId, tenantId);
+  }
+
+  landingPageConversionPathAnalysis(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.landingPageConversionPathAnalysis(campaignId, tenantId);
+  }
+
+  landingPageCompetitiveBenchmark(campaignId: string, tenantId: string) {
+    return campaignLandingPageAnalyzer.landingPageCompetitiveBenchmark(campaignId, tenantId);
+  }
+
   sentimentAnalysis(campaignId: string, tenantId: string) {
     return campaignSocialSentimentAnalyzer.analyzeSentiment(campaignId, tenantId);
   }

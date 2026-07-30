@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/ab-test-analysis", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.landingPageABTestAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/form-analysis", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.landingPageFormAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/heatmap-prediction", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.landingPageHeatmapPrediction(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/accessibility-audit", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.landingPageAccessibilityAudit(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/conversion-path-analysis", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.landingPageConversionPathAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/competitive-benchmark", asyncHandler(async (req, res) => {
+  const result = campaignLandingPageAnalyzer.landingPageCompetitiveBenchmark(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

@@ -2514,6 +2514,12 @@ export const api = {
     pageSegmentation: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/page-segmentation`),
     layoutRecommendations: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/layout-recommendations`),
     trends: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/trends`),
+    abTestAnalysis: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/ab-test-analysis`),
+    formAnalysis: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/form-analysis`),
+    heatmapPrediction: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/heatmap-prediction`),
+    accessibilityAudit: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/accessibility-audit`),
+    conversionPathAnalysis: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/conversion-path-analysis`),
+    competitiveBenchmark: (campaignId: string) => request<any>(`/campaign-landing-page-analyzer/campaign/${campaignId}/competitive-benchmark`),
   },
 
   campaignSocialSentimentAnalyzer: {

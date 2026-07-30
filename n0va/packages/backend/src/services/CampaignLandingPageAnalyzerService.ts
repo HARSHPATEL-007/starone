@@ -91,6 +91,102 @@ const PAGE_POOL = [
   { name: "Features", url: "/features" },
 ];
 
+interface ABTestVariant {
+  variantName: string;
+  pageUrl: string;
+  visitors: number;
+  conversions: number;
+  conversionRate: number;
+  revenue: number;
+  improvement: number;
+  confidence: number;
+  winner: boolean;
+}
+
+interface ABTestAnalysis {
+  campaignId: string;
+  variants: ABTestVariant[];
+  winningVariant: string;
+  estimatedLift: number;
+  recommendation: string;
+}
+
+interface FormFieldAnalysis {
+  fieldName: string;
+  type: string;
+  completionRate: number;
+  abandonmentRate: number;
+  avgTimeToComplete: number;
+  optimization: string;
+  priority: "high" | "medium" | "low";
+}
+
+interface FormAnalysisResult {
+  campaignId: string;
+  totalForms: number;
+  overallCompletionRate: number;
+  fields: FormFieldAnalysis[];
+  recommendations: string[];
+}
+
+interface HeatmapZone {
+  zone: string;
+  predictedAttention: number;
+  expectedCTR: number;
+  currentElement: string;
+  recommendation: string;
+}
+
+interface AccessibilityIssue {
+  issue: string;
+  wcagCriterion: string;
+  severity: "critical" | "serious" | "moderate" | "minor";
+  affectedElements: number;
+  impact: string;
+  fix: string;
+}
+
+interface AccessibilityAudit {
+  campaignId: string;
+  score: number;
+  grade: string;
+  issues: AccessibilityIssue[];
+  topFixes: string[];
+}
+
+interface ConversionPathStep {
+  step: string;
+  page: string;
+  entrants: number;
+  completions: number;
+  dropOff: number;
+  dropOffRate: number;
+}
+
+interface ConversionPathAnalysis {
+  campaignId: string;
+  path: ConversionPathStep[];
+  overallConversionRate: number;
+  biggestDropOff: { step: string; rate: number; recommendation: string };
+}
+
+interface IndustryBenchmark {
+  metric: string;
+  pageValue: number;
+  industryAverage: number;
+  topQuartile: number;
+  percentile: number;
+  status: "above" | "at" | "below";
+  recommendation: string;
+}
+
+interface CompetitiveBenchmark {
+  campaignId: string;
+  benchmarks: IndustryBenchmark[];
+  overallScore: number;
+  overallGrade: string;
+}
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -264,6 +360,147 @@ export class CampaignLandingPageAnalyzerService {
       });
     }
     return trends;
+  }
+
+  landingPageABTestAnalysis(campaignId: string, tenantId: string): ABTestAnalysis {
+    const analysis = this.analyzeLandingPages(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "abtest");
+    const variants: ABTestVariant[] = analysis.pages.slice(0, 4).map((page, i) => {
+      const vSeed = seed + i * 31;
+      const baseCvr = analysis.averageConversionRate;
+      const improvement = (vSeed % 40) - 10;
+      const cvr = Math.round((baseCvr * (1 + improvement / 100)) * 100) / 100;
+      const convs = Math.round(page.visitors * cvr / 100);
+      const rev = Math.round(convs * (20 + (vSeed % 80)));
+      return {
+        variantName: `Variant ${String.fromCharCode(65 + i)}`,
+        pageUrl: page.url, visitors: page.visitors, conversions: convs,
+        conversionRate: cvr, revenue: rev, improvement,
+        confidence: Math.round((65 + (vSeed % 30)) * 100) / 100,
+        winner: false,
+      };
+    });
+    const maxImp = variants.reduce((m, v) => Math.max(m, v.improvement), -Infinity);
+    variants.forEach(v => { v.winner = v.improvement === maxImp; });
+    const winner = variants.reduce((best, v) => v.improvement > best.improvement ? v : best, variants[0]);
+    return { campaignId, variants, winningVariant: winner.variantName, estimatedLift: winner.improvement, recommendation: winner.improvement > 0 ? `Variant ${winner.variantName} outperforms control by ${winner.improvement}% — roll out to all traffic` : `No variant significantly outperforms — continue testing with new hypotheses` };
+  }
+
+  landingPageFormAnalysis(campaignId: string, tenantId: string): FormAnalysisResult {
+    const seed = hashStr(campaignId + tenantId + "form");
+    const fieldDefs = [
+      { name: "Full Name", type: "text" }, { name: "Email Address", type: "email" },
+      { name: "Phone Number", type: "tel" }, { name: "Company Name", type: "text" },
+      { name: "Job Title", type: "text" }, { name: "Company Size", type: "dropdown" },
+      { name: "Industry", type: "dropdown" }, { name: "Message", type: "textarea" },
+    ];
+    const overallCompletion = Math.round((45 + (seed % 35)) * 100) / 100;
+    const fields: FormFieldAnalysis[] = fieldDefs.map((f, i) => {
+      const fSeed = seed + i * 23;
+      const completionRate = Math.max(20, Math.round((90 - i * 8 - (fSeed % 15)) * 100) / 100);
+      const abandonmentRate = Math.round((100 - completionRate) * 100) / 100;
+      return {
+        fieldName: f.name, type: f.type, completionRate, abandonmentRate,
+        avgTimeToComplete: Math.round((5 + i * 3 + (fSeed % 10)) * 100) / 100,
+        optimization: i >= 5 ? `Consider removing or making optional — high abandonment after field ${i + 1}` : i >= 3 ? `Use autocomplete or inline validation to speed completion` : `Field performs well — maintain current position`,
+        priority: i >= 5 ? "high" as const : i >= 3 ? "medium" as const : "low" as const,
+      };
+    });
+    const recommendations = overallCompletion < 60 ? [`Form completion rate is ${overallCompletion}% — reduce to 3-5 fields`, "Add progress indicator for multi-step forms", "Use inline validation to reduce errors"] : [`Form completion rate is ${overallCompletion}% — performing well`, "Consider A/B testing button color and copy", "Add trust badges near submit button"];
+    return { campaignId, totalForms: fieldDefs.length, overallCompletionRate: overallCompletion, fields, recommendations };
+  }
+
+  landingPageHeatmapPrediction(campaignId: string, tenantId: string): HeatmapZone[] {
+    const seed = hashStr(campaignId + tenantId + "heat");
+    const zones: HeatmapZone[] = [
+      { zone: "Hero Section (Above Fold)", baseAttn: 85, baseCTR: 3.5, element: "Hero image + headline" },
+      { zone: "Value Proposition", baseAttn: 65, baseCTR: 2.8, element: "Feature bullets" },
+      { zone: "Social Proof Area", baseAttn: 55, baseCTR: 2.2, element: "Testimonials section" },
+      { zone: "CTA Button (Primary)", baseAttn: 75, baseCTR: 4.5, element: "Primary CTA button" },
+      { zone: "Pricing Section", baseAttn: 60, baseCTR: 3.0, element: "Pricing table" },
+      { zone: "Form Area", baseAttn: 70, baseCTR: 3.2, element: "Lead capture form" },
+      { zone: "Trust Badges (Footer)", baseAttn: 30, baseCTR: 1.0, element: "Footer trust signals" },
+      { zone: "Navigation Bar", baseAttn: 50, baseCTR: 1.8, element: "Header navigation" },
+    ];
+    return zones.map((z, i) => {
+      const zSeed = seed + i * 29;
+      const attnVar = (zSeed % 15) - 7;
+      const attn = Math.max(5, Math.min(100, z.baseAttn + attnVar));
+      const ctr = Math.round((z.baseCTR + ((zSeed * 7) % 15 - 7) / 10) * 100) / 100;
+      return {
+        zone: z.zone, predictedAttention: Math.round(attn * 100) / 100, expectedCTR: ctr,
+        currentElement: z.element,
+        recommendation: attn < 40 ? `Low attention zone — move ${z.element} higher or make it more visually prominent` :
+                       attn < 60 ? `Moderate attention — consider adding motion or contrast to ${z.element}` :
+                       `High attention zone — optimize ${z.element} for maximum conversion impact`,
+      };
+    });
+  }
+
+  landingPageAccessibilityAudit(campaignId: string, tenantId: string): AccessibilityAudit {
+    const seed = hashStr(campaignId + tenantId + "a11y");
+    const baseScore = 55 + (seed % 35);
+    const allIssues: AccessibilityIssue[] = [
+      { issue: "Missing alt text on images", wcagCriterion: "WCAG 1.1.1 (Level A)", severity: "serious" as const, affectedElements: 3 + (seed % 5), impact: "Screen reader users cannot understand image content", fix: "Add descriptive alt text to all images" },
+      { issue: "Low color contrast on text", wcagCriterion: "WCAG 1.4.3 (Level AA)", severity: "serious" as const, affectedElements: 5 + ((seed * 7) % 8), impact: "Users with low vision struggle to read content", fix: "Ensure contrast ratio of at least 4.5:1 for normal text" },
+      { issue: "Missing heading hierarchy", wcagCriterion: "WCAG 1.3.1 (Level A)", severity: "moderate" as const, affectedElements: 2 + ((seed * 11) % 4), impact: "Screen reader navigation is impaired", fix: "Use proper h1-h6 hierarchy with no skipped levels" },
+      { issue: "No focus indicators on interactive elements", wcagCriterion: "WCAG 2.4.7 (Level AA)", severity: "moderate" as const, affectedElements: 8 + ((seed * 13) % 7), impact: "Keyboard-only users cannot see focus position", fix: "Add visible :focus styles to all interactive elements" },
+      { issue: "Form inputs missing labels", wcagCriterion: "WCAG 1.3.1 (Level A)", severity: "critical" as const, affectedElements: 2 + ((seed * 17) % 3), impact: "Screen reader users cannot identify form fields", fix: "Associate label elements with all form inputs" },
+      { issue: "Non-text content lacks text alternatives", wcagCriterion: "WCAG 1.1.1 (Level A)", severity: "serious" as const, affectedElements: 4 + ((seed * 19) % 6), impact: "Users cannot access information conveyed by icons/charts", fix: "Provide text alternatives for all non-text content" },
+      { issue: "Keyboard trap in navigation", wcagCriterion: "WCAG 2.1.2 (Level A)", severity: "critical" as const, affectedElements: 1 + ((seed * 23) % 3), impact: "Keyboard users cannot navigate away from certain elements", fix: "Ensure all elements can be navigated with Tab/Shift+Tab" },
+      { issue: "Missing ARIA landmarks", wcagCriterion: "WCAG 1.3.1 (Level A)", severity: "minor" as const, affectedElements: 3 + ((seed * 29) % 5), impact: "Screen reader navigation efficiency is reduced", fix: "Add ARIA landmark roles (banner, main, navigation, contentinfo)" },
+      { issue: "Auto-playing video without controls", wcagCriterion: "WCAG 1.4.2 (Level A)", severity: "serious" as const, affectedElements: 1 + ((seed * 31) % 2), impact: "Users cannot stop or control media playback", fix: "Add play/pause controls and do not autoplay" },
+      { issue: "Resize text limited to 200%", wcagCriterion: "WCAG 1.4.4 (Level AA)", severity: "moderate" as const, affectedElements: 6 + ((seed * 37) % 5), impact: "Users who need larger text cannot resize without loss", fix: "Use relative units (rem/em) instead of fixed px for text" },
+    ];
+    const score = Math.max(0, Math.min(100, baseScore - allIssues.filter(i => i.severity === "critical").length * 8 - allIssues.filter(i => i.severity === "serious").length * 4));
+    const grade = score >= 85 ? "A" : score >= 70 ? "B" : score >= 55 ? "C" : score >= 40 ? "D" : "F";
+    const topFixes = allIssues.filter(i => i.severity === "critical" || i.severity === "serious").slice(0, 3).map(i => i.fix);
+    return { campaignId, score, grade, issues: allIssues.slice(0, 6), topFixes };
+  }
+
+  landingPageConversionPathAnalysis(campaignId: string, tenantId: string): ConversionPathAnalysis {
+    const analysis = this.analyzeLandingPages(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "convpath");
+    const pages = analysis.pages;
+    const sorted = [...pages].sort((a, b) => b.visitors - a.visitors);
+    const steps: ConversionPathStep[] = sorted.slice(0, 5).map((page, i) => {
+      const sSeed = seed + i * 41;
+      const entrants = i === 0 ? analysis.totalVisitors : Math.round(sorted[i - 1].conversions * (0.6 + (sSeed % 30) / 100));
+      const completions = page.conversions;
+      const dropOff = entrants - completions;
+      const dropOffRate = entrants > 0 ? Math.round((dropOff / entrants) * 10000) / 100 : 0;
+      return { step: `Step ${i + 1}`, page: page.name, entrants, completions: page.conversions, dropOff, dropOffRate };
+    });
+    const overallCvr = steps.length > 0 && steps[0].entrants > 0 ? Math.round((steps[steps.length - 1].completions / steps[0].entrants) * 10000) / 100 : 0;
+    const biggestDropOff = steps.reduce((worst, s) => s.dropOffRate > worst.rate ? { step: s.page, rate: s.dropOffRate, recommendation: `${s.page} has ${s.dropOffRate}% drop-off — optimize page content, add clearer CTAs, reduce friction` } : worst, { step: "", rate: 0, recommendation: "" });
+    return { campaignId, path: steps, overallConversionRate: overallCvr, biggestDropOff };
+  }
+
+  landingPageCompetitiveBenchmark(campaignId: string, tenantId: string): CompetitiveBenchmark {
+    const analysis = this.analyzeLandingPages(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "bench");
+    const benchmarks: IndustryBenchmark[] = [
+      { metric: "Conversion Rate", pageValue: analysis.averageConversionRate, industryAverage: 2.5, topQuartile: 5.0, basePct: 50, higherIsBetter: true },
+      { metric: "Bounce Rate", pageValue: analysis.averageBounceRate, industryAverage: 45, topQuartile: 30, basePct: 40, higherIsBetter: false },
+      { metric: "Page Load Speed (s)", pageValue: analysis.averageLoadSpeed, industryAverage: 2.5, topQuartile: 1.5, basePct: 50, higherIsBetter: false },
+      { metric: "Avg. Time on Page (s)", pageValue: analysis.pages.length > 0 ? analysis.pages.reduce((s, p) => s + p.avgTimeOnPage, 0) / analysis.pages.length : 0, industryAverage: 60, topQuartile: 120, basePct: 50, higherIsBetter: true },
+      { metric: "Page Score", pageValue: analysis.averageScore, industryAverage: 65, topQuartile: 85, basePct: 55, higherIsBetter: true },
+      { metric: "Revenue per Visitor ($)", pageValue: analysis.totalVisitors > 0 ? Math.round((analysis.totalRevenue / analysis.totalVisitors) * 100) / 100 : 0, industryAverage: 0.45, topQuartile: 1.2, basePct: 40, higherIsBetter: true },
+    ].map(b => {
+      const bSeed = seed + hashStr(b.metric);
+      const ratio = b.higherIsBetter ? b.pageValue / Math.max(b.industryAverage, 0.01) : b.industryAverage / Math.max(b.pageValue, 0.01);
+      const percentile = Math.min(99, Math.round((b.basePct + (ratio - 1) * 20 + ((bSeed * 7) % 10 - 5)) * 100) / 100);
+      const status: "above" | "at" | "below" = b.higherIsBetter ? (b.pageValue > b.industryAverage * 1.1 ? "above" : b.pageValue > b.industryAverage * 0.9 ? "at" : "below") : (b.pageValue < b.industryAverage * 0.9 ? "above" : b.pageValue < b.industryAverage * 1.1 ? "at" : "below");
+      return {
+        metric: b.metric, pageValue: Math.round(b.pageValue * 100) / 100,
+        industryAverage: b.industryAverage, topQuartile: b.topQuartile,
+        percentile: Math.max(1, Math.min(99, percentile)),
+        status, recommendation: status === "above" ? `Strong performance — maintain and use as benchmark for other pages` : status === "at" ? `At industry average — incremental improvements can push to top quartile` : `Below average — prioritize improvements to reach industry baseline`,
+      };
+    });
+    const overallScore = Math.round(benchmarks.reduce((s, b) => s + b.percentile, 0) / benchmarks.length);
+    const overallGrade = overallScore >= 80 ? "A" : overallScore >= 65 ? "B" : overallScore >= 50 ? "C" : overallScore >= 35 ? "D" : "F";
+    return { campaignId, benchmarks, overallScore, overallGrade };
   }
 }
 
