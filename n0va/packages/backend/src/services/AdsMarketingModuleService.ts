@@ -1769,6 +1769,30 @@ export class AdsMarketingModuleService {
     return campaignDaypartingOptimizer.generateDaypartingPlan(campaignId, tenantId);
   }
 
+  daypartingForecast(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.daypartingForecast(campaignId, tenantId);
+  }
+
+  hourlyTrendAnalysis(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.hourlyTrendAnalysis(campaignId, tenantId);
+  }
+
+  daypartingROIAnalysis(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.daypartingROIAnalysis(campaignId, tenantId);
+  }
+
+  timeSlotOptimization(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.timeSlotOptimization(campaignId, tenantId);
+  }
+
+  weekendVsWeekdayAnalysis(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.weekendVsWeekdayAnalysis(campaignId, tenantId);
+  }
+
+  hourlyHeatmap(campaignId: string, tenantId: string) {
+    return campaignDaypartingOptimizer.hourlyHeatmap(campaignId, tenantId);
+  }
+
   roiDecomposition(campaignId: string, tenantId: string) {
     return campaignROIDecomposition.decomposeROI(campaignId, tenantId);
   }
@@ -1791,6 +1815,30 @@ export class AdsMarketingModuleService {
 
   decompositionTrends(tenantId: string) {
     return campaignROIDecomposition.decompositionTrends(tenantId);
+  }
+
+  roiBenchmark(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.roiBenchmark(campaignId, tenantId);
+  }
+
+  roiScenarioSimulation(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.roiScenarioSimulation(campaignId, tenantId);
+  }
+
+  roiChannelBreakdown(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.roiChannelBreakdown(campaignId, tenantId);
+  }
+
+  roiOptimizationTargets(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.roiOptimizationTargets(campaignId, tenantId);
+  }
+
+  roiAttributionShift(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.roiAttributionShift(campaignId, tenantId);
+  }
+
+  roiFactorCorrelations(campaignId: string, tenantId: string) {
+    return campaignROIDecomposition.roiFactorCorrelations(campaignId, tenantId);
   }
 
   adQualityAnalysis(campaignId: string, tenantId: string) {

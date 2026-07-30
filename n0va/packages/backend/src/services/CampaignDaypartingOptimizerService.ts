@@ -68,6 +68,20 @@ interface DaypartingPlan {
   summary: string;
 }
 
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function seededRandom(seed: string): () => number {
+  let state = hashStr(seed);
+  return () => {
+    state = (state * 1103515245 + 12345) & 0x7fffffff;
+    return state / 0x7fffffff;
+  };
+}
+
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 function perfByHour(roas: number): number[] {
@@ -90,6 +104,52 @@ function recommendationForScore(score: number): "highly_recommended" | "recommen
   if (score >= 0.85) return "neutral";
   if (score >= 0.6) return "avoid";
   return "strongly_avoid";
+}
+
+interface DaypartingForecast {
+  campaignId: string;
+  forecasts: { day: string; hour: number; predictedPerformance: number; confidence: number }[];
+  bestWindow: string;
+  worstWindow: string;
+}
+
+interface HourlyTrend {
+  hour: number;
+  avgPerformance: number;
+  avgVolume: number;
+  consistency: number;
+  trend: "rising" | "declining" | "stable";
+  recommendedAction: string;
+}
+
+interface DaypartingROI {
+  campaignId: string;
+  windows: { label: string; hours: string; spend: number; conversions: number; revenue: number; roas: number; efficiency: number }[];
+  totalROAS: number;
+  bestWindow: string;
+  worstWindow: string;
+  savingsOpportunity: number;
+}
+
+interface TimeSlotOptimization {
+  campaignId: string;
+  slots: { day: string; hour: number; currentBidMultiplier: number; recommendedBidMultiplier: number; expectedROAS: number; change: number }[];
+  aggregateImprovement: number;
+}
+
+interface WeekendVsWeekday {
+  campaignId: string;
+  weekday: { avgPerformance: number; avgVolume: number; avgROAS: number; topHour: number };
+  weekend: { avgPerformance: number; avgVolume: number; avgROAS: number; topHour: number };
+  gap: { performanceGap: number; volumeGap: number; roasGap: number };
+  recommendation: string;
+}
+
+interface HourlyHeatmap {
+  campaignId: string;
+  grid: { day: string; hour: number; performance: number; volume: number; bidMultiplier: number }[];
+  peakSlot: { day: string; hour: number; performance: number };
+  lowSlot: { day: string; hour: number; performance: number };
 }
 
 export class CampaignDaypartingOptimizerService {
@@ -254,6 +314,163 @@ export class CampaignDaypartingOptimizerService {
       expectedSpendReduction: Math.round(Math.random() * 20 + 10),
       summary: `Optimized schedule targets ${analysis.optimalWindow.label} with reduced bids during ${analysis.worstWindow.label}. Expected to improve ROAS by ${Math.round((analysis.optimalWindow.expectedROAS / 2 - 1) * 100)}% and reduce wasted spend by ${Math.round(Math.random() * 20 + 10)}%.`,
     };
+  }
+
+  daypartingForecast(campaignId: string, tenantId: string): DaypartingForecast | null {
+    const analysis = this.analyzeDayparting(campaignId, tenantId);
+    if (!analysis) return null;
+    const seed = hashStr(campaignId + tenantId + "forecast");
+    const forecasts: DaypartingForecast["forecasts"] = [];
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    for (const day of days) {
+      for (let h = 0; h < 24; h += 3) {
+        const dSeed = seed + hashStr(day) + h;
+        const basePerf = analysis.hourlyBreakdown.find(hb => hb.hour === h)?.performance || 50;
+        forecasts.push({
+          day, hour: h,
+          predictedPerformance: Math.round(Math.max(10, basePerf + ((dSeed * 7) % 40) - 20)),
+          confidence: Math.round(60 + (dSeed % 30)),
+        });
+      }
+    }
+    const best = forecasts.reduce((a, b) => a.predictedPerformance > b.predictedPerformance ? a : b);
+    const worst = forecasts.reduce((a, b) => a.predictedPerformance < b.predictedPerformance ? a : b);
+    return {
+      campaignId, forecasts,
+      bestWindow: `${best.day} ${best.hour}:00`,
+      worstWindow: `${worst.day} ${worst.hour}:00`,
+    };
+  }
+
+  hourlyTrendAnalysis(campaignId: string, tenantId: string): HourlyTrend[] {
+    const analysis = this.analyzeDayparting(campaignId, tenantId);
+    if (!analysis) return [];
+    const seed = hashStr(campaignId + tenantId + "hourly_trend");
+    return analysis.hourlyBreakdown.map(hb => {
+      const hSeed = seed + hb.hour * 13;
+      const consistency = Math.round((60 + (hSeed % 35)) * 100) / 100;
+      const trend: "rising" | "declining" | "stable" = (hSeed % 3) === 0 ? "rising" : (hSeed % 3) === 1 ? "declining" : "stable";
+      const action = hb.recommendation === "highly_recommended" ? "Increase bids by 20-30% during this window" :
+                     hb.recommendation === "recommended" ? "Maintain current bids" :
+                     hb.recommendation === "avoid" ? "Reduce bids by 40-50% or pause" :
+                     "Monitor and adjust based on performance trends";
+      return {
+        hour: hb.hour, avgPerformance: hb.performance, avgVolume: hb.volume,
+        consistency, trend, recommendedAction: action,
+      };
+    });
+  }
+
+  daypartingROIAnalysis(campaignId: string, tenantId: string): DaypartingROI | null {
+    const analysis = this.analyzeDayparting(campaignId, tenantId);
+    if (!analysis) return null;
+    const seed = hashStr(campaignId + tenantId + "roi");
+    const rng = seededRandom(seed + "_r");
+    const windows = [
+      { label: "Early Morning", hours: "6:00-9:00", hStart: 6, hEnd: 9 },
+      { label: "Morning Peak", hours: "9:00-12:00", hStart: 9, hEnd: 12 },
+      { label: "Afternoon", hours: "12:00-17:00", hStart: 12, hEnd: 17 },
+      { label: "Evening", hours: "17:00-21:00", hStart: 17, hEnd: 21 },
+      { label: "Late Night", hours: "21:00-6:00", hStart: 21, hEnd: 6 },
+    ];
+    const windowData = windows.map(w => {
+      const perf = analysis.hourlyBreakdown.filter(h => h.hour >= w.hStart && h.hour < w.hEnd);
+      const avgPerf = perf.length > 0 ? perf.reduce((s, p) => s + p.performance, 0) / perf.length : 50;
+      const spend = Math.round(rng() * 2000 + 200);
+      const conversions = Math.round(spend * avgPerf / 10000 * (rng() * 2 + 1));
+      const revenue = Math.round(conversions * (rng() * 30 + 15));
+      const roas = spend > 0 ? revenue / spend : 0;
+      return {
+        label: w.label, hours: w.hours, spend, conversions,
+        revenue, roas: Math.round(roas * 100) / 100,
+        efficiency: Math.round(avgPerf * 100) / 100,
+      };
+    });
+    const totalSpend = windowData.reduce((s, w) => s + w.spend, 0);
+    const totalRevenue = windowData.reduce((s, w) => s + w.revenue, 0);
+    const totalROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+    const bestWindow = windowData.reduce((a, b) => a.roas > b.roas ? a : b);
+    const worstWindow = windowData.reduce((a, b) => a.roas < b.roas ? a : b);
+    const savings = Math.round(worstWindow.spend * 0.5);
+    return {
+      campaignId, windows: windowData, totalROAS: Math.round(totalROAS * 100) / 100,
+      bestWindow: bestWindow.label, worstWindow: worstWindow.label, savingsOpportunity: savings,
+    };
+  }
+
+  timeSlotOptimization(campaignId: string, tenantId: string): TimeSlotOptimization | null {
+    const analysis = this.analyzeDayparting(campaignId, tenantId);
+    if (!analysis) return null;
+    const seed = hashStr(campaignId + tenantId + "slot_opt");
+    const slots: TimeSlotOptimization["slots"] = [];
+    for (const day of analysis.dayOfWeekBreakdown) {
+      for (let h = 0; h < 24; h += 4) {
+        const sSeed = seed + hashStr(day.day) + h;
+        const currentMultiplier = Math.round((0.5 + ((sSeed * 7) % 100) / 100) * 100) / 100;
+        const perf = analysis.hourlyBreakdown.find(hb => hb.hour === h)?.performance || 50;
+        const recommendedMultiplier = perf > 80 ? 1.3 : perf > 65 ? 1.1 : perf > 50 ? 1.0 : perf > 35 ? 0.6 : 0.3;
+        slots.push({
+          day: day.day, hour: h, currentBidMultiplier: currentMultiplier,
+          recommendedBidMultiplier: Math.round(recommendedMultiplier * 100) / 100,
+          expectedROAS: Math.round(perf * 0.4 * 100) / 100,
+          change: Math.round((recommendedMultiplier - currentMultiplier) * 100) / 100,
+        });
+      }
+    }
+    const totalImprovement = Math.round(slots.reduce((s, sl) => s + Math.abs(sl.change) * 0.5, 0) * 100) / 100;
+    return { campaignId, slots, aggregateImprovement: totalImprovement };
+  }
+
+  weekendVsWeekdayAnalysis(campaignId: string, tenantId: string): WeekendVsWeekday | null {
+    const analysis = this.analyzeDayparting(campaignId, tenantId);
+    if (!analysis) return null;
+    const seed = hashStr(campaignId + tenantId + "wk");
+    const rng = seededRandom(seed + "_r");
+    const weekdayDays = analysis.dayOfWeekBreakdown.filter(d => d.dayIndex < 5);
+    const weekendDays = analysis.dayOfWeekBreakdown.filter(d => d.dayIndex >= 5);
+    const wdPerf = weekdayDays.length > 0 ? weekdayDays.reduce((s, d) => s + d.performance, 0) / weekdayDays.length : 50;
+    const wePerf = weekendDays.length > 0 ? weekendDays.reduce((s, d) => s + d.performance, 0) / weekendDays.length : 50;
+    const wdVol = weekdayDays.length > 0 ? weekdayDays.reduce((s, d) => s + d.volume, 0) / weekdayDays.length : 50;
+    const weVol = weekendDays.length > 0 ? weekendDays.reduce((s, d) => s + d.volume, 0) / weekendDays.length : 50;
+    const wdROAS = Math.round(wdPerf / 100 * (rng() * 2 + 1.5) * 100) / 100;
+    const weROAS = Math.round(wePerf / 100 * (rng() * 1.5 + 1) * 100) / 100;
+    const wdTop = analysis.hourlyBreakdown.filter(h => h.hour >= 8 && h.hour <= 18).reduce((a, b) => a.performance > b.performance ? a : b).hour;
+    const weTop = analysis.hourlyBreakdown.filter(h => h.hour >= 10 && h.hour <= 22).reduce((a, b) => a.performance > b.performance ? a : b).hour;
+    const recommendation = weROAS < wdROAS * 0.7
+      ? "Weekend performance significantly lower — consider reducing weekend bids by 30-40% or pausing underperforming campaigns"
+      : weROAS > wdROAS * 1.1
+      ? "Weekends outperform weekdays — increase weekend budget allocation by 15-20%"
+      : "Weekend and weekday performance is similar — maintain consistent bidding strategy";
+    return {
+      campaignId,
+      weekday: { avgPerformance: Math.round(wdPerf), avgVolume: Math.round(wdVol), avgROAS: wdROAS, topHour: wdTop },
+      weekend: { avgPerformance: Math.round(wePerf), avgVolume: Math.round(weVol), avgROAS: weROAS, topHour: weTop },
+      gap: {
+        performanceGap: Math.round((wePerf - wdPerf) * 100) / 100,
+        volumeGap: Math.round((weVol - wdVol) * 100) / 100,
+        roasGap: Math.round((weROAS - wdROAS) * 100) / 100,
+      },
+      recommendation,
+    };
+  }
+
+  hourlyHeatmap(campaignId: string, tenantId: string): HourlyHeatmap | null {
+    const analysis = this.analyzeDayparting(campaignId, tenantId);
+    if (!analysis) return null;
+    const seed = hashStr(campaignId + tenantId + "heatmap");
+    const grid: HourlyHeatmap["grid"] = [];
+    for (const day of analysis.dayOfWeekBreakdown) {
+      for (let h = 0; h < 24; h++) {
+        const cSeed = seed + hashStr(day.day) + h;
+        const perf = analysis.hourlyBreakdown.find(hb => hb.hour === h)?.performance || 50;
+        const vol = analysis.hourlyBreakdown.find(hb => hb.hour === h)?.volume || 50;
+        const bidMult = Math.round((0.5 + ((cSeed * 11) % 100) / 100) * 100) / 100;
+        grid.push({ day: day.day, hour: h, performance: Math.round(perf), volume: Math.round(vol), bidMultiplier: bidMult });
+      }
+    }
+    const peakSlot = grid.reduce((a, b) => a.performance > b.performance ? a : b);
+    const lowSlot = grid.reduce((a, b) => a.performance < b.performance ? a : b);
+    return { campaignId, grid, peakSlot, lowSlot };
   }
 }
 

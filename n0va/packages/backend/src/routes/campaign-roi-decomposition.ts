@@ -38,4 +38,34 @@ router.get("/decomposition-trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/benchmark", asyncHandler(async (req, res) => {
+  const result = campaignROIDecomposition.roiBenchmark(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/scenario-simulation", asyncHandler(async (req, res) => {
+  const result = campaignROIDecomposition.roiScenarioSimulation(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/channel-breakdown", asyncHandler(async (req, res) => {
+  const result = campaignROIDecomposition.roiChannelBreakdown(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/optimization-targets", asyncHandler(async (req, res) => {
+  const result = campaignROIDecomposition.roiOptimizationTargets(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/attribution-shift", asyncHandler(async (req, res) => {
+  const result = campaignROIDecomposition.roiAttributionShift(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/factor-correlations", asyncHandler(async (req, res) => {
+  const result = campaignROIDecomposition.roiFactorCorrelations(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

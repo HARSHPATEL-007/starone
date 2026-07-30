@@ -38,4 +38,34 @@ router.get("/timezone-performance", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/forecast", asyncHandler(async (req, res) => {
+  const result = campaignDaypartingOptimizer.daypartingForecast(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/hourly-trends", asyncHandler(async (req, res) => {
+  const result = campaignDaypartingOptimizer.hourlyTrendAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/roi-analysis", asyncHandler(async (req, res) => {
+  const result = campaignDaypartingOptimizer.daypartingROIAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/slot-optimization", asyncHandler(async (req, res) => {
+  const result = campaignDaypartingOptimizer.timeSlotOptimization(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/weekend-vs-weekday", asyncHandler(async (req, res) => {
+  const result = campaignDaypartingOptimizer.weekendVsWeekdayAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/heatmap", asyncHandler(async (req, res) => {
+  const result = campaignDaypartingOptimizer.hourlyHeatmap(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
 export default router;

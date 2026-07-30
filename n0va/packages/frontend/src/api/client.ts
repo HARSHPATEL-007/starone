@@ -2443,6 +2443,12 @@ export const api = {
     timePatterns: () => request<any>("/campaign-dayparting-optimizer/time-patterns"),
     scheduleConflicts: () => request<any>("/campaign-dayparting-optimizer/schedule-conflicts"),
     timezonePerformance: () => request<any>("/campaign-dayparting-optimizer/timezone-performance"),
+    forecast: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/forecast`),
+    hourlyTrends: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/hourly-trends`),
+    roiAnalysis: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/roi-analysis`),
+    slotOptimization: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/slot-optimization`),
+    weekendVsWeekday: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/weekend-vs-weekday`),
+    heatmap: (campaignId: string) => request<any>(`/campaign-dayparting-optimizer/campaign/${campaignId}/heatmap`),
   },
 
   campaignROIDecomposition: {
@@ -2452,6 +2458,12 @@ export const api = {
     sensitivity: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/sensitivity`),
     forecastByFactor: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/forecast-by-factor`),
     trends: () => request<any>("/campaign-roi-decomposition/decomposition-trends"),
+    benchmark: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/benchmark`),
+    scenarioSimulation: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/scenario-simulation`),
+    channelBreakdown: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/channel-breakdown`),
+    optimizationTargets: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/optimization-targets`),
+    attributionShift: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/attribution-shift`),
+    factorCorrelations: (campaignId: string) => request<any>(`/campaign-roi-decomposition/campaign/${campaignId}/factor-correlations`),
   },
 
   campaignAdQualityAnalyzer: {
