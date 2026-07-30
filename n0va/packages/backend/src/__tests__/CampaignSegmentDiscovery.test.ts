@@ -116,3 +116,112 @@ describe("CampaignSegmentDiscovery - segmentOverlapAnalysis", () => {
     }
   });
 });
+
+describe("CampaignSegmentDiscovery - segmentLookalikeModeling", () => {
+  it("generates lookalike segments from seed", () => {
+    const look = campaignSegmentDiscovery.segmentLookalikeModeling(TEST_TENANT);
+    expect(look.sourceSegment).toBeTruthy();
+    expect(look.lookalikeSegments.length).toBeGreaterThan(0);
+    expect(look.totalLookalikeReach).toBeGreaterThan(0);
+    expect(look.qualityScore).toBeGreaterThan(0);
+    look.lookalikeSegments.forEach(l => {
+      expect(l.name).toBeTruthy();
+      expect(l.similarity).toBeGreaterThan(0);
+      expect(l.estimatedSize).toBeGreaterThan(0);
+      expect(l.recommendation).toBeTruthy();
+    });
+  });
+});
+
+describe("CampaignSegmentDiscovery - segmentPropensityScoring", () => {
+  it("scores segments by conversion propensity", () => {
+    const prop = campaignSegmentDiscovery.segmentPropensityScoring(TEST_TENANT);
+    expect(prop.segments.length).toBeGreaterThan(0);
+    expect(prop.topSegment).toBeTruthy();
+    expect(prop.portfolioPropensity).toBeGreaterThan(0);
+    prop.segments.forEach(s => {
+      expect(s.propensityScore).toBeGreaterThan(0);
+      expect(s.conversionProbability).toBeGreaterThan(0);
+      expect(s.lifetimeValue).toBeGreaterThan(0);
+      expect(["high", "medium", "low"]).toContain(s.priority);
+    });
+  });
+});
+
+describe("CampaignSegmentDiscovery - segmentLifecycleAnalysis", () => {
+  it("analyzes segment lifecycle stages", () => {
+    const life = campaignSegmentDiscovery.segmentLifecycleAnalysis(TEST_TENANT);
+    expect(life.segments.length).toBeGreaterThan(0);
+    expect(life.overallPortfolioStage).toBeTruthy();
+    expect(life.fastestGrowing).toBeTruthy();
+    expect(life.fastestDeclining).toBeTruthy();
+    life.segments.forEach(s => {
+      expect(["introduction", "growth", "maturity", "decline"]).toContain(s.maturityStage);
+      expect(s.recommendation).toBeTruthy();
+    });
+  });
+});
+
+describe("CampaignSegmentDiscovery - segmentCrossSellAnalysis", () => {
+  it("identifies cross-sell opportunities", () => {
+    const cross = campaignSegmentDiscovery.segmentCrossSellAnalysis(TEST_TENANT);
+    expect(cross.opportunities.length).toBeGreaterThan(0);
+    expect(cross.topOpportunity).toBeTruthy();
+    expect(cross.portfolioUpsellIndex).toBeGreaterThan(0);
+    cross.opportunities.forEach(o => {
+      expect(o.sourceSegment).toBeTruthy();
+      expect(o.targetSegment).toBeTruthy();
+      expect(o.crossSellPotential).toBeGreaterThan(0);
+      expect(o.strategy).toBeTruthy();
+    });
+  });
+});
+
+describe("CampaignSegmentDiscovery - segmentAttributionByChannel", () => {
+  it("attributes segment performance to channels", () => {
+    const attr = campaignSegmentDiscovery.segmentAttributionByChannel(TEST_TENANT);
+    expect(attr.segmentChannelBreakdown.length).toBeGreaterThan(0);
+    expect(attr.overallTopChannel).toBeTruthy();
+    expect(attr.channelDiversity).toBeGreaterThan(0);
+    attr.segmentChannelBreakdown.forEach(s => {
+      expect(s.segmentName).toBeTruthy();
+      expect(s.primaryChannel).toBeTruthy();
+      expect(s.channels.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("CampaignSegmentDiscovery - segmentOptimizationScorecard", () => {
+  it("generates optimization scorecard", () => {
+    const sc = campaignSegmentDiscovery.segmentOptimizationScorecard(TEST_TENANT);
+    expect(sc.segments.length).toBeGreaterThan(0);
+    expect(sc.topSegment).toBeTruthy();
+    expect(sc.portfolioHealthScore).toBeGreaterThan(0);
+    expect(sc.primaryRecommendation).toBeTruthy();
+    sc.segments.forEach(s => {
+      expect(s.compositeScore).toBeGreaterThan(0);
+      expect(s.action).toBeTruthy();
+    });
+  });
+});
+
+describe("CampaignSegmentDiscovery - deterministic", () => {
+  it("discoverSegments is deterministic", () => {
+    const r1 = campaignSegmentDiscovery.discoverSegments(TEST_TENANT);
+    const r2 = campaignSegmentDiscovery.discoverSegments(TEST_TENANT);
+    expect(r1.segments.length).toBe(r2.segments.length);
+    expect(r1.segments[0].name).toBe(r2.segments[0].name);
+    expect(r1.segments[0].roas).toBe(r2.segments[0].roas);
+  });
+
+  it("deep methods are deterministic", () => {
+    const p1 = campaignSegmentDiscovery.segmentPropensityScoring(TEST_TENANT);
+    const p2 = campaignSegmentDiscovery.segmentPropensityScoring(TEST_TENANT);
+    expect(p1.topSegment).toBe(p2.topSegment);
+    expect(p1.portfolioPropensity).toBe(p2.portfolioPropensity);
+
+    const c1 = campaignSegmentDiscovery.segmentCrossSellAnalysis(TEST_TENANT);
+    const c2 = campaignSegmentDiscovery.segmentCrossSellAnalysis(TEST_TENANT);
+    expect(c1.topOpportunity).toBe(c2.topOpportunity);
+  });
+});

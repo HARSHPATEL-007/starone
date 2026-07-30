@@ -115,7 +115,7 @@ export class CampaignSegmentDiscoveryService {
       const roas = spd > 0 ? rev / spd : 0;
       const clusterQuality = 0.55 + ((segSeed * 23) % 40) / 100;
       const characteristics = t.traits.map((tr, ti) => ({
-        trait: tr, value: Math.random() > 0.5 ? "high" : "medium", strength: Math.round((60 + ((segSeed + ti * 31) % 35)) * 10) / 10,
+        trait: tr, value: (segSeed + ti * 37) % 2 === 0 ? "high" : "medium", strength: Math.round((60 + ((segSeed + ti * 31) % 35)) * 10) / 10,
       }));
       return {
         segmentId: `seg_${i}_${seed % 1000}`,
@@ -143,18 +143,19 @@ export class CampaignSegmentDiscoveryService {
   analyzeSegmentPerformance(tenantId: string): SegmentPerformanceDetail[] {
     const report = this.discoverSegments(tenantId);
     return report.segments.map(s => {
-      const imps = s.size * (5 + Math.floor(Math.random() * 20));
-      const clicks = Math.round(imps * (1 + Math.random() * 3) / 100);
+      const seed = hashStr(s.segmentId + tenantId + "perf");
+      const imps = s.size * (5 + (seed % 20));
+      const clicks = Math.round(imps * (1 + ((seed * 7) % 300) / 100) / 100);
       const convs = s.totalConversions;
       const rev = s.totalRevenue;
-      const spd = Math.round(rev * (0.15 + Math.random() * 0.2));
+      const spd = Math.round(rev * (0.15 + ((seed * 13) % 200) / 1000));
       const ctr = imps > 0 ? Math.round(clicks / imps * 10000) / 100 : 0;
       const cvr = clicks > 0 ? Math.round(convs / clicks * 10000) / 100 : 0;
       const roas = spd > 0 ? Math.round(rev / spd * 100) / 100 : 0;
       const cpc = clicks > 0 ? Math.round(spd / clicks * 100) / 100 : 0;
       const score = Math.round(ctr / 2 * 20 + cvr / 3 * 25 + roas / 2 * 30 + (s.size > 50000 ? 25 : 10));
       const trends: ("rising" | "stable" | "declining")[] = ["rising", "stable", "declining"];
-      const trend = trends[Math.floor(Math.random() * 3)];
+      const trend = trends[(seed * 31) % 3];
       return { segmentId: s.segmentId, segmentName: s.name, impressions: imps, clicks, conversions: convs, revenue: rev, spend: spd, ctr, cvr, roas, cpc, performanceScore: Math.min(100, score), trend };
     }).sort((a, b) => b.performanceScore - a.performanceScore);
   }
@@ -233,6 +234,137 @@ export class CampaignSegmentDiscoveryService {
       }
     }
     return overlaps;
+  }
+
+  // ── Deep methods ──────────────────────────────────────────────────
+
+  segmentLookalikeModeling(tenantId: string, seedSegmentName?: string): {
+    sourceSegment: string; lookalikeSegments: { name: string; similarity: number; estimatedSize: number; expectedROAS: number; traitOverlap: string[]; recommendation: string }[];
+    totalLookalikeReach: number; qualityScore: number;
+  } {
+    const report = this.discoverSegments(tenantId);
+    const seed = hashStr(tenantId + "look");
+    const sourceIdx = seedSegmentName ? report.segments.findIndex(s => s.name === seedSegmentName) : 0;
+    const source = report.segments[sourceIdx >= 0 ? sourceIdx : 0];
+    const lookalikes = report.segments.filter(s => s.segmentId !== source.segmentId).map(s => {
+      const sim = Math.round((50 + ((seed + hashStr(s.name)) % 45)) * 10) / 10;
+      const estSize = Math.round(s.size * (0.3 + ((seed + hashStr(s.name + "sz")) % 50) / 100));
+      const expectedROAS = Math.round((s.roas * (0.8 + ((seed + hashStr(s.name + "ro")) % 30) / 100)) * 100) / 100;
+      const overlapTraits = s.keyCharacteristics.filter(c => source.keyCharacteristics.some(sc => sc.trait === c.trait && sc.value === c.value)).map(c => c.trait);
+      const rec = sim > 75 ? `High similarity — target ${s.name} as lookalike of ${source.name} with dedicated campaigns` : sim > 55 ? `Moderate similarity — include ${s.name} in expanded targeting with adjusted bid multipliers` : `Low similarity — use ${s.name} for audience exclusion to avoid wasted spend`;
+      return { name: s.name, similarity: sim, estimatedSize: estSize, expectedROAS, traitOverlap: overlapTraits, recommendation: rec };
+    }).sort((a, b) => b.similarity - a.similarity);
+    return { sourceSegment: source.name, lookalikeSegments: lookalikes, totalLookalikeReach: lookalikes.reduce((s, l) => s + l.estimatedSize, 0), qualityScore: Math.round(lookalikes.reduce((s, l) => s + l.similarity, 0) / lookalikes.length * 100) / 100 };
+  }
+
+  segmentPropensityScoring(tenantId: string): {
+    segments: { name: string; size: number; propensityScore: number; conversionProbability: number; averageOrderValue: number; lifetimeValue: number; engagementLevel: string; priority: string }[];
+    topSegment: string; portfolioPropensity: number;
+  } {
+    const report = this.discoverSegments(tenantId);
+    const seed = hashStr(tenantId + "prop");
+    const segments = report.segments.map(s => {
+      const convProb = Math.min(95, Math.round((s.conversionRate + ((seed + hashStr(s.name)) % 15)) * 10) / 10);
+      const aov = Math.max(10, Math.round((s.totalRevenue / Math.max(s.totalConversions, 1)) * (0.8 + ((seed + hashStr(s.name + "aov")) % 30) / 100)));
+      const ltv = Math.round(aov * (s.roas > 2 ? 3 : s.roas > 1 ? 2 : 1) * (1 + ((seed + hashStr(s.name + "ltv")) % 40) / 100));
+      const score = Math.min(100, Math.round((convProb * 0.25 + (aov / 200) * 100 * 0.2 + (ltv / 500) * 100 * 0.25 + s.roas * 15 * 0.3)));
+      const engLevel = score > 70 ? "high" : score > 45 ? "medium" : "low";
+      const priority = score > 65 ? "high" : score > 40 ? "medium" : "low";
+      return { name: s.name, size: s.size, propensityScore: score, conversionProbability: convProb, averageOrderValue: aov, lifetimeValue: ltv, engagementLevel: engLevel, priority };
+    }).sort((a, b) => b.propensityScore - a.propensityScore);
+    return { segments, topSegment: segments[0]?.name || "", portfolioPropensity: Math.round(segments.reduce((s, seg) => s + seg.propensityScore, 0) / segments.length * 100) / 100 };
+  }
+
+  segmentLifecycleAnalysis(tenantId: string): {
+    segments: { name: string; currentSize: number; growthRate: number; maturityStage: string; projectedSize: number; daysToPeak: number; recommendation: string }[];
+    overallPortfolioStage: string; fastestGrowing: string; fastestDeclining: string;
+  } {
+    const report = this.discoverSegments(tenantId);
+    const seed = hashStr(tenantId + "life");
+    const stages = ["introduction", "growth", "maturity", "decline"];
+    const segments = report.segments.map(s => {
+      const growth = Math.round((-15 + ((seed + hashStr(s.name)) % 40)) * 10) / 10;
+      const stageIdx = Math.min(3, Math.max(0, growth < -8 ? 3 : growth < 3 ? 2 : growth < 10 ? 1 : 0));
+      const stage = stages[stageIdx];
+      const projSize = Math.round(s.size * (1 + growth / 100 * (0.5 + ((seed + hashStr(s.name + "pj")) % 30) / 100)));
+      const daysToPeak = stage === "growth" ? Math.round(15 + ((seed + hashStr(s.name + "dp")) % 60)) : stage === "introduction" ? Math.round(30 + ((seed + hashStr(s.name + "dp")) % 90)) : 0;
+      const rec = stage === "growth" ? `Invest heavily in ${s.name} — growing at ${Math.abs(growth)}% with ${daysToPeak} days to peak` : stage === "maturity" ? `Maintain ${s.name} with optimization-focused campaigns — stable performance` : stage === "decline" ? `Reduce spend on ${s.name} — declining at ${Math.abs(growth)}%; test refresh strategies` : `Test ${s.name} with small budget — early-stage segment with growth potential`;
+      return { name: s.name, currentSize: s.size, growthRate: growth, maturityStage: stage, projectedSize: projSize, daysToPeak, recommendation: rec };
+    });
+    const growthStages = segments.filter(s => s.maturityStage === "growth").length;
+    const declineStages = segments.filter(s => s.maturityStage === "decline").length;
+    const overall = growthStages > declineStages ? "growth" : declineStages > growthStages ? "decline" : "maturity";
+    const fastestGrowing = segments.reduce((a, b) => a.growthRate > b.growthRate ? a : b).name;
+    const fastestDeclining = segments.reduce((a, b) => a.growthRate < b.growthRate ? a : b).name;
+    return { segments, overallPortfolioStage: overall, fastestGrowing, fastestDeclining };
+  }
+
+  segmentCrossSellAnalysis(tenantId: string): {
+    opportunities: { sourceSegment: string; targetSegment: string; crossSellPotential: number; expectedLift: number; sharedTraits: string[]; strategy: string }[];
+    topOpportunity: string; portfolioUpsellIndex: number;
+  } {
+    const report = this.discoverSegments(tenantId);
+    const seed = hashStr(tenantId + "cross");
+    const top = report.segments.slice(0, 8);
+    const opportunities: any[] = [];
+    for (let i = 0; i < top.length; i++) {
+      for (let j = i + 1; j < top.length; j++) {
+        if ((seed + i * 17 + j * 31) % 3 !== 0) continue;
+        const a = top[i]; const b = top[j];
+        const potential = Math.round(30 + ((seed + i * 13 + j * 19) % 50));
+        const lift = Math.round((potential / 100) * (b.roas / a.roas) * 10000) / 100;
+        const shared = a.keyCharacteristics.filter(c => b.keyCharacteristics.some(bc => bc.trait === c.trait)).map(c => c.trait);
+        const strategy = `Cross-sell ${a.name} audience into ${b.name} campaigns — ${potential}% audience overlap with ${lift}% expected conversion lift`;
+        opportunities.push({ sourceSegment: a.name, targetSegment: b.name, crossSellPotential: potential, expectedLift: lift, sharedTraits: shared, strategy });
+      }
+    }
+    const topOpp = opportunities.sort((a, b) => b.crossSellPotential - a.crossSellPotential)[0];
+    const upsellIndex = opportunities.length > 0 ? Math.round(opportunities.reduce((s, o) => s + o.expectedLift, 0) / opportunities.length * 100) / 100 : 0;
+    return { opportunities, topOpportunity: topOpp ? `${topOpp.sourceSegment} → ${topOpp.targetSegment}` : "none", portfolioUpsellIndex: upsellIndex };
+  }
+
+  segmentAttributionByChannel(tenantId: string): {
+    segmentChannelBreakdown: { segmentName: string; channels: { channel: string; conversions: number; revenue: number; share: number; efficiency: string }[]; primaryChannel: string }[];
+    overallTopChannel: string; channelDiversity: number;
+  } {
+    const report = this.discoverSegments(tenantId);
+    const seed = hashStr(tenantId + "chattr");
+    const channels = ["Search", "Display", "Social", "Email", "Video", "Direct"];
+    const breakdown = report.segments.slice(0, 8).map(s => {
+      const segSeed = seed + hashStr(s.name);
+      const chData = channels.map((ch, ci) => {
+        const share = Math.round((0.05 + ((segSeed + ci * 17) % 35) / 100) * 100) / 100;
+        const convs = Math.round(s.totalConversions * share);
+        const rev = Math.round(s.totalRevenue * share);
+        const eff = share > 0.25 ? "high" : share > 0.12 ? "medium" : "low";
+        return { channel: ch, conversions: convs, revenue: rev, share: Math.round(share * 10000) / 100, efficiency: eff };
+      });
+      const primary = chData.reduce((a, b) => a.conversions > b.conversions ? a : b).channel;
+      return { segmentName: s.name, channels: chData, primaryChannel: primary };
+    });
+    const chCounts = new Map<string, number>();
+    breakdown.forEach(b => chCounts.set(b.primaryChannel, (chCounts.get(b.primaryChannel) || 0) + 1));
+    const topCh = Array.from(chCounts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+    return { segmentChannelBreakdown: breakdown, overallTopChannel: topCh, channelDiversity: Math.round(chCounts.size / channels.length * 10000) / 100 };
+  }
+
+  segmentOptimizationScorecard(tenantId: string): {
+    segments: { name: string; size: number; roas: number; conversionRate: number; efficiencyScore: number; growthPotential: number; competitiveMoat: number; compositeScore: number; action: string }[];
+    topSegment: string; portfolioHealthScore: number; primaryRecommendation: string;
+  } {
+    const report = this.discoverSegments(tenantId);
+    const seed = hashStr(tenantId + "opt");
+    const segments = report.segments.map(s => {
+      const efficiency = Math.min(100, Math.round((s.roas / 3) * 100 * 0.35 + (s.conversionRate / 10) * 100 * 0.25 + (s.clusterQuality) * 0.2 + (s.size > 50000 ? 20 : 10)));
+      const growthPotential = Math.min(100, Math.round((60 + ((seed + hashStr(s.name + "gp")) % 35)) * (s.roas > 1.5 ? 1.2 : 0.8)));
+      const moat = Math.min(100, Math.round((50 + ((seed + hashStr(s.name + "cm")) % 40)) * (s.keyCharacteristics.length > 2 ? 1.1 : 0.9)));
+      const composite = Math.min(100, Math.round(efficiency * 0.35 + growthPotential * 0.3 + moat * 0.2 + s.clusterQuality * 0.15));
+      const action = composite >= 75 ? `Invest — top priority segment with ${composite}/100 composite score` : composite >= 55 ? `Optimize — moderate potential, A/B test targeting and messaging` : composite >= 35 ? `Monitor — review segment strategy, consider audience refresh` : `Reduce — low potential segment, shift budget to higher-performing segments`;
+      return { name: s.name, size: s.size, roas: s.roas, conversionRate: s.conversionRate, efficiencyScore: efficiency, growthPotential, competitiveMoat: moat, compositeScore: composite, action };
+    }).sort((a, b) => b.compositeScore - a.compositeScore);
+    const avgScore = Math.round(segments.reduce((s, seg) => s + seg.compositeScore, 0) / segments.length * 100) / 100;
+    const rec = avgScore >= 65 ? "Portfolio healthy — maintain current strategy with incremental optimization" : avgScore >= 45 ? "Portfolio needs attention — reallocate budget from low-scoring to high-scoring segments" : "Portfolio underperforming — major restructuring recommended, consider new audience acquisition strategies";
+    return { segments, topSegment: segments[0]?.name || "", portfolioHealthScore: avgScore, primaryRecommendation: rec };
   }
 }
 

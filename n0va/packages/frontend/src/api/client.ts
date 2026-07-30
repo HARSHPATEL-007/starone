@@ -2416,6 +2416,13 @@ export const api = {
     segmentComparison: () => request<any>("/campaign-segment-discovery/segment-comparison"),
     segmentTrends: () => request<any>("/campaign-segment-discovery/segment-trends"),
     segmentOverlap: () => request<any>("/campaign-segment-discovery/segment-overlap"),
+    segmentLookalikeModeling: (seedSegmentName?: string) =>
+      request<any>(`/campaign-segment-discovery/segment-lookalike-modeling${seedSegmentName ? `?seedSegmentName=${encodeURIComponent(seedSegmentName)}` : ""}`),
+    segmentPropensityScoring: () => request<any>("/campaign-segment-discovery/segment-propensity-scoring"),
+    segmentLifecycleAnalysis: () => request<any>("/campaign-segment-discovery/segment-lifecycle-analysis"),
+    segmentCrossSellAnalysis: () => request<any>("/campaign-segment-discovery/segment-cross-sell-analysis"),
+    segmentAttributionByChannel: () => request<any>("/campaign-segment-discovery/segment-attribution-by-channel"),
+    segmentOptimizationScorecard: () => request<any>("/campaign-segment-discovery/segment-optimization-scorecard"),
   },
 
   campaignGoalTracker: {

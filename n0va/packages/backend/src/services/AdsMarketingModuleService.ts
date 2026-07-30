@@ -1933,6 +1933,30 @@ export class AdsMarketingModuleService {
     return campaignSegmentDiscovery.segmentOverlapAnalysis(tenantId);
   }
 
+  segmentLookalikeModeling(tenantId: string, seedSegmentName?: string) {
+    return campaignSegmentDiscovery.segmentLookalikeModeling(tenantId, seedSegmentName);
+  }
+
+  segmentPropensityScoring(tenantId: string) {
+    return campaignSegmentDiscovery.segmentPropensityScoring(tenantId);
+  }
+
+  segmentLifecycleAnalysis(tenantId: string) {
+    return campaignSegmentDiscovery.segmentLifecycleAnalysis(tenantId);
+  }
+
+  segmentCrossSellAnalysis(tenantId: string) {
+    return campaignSegmentDiscovery.segmentCrossSellAnalysis(tenantId);
+  }
+
+  segmentAttributionByChannel(tenantId: string) {
+    return campaignSegmentDiscovery.segmentAttributionByChannel(tenantId);
+  }
+
+  segmentOptimizationScorecard(tenantId: string) {
+    return campaignSegmentDiscovery.segmentOptimizationScorecard(tenantId);
+  }
+
   goalProgress(campaignId: string, tenantId: string) {
     return campaignGoalTracker.trackGoalProgress(campaignId, tenantId);
   }

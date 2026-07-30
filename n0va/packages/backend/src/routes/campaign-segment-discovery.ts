@@ -38,4 +38,35 @@ router.get("/segment-overlap", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/segment-lookalike-modeling", asyncHandler(async (req, res) => {
+  const seedSegmentName = req.query.seedSegmentName as string | undefined;
+  const result = campaignSegmentDiscovery.segmentLookalikeModeling(req.user!.tenantId, seedSegmentName);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-propensity-scoring", asyncHandler(async (req, res) => {
+  const result = campaignSegmentDiscovery.segmentPropensityScoring(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-lifecycle-analysis", asyncHandler(async (req, res) => {
+  const result = campaignSegmentDiscovery.segmentLifecycleAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-cross-sell-analysis", asyncHandler(async (req, res) => {
+  const result = campaignSegmentDiscovery.segmentCrossSellAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-attribution-by-channel", asyncHandler(async (req, res) => {
+  const result = campaignSegmentDiscovery.segmentAttributionByChannel(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segment-optimization-scorecard", asyncHandler(async (req, res) => {
+  const result = campaignSegmentDiscovery.segmentOptimizationScorecard(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
