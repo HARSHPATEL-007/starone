@@ -1134,6 +1134,18 @@ export const api = {
     report: (campaignId: string, metrics: Record<string, unknown>[]) =>
       request<any>("/campaign-health-predictor/report", { method: "POST", body: JSON.stringify({ campaignId, metrics }) }),
     sampleMetrics: (days?: number) => request<any>(`/campaign-health-predictor/sample-metrics?days=${days || 30}`),
+    healthTrendForecast: (metrics: Record<string, unknown>[], days?: number) =>
+      request<any>("/campaign-health-predictor/health-trend-forecast", { method: "POST", body: JSON.stringify({ metrics, days }) }),
+    healthDimensionBreakdown: (campaignInputs: { campaignId: string; metrics: Record<string, unknown>[] }[]) =>
+      request<any>("/campaign-health-predictor/health-dimension-breakdown", { method: "POST", body: JSON.stringify({ campaignInputs }) }),
+    healthAnomalyDetection: (metrics: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/health-anomaly-detection", { method: "POST", body: JSON.stringify({ metrics }) }),
+    healthImprovementPlan: (healthScore: Record<string, unknown>, riskFactors?: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/health-improvement-plan", { method: "POST", body: JSON.stringify({ healthScore, riskFactors }) }),
+    healthPeerComparison: (campaignId: string, ownMetrics: Record<string, unknown>[], peerMetricsList?: { campaignId: string; metrics: Record<string, unknown>[] }[]) =>
+      request<any>("/campaign-health-predictor/health-peer-comparison", { method: "POST", body: JSON.stringify({ campaignId, ownMetrics, peerMetricsList }) }),
+    healthBenchmark: (metrics: Record<string, unknown>[], benchmarks?: Record<string, unknown>[]) =>
+      request<any>("/campaign-health-predictor/health-benchmark", { method: "POST", body: JSON.stringify({ metrics, benchmarks }) }),
   },
   dsAlgorithms: {
     trie: (data: Record<string, unknown>) =>

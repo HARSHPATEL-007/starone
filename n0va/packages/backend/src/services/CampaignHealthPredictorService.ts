@@ -61,6 +61,59 @@ export interface CampaignHealthReport {
   trend: { day: number; healthScore: number; category: string }[];
 }
 
+export interface HealthForecast {
+  forecast: { day: number; predictedHealth: number; lowerBound: number; upperBound: number }[];
+  confidenceLevel: number;
+  trend: "improving" | "declining" | "stable";
+  predictedCategory: string;
+}
+
+export interface DimensionBreakdown {
+  campaignId: string;
+  overall: number;
+  dimensions: { name: string; score: number; percentile: number; status: string }[];
+  weakestDimension: string;
+  strongestDimension: string;
+}
+
+export interface HealthAnomaly {
+  day: number;
+  metric: string;
+  actualValue: number;
+  expectedValue: number;
+  deviation: number;
+  severity: "low" | "medium" | "high";
+  likelyCause: string;
+}
+
+export interface ImprovementStep {
+  order: number;
+  dimension: string;
+  action: string;
+  rationale: string;
+  effort: "low" | "medium" | "high";
+  expectedLift: number;
+  timeframe: string;
+}
+
+export interface PeerComparison {
+  campaignId: string;
+  overallHealth: number;
+  peerAverage: number;
+  percentile: number;
+  rank: number;
+  peerCount: number;
+  dimensionGaps: { dimension: string; ownScore: number; peerAvg: number; gap: number }[];
+  verdict: string;
+}
+
+export interface BenchmarkResult {
+  campaignId: string;
+  benchmarks: { metric: string; value: number; benchmark: number; deviation: number; rating: "excellent" | "above_average" | "average" | "below_average" | "poor" }[];
+  overallRating: string;
+  percentileRank: number;
+}
+
 export class CampaignHealthPredictorService {
   computeHealthScore(metrics: CampaignMetric[]): HealthScore {
     if (metrics.length < 3) {
@@ -335,6 +388,214 @@ export class CampaignHealthPredictorService {
     if (mean === 0) return 0;
     const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1);
     return Math.sqrt(variance) / mean;
+  }
+
+  healthTrendForecast(metrics: CampaignMetric[], days: number = 7): HealthForecast {
+    if (metrics.length < 3) {
+      const forecast = Array.from({ length: days }, (_, i) => ({
+        day: (metrics[metrics.length - 1]?.day || 0) + i + 1,
+        predictedHealth: 75, lowerBound: 60, upperBound: 90,
+      }));
+      return { forecast, confidenceLevel: 50, trend: "stable", predictedCategory: "good" };
+    }
+    const healthScores = metrics.map((_, i) => {
+      const sub = metrics.slice(0, i + 1);
+      return this.computeHealthScore(sub).overall;
+    });
+    let smoothed = healthScores[healthScores.length - 1];
+    const alpha = 0.3;
+    const forecast: HealthForecast["forecast"] = [];
+    for (let i = 0; i < days; i++) {
+      smoothed = alpha * (healthScores[healthScores.length - 1] + (smoothed - healthScores[healthScores.length - 1]) * (1 - alpha));
+      const noise = (100 - smoothed) * 0.1;
+      forecast.push({
+        day: (metrics[metrics.length - 1]?.day || 0) + i + 1,
+        predictedHealth: Math.round(smoothed),
+        lowerBound: Math.max(0, Math.round(smoothed - noise * 1.96)),
+        upperBound: Math.min(100, Math.round(smoothed + noise * 1.96)),
+      });
+    }
+    const recent = healthScores.slice(-3);
+    const trend: "improving" | "declining" | "stable" = recent[2] - recent[0] > 3 ? "improving" : recent[2] - recent[0] < -3 ? "declining" : "stable";
+    const predictedCategory = smoothed >= 85 ? "excellent" : smoothed >= 70 ? "good" : smoothed >= 50 ? "fair" : smoothed >= 30 ? "poor" : "critical";
+    return { forecast, confidenceLevel: Math.round(metrics.length / (metrics.length + days) * 100), trend, predictedCategory };
+  }
+
+  healthDimensionBreakdown(campaignInputs: { campaignId: string; metrics: CampaignMetric[] }[]): DimensionBreakdown[] {
+    if (!campaignInputs.length) return [];
+    const allScores = campaignInputs.map(input => {
+      const h = this.computeHealthScore(input.metrics);
+      return { campaignId: input.campaignId, overall: h.overall, components: h.components };
+    });
+    const dimNames = ["efficiency", "engagement", "conversion", "pacing", "stability"] as const;
+    return allScores.map(s => {
+      const dims = dimNames.map(name => {
+        const allDim = allScores.map(x => (x.components as any)[name] as number).sort((a, b) => a - b);
+        const score = (s.components as any)[name] as number;
+        const rank = allDim.indexOf(score);
+        const percentile = allDim.length > 1 ? Math.round(rank / (allDim.length - 1) * 100) : 50;
+        const status = score >= 80 ? "strong" : score >= 60 ? "adequate" : score >= 40 ? "weak" : "critical";
+        return { name, score, percentile, status };
+      });
+      const weakest = dims.reduce((a, b) => a.score < b.score ? a : b);
+      const strongest = dims.reduce((a, b) => a.score > b.score ? a : b);
+      return { campaignId: s.campaignId, overall: s.overall, dimensions: dims, weakestDimension: weakest.name, strongestDimension: strongest.name };
+    });
+  }
+
+  healthAnomalyDetection(metrics: CampaignMetric[]): HealthAnomaly[] {
+    if (metrics.length < 7) return [];
+    const anomalies: HealthAnomaly[] = [];
+    const ctrValues = metrics.map(m => m.clicks / Math.max(1, m.impressions));
+    const roasValues = metrics.map(m => m.spend > 0 ? m.revenue / m.spend : 0);
+    const spendValues = metrics.map(m => m.spend);
+    const pairs: { metric: string; values: number[] }[] = [
+      { metric: "ctr", values: ctrValues },
+      { metric: "roas", values: roasValues },
+      { metric: "spend", values: spendValues },
+    ];
+    for (const { metric, values } of pairs) {
+      const mean = values.reduce((s, v) => s + v, 0) / values.length;
+      const std = Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length);
+      for (let i = 0; i < values.length; i++) {
+        const z = std > 0 ? Math.abs(values[i] - mean) / std : 0;
+        if (z > 2) {
+          const severity: "low" | "medium" | "high" = z > 3 ? "high" : z > 2.5 ? "medium" : "low";
+          const causes = metric === "ctr" ? ["Creative fatigue", "Audience saturation", "Placement change", "Competitor activity"] : metric === "roas" ? ["Conversion tracking issue", "Traffic quality shift", "Landing page problem"] : ["Budget pacing change", "Platform delivery anomaly", "Bid strategy adjustment"];
+          anomalies.push({
+            day: metrics[i]?.day || i,
+            metric, actualValue: Math.round(values[i] * 10000) / 10000,
+            expectedValue: Math.round(mean * 10000) / 10000,
+            deviation: Math.round(z * 100) / 100,
+            severity,
+            likelyCause: causes[i % causes.length],
+          });
+        }
+      }
+    }
+    return anomalies.slice(0, 10);
+  }
+
+  healthImprovementPlan(healthScore: HealthScore, riskFactors: RiskFactor[]): ImprovementStep[] {
+    const steps: ImprovementStep[] = [];
+    const dimMap: Record<string, { name: string; score: number }> = {
+      efficiency: { name: "Efficiency", score: healthScore.components.efficiency },
+      engagement: { name: "Engagement", score: healthScore.components.engagement },
+      conversion: { name: "Conversion", score: healthScore.components.conversion },
+      pacing: { name: "Pacing", score: healthScore.components.pacing },
+      stability: { name: "Stability", score: healthScore.components.stability },
+    };
+    const weakDims = Object.entries(dimMap).filter(([_, d]) => d.score < 60).sort((a, b) => a[1].score - b[1].score);
+    const criticalRisks = riskFactors.filter(r => r.severity === "critical" || r.severity === "high");
+    let order = 0;
+    for (const risk of criticalRisks) {
+      steps.push({
+        order: ++order, dimension: "cross_dimension",
+        action: risk.recommendation,
+        rationale: `Critical risk: ${risk.name} — ${risk.description}`,
+        effort: "high", expectedLift: 20, timeframe: "Immediate",
+      });
+    }
+    for (const [key, dim] of weakDims) {
+      const actions: Record<string, string> = {
+        efficiency: "Optimize bids toward high-ROAS placements. Pause low-performing ad sets. Consolidate high-spend, low-return campaigns.",
+        engagement: "Refresh creative assets. Test new headlines and imagery. Expand audience targeting to reduce saturation.",
+        conversion: "Audit landing page conversion flow. A/B test CTAs and form fields. Add social proof and urgency elements.",
+        pacing: "Adjust daily budget distribution. Implement dayparting to match peak performance windows. Smooth delivery across the period.",
+        stability: "Reduce bid adjustment frequency. Consolidate overlapping ad sets. Set frequency caps to prevent oversaturation.",
+      };
+      steps.push({
+        order: ++order, dimension: key,
+        action: actions[key] || `Improve ${dim.name} score from ${dim.score}`,
+        rationale: `${dim.name} score of ${dim.score} is below 60 — addressing this will improve overall health by an estimated ${Math.round((60 - dim.score) * 0.25)} points`,
+        effort: dim.score < 40 ? "high" : "medium",
+        expectedLift: Math.round((60 - dim.score) * 0.3),
+        timeframe: dim.score < 40 ? "Within 7 days" : "Within 14 days",
+      });
+    }
+    if (steps.length === 0) {
+      steps.push({
+        order: 1, dimension: "all",
+        action: "Maintain current strategy. Continue monitoring and optimizing incrementally.",
+        rationale: "All health dimensions are above 60 — campaign is in good shape",
+        effort: "low", expectedLift: 5, timeframe: "Ongoing",
+      });
+    }
+    return steps;
+  }
+
+  healthPeerComparison(campaignId: string, ownMetrics: CampaignMetric[], peerMetricsList: { campaignId: string; metrics: CampaignMetric[] }[]): PeerComparison {
+    const ownHealth = this.computeHealthScore(ownMetrics);
+    const peerHealths = peerMetricsList.map(p => ({
+      campaignId: p.campaignId,
+      health: this.computeHealthScore(p.metrics),
+    }));
+    const allHealths = [ownHealth.overall, ...peerHealths.map(p => p.health.overall)].sort((a, b) => b - a);
+    const rank = allHealths.indexOf(ownHealth.overall) + 1;
+    const peerAvg = peerHealths.length > 0 ? Math.round(peerHealths.reduce((s, p) => s + p.health.overall, 0) / peerHealths.length) : 0;
+    const percentile = allHealths.length > 1 ? Math.round((allHealths.length - rank) / (allHealths.length - 1) * 100) : 50;
+    const dimNames = ["efficiency", "engagement", "conversion", "pacing", "stability"] as const;
+    const dimGaps: PeerComparison["dimensionGaps"] = dimNames.map(name => {
+      const ownScore = (ownHealth.components as any)[name] as number;
+      const peerAvgScore = peerHealths.length > 0
+        ? Math.round(peerHealths.reduce((s, p) => s + ((p.health.components as any)[name] as number), 0) / peerHealths.length)
+        : ownScore;
+      return { dimension: name, ownScore, peerAvg: peerAvgScore, gap: Math.round((ownScore - peerAvgScore) * 100) / 100 };
+    }).sort((a, b) => a.gap - b.gap);
+    let verdict: string;
+    if (ownHealth.overall >= peerAvg + 10) verdict = "Significantly outperforming peer average — excellent health relative to similar campaigns";
+    else if (ownHealth.overall >= peerAvg) verdict = "Above peer average — campaign is in good relative health";
+    else if (ownHealth.overall >= peerAvg - 10) verdict = "Slightly below peer average — targeted improvements recommended";
+    else verdict = "Significantly below peer average — comprehensive review and restructuring recommended";
+    return { campaignId, overallHealth: ownHealth.overall, peerAverage: peerAvg, percentile, rank, peerCount: peerMetricsList.length, dimensionGaps: dimGaps, verdict };
+  }
+
+  healthBenchmark(metrics: CampaignMetric[], benchmarks?: { metric: string; excellent: number; good: number; fair: number; poor: number }[]): BenchmarkResult {
+    const defaultBenchmarks: { metric: string; excellent: number; good: number; fair: number; poor: number }[] = [
+      { metric: "ctr", excellent: 4, good: 2.5, fair: 1.5, poor: 0.5 },
+      { metric: "cvr", excellent: 8, good: 5, fair: 3, poor: 1 },
+      { metric: "roas", excellent: 4, good: 2.5, fair: 1.5, poor: 0.5 },
+      { metric: "cpa", excellent: 10, good: 25, fair: 50, poor: 100 },
+    ];
+    const bm = benchmarks || defaultBenchmarks;
+    const recent = metrics.slice(-7);
+    const totalImps = recent.reduce((s, m) => s + m.impressions, 0);
+    const totalClicks = recent.reduce((s, m) => s + m.clicks, 0);
+    const totalConv = recent.reduce((s, m) => s + m.conversions, 0);
+    const totalSpend = recent.reduce((s, m) => s + m.spend, 0);
+    const totalRev = recent.reduce((s, m) => s + m.revenue, 0);
+    const values: Record<string, number> = {
+      ctr: totalImps > 0 ? totalClicks / totalImps * 100 : 0,
+      cvr: totalClicks > 0 ? totalConv / totalClicks * 100 : 0,
+      roas: totalSpend > 0 ? totalRev / totalSpend : 0,
+      cpa: totalConv > 0 ? totalSpend / totalConv : Infinity,
+    };
+
+    const results: BenchmarkResult["benchmarks"] = bm.map(b => {
+      const val = values[b.metric] || 0;
+      let rating: "excellent" | "above_average" | "average" | "below_average" | "poor";
+      if (b.metric === "cpa") {
+        if (val <= b.excellent) rating = "excellent";
+        else if (val <= b.good) rating = "above_average";
+        else if (val <= b.fair) rating = "average";
+        else if (val <= b.poor) rating = "below_average";
+        else rating = "poor";
+      } else {
+        if (val >= b.excellent) rating = "excellent";
+        else if (val >= b.good) rating = "above_average";
+        else if (val >= b.fair) rating = "average";
+        else if (val >= b.poor) rating = "below_average";
+        else rating = "poor";
+      }
+      const deviation = b.good > 0 ? Math.round((val - b.good) / b.good * 10000) / 100 : 0;
+      return { metric: b.metric, value: Math.round(val * 100) / 100, benchmark: b.good, deviation, rating };
+    });
+
+    const scoreMap: Record<string, number> = { excellent: 4, above_average: 3, average: 2, below_average: 1, poor: 0 };
+    const avgScore = results.reduce((s, r) => s + (scoreMap[r.rating] || 0), 0) / results.length;
+    const overallRating = avgScore >= 3.5 ? "excellent" : avgScore >= 2.5 ? "above_average" : avgScore >= 1.5 ? "average" : "below_average";
+    const percentileRank = Math.round(avgScore / 4 * 100);
+    return { campaignId: "benchmark", benchmarks: results, overallRating, percentileRank };
   }
 }
 

@@ -67,4 +67,64 @@ router.get(
   }),
 );
 
+router.post(
+  "/health-trend-forecast",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { metrics, days } = req.body;
+    if (!metrics || !Array.isArray(metrics)) return res.status(400).json({ error: "metrics array required" });
+    const result = campaignHealthPredictorService.healthTrendForecast(metrics, days || 7);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/health-dimension-breakdown",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { campaignInputs } = req.body;
+    if (!campaignInputs || !Array.isArray(campaignInputs)) return res.status(400).json({ error: "campaignInputs array required" });
+    const result = campaignHealthPredictorService.healthDimensionBreakdown(campaignInputs);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/health-anomaly-detection",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { metrics } = req.body;
+    if (!metrics || !Array.isArray(metrics)) return res.status(400).json({ error: "metrics array required" });
+    const result = campaignHealthPredictorService.healthAnomalyDetection(metrics);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/health-improvement-plan",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { healthScore, riskFactors } = req.body;
+    if (!healthScore) return res.status(400).json({ error: "healthScore required" });
+    const result = campaignHealthPredictorService.healthImprovementPlan(healthScore, riskFactors || []);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/health-peer-comparison",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { campaignId, ownMetrics, peerMetricsList } = req.body;
+    if (!campaignId || !ownMetrics) return res.status(400).json({ error: "campaignId and ownMetrics required" });
+    const result = campaignHealthPredictorService.healthPeerComparison(campaignId, ownMetrics, peerMetricsList || []);
+    sendSuccess(res, result);
+  }),
+);
+
+router.post(
+  "/health-benchmark",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { metrics, benchmarks } = req.body;
+    if (!metrics || !Array.isArray(metrics)) return res.status(400).json({ error: "metrics array required" });
+    const result = campaignHealthPredictorService.healthBenchmark(metrics, benchmarks);
+    sendSuccess(res, result);
+  }),
+);
+
 export default router;

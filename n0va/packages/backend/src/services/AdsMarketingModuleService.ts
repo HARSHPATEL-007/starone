@@ -1,6 +1,7 @@
 import { autonomousCampaignManager } from "./AutonomousCampaignManagerService";
 import { unifiedAdsPipeline } from "./UnifiedAdsPipelineService";
 import { campaignHealthService, CampaignHealthScore } from "./CampaignHealthService";
+import { campaignHealthPredictorService } from "./CampaignHealthPredictorService";
 import { campaignSaturationService } from "./CampaignSaturationService";
 import { portfolioBudgetOptimizer } from "./PortfolioBudgetOptimizerService";
 import { CampaignSummaryService } from "./CampaignSummaryService";
@@ -2759,6 +2760,30 @@ export class AdsMarketingModuleService {
 
   summaryAnomalyReport(campaigns: any[]) {
     return campaignSummaryService.summaryAnomalyReport(campaigns);
+  }
+
+  healthTrendForecast(metrics: any[], days?: number) {
+    return campaignHealthPredictorService.healthTrendForecast(metrics, days);
+  }
+
+  healthDimensionBreakdown(campaignInputs: { campaignId: string; metrics: any[] }[]) {
+    return campaignHealthPredictorService.healthDimensionBreakdown(campaignInputs);
+  }
+
+  healthAnomalyDetection(metrics: any[]) {
+    return campaignHealthPredictorService.healthAnomalyDetection(metrics);
+  }
+
+  healthImprovementPlan(healthScore: any, riskFactors?: any[]) {
+    return campaignHealthPredictorService.healthImprovementPlan(healthScore, riskFactors);
+  }
+
+  healthPeerComparison(campaignId: string, ownMetrics: any[], peerMetricsList?: { campaignId: string; metrics: any[] }[]) {
+    return campaignHealthPredictorService.healthPeerComparison(campaignId, ownMetrics, peerMetricsList);
+  }
+
+  healthBenchmark(metrics: any[], benchmarks?: any[]) {
+    return campaignHealthPredictorService.healthBenchmark(metrics, benchmarks);
   }
 }
 
