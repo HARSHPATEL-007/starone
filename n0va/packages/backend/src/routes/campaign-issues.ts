@@ -46,4 +46,21 @@ router.delete("/:id", asyncHandler(async (req, res) => {
   res.status(204).send();
 }));
 
+router.post("/batch-update", asyncHandler(async (req, res) => {
+  const { issueIds, updates } = req.body;
+  if (!Array.isArray(issueIds) || !updates) throw new AppError(400, "issueIds array and updates object required");
+  const result = campaignIssueService.issueBatchUpdate(req.user!.tenantId, issueIds, updates);
+  sendSuccess(res, result);
+}));
+
+router.get("/priority-queue", asyncHandler(async (req, res) => {
+  const queue = campaignIssueService.issuePriorityQueue(req.user!.tenantId);
+  sendSuccess(res, queue);
+}));
+
+router.get("/auto-assignment", asyncHandler(async (req, res) => {
+  const suggestions = campaignIssueService.issueAutoAssignment(req.user!.tenantId);
+  sendSuccess(res, suggestions);
+}));
+
 export default router;

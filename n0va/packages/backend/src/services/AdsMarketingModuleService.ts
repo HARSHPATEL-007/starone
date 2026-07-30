@@ -33,6 +33,7 @@ import { campaignAIBiddingAgent } from "./CampaignAIBiddingAgentService";
 import { campaignScorecardService } from "./CampaignScorecardService";
 import { campaignSnapshotService } from "./CampaignSnapshotService";
 import { campaignSimulationService } from "./CampaignSimulationService";
+import { campaignIssueService } from "./CampaignIssueService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -3080,6 +3081,18 @@ export class AdsMarketingModuleService {
 
   healthBenchmark(metrics: any[], benchmarks?: any[]) {
     return campaignHealthPredictorService.healthBenchmark(metrics, benchmarks);
+  }
+
+  issueBatchUpdate(tenantId: string, issueIds: string[], updates: any) {
+    return campaignIssueService.issueBatchUpdate(tenantId, issueIds, updates);
+  }
+
+  issuePriorityQueue(tenantId: string) {
+    return campaignIssueService.issuePriorityQueue(tenantId);
+  }
+
+  issueAutoAssignment(tenantId: string) {
+    return campaignIssueService.issueAutoAssignment(tenantId);
   }
 }
 

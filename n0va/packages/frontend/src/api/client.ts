@@ -725,6 +725,10 @@ export const api = {
     update: (id: string, data: Record<string, unknown>) =>
       request<any>(`/campaign-issues/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/campaign-issues/${id}`, { method: "DELETE" }),
+    batchUpdate: (issueIds: string[], updates: Record<string, unknown>) =>
+      request<any>("/campaign-issues/batch-update", { method: "POST", body: JSON.stringify({ issueIds, updates }) }),
+    priorityQueue: () => request<any>("/campaign-issues/priority-queue"),
+    autoAssignment: () => request<any>("/campaign-issues/auto-assignment"),
   },
   cdp: {
     stats: () => request<any>("/cdp/stats"),

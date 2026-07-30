@@ -1,5 +1,16 @@
 import { DataStore } from "./DataStore";
 
+function hashStr(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); hash = ((hash << 5) - hash) + c; hash |= 0; }
+  return Math.abs(hash);
+}
+
+function seededRandom(seed: string): () => number {
+  let h = hashStr(seed);
+  return () => { h = (h * 16807) % 2147483647; return (h - 1) / 2147483646; };
+}
+
 interface CampaignIssue {
   id: string;
   tenantId: string;
@@ -21,6 +32,30 @@ interface CampaignIssue {
 interface DetectionResult {
   issues: CampaignIssue[];
   _detectionScores: { issueId: string; confidence: number; urgency: number; impactScore: number }[];
+}
+
+interface IssueBatchUpdateResult {
+  total: number;
+  succeeded: number;
+  failed: number;
+  errors: string[];
+}
+
+interface IssuePriorityItem {
+  issue: CampaignIssue;
+  priorityScore: number;
+  urgencyLabel: "immediate" | "today" | "this_week" | "when_possible";
+  timeSinceCreation: string;
+  suggestedAction: string;
+}
+
+interface IssueAssignmentSuggestion {
+  issueId: string;
+  title: string;
+  suggestedAssignee: string;
+  reason: string;
+  confidence: number;
+  category: string;
 }
 
 export class CampaignIssueService {
@@ -315,6 +350,66 @@ export class CampaignIssueService {
         : 0,
     };
   }
-}
 
-export const campaignIssueService = new CampaignIssueService();
+  issueBatchUpdate(tenantId: string, issueIds: string[], updates: Partial<CampaignIssue>): IssueBatchUpdateResult {
+    const mem = DataStore["mem"]();
+    let succeeded = 0, failed = 0;
+    const errors: string[] = [];
+    for (const id of issueIds) {
+      const existing = mem.findOne("campaign_issues", (i: any) => (i._id || i.id) === id && i.tenantId === tenantId);
+      if (!existing) { failed++; errors.push(`Issue ${id} not found`); continue; }
+      const updateData = { ...updates, updatedAt: new Date().toISOString() };
+      if (updates.status === "resolved" && !existing.resolvedAt) {
+        updateData.resolvedAt = new Date().toISOString();
+        updateData.resolvedBy = "batch_user";
+      }
+      mem.update("campaign_issues", (i: any) => (i._id || i.id) === id, updateData);
+      succeeded++;
+    }
+    return { total: issueIds.length, succeeded, failed, errors };
+  }
+
+  issuePriorityQueue(tenantId: string): IssuePriorityItem[] {
+    const issues = this.getIssues(tenantId);
+    const open = issues.filter(i => i.status === "open" || i.status === "in_progress");
+    const severityScores: Record<string, number> = { critical: 100, high: 60, medium: 30, low: 10 };
+    const now = Date.now();
+    return open.map(i => {
+      const sevScore = severityScores[i.severity] || 0;
+      const hoursSince = (now - new Date(i.createdAt).getTime()) / 3600000;
+      const ageBonus = Math.min(40, hoursSince / 24 * 5);
+      const priorityScore = Math.round(sevScore + ageBonus);
+      const urgencyLabel: IssuePriorityItem["urgencyLabel"] = priorityScore >= 100 ? "immediate" : priorityScore >= 60 ? "today" : priorityScore >= 30 ? "this_week" : "when_possible";
+      return {
+        issue: i, priorityScore, urgencyLabel,
+        timeSinceCreation: hoursSince < 1 ? `${Math.round(hoursSince * 60)}m` : hoursSince < 24 ? `${Math.round(hoursSince)}h` : `${Math.round(hoursSince / 24)}d`,
+        suggestedAction: i.severity === "critical" ? "Assign immediately and escalate if unresolved within 4h" : i.severity === "high" ? "Assign today with 24h resolution target" : "Review during next sprint planning",
+      };
+    }).sort((a, b) => b.priorityScore - a.priorityScore);
+  }
+
+  issueAutoAssignment(tenantId: string): IssueAssignmentSuggestion[] {
+    const issues = this.getIssues(tenantId);
+    const open = issues.filter(i => i.status === "open" && !i.assignedTo);
+    const teamByCategory: Record<string, string[]> = {
+      budget: ["finance_team", "campaign_manager"],
+      creative: ["creative_team", "design_team"],
+      audience: ["audience_strategist", "data_scientist"],
+      platform: ["platform_specialist", "tech_ops"],
+      performance: ["campaign_manager", "optimization_team"],
+      compliance: ["legal_team", "compliance_officer"],
+      other: ["campaign_manager"],
+    };
+    return open.map(i => {
+      const rng = seededRandom(i.id + tenantId + "_auto");
+      const candidates = teamByCategory[i.category] || ["campaign_manager"];
+      return {
+        issueId: i.id, title: i.title,
+        suggestedAssignee: candidates[0],
+        reason: `${i.category} issues typically handled by ${candidates[0]}`,
+        confidence: 70 + Math.floor(rng() * 20),
+        category: i.category,
+      };
+    });
+  }
+}
