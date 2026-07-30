@@ -122,3 +122,111 @@ describe("CampaignAudienceExpansion - trackExpansionPerformance", () => {
     }
   });
 });
+
+describe("CampaignAudienceExpansion - audienceSourceAnalysis", () => {
+  it("returns source breakdown with quality distribution", () => {
+    const sources = campaignAudienceExpansion.audienceSourceAnalysis(TEST_TENANT);
+    expect(Array.isArray(sources)).toBe(true);
+    expect(sources.length).toBeGreaterThan(0);
+    for (const s of sources) {
+      expect(s).toHaveProperty("source");
+      expect(s).toHaveProperty("audienceCount");
+      expect(s).toHaveProperty("totalSize");
+      expect(s).toHaveProperty("avgConversionRate");
+      expect(s).toHaveProperty("qualityDistribution");
+      expect(s.qualityDistribution).toHaveProperty("excellent");
+      expect(s).toHaveProperty("topAudience");
+    }
+  });
+});
+
+describe("CampaignAudienceExpansion - audienceOverlapAnalysis", () => {
+  it("returns overlap pairs sorted by overlap percent", () => {
+    const ids = ["aud_0", "aud_1", "aud_2"];
+    const pairs = campaignAudienceExpansion.audienceOverlapAnalysis(ids, TEST_TENANT);
+    expect(Array.isArray(pairs)).toBe(true);
+    expect(pairs.length).toBe(3);
+    for (const p of pairs) {
+      expect(p).toHaveProperty("audienceA");
+      expect(p).toHaveProperty("audienceB");
+      expect(p).toHaveProperty("overlapPercent");
+      expect(p).toHaveProperty("jaccardIndex");
+      expect(p).toHaveProperty("exclusiveA");
+      expect(p).toHaveProperty("recommendation");
+    }
+    for (let i = 1; i < pairs.length; i++) {
+      expect(pairs[i - 1].overlapPercent).toBeGreaterThanOrEqual(pairs[i].overlapPercent);
+    }
+  });
+});
+
+describe("CampaignAudienceExpansion - audienceSegmentationSuggestions", () => {
+  it("returns suggested segments with recommended actions", () => {
+    const segs = campaignAudienceExpansion.audienceSegmentationSuggestions(TEST_TENANT);
+    expect(Array.isArray(segs)).toBe(true);
+    expect(segs.length).toBe(6);
+    for (const s of segs) {
+      expect(s).toHaveProperty("segmentName");
+      expect(s).toHaveProperty("description");
+      expect(s).toHaveProperty("estimatedSize");
+      expect(s).toHaveProperty("predictedConversionRate");
+      expect(Array.isArray(s.definingFeatures)).toBe(true);
+      expect(s).toHaveProperty("recommendedAction");
+      expect(["high", "medium", "low"]).toContain(s.priority);
+    }
+  });
+});
+
+describe("CampaignAudienceExpansion - audienceValueForecasting", () => {
+  it("returns value projections with LTV", () => {
+    const result = campaignAudienceExpansion.findLookalikeAudiences(TEST_TENANT);
+    if (result.candidates.length > 0) {
+      const fc = campaignAudienceExpansion.audienceValueForecasting(result.candidates[0].audienceId, TEST_TENANT);
+      expect(fc).not.toBeNull();
+      expect(fc!.audienceName).toBeTruthy();
+      expect(fc!.currentValue).toBeGreaterThan(0);
+      expect(Array.isArray(fc!.projections)).toBe(true);
+      expect(fc!.projections.length).toBe(6);
+      for (const p of fc!.projections) {
+        expect(p).toHaveProperty("period");
+        expect(p).toHaveProperty("projectedSize");
+        expect(p).toHaveProperty("projectedRevenue");
+        expect(p).toHaveProperty("cumulativeRevenue");
+      }
+      expect(fc!.predictedLTV).toBeGreaterThan(0);
+      expect(fc!.paybackPeriod).toBeTruthy();
+      expect(fc!.recommendation).toBeTruthy();
+    }
+  });
+});
+
+describe("CampaignAudienceExpansion - audienceSaturationAnalysis", () => {
+  it("returns saturation points with status", () => {
+    const sat = campaignAudienceExpansion.audienceSaturationAnalysis(TEST_TENANT);
+    expect(Array.isArray(sat)).toBe(true);
+    expect(sat.length).toBe(6);
+    for (const s of sat) {
+      expect(s).toHaveProperty("dimension");
+      expect(s).toHaveProperty("currentLevel");
+      expect(s).toHaveProperty("saturationThreshold");
+      expect(s).toHaveProperty("saturationPercent");
+      expect(["healthy", "approaching", "saturated"]).toContain(s.status);
+      expect(s).toHaveProperty("recommendation");
+    }
+  });
+});
+
+describe("CampaignAudienceExpansion - audienceCompositionAnalysis", () => {
+  it("returns composition comparison between seed and expansion", () => {
+    const comp = campaignAudienceExpansion.audienceCompositionAnalysis(TEST_TENANT);
+    expect(Array.isArray(comp)).toBe(true);
+    expect(comp.length).toBe(16);
+    for (const c of comp) {
+      expect(c).toHaveProperty("category");
+      expect(c).toHaveProperty("seedPercentage");
+      expect(c).toHaveProperty("expansionPercentage");
+      expect(c).toHaveProperty("difference");
+      expect(c).toHaveProperty("significance");
+    }
+  });
+});

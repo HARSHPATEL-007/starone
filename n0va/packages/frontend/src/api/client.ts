@@ -2380,6 +2380,12 @@ export const api = {
     unification: (platformA?: string, platformB?: string) =>
       request<any>(`/campaign-audience-expansion/unification${platformA ? `?platformA=${platformA}&platformB=${platformB}` : ""}`),
     performance: (audienceId: string) => request<any>(`/campaign-audience-expansion/performance?audienceId=${encodeURIComponent(audienceId)}`),
+    sourceAnalysis: () => request<any>("/campaign-audience-expansion/source-analysis"),
+    overlapAnalysis: (audienceIds: string[]) => request<any>(`/campaign-audience-expansion/overlap-analysis?audienceIds=${audienceIds.join(",")}`),
+    segmentationSuggestions: () => request<any>("/campaign-audience-expansion/segmentation-suggestions"),
+    valueForecast: (audienceId: string) => request<any>(`/campaign-audience-expansion/value-forecast?audienceId=${encodeURIComponent(audienceId)}`),
+    saturationAnalysis: () => request<any>("/campaign-audience-expansion/saturation-analysis"),
+    compositionAnalysis: () => request<any>("/campaign-audience-expansion/composition-analysis"),
   },
 
   campaignCrossDeviceAnalyzer: {

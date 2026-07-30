@@ -1837,6 +1837,30 @@ export class AdsMarketingModuleService {
     return campaignAudienceExpansion.trackExpansionPerformance(audienceId, tenantId);
   }
 
+  audienceSourceAnalysis(tenantId: string) {
+    return campaignAudienceExpansion.audienceSourceAnalysis(tenantId);
+  }
+
+  audienceOverlapAnalysis(audienceIds: string[], tenantId: string) {
+    return campaignAudienceExpansion.audienceOverlapAnalysis(audienceIds, tenantId);
+  }
+
+  audienceSegmentationSuggestions(tenantId: string) {
+    return campaignAudienceExpansion.audienceSegmentationSuggestions(tenantId);
+  }
+
+  audienceValueForecasting(audienceId: string, tenantId: string) {
+    return campaignAudienceExpansion.audienceValueForecasting(audienceId, tenantId);
+  }
+
+  audienceSaturationAnalysis(tenantId: string) {
+    return campaignAudienceExpansion.audienceSaturationAnalysis(tenantId);
+  }
+
+  audienceCompositionAnalysis(tenantId: string) {
+    return campaignAudienceExpansion.audienceCompositionAnalysis(tenantId);
+  }
+
   crossDevicePerformance(campaignId: string, tenantId: string) {
     return campaignCrossDeviceAnalyzer.analyzeCrossDevice(campaignId, tenantId);
   }

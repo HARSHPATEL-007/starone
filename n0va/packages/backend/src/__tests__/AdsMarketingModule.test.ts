@@ -262,15 +262,15 @@ describe("AdsMarketingModule - executiveBriefing", () => {
 
 describe("AdsMarketingModule - audienceOverlapAnalysis", () => {
   it("returns overlap analysis across active campaigns", () => {
-    const r = adsMarketingModule.audienceOverlapAnalysis(TEST_TENANT);
-    expect(r.generatedAt).toBeTruthy();
-    expect(r.overlaps).toBeDefined();
-    expect(r.summary.totalPairs).toBeGreaterThanOrEqual(0);
-    expect(r.summary.estimatedWaste).toBeGreaterThanOrEqual(0);
-    for (const o of r.overlaps) {
-      expect(o.campaignA.id).toBeTruthy();
-      expect(o.campaignB.id).toBeTruthy();
-      expect(o.recommendation).toBeTruthy();
+    const ids = ["camp_a", "camp_b", "camp_c"];
+    const r = adsMarketingModule.audienceOverlapAnalysis(ids, TEST_TENANT);
+    expect(Array.isArray(r)).toBe(true);
+    expect(r.length).toBe(3);
+    for (const o of r) {
+      expect(o).toHaveProperty("audienceA");
+      expect(o).toHaveProperty("audienceB");
+      expect(o).toHaveProperty("overlapPercent");
+      expect(o).toHaveProperty("recommendation");
     }
   });
 });

@@ -129,6 +129,78 @@ function generateAudienceFeatures(seed: string): Record<string, number> {
   };
 }
 
+interface AudienceSourceBreakdown {
+  source: string;
+  audienceCount: number;
+  totalSize: number;
+  avgConversionRate: number;
+  avgSimilarity: number;
+  qualityDistribution: { excellent: number; good: number; fair: number; poor: number };
+  topAudience: string;
+}
+
+interface AudienceOverlapPair {
+  audienceA: string;
+  audienceB: string;
+  overlapPercent: number;
+  jaccardIndex: number;
+  exclusiveA: number;
+  exclusiveB: number;
+  recommendation: string;
+}
+
+interface SegmentSuggestion {
+  segmentName: string;
+  description: string;
+  estimatedSize: number;
+  predictedConversionRate: number;
+  definingFeatures: string[];
+  recommendedAction: string;
+  priority: "high" | "medium" | "low";
+}
+
+interface AudienceValueProjection {
+  period: string;
+  projectedSize: number;
+  projectedConversions: number;
+  projectedRevenue: number;
+  projectedROAS: number;
+  cumulativeRevenue: number;
+}
+
+interface ValueForecast {
+  audienceId: string;
+  audienceName: string;
+  currentValue: number;
+  projections: AudienceValueProjection[];
+  predictedLTV: number;
+  paybackPeriod: string;
+  recommendation: string;
+}
+
+interface SaturationPoint {
+  dimension: string;
+  currentLevel: number;
+  saturationThreshold: number;
+  saturationPercent: number;
+  status: "healthy" | "approaching" | "saturated";
+  recommendation: string;
+}
+
+interface CompositionComponent {
+  category: string;
+  seedPercentage: number;
+  expansionPercentage: number;
+  difference: number;
+  significance: string;
+}
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+
 export class CampaignAudienceExpansionService {
   findLookalikeAudiences(tenantId: string, seedAudienceId?: string): LookalikeResult {
     const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
@@ -154,11 +226,12 @@ export class CampaignAudienceExpansionService {
       }
     } else {
       for (const a of audiences) {
+        const aSeed = hashStr(a._id + tenantId);
         seedProfiles.push({
           id: a._id, name: a.name || "Unknown", size: a.size || 10000,
           features: generateAudienceFeatures(a._id),
-          conversionRate: a.conversionRate || Math.random() * 5,
-          avgOrderValue: a.avgOrderValue || Math.random() * 80 + 20,
+          conversionRate: a.conversionRate || (aSeed % 50) / 10,
+          avgOrderValue: a.avgOrderValue || (aSeed % 80) + 20,
           source: a.platform || "unknown",
         });
       }
@@ -300,11 +373,13 @@ export class CampaignAudienceExpansionService {
   }
 
   crossPlatformUnification(tenantId: string, platformA?: string, platformB?: string): CrossPlatformUnification[] {
+    const seed = hashStr(tenantId + "xplat");
     const platforms = platformA && platformB ? [[platformA, platformB]] : [["Facebook", "Google"], ["Facebook", "LinkedIn"], ["Facebook", "TikTok"], ["Google", "LinkedIn"], ["Google", "YouTube"], ["TikTok", "Snapchat"], ["LinkedIn", "Twitter"]];
-    return platforms.map(([pA, pB]) => {
-      const overlap = 0.15 + Math.random() * 0.3;
-      const reachA = 500000 + Math.random() * 500000;
-      const reachB = 300000 + Math.random() * 400000;
+    return platforms.map(([pA, pB], i) => {
+      const pSeed = seed + i * 37;
+      const overlap = 0.15 + (pSeed % 30) / 100;
+      const reachA = 500000 + (pSeed % 500000);
+      const reachB = 300000 + ((pSeed * 7) % 400000);
       const ovUsers = Math.round(overlap * Math.min(reachA, reachB));
       const unified = Math.round(reachA + reachB - ovUsers);
       const savings = Math.round(ovUsers * 0.05);
@@ -325,15 +400,16 @@ export class CampaignAudienceExpansionService {
     if (!candidate) return null;
     const periods = ["Week 1", "Week 2", "Week 3", "Week 4"];
     const metrics = periods.map((period, i) => {
+      const pSeed = hashStr(audienceId + tenantId + "perf" + i);
       const growth = 1 + i * 0.15;
       const impressions = Math.round(candidate.estimatedSize * 0.3 * growth);
-      const ctrVal = 0.012 + (candidate.similarityScore - 0.5) * 0.01 + Math.random() * 0.003;
+      const ctrVal = 0.012 + (candidate.similarityScore - 0.5) * 0.01 + (pSeed % 3) / 1000;
       const clicks = Math.round(impressions * ctrVal);
       const convRate = candidate.estimatedConversionRate / 100 * growth * 0.9;
       const conversions = Math.round(clicks * convRate);
       const aov = candidate.similarityScore > 0.7 ? 45 : 30;
       const revenue = conversions * aov;
-      const cpc = 0.35 + Math.random() * 0.2;
+      const cpc = 0.35 + ((pSeed * 7) % 20) / 100;
       const spend = Math.round(clicks * cpc);
       return { period, impressions, clicks, conversions, revenue, spend, roas: spend > 0 ? Math.round(revenue / spend * 100) / 100 : 0 };
     });
@@ -357,6 +433,122 @@ export class CampaignAudienceExpansionService {
       expansionDate: new Date(Date.now() - 28 * 86400000).toISOString().split("T")[0],
       metrics, comparisonToSeed, overallVerdict,
     };
+  }
+
+  audienceSourceAnalysis(tenantId: string): AudienceSourceBreakdown[] {
+    const result = this.findLookalikeAudiences(tenantId);
+    const seed = hashStr(tenantId + "src");
+    const sources = ["Facebook", "Google", "LinkedIn", "TikTok", "Twitter", "Pinterest", "Snapchat", "YouTube"];
+    return sources.map((source, i) => {
+      const sSeed = seed + i * 41;
+      const count = 2 + (sSeed % 5);
+      const totalSize = 10000 + (sSeed % 90000);
+      const avgCvr = Math.round((1.5 + (sSeed % 50) / 10) * 100) / 100;
+      const avgSim = Math.round((0.4 + (sSeed % 40) / 100) * 1000) / 1000;
+      const dist = { excellent: sSeed % 3, good: 2 + (sSeed * 7 % 3), fair: 1 + (sSeed * 11 % 3), poor: (sSeed * 13 % 2) };
+      return { source, audienceCount: count, totalSize, avgConversionRate: avgCvr, avgSimilarity: avgSim, qualityDistribution: dist, topAudience: result.candidates[i % result.candidates.length]?.audienceName || `${source} Lookalike` };
+    });
+  }
+
+  audienceOverlapAnalysis(audienceIds: string[], tenantId: string): AudienceOverlapPair[] {
+    const seed = hashStr(tenantId + "overlap" + audienceIds.join(","));
+    const pairs: AudienceOverlapPair[] = [];
+    for (let i = 0; i < audienceIds.length; i++) {
+      for (let j = i + 1; j < audienceIds.length; j++) {
+        const pSeed = seed + i * 53 + j * 71;
+        const overlap = 10 + (pSeed % 50);
+        const jaccard = Math.round((overlap / 100) * 1000) / 1000;
+        const sizeA = 10000 + (pSeed % 40000);
+        const sizeB = 8000 + ((pSeed * 7) % 35000);
+        const exclusiveA = Math.round(sizeA * (1 - overlap / 100));
+        const exclusiveB = Math.round(sizeB * (1 - overlap / 100));
+        pairs.push({
+          audienceA: audienceIds[i], audienceB: audienceIds[j], overlapPercent: overlap,
+          jaccardIndex: jaccard, exclusiveA, exclusiveB,
+          recommendation: overlap > 35 ? `High overlap — merge ${audienceIds[i]} and ${audienceIds[j]} for unified targeting` : overlap > 20 ? `Moderate overlap — coordinate messaging between these audiences` : `Low overlap — audiences are distinct; maintain separate strategies`,
+        });
+      }
+    }
+    return pairs.sort((a, b) => b.overlapPercent - a.overlapPercent);
+  }
+
+  audienceSegmentationSuggestions(tenantId: string): SegmentSuggestion[] {
+    const result = this.findLookalikeAudiences(tenantId);
+    const seed = hashStr(tenantId + "seg");
+    const segments: SegmentSuggestion[] = [
+      { segmentName: "High-Intent Converters", description: "Users who visited pricing or checkout pages", estimatedSize: 25000 + (seed % 15000), predictedConversionRate: Math.round((4.5 + (seed % 30) / 10) * 100) / 100, definingFeatures: ["pricing_page_visitors", "cart_adders", "high_session_duration"], recommendedAction: "Create dedicated retargeting campaign with urgency messaging", priority: "high" as const },
+      { segmentName: "Engaged Window Shoppers", description: "Users with frequent visits but no conversions", estimatedSize: 45000 + ((seed * 7) % 25000), predictedConversionRate: Math.round((2.2 + ((seed * 11) % 25) / 10) * 100) / 100, definingFeatures: ["returning_visitors", "category_browsers", "medium_engagement"], recommendedAction: "Offer first-purchase discount with limited-time incentive", priority: "high" as const },
+      { segmentName: "Lookalike Prospects", description: "Users similar to best existing customers", estimatedSize: 80000 + ((seed * 13) % 50000), predictedConversionRate: Math.round((1.8 + ((seed * 17) % 20) / 10) * 100) / 100, definingFeatures: ["demographic_match", "interest_alignment", "behavioral_similarity"], recommendedAction: "Run lookalike campaign at 1-3% similarity threshold", priority: "medium" as const },
+      { segmentName: "Cross-Sell Candidates", description: "Existing customers in adjacent product categories", estimatedSize: 15000 + ((seed * 19) % 10000), predictedConversionRate: Math.round((5.0 + ((seed * 23) % 20) / 10) * 100) / 100, definingFeatures: ["existing_customer", "category_affinity", "repeat_purchaser"], recommendedAction: "Build product recommendation engine with cross-sell logic", priority: "medium" as const },
+      { segmentName: "Lapsed High-Value Users", description: "Previously high-value users who haven't engaged recently", estimatedSize: 8000 + ((seed * 29) % 7000), predictedConversionRate: Math.round((3.0 + ((seed * 31) % 25) / 10) * 100) / 100, definingFeatures: ["high_ltv", "dormant_30d_plus", "past_converter"], recommendedAction: "Launch win-back campaign with personalized offer based on history", priority: "high" as const },
+      { segmentName: "New Audience Explorers", description: "Cold audiences in adjacent interest categories", estimatedSize: 60000 + ((seed * 37) % 40000), predictedConversionRate: Math.round((0.8 + ((seed * 41) % 15) / 10) * 100) / 100, definingFeatures: ["cold_traffic", "broad_interest", "low_frequency"], recommendedAction: "Test with small budget allocation (5-10%) before scaling", priority: "low" as const },
+    ];
+    return segments;
+  }
+
+  audienceValueForecasting(audienceId: string, tenantId: string): ValueForecast | null {
+    const result = this.findLookalikeAudiences(tenantId, audienceId);
+    const candidate = result.candidates.find(c => c.audienceId === audienceId) || result.candidates[0];
+    if (!candidate) return null;
+    const seed = hashStr(audienceId + tenantId + "val");
+    const currentValue = Math.round(candidate.estimatedSize * candidate.estimatedConversionRate / 100 * 45);
+    const periods = ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"];
+    let cumRevenue = 0;
+    const projections = periods.map((period, i) => {
+      const pSeed = seed + i * 31;
+      const decay = 1 - i * 0.08;
+      const projSize = Math.round(candidate.estimatedSize * Math.max(0.3, decay));
+      const projCvr = candidate.estimatedConversionRate * (1 - i * 0.05);
+      const convs = Math.round(projSize * projCvr / 100);
+      const rev = Math.round(convs * (35 + (pSeed % 30)));
+      const spend = Math.round(projSize * (0.2 + (pSeed % 20) / 100));
+      cumRevenue += rev;
+      return { period, projectedSize: projSize, projectedConversions: convs, projectedRevenue: rev, projectedROAS: spend > 0 ? Math.round((rev / spend) * 100) / 100 : 0, cumulativeRevenue: cumRevenue };
+    });
+    const predictedLTV = cumRevenue;
+    const maxMonth = projections.reduce((best, p, i) => p.cumulativeRevenue >= currentValue ? i : best, 5);
+    const paybackPeriod = maxMonth < 6 ? `Month ${maxMonth + 1}` : "Beyond 6 months";
+    const recommendation = predictedLTV > currentValue * 3 ? `Strong LTV projection (${predictedLTV}x current value) — invest in audience expansion` : predictedLTV > currentValue * 1.5 ? `Healthy LTV — maintain current investment level` : `Limited LTV — optimize targeting before scaling further`;
+    return { audienceId: candidate.audienceId, audienceName: candidate.audienceName, currentValue, projections, predictedLTV, paybackPeriod, recommendation };
+  }
+
+  audienceSaturationAnalysis(tenantId: string): SaturationPoint[] {
+    const result = this.findLookalikeAudiences(tenantId);
+    const seed = hashStr(tenantId + "sat");
+    const dimensions = [
+      { dim: "Audience Reach", cur: 65 + (seed % 25), thresh: 90 },
+      { dim: "Frequency Cap", cur: 40 + ((seed * 7) % 30), thresh: 75 },
+      { dim: "Creative Fatigue", cur: 30 + ((seed * 11) % 35), thresh: 70 },
+      { dim: "Conversion Rate Decline", cur: 20 + ((seed * 13) % 25), thresh: 50 },
+      { dim: "CPA Increase", cur: 15 + ((seed * 17) % 20), thresh: 40 },
+      { dim: "Audience Overlap", cur: 25 + ((seed * 19) % 30), thresh: 60 },
+    ];
+    return dimensions.map(d => {
+      const satPct = d.thresh > 0 ? Math.round((d.cur / d.thresh) * 100) : 0;
+      const status: "healthy" | "approaching" | "saturated" = satPct >= 90 ? "saturated" : satPct >= 65 ? "approaching" : "healthy";
+      const recommendation = status === "saturated" ? `${d.dim} is saturated (${satPct}%) — immediate action required` : status === "approaching" ? `${d.dim} approaching threshold — monitor and plan refresh` : `${d.dim} is healthy — no action needed`;
+      return { dimension: d.dim, currentLevel: d.cur, saturationThreshold: d.thresh, saturationPercent: satPct, status, recommendation };
+    });
+  }
+
+  audienceCompositionAnalysis(tenantId: string): CompositionComponent[] {
+    const result = this.findLookalikeAudiences(tenantId);
+    const seed = hashStr(tenantId + "comp");
+    const categories = [
+      "Age 18-24", "Age 25-34", "Age 35-44", "Age 45-54", "Age 55+",
+      "Income Low", "Income Mid", "Income High",
+      "Mobile Users", "Desktop Users", "Tablet Users",
+      "Interest Tech", "Interest Shopping", "Interest Finance", "Interest Travel", "Interest Health",
+    ];
+    return categories.map((cat, i) => {
+      const cSeed = seed + i * 29;
+      const seedPct = 10 + (cSeed % 35);
+      const expansionPct = Math.max(1, seedPct + ((cSeed * 7) % 20 - 10));
+      const diff = expansionPct - seedPct;
+      const absDiff = Math.abs(diff);
+      const significance = absDiff > 15 ? "Significant shift — adjust targeting strategy" : absDiff > 8 ? "Moderate shift — monitor performance impact" : "Minor shift — within expected range";
+      return { category: cat, seedPercentage: seedPct, expansionPercentage: expansionPct, difference: diff, significance };
+    });
   }
 }
 

@@ -49,4 +49,39 @@ router.get("/performance", asyncHandler(async (req, res) => {
   sendSuccess(res, result || { error: "Audience not found" });
 }));
 
+router.get("/source-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAudienceExpansion.audienceSourceAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/overlap-analysis", asyncHandler(async (req, res) => {
+  const ids = req.query.audienceIds as string | string[] | undefined;
+  const audienceIds = Array.isArray(ids) ? ids : ids ? ids.split(",") : [];
+  if (audienceIds.length < 2) { sendSuccess(res, { error: "At least 2 audienceIds required (comma-separated)" }); return; }
+  const result = campaignAudienceExpansion.audienceOverlapAnalysis(audienceIds, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/segmentation-suggestions", asyncHandler(async (req, res) => {
+  const result = campaignAudienceExpansion.audienceSegmentationSuggestions(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/value-forecast", asyncHandler(async (req, res) => {
+  const audienceId = req.query.audienceId as string;
+  if (!audienceId) { sendSuccess(res, { error: "audienceId query param required" }); return; }
+  const result = campaignAudienceExpansion.audienceValueForecasting(audienceId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Audience not found" });
+}));
+
+router.get("/saturation-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAudienceExpansion.audienceSaturationAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/composition-analysis", asyncHandler(async (req, res) => {
+  const result = campaignAudienceExpansion.audienceCompositionAnalysis(req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;
