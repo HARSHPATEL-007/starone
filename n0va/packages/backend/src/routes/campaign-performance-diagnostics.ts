@@ -39,4 +39,34 @@ router.post("/remediate", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/trend-analysis", asyncHandler(async (req, res) => {
+  const result = campaignPerformanceDiagnostics.diagnosticTrendAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/compare/:campaignIdA/:campaignIdB", asyncHandler(async (req, res) => {
+  const result = campaignPerformanceDiagnostics.campaignComparisonDiagnostics(req.params.campaignIdA, req.params.campaignIdB);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/severity-breakdown", asyncHandler(async (req, res) => {
+  const result = campaignPerformanceDiagnostics.severityBreakdown(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/fix-recommendation/:findingId", asyncHandler(async (req, res) => {
+  const result = campaignPerformanceDiagnostics.getFixRecommendation(req.params.findingId);
+  sendSuccess(res, result || { error: "Finding not found" });
+}));
+
+router.get("/campaign/:campaignId/timeline", asyncHandler(async (req, res) => {
+  const result = campaignPerformanceDiagnostics.getDiagnosticTimeline(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/export", asyncHandler(async (req, res) => {
+  const result = campaignPerformanceDiagnostics.exportDiagnostics(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

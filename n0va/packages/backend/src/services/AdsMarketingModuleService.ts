@@ -1745,6 +1745,30 @@ export class AdsMarketingModuleService {
     return campaignPerformanceDiagnostics.remediateFinding(findingId, action, metricBefore, metricAfter);
   }
 
+  diagnosticTrendAnalysis(campaignId: string, tenantId: string) {
+    return campaignPerformanceDiagnostics.diagnosticTrendAnalysis(campaignId, tenantId);
+  }
+
+  campaignComparisonDiagnostics(campaignIdA: string, campaignIdB: string) {
+    return campaignPerformanceDiagnostics.campaignComparisonDiagnostics(campaignIdA, campaignIdB);
+  }
+
+  severityBreakdown(campaignId: string, tenantId: string) {
+    return campaignPerformanceDiagnostics.severityBreakdown(campaignId, tenantId);
+  }
+
+  getFixRecommendation(findingId: string) {
+    return campaignPerformanceDiagnostics.getFixRecommendation(findingId);
+  }
+
+  getDiagnosticTimeline(campaignId: string, tenantId: string) {
+    return campaignPerformanceDiagnostics.getDiagnosticTimeline(campaignId, tenantId);
+  }
+
+  exportDiagnostics(campaignId: string, tenantId: string) {
+    return campaignPerformanceDiagnostics.exportDiagnostics(campaignId, tenantId);
+  }
+
   daypartingAnalysis(campaignId: string, tenantId: string) {
     return campaignDaypartingOptimizer.analyzeDayparting(campaignId, tenantId);
   }

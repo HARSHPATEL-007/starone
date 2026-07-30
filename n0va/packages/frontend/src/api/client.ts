@@ -2434,6 +2434,12 @@ export const api = {
     recoveryPlan: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/recovery-plan`),
     remediate: (findingId: string, action: string, metricBefore: number, metricAfter: number) =>
       request<any>("/campaign-performance-diagnostics/remediate", { method: "POST", body: JSON.stringify({ findingId, action, metricBefore, metricAfter }) }),
+    trendAnalysis: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/trend-analysis`),
+    compare: (campaignIdA: string, campaignIdB: string) => request<any>(`/campaign-performance-diagnostics/compare/${campaignIdA}/${campaignIdB}`),
+    severityBreakdown: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/severity-breakdown`),
+    fixRecommendation: (findingId: string) => request<any>(`/campaign-performance-diagnostics/fix-recommendation/${findingId}`),
+    timeline: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/timeline`),
+    export: (campaignId: string) => request<any>(`/campaign-performance-diagnostics/campaign/${campaignId}/export`),
   },
 
   campaignDaypartingOptimizer: {
