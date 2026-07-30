@@ -1861,6 +1861,30 @@ export class AdsMarketingModuleService {
     return campaignCrossDeviceAnalyzer.analyzeDeviceTrends(campaignId, tenantId);
   }
 
+  crossDeviceGraphAnalysis(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.deviceGraphAnalysis(campaignId, tenantId);
+  }
+
+  crossDeviceAttributionModeling(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.crossDeviceAttributionModeling(campaignId, tenantId);
+  }
+
+  deviceAffinityScoring(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.deviceAffinityScoring(campaignId, tenantId);
+  }
+
+  crossDeviceJourneySequencing(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.deviceJourneySequencing(campaignId, tenantId);
+  }
+
+  crossDevicePerformanceForecast(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.devicePerformanceForecast(campaignId, tenantId);
+  }
+
+  crossDeviceOptimizationSimulator(campaignId: string, tenantId: string) {
+    return campaignCrossDeviceAnalyzer.deviceOptimizationSimulator(campaignId, tenantId);
+  }
+
   geoPerformance(campaignId: string, tenantId: string) {
     return campaignGeoPerformanceAnalyzer.analyzeGeoPerformance(campaignId, tenantId);
   }

@@ -38,4 +38,34 @@ router.get("/campaign/:campaignId/trends", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/device-graph", asyncHandler(async (req, res) => {
+  const result = campaignCrossDeviceAnalyzer.deviceGraphAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/attribution-modeling", asyncHandler(async (req, res) => {
+  const result = campaignCrossDeviceAnalyzer.crossDeviceAttributionModeling(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/affinity-scoring", asyncHandler(async (req, res) => {
+  const result = campaignCrossDeviceAnalyzer.deviceAffinityScoring(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/journey-sequencing", asyncHandler(async (req, res) => {
+  const result = campaignCrossDeviceAnalyzer.deviceJourneySequencing(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
+router.get("/campaign/:campaignId/performance-forecast", asyncHandler(async (req, res) => {
+  const result = campaignCrossDeviceAnalyzer.devicePerformanceForecast(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/optimization-simulator", asyncHandler(async (req, res) => {
+  const result = campaignCrossDeviceAnalyzer.deviceOptimizationSimulator(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result || { error: "Campaign not found" });
+}));
+
 export default router;

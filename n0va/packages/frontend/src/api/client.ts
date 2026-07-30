@@ -2389,6 +2389,12 @@ export const api = {
     bidAdjustments: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/bid-adjustments`),
     audienceOverlap: () => request<any>("/campaign-cross-device-analyzer/audience-overlap"),
     deviceTrends: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/trends`),
+    deviceGraph: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/device-graph`),
+    attributionModeling: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/attribution-modeling`),
+    affinityScoring: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/affinity-scoring`),
+    journeySequencing: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/journey-sequencing`),
+    performanceForecast: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/performance-forecast`),
+    optimizationSimulator: (campaignId: string) => request<any>(`/campaign-cross-device-analyzer/campaign/${campaignId}/optimization-simulator`),
   },
 
   campaignGeoPerformanceAnalyzer: {
