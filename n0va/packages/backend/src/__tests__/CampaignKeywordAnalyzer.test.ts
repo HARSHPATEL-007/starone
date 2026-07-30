@@ -87,4 +87,88 @@ describe("CampaignKeywordAnalyzerService", () => {
     expect(a1.totalImpressions).toBe(a2.totalImpressions);
     expect(a1.averageROAS).toBe(a2.averageROAS);
   });
+
+  it("returns keyword performance forecast with projections", () => {
+    const fc = campaignKeywordAnalyzer.keywordPerformanceForecast(campaignId, tenantId);
+    expect(fc.campaignId).toBe(campaignId);
+    expect(fc.currentMetrics).toHaveProperty("impressions");
+    expect(fc.currentMetrics).toHaveProperty("roas");
+    expect(Array.isArray(fc.forecast)).toBe(true);
+    expect(fc.forecast.length).toBe(6);
+    for (const f of fc.forecast) {
+      expect(f).toHaveProperty("period");
+      expect(f).toHaveProperty("roas");
+      expect(f).toHaveProperty("avgPosition");
+    }
+    expect(["improving", "declining", "stable"]).toContain(fc.overallTrend);
+    expect(fc.confidence).toBeGreaterThan(0);
+  });
+
+  it("returns competitive analysis for top keywords", () => {
+    const comp = campaignKeywordAnalyzer.keywordCompetitiveAnalysis(campaignId, tenantId);
+    expect(Array.isArray(comp)).toBe(true);
+    expect(comp.length).toBeGreaterThan(0);
+    for (const c of comp) {
+      expect(c).toHaveProperty("keyword");
+      expect(c).toHaveProperty("competitorCount");
+      expect(c).toHaveProperty("winRate");
+      expect(c).toHaveProperty("impressionShare");
+      expect(["low", "medium", "high"]).toContain(c.competitivePressure);
+    }
+  });
+
+  it("returns match type distribution analysis", () => {
+    const mt = campaignKeywordAnalyzer.keywordMatchTypeAnalysis(campaignId, tenantId);
+    expect(Array.isArray(mt)).toBe(true);
+    expect(mt.length).toBe(4);
+    for (const m of mt) {
+      expect(m).toHaveProperty("matchType");
+      expect(m).toHaveProperty("keywords");
+      expect(m).toHaveProperty("roas");
+      expect(m).toHaveProperty("recommendation");
+    }
+  });
+
+  it("returns seasonality analysis with monthly pattern", () => {
+    const seas = campaignKeywordAnalyzer.keywordSeasonalityAnalysis(campaignId, tenantId);
+    expect(seas.campaignId).toBe(campaignId);
+    expect(Array.isArray(seas.seasonalPattern)).toBe(true);
+    expect(seas.seasonalPattern.length).toBe(12);
+    for (const s of seas.seasonalPattern) {
+      expect(s).toHaveProperty("period");
+      expect(s).toHaveProperty("seasonalityIndex");
+      expect(s).toHaveProperty("predictedVolume");
+    }
+    expect(seas.peakPeriod).toBeTruthy();
+    expect(seas.troughPeriod).toBeTruthy();
+    expect(["high", "medium", "low"]).toContain(seas.overallVolatility);
+  });
+
+  it("returns semantic clustering by intent", () => {
+    const sem = campaignKeywordAnalyzer.keywordSemanticClustering(campaignId, tenantId);
+    expect(Array.isArray(sem)).toBe(true);
+    expect(sem.length).toBe(6);
+    for (const s of sem) {
+      expect(s).toHaveProperty("clusterName");
+      expect(s).toHaveProperty("intent");
+      expect(Array.isArray(s.keywords)).toBe(true);
+      expect(s).toHaveProperty("totalVolume");
+      expect(s).toHaveProperty("conversionRate");
+      expect(s).toHaveProperty("effectiveness");
+    }
+  });
+
+  it("returns ROI attribution across keyword groups", () => {
+    const attr = campaignKeywordAnalyzer.keywordROIAttribution(campaignId, tenantId);
+    expect(Array.isArray(attr)).toBe(true);
+    expect(attr.length).toBe(4);
+    for (const a of attr) {
+      expect(a).toHaveProperty("groupName");
+      expect(a).toHaveProperty("totalCost");
+      expect(a).toHaveProperty("totalRevenue");
+      expect(a).toHaveProperty("roas");
+      expect(a).toHaveProperty("assistedConversions");
+      expect(a).toHaveProperty("attribution");
+    }
+  });
 });

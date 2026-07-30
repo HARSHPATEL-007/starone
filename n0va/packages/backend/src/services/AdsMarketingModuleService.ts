@@ -2198,6 +2198,30 @@ export class AdsMarketingModuleService {
     return campaignKeywordAnalyzer.analyzeSearchTermOverlap(campaignId, tenantIdA, tenantIdB);
   }
 
+  keywordPerformanceForecast(campaignId: string, tenantId: string) {
+    return campaignKeywordAnalyzer.keywordPerformanceForecast(campaignId, tenantId);
+  }
+
+  keywordCompetitiveAnalysis(campaignId: string, tenantId: string) {
+    return campaignKeywordAnalyzer.keywordCompetitiveAnalysis(campaignId, tenantId);
+  }
+
+  keywordMatchTypeAnalysis(campaignId: string, tenantId: string) {
+    return campaignKeywordAnalyzer.keywordMatchTypeAnalysis(campaignId, tenantId);
+  }
+
+  keywordSeasonalityAnalysis(campaignId: string, tenantId: string) {
+    return campaignKeywordAnalyzer.keywordSeasonalityAnalysis(campaignId, tenantId);
+  }
+
+  keywordSemanticClustering(campaignId: string, tenantId: string) {
+    return campaignKeywordAnalyzer.keywordSemanticClustering(campaignId, tenantId);
+  }
+
+  keywordROIAttribution(campaignId: string, tenantId: string) {
+    return campaignKeywordAnalyzer.keywordROIAttribution(campaignId, tenantId);
+  }
+
   creativePerformance(campaignId: string, tenantId: string) {
     return campaignCreativeOptimizer.analyzeCreativePerformance(campaignId, tenantId);
   }

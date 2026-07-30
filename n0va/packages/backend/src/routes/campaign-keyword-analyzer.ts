@@ -39,4 +39,34 @@ router.post("/search-term-overlap", asyncHandler(async (req, res) => {
   sendSuccess(res, result);
 }));
 
+router.get("/campaign/:campaignId/performance-forecast", asyncHandler(async (req, res) => {
+  const result = campaignKeywordAnalyzer.keywordPerformanceForecast(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/competitive-analysis", asyncHandler(async (req, res) => {
+  const result = campaignKeywordAnalyzer.keywordCompetitiveAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/match-type-analysis", asyncHandler(async (req, res) => {
+  const result = campaignKeywordAnalyzer.keywordMatchTypeAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/seasonality-analysis", asyncHandler(async (req, res) => {
+  const result = campaignKeywordAnalyzer.keywordSeasonalityAnalysis(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/semantic-clustering", asyncHandler(async (req, res) => {
+  const result = campaignKeywordAnalyzer.keywordSemanticClustering(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
+router.get("/campaign/:campaignId/roi-attribution", asyncHandler(async (req, res) => {
+  const result = campaignKeywordAnalyzer.keywordROIAttribution(req.params.campaignId, req.user!.tenantId);
+  sendSuccess(res, result);
+}));
+
 export default router;

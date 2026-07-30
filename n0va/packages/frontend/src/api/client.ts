@@ -2496,6 +2496,12 @@ export const api = {
     trends: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/trends`),
     searchTermOverlap: (campaignId: string, tenantIdA?: string, tenantIdB?: string) =>
       request<any>("/campaign-keyword-analyzer/search-term-overlap", { method: "POST", body: JSON.stringify({ campaignId, tenantIdA, tenantIdB }) }),
+    performanceForecast: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/performance-forecast`),
+    competitiveAnalysis: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/competitive-analysis`),
+    matchTypeAnalysis: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/match-type-analysis`),
+    seasonalityAnalysis: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/seasonality-analysis`),
+    semanticClustering: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/semantic-clustering`),
+    roiAttribution: (campaignId: string) => request<any>(`/campaign-keyword-analyzer/campaign/${campaignId}/roi-attribution`),
   },
 
   campaignCreativeOptimizer: {

@@ -83,6 +83,86 @@ const KEYWORD_POOL = [
   "customer lifetime value", "attribution modeling", "seasonal promotion", "geo-targeting",
 ];
 
+interface KeywordForecastPoint {
+  period: string;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  cost: number;
+  revenue: number;
+  roas: number;
+  avgPosition: number;
+}
+
+interface KeywordPerformanceForecast {
+  campaignId: string;
+  currentMetrics: { impressions: number; clicks: number; conversions: number; cost: number; revenue: number; roas: number };
+  forecast: KeywordForecastPoint[];
+  overallTrend: "improving" | "declining" | "stable";
+  confidence: number;
+}
+
+interface CompetitiveKeywordMetric {
+  keyword: string;
+  yourBid: number;
+  estCompetitorBid: number;
+  competitorCount: number;
+  winRate: number;
+  impressionShare: number;
+  competitivePressure: "low" | "medium" | "high";
+  strategy: string;
+}
+
+interface MatchTypeDistribution {
+  matchType: string;
+  keywords: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  cost: number;
+  revenue: number;
+  roas: number;
+  recommendation: string;
+}
+
+interface SeasonalPeriod {
+  period: string;
+  seasonalityIndex: number;
+  predictedVolume: number;
+  recommendedAction: string;
+}
+
+interface SeasonalityAnalysis {
+  campaignId: string;
+  seasonalPattern: SeasonalPeriod[];
+  peakPeriod: string;
+  troughPeriod: string;
+  overallVolatility: "high" | "medium" | "low";
+  recommendation: string;
+}
+
+interface SemanticCluster {
+  clusterName: string;
+  intent: "informational" | "navigational" | "commercial" | "transactional";
+  keywords: string[];
+  totalVolume: number;
+  totalConversions: number;
+  conversionRate: number;
+  totalRevenue: number;
+  effectiveness: string;
+}
+
+interface ROIAttributionGroup {
+  groupName: string;
+  keywords: number;
+  totalCost: number;
+  totalRevenue: number;
+  roas: number;
+  assistedConversions: number;
+  assistedRevenue: number;
+  attribution: string;
+}
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -247,6 +327,168 @@ export class CampaignKeywordAnalyzerService {
                       overlapRate > 25 ? `Moderate overlap — review shared keywords for differentiated bidding strategies` :
                       `Low overlap — tenants target distinct keyword sets; maintain separate strategies`,
     };
+  }
+
+  keywordPerformanceForecast(campaignId: string, tenantId: string): KeywordPerformanceForecast {
+    const analysis = this.analyzeKeywords(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "forecast");
+    const currentMetrics = {
+      impressions: analysis.totalImpressions, clicks: analysis.totalClicks,
+      conversions: analysis.totalConversions, cost: analysis.totalCost,
+      revenue: analysis.totalRevenue, roas: analysis.averageROAS,
+    };
+    const trendVal = (seed * 13) % 3;
+    const overallTrend: "improving" | "declining" | "stable" = trendVal === 0 ? "improving" : trendVal === 1 ? "declining" : "stable";
+    const periods = ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"];
+    let runningImps = analysis.totalImpressions; let runningClks = analysis.totalClicks;
+    let runningConvs = analysis.totalConversions; let runningCost = analysis.totalCost;
+    let runningRev = analysis.totalRevenue;
+    const forecast = periods.map((period, i) => {
+      const fSeed = seed + i * 19;
+      const factor = overallTrend === "improving" ? (1 + 0.04 + (fSeed % 5) / 100 * (i + 1)) :
+                     overallTrend === "declining" ? (1 - 0.03 - (fSeed % 4) / 100 * (i + 1)) :
+                     (1 + ((fSeed % 10) - 5) / 100);
+      runningImps = Math.round(runningImps * factor);
+      runningClks = Math.round(runningClks * factor);
+      runningConvs = Math.round(runningConvs * factor);
+      runningCost = Math.round(runningCost * (1 + ((fSeed * 7) % 5 - 2) / 100));
+      runningRev = Math.round(runningRev * factor);
+      return {
+        period, impressions: runningImps, clicks: runningClks, conversions: runningConvs,
+        cost: runningCost, revenue: runningRev,
+        roas: runningCost > 0 ? Math.round((runningRev / runningCost) * 100) / 100 : 0,
+        avgPosition: Math.max(1, 3 + ((fSeed * 11) % 5 - 2)),
+      };
+    });
+    const confidence = Math.round((65 + (seed % 25)) * 100) / 100;
+    return { campaignId, currentMetrics, forecast, overallTrend, confidence };
+  }
+
+  keywordCompetitiveAnalysis(campaignId: string, tenantId: string): CompetitiveKeywordMetric[] {
+    const analysis = this.analyzeKeywords(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "comp");
+    return analysis.keywords.slice(0, 8).map((kw, i) => {
+      const cSeed = seed + i * 37;
+      const compCount = 3 + (cSeed % 12);
+      const winRate = Math.round((30 + (cSeed % 50)) * 100) / 100;
+      const impShare = Math.round((20 + (cSeed % 60)) * 100) / 100;
+      const pressure: "low" | "medium" | "high" = compCount > 10 ? "high" : compCount > 6 ? "medium" : "low";
+      const strategy = pressure === "high" ? `High competition (${compCount} competitors) — focus on long-tail variations and negative keywords` :
+                       pressure === "medium" ? `Moderate competition — differentiate with ad copy and landing page relevance` :
+                       `Low competition — capture share with aggressive bidding and broad match`;
+      return {
+        keyword: kw.keyword, yourBid: kw.cpc,
+        estCompetitorBid: Math.round((kw.cpc * (0.9 + (cSeed % 30) / 100)) * 100) / 100,
+        competitorCount: compCount, winRate, impressionShare: impShare,
+        competitivePressure: pressure, strategy,
+      };
+    });
+  }
+
+  keywordMatchTypeAnalysis(campaignId: string, tenantId: string): MatchTypeDistribution[] {
+    const analysis = this.analyzeKeywords(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "match");
+    const matchTypes = ["Exact Match", "Phrase Match", "Broad Match", "Broad Match Modifier"];
+    return matchTypes.map((mt, i) => {
+      const mSeed = seed + i * 23;
+      const share = [0.35, 0.30, 0.20, 0.15][i];
+      const roasMul = [1.3, 1.1, 0.7, 0.9][i];
+      const count = Math.max(1, Math.round(analysis.keywords.length * share * (0.7 + (mSeed % 50) / 100)));
+      const imps = Math.round(analysis.totalImpressions * share * (0.8 + (mSeed % 40) / 100));
+      const clks = Math.round(imps * analysis.averageCTR / 100 * (1 + (mSeed % 20 - 10) / 100));
+      const convs = Math.round(clks * analysis.averageCVR / 100);
+      const cost = Math.round(clks * analysis.averageCPC);
+      const rev = Math.round(convs * (analysis.totalRevenue / Math.max(analysis.totalConversions, 1)) * roasMul);
+      return {
+        matchType: mt, keywords: count, impressions: imps, clicks: clks, conversions: convs,
+        cost, revenue: rev, roas: cost > 0 ? Math.round((rev / cost) * 100) / 100 : 0,
+        recommendation: i === 0 ? "Exact match drives highest ROAS — expand exact match coverage for top converters" :
+                        i === 1 ? "Phrase match balances reach and relevance — maintain current bid strategy" :
+                        i === 2 ? "Broad match has lowest ROAS — add more negative keywords and monitor search terms" :
+                        "Broad match modifier offers good middle ground — test expanding BMM coverage",
+      };
+    });
+  }
+
+  keywordSeasonalityAnalysis(campaignId: string, tenantId: string): SeasonalityAnalysis {
+    const seed = hashStr(campaignId + tenantId + "seas");
+    const periods: SeasonalPeriod[] = [
+      { period: "January", baseIdx: 0.8 }, { period: "February", baseIdx: 0.7 }, { period: "March", baseIdx: 0.9 },
+      { period: "April", baseIdx: 1.0 }, { period: "May", baseIdx: 1.1 }, { period: "June", baseIdx: 1.2 },
+      { period: "July", baseIdx: 1.0 }, { period: "August", baseIdx: 1.1 }, { period: "September", baseIdx: 1.3 },
+      { period: "October", baseIdx: 1.2 }, { period: "November", baseIdx: 1.5 }, { period: "December", baseIdx: 1.4 },
+    ].map((p, i) => {
+      const pSeed = seed + i * 13;
+      const idx = Math.round((p.baseIdx + ((pSeed % 20) - 10) / 100) * 100) / 100;
+      return {
+        period: p.period, seasonalityIndex: idx,
+        predictedVolume: 1000 + Math.round(idx * 5000 + (pSeed % 2000)),
+        recommendedAction: idx > 1.2 ? `Peak season — increase keyword bids by ${Math.round((idx - 1) * 100)}%, expand match types` :
+                           idx < 0.8 ? `Low season — reduce bids by ${Math.round((1 - idx) * 100)}%, focus on efficiency` :
+                           `Steady period — maintain current strategy with minor optimization`,
+      };
+    });
+    const peak = periods.reduce((best, p) => p.seasonalityIndex > best.seasonalityIndex ? p : best, periods[0]);
+    const trough = periods.reduce((worst, p) => p.seasonalityIndex < worst.seasonalityIndex ? p : worst, periods[0]);
+    const values = periods.map(p => p.seasonalityIndex);
+    const variance = values.reduce((s, v) => s + Math.pow(v - 1, 2), 0) / values.length;
+    const volatility: "high" | "medium" | "low" = variance > 0.05 ? "high" : variance > 0.02 ? "medium" : "low";
+    return { campaignId, seasonalPattern: periods, peakPeriod: peak.period, troughPeriod: trough.period, overallVolatility: volatility, recommendation: volatility === "high" ? `High seasonality detected — peak in ${peak.period}, trough in ${trough.period}. Implement seasonal bid adjustments.` : `Moderate seasonality — plan budget around ${peak.period} peak and ${trough.period} low.` };
+  }
+
+  keywordSemanticClustering(campaignId: string, tenantId: string): SemanticCluster[] {
+    const analysis = this.analyzeKeywords(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "sem");
+    const clusters: SemanticCluster[] = [
+      { name: "Brand & Awareness", intent: "informational" as const, count: 3 },
+      { name: "Product Research", intent: "commercial" as const, count: 4 },
+      { name: "Purchase Intent", intent: "transactional" as const, count: 3 },
+      { name: "Comparison & Evaluation", intent: "commercial" as const, count: 3 },
+      { name: "Problem & Solution", intent: "informational" as const, count: 3 },
+      { name: "Loyalty & Retention", intent: "navigational" as const, count: 2 },
+    ];
+    let kwIdx = 0;
+    return clusters.map((c, i) => {
+      const cSeed = seed + i * 29;
+      const groupKws = analysis.keywords.slice(kwIdx, kwIdx + c.count);
+      kwIdx += c.count;
+      const totalVol = groupKws.reduce((s, kw) => s + kw.impressions, 0);
+      const totalConvs = groupKws.reduce((s, kw) => s + kw.conversions, 0);
+      const totalRev = groupKws.reduce((s, kw) => s + kw.revenue, 0);
+      const cvr = groupKws.length > 0 ? Math.round((totalConvs / Math.max(groupKws.reduce((s, kw) => s + kw.clicks, 0), 1)) * 10000) / 100 : 0;
+      const eff = c.intent === "transactional" ? `High purchase intent — ${cvr}% CVR, $${totalRev} revenue` :
+                  c.intent === "commercial" ? `Research phase — nurture with detailed content, ${cvr}% CVR` :
+                  `Awareness stage — focus on reach and engagement, low immediate conversion`;
+      return { clusterName: c.name, intent: c.intent, keywords: groupKws.map(k => k.keyword), totalVolume: totalVol, totalConversions: totalConvs, conversionRate: cvr, totalRevenue: totalRev, effectiveness: eff };
+    });
+  }
+
+  keywordROIAttribution(campaignId: string, tenantId: string): ROIAttributionGroup[] {
+    const analysis = this.analyzeKeywords(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "roiattr");
+    const groups = [
+      { name: "Direct Conversion Keywords", share: 0.40, assistShare: 0.10 },
+      { name: "Assisted Conversion Keywords", share: 0.25, assistShare: 0.35 },
+      { name: "Brand Keywords", share: 0.20, assistShare: 0.05 },
+      { name: "Discovery Keywords", share: 0.15, assistShare: 0.50 },
+    ];
+    let kwIdx = 0;
+    return groups.map((g, i) => {
+      const gSeed = seed + i * 41;
+      const count = Math.max(2, Math.round(analysis.keywords.length * g.share * (0.8 + (gSeed % 40) / 100)));
+      const groupKws = analysis.keywords.slice(kwIdx, kwIdx + count);
+      kwIdx += count;
+      const totalCost = groupKws.reduce((s, kw) => s + kw.cost, 0);
+      const totalRev = groupKws.reduce((s, kw) => s + kw.revenue, 0);
+      const roas = totalCost > 0 ? Math.round((totalRev / totalCost) * 100) / 100 : 0;
+      const assistedConvs = Math.round(groupKws.reduce((s, kw) => s + kw.conversions, 0) * g.assistShare);
+      const assistedRev = Math.round(totalRev * g.assistShare);
+      const attr = g.name.includes("Direct") ? `Last-click: ${roas}x ROAS, assists add ${Math.round(g.assistShare * 100)}% more value` :
+                   g.name.includes("Assisted") ? `Assist-heavy: ${roas}x direct ROAS, assisted conversions add ${Math.round(g.assistShare * 100)}% incremental revenue` :
+                   g.name.includes("Brand") ? `Brand defense: ${roas}x ROAS — critical for protecting branded search share` :
+                   `Top-of-funnel: ${roas}x ROAS directly, but enables ${Math.round(g.assistShare * 100)}% of conversions across other groups`;
+      return { groupName: g.name, keywords: groupKws.length, totalCost, totalRevenue: totalRev, roas, assistedConversions: assistedConvs, assistedRevenue: assistedRev, attribution: attr };
+    });
   }
 }
 
