@@ -31,6 +31,7 @@ import { campaignAttributionModeling } from "./CampaignAttributionModelingServic
 import { campaignAIBiddingAgent } from "./CampaignAIBiddingAgentService";
 import { campaignScorecardService } from "./CampaignScorecardService";
 import { campaignSnapshotService } from "./CampaignSnapshotService";
+import { campaignSimulationService } from "./CampaignSimulationService";
 import { DataStore } from "./DataStore";
 
 const campaignSummaryService = new CampaignSummaryService();
@@ -2690,6 +2691,46 @@ export class AdsMarketingModuleService {
 
   snapshotExport(tenantId: string, snapshotId: string) {
     return campaignSnapshotService.snapshotExport(tenantId, snapshotId);
+  }
+
+  simulationRun(channels: any[], scenario: any, trials?: number, seed?: number) {
+    return campaignSimulationService.runSimulation(channels, scenario, trials, seed);
+  }
+
+  simulationMultiScenario(channels: any[], scenarios: any[], trials?: number) {
+    return campaignSimulationService.runMultiScenario(channels, scenarios, trials);
+  }
+
+  simulationSensitivity(channel: any, seed?: number) {
+    return campaignSimulationService.sensitivityAnalysis(channel, seed);
+  }
+
+  simulationBudgetOptimization(channels: any[], totalBudget: number, seed?: number) {
+    return campaignSimulationService.budgetOptimization(channels, totalBudget, seed);
+  }
+
+  simulationRiskAssessment(channels: any[], scenarios: any[], seed?: number) {
+    return campaignSimulationService.riskAssessment(channels, scenarios, seed);
+  }
+
+  simulationChannelEfficiency(channel: any, seed?: number) {
+    return campaignSimulationService.channelEfficiency(channel, seed);
+  }
+
+  simulationMonteCarloForecast(channel: any, budget: number, trials?: number, seed?: number) {
+    return campaignSimulationService.monteCarloForecast(channel, budget, trials, seed);
+  }
+
+  simulationBudgetElasticity(channel: any, seed?: number) {
+    return campaignSimulationService.budgetElasticity(channel, seed);
+  }
+
+  simulationOptimalChannelMix(channels: any[], totalBudget: number, targetROAS: number, seed?: number) {
+    return campaignSimulationService.optimalChannelMix(channels, totalBudget, targetROAS, seed);
+  }
+
+  simulationSummary(channels: any[], scenarios: any[], seed?: number) {
+    return campaignSimulationService.simulationSummary(channels, scenarios, seed);
   }
 }
 

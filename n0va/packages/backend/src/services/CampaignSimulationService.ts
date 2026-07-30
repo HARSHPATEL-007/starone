@@ -1,3 +1,9 @@
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+
 export interface ChannelConfig {
   name: string;
   baseSpend: number;
@@ -45,6 +51,139 @@ export interface SimulationResult {
     uplift: number;
     upliftProbability: number;
   };
+}
+
+export interface SensitivityPoint {
+  budgetChangePercent: number;
+  meanROAS: number;
+  meanRevenue: number;
+  probabilityPositive: number;
+}
+
+export interface SensitivityAnalysisResult {
+  channel: string;
+  baseSpend: number;
+  baseROAS: number;
+  points: SensitivityPoint[];
+  optimalChange: number;
+  elasticity: number;
+}
+
+export interface BudgetOptimizationAllocation {
+  channel: string;
+  currentBudget: number;
+  recommendedBudget: number;
+  budgetDelta: number;
+  projectedROAS: number;
+  projectedRevenue: number;
+  marginalBenefit: number;
+}
+
+export interface BudgetOptimizationResult {
+  allocations: BudgetOptimizationAllocation[];
+  totalCurrentBudget: number;
+  totalRecommendedBudget: number;
+  projectedTotalRevenue: number;
+  projectedTotalROAS: number;
+  improvementOverCurrent: number;
+}
+
+export interface RiskAssessmentDetail {
+  scenario: string;
+  probabilityOfLoss: number;
+  expectedShortfall: number;
+  valueAtRisk95: number;
+  worstCaseRevenue: number;
+  bestCaseRevenue: number;
+  revenueStdDev: number;
+  riskScore: "low" | "medium" | "high" | "extreme";
+}
+
+export interface MultiScenarioRiskResult {
+  assessments: RiskAssessmentDetail[];
+  safestScenario: string;
+  riskiestScenario: string;
+}
+
+export interface ChannelEfficiencyPoint {
+  spend: number;
+  marginalROAS: number;
+  cumulativeROAS: number;
+  saturationLevel: number;
+}
+
+export interface ChannelEfficiencyResult {
+  channel: string;
+  baseSpend: number;
+  currentMarginalROAS: number;
+  saturationPoint: number;
+  efficiencyCurve: ChannelEfficiencyPoint[];
+  recommendation: string;
+}
+
+export interface ForecastTrial {
+  trial: number;
+  revenue: number;
+  roas: number;
+}
+
+export interface MonteCarloForecastResult {
+  channel: string;
+  currentSpend: number;
+  meanForecastRevenue: number;
+  medianForecastRevenue: number;
+  stdDevRevenue: number;
+  confidenceInterval90: { lower: number; upper: number };
+  confidenceInterval95: { lower: number; upper: number };
+  probabilityAboveTarget: number;
+}
+
+export interface ElasticityPoint {
+  budgetMultiplier: number;
+  revenueMultiplier: number;
+  elasticity: number;
+}
+
+export interface BudgetElasticityResult {
+  channel: string;
+  baseSpend: number;
+  elasticityPoints: ElasticityPoint[];
+  avgElasticity: number;
+  interpretation: string;
+}
+
+export interface OptimalMixAllocation {
+  channel: string;
+  budget: number;
+  share: number;
+  projectedRevenue: number;
+  projectedROAS: number;
+}
+
+export interface OptimalChannelMixResult {
+  targetROAS: number;
+  totalBudget: number;
+  allocations: OptimalMixAllocation[];
+  projectedTotalRevenue: number;
+  projectedOverallROAS: number;
+  confidenceLevel: "low" | "medium" | "high";
+}
+
+export interface ScenarioSummaryEntry {
+  name: string;
+  description: string;
+  meanROAS: number;
+  meanRevenue: number;
+  probabilityPositive: number;
+  riskLevel: "low" | "medium" | "high";
+  valueAtRisk: number;
+}
+
+export interface SimulationSummaryResult {
+  scenarios: ScenarioSummaryEntry[];
+  bestScenario: string;
+  worstScenario: string;
+  recommendation: string;
 }
 
 export class CampaignSimulationService {
@@ -208,6 +347,234 @@ export class CampaignSimulationService {
         budgetChanges: { google_ads: -10, meta_ads: -5, linkedin_ads: -20, tiktok_ads: 80, amazon_ads: 0 },
       },
     ];
+  }
+
+  sensitivityAnalysis(channel: ChannelConfig, seed: number = 42): SensitivityAnalysisResult {
+    const rng = this.mulberry32(seed);
+    const changePcts = [-50, -30, -20, -10, 0, 10, 20, 30, 50, 75, 100];
+    const points: SensitivityPoint[] = [];
+    for (const pct of changePcts) {
+      let totalROAS = 0, totalRev = 0, posCount = 0;
+      const trials = 500;
+      for (let t = 0; t < trials; t++) {
+        const newSpend = Math.min(channel.baseSpend * (1 + pct / 100), channel.maxSpend);
+        const ns = newSpend / channel.saturationHalf;
+        const sat = ns / (1 + ns);
+        const noise = (rng() - 0.5) * 2 * channel.roasVolatility;
+        const effROAS = channel.baseROAS * (1 - sat * 0.5) * (1 + noise);
+        const rev = newSpend * Math.max(0, effROAS);
+        totalROAS += newSpend > 0 ? rev / newSpend : 0;
+        totalRev += rev;
+        if (rev > newSpend) posCount++;
+      }
+      points.push({ budgetChangePercent: pct, meanROAS: Math.round((totalROAS / trials) * 100) / 100, meanRevenue: Math.round((totalRev / trials) * 100) / 100, probabilityPositive: Math.round((posCount / trials) * 10000) / 100 });
+    }
+    const best = [...points].sort((a, b) => b.meanROAS - a.meanROAS)[0];
+    const mid = points[Math.floor(points.length / 2)];
+    const first = points[0];
+    const elas = mid.meanROAS > 0 && first.meanROAS > 0 ? Math.abs((mid.meanROAS - first.meanROAS) / first.meanROAS) / Math.abs((mid.budgetChangePercent - first.budgetChangePercent) / Math.max(1, first.budgetChangePercent)) : 0;
+    return { channel: channel.name, baseSpend: channel.baseSpend, baseROAS: channel.baseROAS, points, optimalChange: best.budgetChangePercent, elasticity: Math.round(elas * 100) / 100 };
+  }
+
+  budgetOptimization(channels: ChannelConfig[], totalBudget: number, seed: number = 42): BudgetOptimizationResult {
+    const rng = this.mulberry32(seed);
+    const totalBase = channels.reduce((s, c) => s + c.baseSpend, 0);
+    const factor = totalBudget / totalBase;
+    const allocations: BudgetOptimizationAllocation[] = [];
+    let totalRec = 0, totalProjRev = 0, totalCurRev = 0;
+    for (const ch of channels) {
+      const curBudget = ch.baseSpend;
+      const recBudget = Math.min(ch.baseSpend * factor, ch.maxSpend);
+      const ns = recBudget / ch.saturationHalf;
+      const sat = ns / (1 + ns);
+      let avgROAS = 0, avgRev = 0;
+      for (let t = 0; t < 200; t++) {
+        const noise = (rng() - 0.5) * 2 * ch.roasVolatility;
+        const effROAS = ch.baseROAS * (1 - sat * 0.5) * (1 + noise);
+        const rev = recBudget * Math.max(0, effROAS);
+        avgROAS += recBudget > 0 ? rev / recBudget : 0;
+        avgRev += rev;
+      }
+      avgROAS /= 200;
+      avgRev /= 200;
+      const curNs = curBudget / ch.saturationHalf;
+      const curSat = curNs / (1 + curNs);
+      const curEffROAS = ch.baseROAS * (1 - curSat * 0.5);
+      const curRev = curBudget * curEffROAS;
+      totalCurRev += curRev;
+      totalRec += recBudget;
+      totalProjRev += avgRev;
+      allocations.push({
+        channel: ch.name, currentBudget: curBudget, recommendedBudget: Math.round(recBudget * 100) / 100,
+        budgetDelta: Math.round((recBudget - curBudget) * 100) / 100,
+        projectedROAS: Math.round(avgROAS * 100) / 100, projectedRevenue: Math.round(avgRev * 100) / 100,
+        marginalBenefit: Math.round(((avgRev - curRev) / Math.max(1, recBudget - curBudget)) * 100) / 100,
+      });
+    }
+    const projTotalROAS = totalRec > 0 ? totalProjRev / totalRec : 0;
+    const curTotalROAS = totalBase > 0 ? totalCurRev / totalBase : 0;
+    const improv = curTotalROAS > 0 ? ((projTotalROAS - curTotalROAS) / curTotalROAS) * 100 : 0;
+    return { allocations, totalCurrentBudget: totalBase, totalRecommendedBudget: Math.round(totalRec * 100) / 100, projectedTotalRevenue: Math.round(totalProjRev * 100) / 100, projectedTotalROAS: Math.round(projTotalROAS * 100) / 100, improvementOverCurrent: Math.round(improv * 100) / 100 };
+  }
+
+  riskAssessment(channels: ChannelConfig[], scenarios: SimulationScenario[], seed: number = 42): MultiScenarioRiskResult {
+    const assessments: RiskAssessmentDetail[] = [];
+    for (const sc of scenarios) {
+      const result = this.runSimulation(channels, sc, 2000, seed + hashStr(sc.name));
+      const sorted = result.trials.map(t => t.totalRevenue).sort((a, b) => a - b);
+      const lossCount = result.trials.filter(t => t.totalRevenue < t.totalSpend).length;
+      const probLoss = (lossCount / result.trials.length) * 100;
+      const varIdx = Math.floor(result.trials.length * 0.05);
+      const esIdx = Math.floor(result.trials.length * 0.05);
+      const riskScore: "low" | "medium" | "high" | "extreme" = probLoss < 10 ? "low" : probLoss < 25 ? "medium" : probLoss < 50 ? "high" : "extreme";
+      assessments.push({
+        scenario: sc.name, probabilityOfLoss: Math.round(probLoss * 100) / 100,
+        expectedShortfall: Math.round(sorted.slice(0, esIdx).reduce((s, v) => s + v, 0) / Math.max(1, esIdx) * 100) / 100,
+        valueAtRisk95: Math.round(sorted[varIdx] * 100) / 100,
+        worstCaseRevenue: Math.round(sorted[0] * 100) / 100, bestCaseRevenue: Math.round(sorted[sorted.length - 1] * 100) / 100,
+        revenueStdDev: result.summary.stdRevenue, riskScore,
+      });
+    }
+    const sortedAsc = [...assessments].sort((a, b) => a.probabilityOfLoss - b.probabilityOfLoss);
+    const sortedDesc = [...assessments].sort((a, b) => b.probabilityOfLoss - a.probabilityOfLoss);
+    return { assessments, safestScenario: sortedAsc[0]?.scenario || "", riskiestScenario: sortedDesc[0]?.scenario || "" };
+  }
+
+  channelEfficiency(channel: ChannelConfig, seed: number = 42): ChannelEfficiencyResult {
+    const rng = this.mulberry32(seed);
+    const spendLevels = [];
+    const step = Math.max(100, channel.maxSpend / 20);
+    for (let s = step; s <= channel.maxSpend * 1.5; s += step) spendLevels.push(s);
+    if (!spendLevels.includes(channel.baseSpend)) spendLevels.push(channel.baseSpend);
+    spendLevels.sort((a, b) => a - b);
+    const curve: ChannelEfficiencyPoint[] = [];
+    for (const sp of spendLevels) {
+      const ns = sp / channel.saturationHalf;
+      const sat = ns / (1 + ns);
+      let avgROAS = 0;
+      for (let t = 0; t < 100; t++) {
+        const noise = (rng() - 0.5) * 2 * channel.roasVolatility;
+        const effROAS = channel.baseROAS * (1 - sat * 0.5) * (1 + noise);
+        avgROAS += effROAS;
+      }
+      avgROAS /= 100;
+      const cumROAS = channel.baseROAS * (1 - sat * 0.5);
+      curve.push({ spend: Math.round(sp * 100) / 100, marginalROAS: Math.round(avgROAS * 100) / 100, cumulativeROAS: Math.round(cumROAS * 100) / 100, saturationLevel: Math.round(sat * 100) });
+    }
+    const satPoint = curve.find(p => p.marginalROAS < 1) || curve[curve.length - 1];
+    const curPoint = curve.find(p => Math.abs(p.spend - channel.baseSpend) < step * 0.5) || curve[0];
+    return {
+      channel: channel.name, baseSpend: channel.baseSpend,
+      currentMarginalROAS: curPoint.marginalROAS,
+      saturationPoint: satPoint.spend, efficiencyCurve: curve,
+      recommendation: curPoint.marginalROAS < 1 ? `${channel.name} is past saturation point — reduce spend` : curPoint.marginalROAS < 2 ? `${channel.name} approaching saturation — monitor closely` : `${channel.name} has headroom — consider increasing spend`,
+    };
+  }
+
+  monteCarloForecast(channel: ChannelConfig, budget: number, trials: number = 5000, seed: number = 42): MonteCarloForecastResult {
+    const rng = this.mulberry32(seed + hashStr(channel.name));
+    const revenues: number[] = [];
+    const roasValues: number[] = [];
+    for (let t = 0; t < trials; t++) {
+      const ns = budget / channel.saturationHalf;
+      const sat = ns / (1 + ns);
+      const noise = (rng() - 0.5) * 2 * channel.roasVolatility;
+      const effROAS = channel.baseROAS * (1 - sat * 0.5) * (1 + noise);
+      const rev = budget * Math.max(0, effROAS);
+      revenues.push(rev);
+      roasValues.push(budget > 0 ? rev / budget : 0);
+    }
+    const sorted = [...revenues].sort((a, b) => a - b);
+    const mean = revenues.reduce((s, v) => s + v, 0) / trials;
+    const median = sorted[Math.floor(trials / 2)];
+    const std = Math.sqrt(revenues.reduce((s, v) => s + (v - mean) ** 2, 0) / trials);
+    const idx90 = Math.floor(trials * 0.05);
+    const idx95 = Math.floor(trials * 0.025);
+    const aboveTarget = roasValues.filter(r => r > 1).length;
+    return {
+      channel: channel.name, currentSpend: budget,
+      meanForecastRevenue: Math.round(mean * 100) / 100, medianForecastRevenue: Math.round(median * 100) / 100, stdDevRevenue: Math.round(std * 100) / 100,
+      confidenceInterval90: { lower: Math.round(sorted[idx90] * 100) / 100, upper: Math.round(sorted[trials - 1 - idx90] * 100) / 100 },
+      confidenceInterval95: { lower: Math.round(sorted[idx95] * 100) / 100, upper: Math.round(sorted[trials - 1 - idx95] * 100) / 100 },
+      probabilityAboveTarget: Math.round((aboveTarget / trials) * 10000) / 100,
+    };
+  }
+
+  budgetElasticity(channel: ChannelConfig, seed: number = 42): BudgetElasticityResult {
+    const rng = this.mulberry32(seed);
+    const mults = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+    const baseRev = channel.baseSpend * channel.baseROAS;
+    const points: ElasticityPoint[] = [];
+    for (const mult of mults) {
+      const budget = channel.baseSpend * mult;
+      const ns = budget / channel.saturationHalf;
+      const sat = ns / (1 + ns);
+      let avgRev = 0;
+      for (let t = 0; t < 200; t++) {
+        const noise = (rng() - 0.5) * 2 * channel.roasVolatility;
+        const effROAS = channel.baseROAS * (1 - sat * 0.5) * (1 + noise);
+        avgRev += budget * Math.max(0, effROAS);
+      }
+      avgRev /= 200;
+      const revMult = baseRev > 0 ? avgRev / baseRev : 0;
+      const elas = revMult > 0 ? Math.log(revMult) / Math.log(mult) : 0;
+      points.push({ budgetMultiplier: mult, revenueMultiplier: Math.round(revMult * 100) / 100, elasticity: Math.round(elas * 100) / 100 });
+    }
+    const avgElas = points.reduce((s, p) => s + p.elasticity, 0) / points.length;
+    return { channel: channel.name, baseSpend: channel.baseSpend, elasticityPoints: points, avgElasticity: Math.round(avgElas * 100) / 100, interpretation: avgElas > 1 ? "Revenue-elastic — budget increases yield proportionally higher revenue" : avgElas > 0.5 ? "Moderately elastic — some room for budget growth" : "Inelastic — diminishing returns, focus on efficiency" };
+  }
+
+  optimalChannelMix(channels: ChannelConfig[], totalBudget: number, targetROAS: number, seed: number = 42): OptimalChannelMixResult {
+    const rng = this.mulberry32(seed);
+    const weights = channels.map(() => 0.5 + rng() * 0.5);
+    const totalW = weights.reduce((s, w) => s + w, 0);
+    const normalized = weights.map(w => w / totalW);
+    const allocations: OptimalMixAllocation[] = [];
+    let totalProjRev = 0;
+    for (let i = 0; i < channels.length; i++) {
+      const ch = channels[i];
+      const budget = totalBudget * normalized[i];
+      const clamped = Math.min(budget, ch.maxSpend);
+      const ns = clamped / ch.saturationHalf;
+      const sat = ns / (1 + ns);
+      let avgROAS = 0, avgRev = 0;
+      for (let t = 0; t < 200; t++) {
+        const noise = (rng() - 0.5) * 2 * ch.roasVolatility;
+        const effROAS = ch.baseROAS * (1 - sat * 0.5) * (1 + noise);
+        const rev = clamped * Math.max(0, effROAS);
+        avgROAS += clamped > 0 ? rev / clamped : 0;
+        avgRev += rev;
+      }
+      avgROAS /= 200;
+      avgRev /= 200;
+      totalProjRev += avgRev;
+      allocations.push({ channel: ch.name, budget: Math.round(clamped * 100) / 100, share: Math.round(normalized[i] * 10000) / 100, projectedRevenue: Math.round(avgRev * 100) / 100, projectedROAS: Math.round(avgROAS * 100) / 100 });
+    }
+    const projROAS = totalBudget > 0 ? totalProjRev / totalBudget : 0;
+    const conf: "low" | "medium" | "high" = Math.abs(projROAS - targetROAS) / targetROAS < 0.1 ? "high" : Math.abs(projROAS - targetROAS) / targetROAS < 0.25 ? "medium" : "low";
+    return { targetROAS, totalBudget, allocations, projectedTotalRevenue: Math.round(totalProjRev * 100) / 100, projectedOverallROAS: Math.round(projROAS * 100) / 100, confidenceLevel: conf };
+  }
+
+  simulationSummary(channels: ChannelConfig[], scenarios: SimulationScenario[], seed: number = 42): SimulationSummaryResult {
+    const entries: ScenarioSummaryEntry[] = scenarios.map(sc => {
+      const result = this.runSimulation(channels, sc, 500, seed + hashStr(sc.name));
+      const sorted = result.trials.map(t => t.totalRevenue).sort((a, b) => a - b);
+      const var95 = sorted[Math.floor(sorted.length * 0.05)];
+      const riskLevel: "low" | "medium" | "high" = result.summary.probabilityPositiveROI > 80 ? "low" : result.summary.probabilityPositiveROI > 50 ? "medium" : "high";
+      return {
+        name: sc.name, description: sc.description, meanROAS: result.summary.meanROAS,
+        meanRevenue: result.summary.meanRevenue, probabilityPositive: result.summary.probabilityPositiveROI,
+        riskLevel, valueAtRisk: Math.round(var95 * 100) / 100,
+      };
+    });
+    const best = [...entries].sort((a, b) => b.meanROAS - a.meanROAS)[0];
+    const worst = [...entries].sort((a, b) => a.meanROAS - b.meanROAS)[0];
+    return {
+      scenarios: entries,
+      bestScenario: best?.name || "",
+      worstScenario: worst?.name || "",
+      recommendation: best ? `Recommended: "${best.name}" — highest mean ROAS (${best.meanROAS}x) with ${best.riskLevel} risk` : "No scenarios evaluated",
+    };
   }
 
   private mulberry32(a: number): () => number {

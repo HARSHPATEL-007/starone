@@ -1003,6 +1003,22 @@ export const api = {
       request<any>("/campaign-simulation/multi-scenario", { method: "POST", body: JSON.stringify({ channels, scenarios, trials }) }),
     sampleChannels: () => request<any>("/campaign-simulation/sample-channels"),
     sampleScenarios: () => request<any>("/campaign-simulation/sample-scenarios"),
+    sensitivity: (channel: Record<string, unknown>, seed?: number) =>
+      request<any>("/campaign-simulation/sensitivity", { method: "POST", body: JSON.stringify({ channel, seed }) }),
+    budgetOptimization: (channels: Record<string, unknown>[], totalBudget: number, seed?: number) =>
+      request<any>("/campaign-simulation/budget-optimization", { method: "POST", body: JSON.stringify({ channels, totalBudget, seed }) }),
+    riskAssessment: (channels: Record<string, unknown>[], scenarios: Record<string, unknown>[], seed?: number) =>
+      request<any>("/campaign-simulation/risk-assessment", { method: "POST", body: JSON.stringify({ channels, scenarios, seed }) }),
+    channelEfficiency: (channel: Record<string, unknown>, seed?: number) =>
+      request<any>("/campaign-simulation/channel-efficiency", { method: "POST", body: JSON.stringify({ channel, seed }) }),
+    monteCarloForecast: (channel: Record<string, unknown>, budget: number, trials?: number, seed?: number) =>
+      request<any>("/campaign-simulation/monte-carlo-forecast", { method: "POST", body: JSON.stringify({ channel, budget, trials, seed }) }),
+    budgetElasticity: (channel: Record<string, unknown>, seed?: number) =>
+      request<any>("/campaign-simulation/budget-elasticity", { method: "POST", body: JSON.stringify({ channel, seed }) }),
+    optimalChannelMix: (channels: Record<string, unknown>[], totalBudget: number, targetROAS: number, seed?: number) =>
+      request<any>("/campaign-simulation/optimal-channel-mix", { method: "POST", body: JSON.stringify({ channels, totalBudget, targetROAS, seed }) }),
+    simulationSummary: (channels: Record<string, unknown>[], scenarios: Record<string, unknown>[], seed?: number) =>
+      request<any>("/campaign-simulation/simulation-summary", { method: "POST", body: JSON.stringify({ channels, scenarios, seed }) }),
   },
   realTimeBidding: {
     evaluateBid: (bidReq: Record<string, unknown>, targetCPA: number) =>
