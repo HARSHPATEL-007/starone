@@ -83,6 +83,55 @@ interface SentimentTrend {
   topTopic: string;
 }
 
+interface SentimentKeywordAnalysis {
+  campaignId: string;
+  keywords: { keyword: string; mentionCount: number; sentiment: number; frequency: number; context: string }[];
+  topPositiveKeyword: string;
+  topNegativeKeyword: string;
+  avgKeywordSentiment: number;
+}
+
+interface CompetitorSentimentComparison {
+  campaignId: string;
+  brandSentiment: number;
+  competitors: { name: string; sentiment: number; shareOfVoice: number; topTopic: string }[];
+  rank: number;
+  totalCompetitors: number;
+  advantage: string;
+}
+
+interface SentimentAlertThreshold {
+  campaignId: string;
+  thresholds: { metric: string; currentValue: number; threshold: number; breached: boolean; severity: string; alert: string }[];
+  breachCount: number;
+  overallStatus: string;
+}
+
+interface SentimentActionableInsight {
+  campaignId: string;
+  insights: { area: string; insight: string; suggestedAction: string; priority: string; expectedImpact: string }[];
+  totalInsights: number;
+  topPriority: string;
+}
+
+interface ShareOfVoice {
+  campaignId: string;
+  totalMentions: number;
+  brandMentions: number;
+  share: number;
+  competitors: { name: string; mentions: number; share: number; sentiment: number }[];
+  trend: string;
+  recommendation: string;
+}
+
+interface SentimentForecast {
+  campaignId: string;
+  periods: { period: string; predictedScore: number; confidence: string; range: { low: number; high: number } }[];
+  overallOutlook: string;
+  riskLevel: string;
+  keyDriver: string;
+}
+
 const TOPICS = [
   "Product Quality", "Customer Service", "Pricing", "Brand Reputation",
   "Feature Requests", "User Experience", "Competitor Comparison", "Industry News",
@@ -106,6 +155,14 @@ function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
   return Math.abs(h);
+}
+
+function seededRandom(seed: string): () => number {
+  let state = hashStr(seed);
+  return () => {
+    state = (state * 1103515245 + 12345) & 0x7fffffff;
+    return state / 0x7fffffff;
+  };
 }
 
 export class CampaignSocialSentimentAnalyzerService {
@@ -291,6 +348,141 @@ export class CampaignSocialSentimentAnalyzerService {
       });
     }
     return trends;
+  }
+
+  sentimentKeywordAnalysis(campaignId: string, tenantId: string): SentimentKeywordAnalysis {
+    const analysis = this.analyzeSentiment(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "keyword");
+    const keywords: SentimentKeywordAnalysis["keywords"] = [];
+    const wordPool = ["quality", "price", "support", "value", "innovation", "trust", "service", "experience", "design", "features"];
+    let topPosKw = "", topNegKw = "", maxPos = -Infinity, minNeg = Infinity;
+    let totalSent = 0;
+    for (let i = 0; i < wordPool.length; i++) {
+      const kwSeed = seed + i * 13;
+      const mentionCount = 5 + (kwSeed % 25);
+      const sentiment = Math.round(((kwSeed % 100) / 100) * 2 - 1);
+      const frequency = Math.round((mentionCount / analysis.totalMentions) * 10000) / 100;
+      const contexts = ["positive customer reviews", "neutral discussions", "negative feedback", "comparative mentions"];
+      keywords.push({ keyword: wordPool[i], mentionCount, sentiment, frequency, context: contexts[kwSeed % contexts.length] });
+      totalSent += sentiment;
+      if (sentiment > maxPos) { maxPos = sentiment; topPosKw = wordPool[i]; }
+      if (sentiment < minNeg) { minNeg = sentiment; topNegKw = wordPool[i]; }
+    }
+    return {
+      campaignId, keywords, topPositiveKeyword: topPosKw,
+      topNegativeKeyword: topNegKw,
+      avgKeywordSentiment: Math.round(totalSent / wordPool.length * 100) / 100,
+    };
+  }
+
+  sentimentCompetitorComparison(campaignId: string, tenantId: string): CompetitorSentimentComparison {
+    const analysis = this.analyzeSentiment(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "comp");
+    const competitors = ["CompetitorA", "CompetitorB", "CompetitorC", "CompetitorD"];
+    const compResults = competitors.map((name, i) => {
+      const cSeed = seed + i * 17;
+      return { name, sentiment: Math.round(((cSeed % 100) / 100) * 2 - 1), shareOfVoice: 10 + (cSeed % 30), topTopic: TOPICS[(cSeed * 13) % TOPICS.length] };
+    });
+    const brandSentiment = analysis.averageSentimentScore;
+    const all = [{ name: "Brand", sentiment: brandSentiment, shareOfVoice: 0, topTopic: "" }, ...compResults];
+    const sorted = [...all].sort((a, b) => b.sentiment - a.sentiment);
+    const rank = sorted.findIndex(s => s.name === "Brand") + 1;
+    const better = sorted.filter(s => s.sentiment > brandSentiment && s.name !== "Brand");
+    const advantage = better.length === 0 ? "Leading — no competitor has higher sentiment" : `Trailing ${better.length} competitor(s) — investigate their strategy`;
+    return {
+      campaignId, brandSentiment: Math.round(brandSentiment * 100) / 100,
+      competitors: compResults, rank, totalCompetitors: competitors.length, advantage,
+    };
+  }
+
+  sentimentAlertThresholds(campaignId: string, tenantId: string): SentimentAlertThreshold {
+    const analysis = this.analyzeSentiment(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "alert_thresh");
+    const rng = seededRandom(seed + "_alert_thresh");
+    const thresholds: SentimentAlertThreshold["thresholds"] = [
+      { metric: "avg_sentiment", currentValue: analysis.averageSentimentScore, threshold: 0.2, breached: analysis.averageSentimentScore < 0.2, severity: analysis.averageSentimentScore < 0.2 ? "warning" : "ok", alert: analysis.averageSentimentScore < 0.2 ? "Average sentiment below safe threshold" : "Sentiment within acceptable range" },
+      { metric: "negative_percent", currentValue: analysis.negativePercent, threshold: 25, breached: analysis.negativePercent > 25, severity: analysis.negativePercent > 25 ? "critical" : "ok", alert: analysis.negativePercent > 25 ? "Negative sentiment percentage exceeds 25% threshold" : "Negative percentage within limits" },
+      { metric: "mention_volume", currentValue: analysis.totalMentions, threshold: 15, breached: analysis.totalMentions < 15, severity: analysis.totalMentions < 15 ? "warning" : "ok", alert: analysis.totalMentions < 15 ? "Mention volume low — consider boosting brand awareness campaigns" : "Mention volume adequate" },
+      { metric: "positive_ratio", currentValue: analysis.positivePercent, threshold: 30, breached: analysis.positivePercent < 30, severity: analysis.positivePercent < 30 ? "warning" : "ok", alert: analysis.positivePercent < 30 ? "Positive sentiment ratio below 30% — investigate causes" : "Positive ratio healthy" },
+    ];
+    const breachCount = thresholds.filter(t => t.breached).length;
+    const overallStatus = breachCount === 0 ? "all_clear" : breachCount <= 2 ? "attention" : "critical";
+    return { campaignId, thresholds, breachCount, overallStatus };
+  }
+
+  sentimentActionableInsights(campaignId: string, tenantId: string): SentimentActionableInsight {
+    const analysis = this.analyzeSentiment(campaignId, tenantId);
+    const insights: SentimentActionableInsight["insights"] = [];
+    if (analysis.positivePercent > 40) {
+      insights.push({ area: "positive_sentiment", insight: `High positive sentiment at ${analysis.positivePercent}%`, suggestedAction: "Amplify through testimonials and user-generated content campaigns", priority: "medium", expectedImpact: "15-25% increase in engagement" });
+    }
+    if (analysis.negativePercent > 20) {
+      insights.push({ area: "negative_sentiment", insight: `Elevated negative sentiment at ${analysis.negativePercent}%`, suggestedAction: "Launch targeted response campaign addressing top complaints", priority: "high", expectedImpact: "30-50% reduction in negative mentions" });
+    }
+    if (analysis.averageSentimentScore < 0) {
+      insights.push({ area: "overall_sentiment", insight: `Overall sentiment is negative (${analysis.averageSentimentScore})`, suggestedAction: "Audit recent campaigns and messaging; consider brand refresh", priority: "critical", expectedImpact: "Recovery to neutral within 30 days" });
+    }
+    if (analysis.topNegativeTopics.length > 0) {
+      const topNeg = analysis.topNegativeTopics[0];
+      insights.push({ area: "top_negative_topic", insight: `Top negative topic: ${topNeg.topic} (${topNeg.mentions} mentions)`, suggestedAction: `Create dedicated content addressing ${topNeg.topic} concerns`, priority: "high", expectedImpact: "20-35% improvement in topic sentiment" });
+    }
+    if (analysis.topPositiveTopics.length > 0) {
+      const topPos = analysis.topPositiveTopics[0];
+      insights.push({ area: "top_positive_topic", insight: `Top positive topic: ${topPos.topic} (${topPos.mentions} mentions)`, suggestedAction: `Feature ${topPos.topic} in upcoming campaign creatives`, priority: "medium", expectedImpact: "10-20% increase in positive mentions" });
+    }
+    if (analysis.totalMentions < 20) {
+      insights.push({ area: "low_visibility", insight: `Low mention count (${analysis.totalMentions}) — brand visibility is limited`, suggestedAction: "Increase social media posting frequency and influencer partnerships", priority: "medium", expectedImpact: "40-60% increase in brand mentions" });
+    }
+    const priorities = ["critical", "high", "medium", "low"];
+    const sorted = [...insights].sort((a, b) => priorities.indexOf(a.priority) - priorities.indexOf(b.priority));
+    return { campaignId, insights, totalInsights: insights.length, topPriority: sorted[0]?.priority ?? "none" };
+  }
+
+  sentimentShareOfVoice(campaignId: string, tenantId: string): ShareOfVoice {
+    const analysis = this.analyzeSentiment(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "sov");
+    const brandMentions = analysis.totalMentions;
+    const competitors = ["CompetitorA", "CompetitorB", "CompetitorC"];
+    const compMentions = competitors.map((name, i) => {
+      const cSeed = seed + i * 19;
+      return { name, mentions: 15 + (cSeed % 40), share: 0, sentiment: Math.round(((cSeed % 100) / 100) * 2 - 1) };
+    });
+    const totalIndustryMentions = brandMentions + compMentions.reduce((s, c) => s + c.mentions, 0);
+    const share = totalIndustryMentions > 0 ? Math.round(brandMentions / totalIndustryMentions * 10000) / 100 : 0;
+    const compWithShare = compMentions.map(c => ({ ...c, share: totalIndustryMentions > 0 ? Math.round(c.mentions / totalIndustryMentions * 10000) / 100 : 0 }));
+    return {
+      campaignId, totalMentions: totalIndustryMentions, brandMentions, share, competitors: compWithShare,
+      trend: share > 25 ? "growing" : share > 15 ? "stable" : "declining",
+      recommendation: share > 25 ? "Strong position — defend by maintaining quality engagement" : share > 15 ? "Competitive position — look for share growth opportunities" : "Low visibility — aggressive awareness campaign needed",
+    };
+  }
+
+  sentimentForecast(campaignId: string, tenantId: string): SentimentForecast {
+    const analysis = this.analyzeSentiment(campaignId, tenantId);
+    const seed = hashStr(campaignId + tenantId + "forecast_sent");
+    const rng = seededRandom(seed + "_forecast_sent");
+    const periods: SentimentForecast["periods"] = [];
+    let projected = analysis.averageSentimentScore;
+    for (let i = 1; i <= 6; i++) {
+      const change = (rng() - 0.45) * 0.15;
+      projected += change;
+      projected = Math.max(-1, Math.min(1, projected));
+      const d = new Date();
+      d.setDate(d.getDate() + i * 7);
+      const confidence = i <= 2 ? "high" : i <= 4 ? "medium" : "low";
+      const halfRange = confidence === "high" ? 0.1 : confidence === "medium" ? 0.2 : 0.35;
+      periods.push({
+        period: d.toISOString().slice(0, 10),
+        predictedScore: Math.round(projected * 1000) / 1000,
+        confidence,
+        range: { low: Math.round(Math.max(-1, projected - halfRange) * 1000) / 1000, high: Math.round(Math.min(1, projected + halfRange) * 1000) / 1000 },
+      });
+    }
+    const lastScore = periods[periods.length - 1]?.predictedScore ?? 0;
+    const firstScore = periods[0]?.predictedScore ?? 0;
+    const overallOutlook = lastScore > firstScore + 0.1 ? "improving" : lastScore < firstScore - 0.1 ? "declining" : "stable";
+    const riskLevel = lastScore < 0 ? "high" : lastScore < 0.1 ? "medium" : "low";
+    return { campaignId, periods, overallOutlook, riskLevel, keyDriver: "campaign sentiment trajectory" };
   }
 }
 

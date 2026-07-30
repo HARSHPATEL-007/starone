@@ -543,3 +543,5 @@ export class CampaignPerformanceDiagnosticsService {
     };
   }
 }
+
+export const campaignPerformanceDiagnostics = new CampaignPerformanceDiagnosticsService();

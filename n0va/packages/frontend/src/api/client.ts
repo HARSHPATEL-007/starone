@@ -2684,6 +2684,12 @@ export const api = {
     platformSentiment: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/platform-sentiment`),
     emotionalTone: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/emotional-tone`),
     sentimentTrends: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/sentiment-trends`),
+    keywordAnalysis: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/keyword-analysis`),
+    competitorComparison: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/competitor-comparison`),
+    alertThresholds: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/alert-thresholds`),
+    actionableInsights: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/actionable-insights`),
+    shareOfVoice: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/share-of-voice`),
+    forecast: (campaignId: string) => request<any>(`/campaign-social-sentiment-analyzer/campaign/${campaignId}/forecast`),
   },
 
   campaignRetargetingAnalyzer: {
