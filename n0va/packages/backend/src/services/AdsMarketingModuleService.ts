@@ -1899,6 +1899,10 @@ export class AdsMarketingModuleService {
     return campaignPerformanceDiagnostics.exportDiagnostics(campaignId, tenantId);
   }
 
+  diagnosticsPriorityList(tenantId: string) {
+    return campaignPerformanceDiagnostics.diagnosticsPriorityList(tenantId);
+  }
+
   daypartingAnalysis(campaignId: string, tenantId: string) {
     return campaignDaypartingOptimizer.analyzeDayparting(campaignId, tenantId);
   }
@@ -2504,6 +2508,10 @@ export class AdsMarketingModuleService {
     return campaignConversionFunnelAnalyzer.funnelHealthScore(campaignId, tenantId);
   }
 
+  funnelPortfolioHealth(tenantId: string) {
+    return campaignConversionFunnelAnalyzer.funnelPortfolioHealth(tenantId);
+  }
+
   keywordAnalysis(campaignId: string, tenantId: string) {
     return campaignKeywordAnalyzer.analyzeKeywords(campaignId, tenantId);
   }
@@ -2802,6 +2810,14 @@ export class AdsMarketingModuleService {
 
   realTimeDashboard(campaignId: string, tenantId: string) {
     return campaignRealTimeMonitor.getRealTimeDashboard(campaignId, tenantId);
+  }
+
+  realTimePortfolioSummary(tenantId: string) {
+    return campaignRealTimeMonitor.portfolioRealTimeSummary(tenantId);
+  }
+
+  realTimeBatchResolveAlerts(campaignId: string, tenantId: string, alertIds: string[], action: string) {
+    return campaignRealTimeMonitor.batchResolveAlerts(campaignId, tenantId, alertIds, action as any);
   }
 
   attribution(campaignId: string, tenantId: string, model?: string) {
@@ -3122,6 +3138,10 @@ export class AdsMarketingModuleService {
 
   healthBenchmark(metrics: any[], benchmarks?: any[]) {
     return campaignHealthPredictorService.healthBenchmark(metrics, benchmarks);
+  }
+
+  healthPredictorQuickView(campaignInputs: { campaignId: string; campaignName?: string; metrics: any[] }[]) {
+    return campaignHealthPredictorService.healthPredictorQuickView(campaignInputs);
   }
 
   insightAcknowledgeBatch(tenantId: string, insightIds: string[], action: string) {

@@ -597,6 +597,34 @@ export class CampaignHealthPredictorService {
     const percentileRank = Math.round(avgScore / 4 * 100);
     return { campaignId: "benchmark", benchmarks: results, overallRating, percentileRank };
   }
+
+  healthPredictorQuickView(campaignInputs: { campaignId: string; campaignName?: string; metrics: CampaignMetric[] }[]): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; overall: number; category: string; riskLevel: string; earlyWarning: boolean; predictedRemainingDays: number; topRisk: string | null }[]; totals: { scanned: number; averageHealth: number; atRisk: number; earlyWarnings: number; summary: string } } {
+    const rows: any[] = [];
+    let earlyWarnings = 0;
+    for (const input of campaignInputs) {
+      const health = this.computeHealthScore(input.metrics);
+      const risks = this.identifyRiskFactors(input.metrics);
+      const warning = this.computeEarlyWarning(input.metrics);
+      const survival = this.computeSurvivalAnalysis(input.metrics);
+      if (warning.triggered) earlyWarnings++;
+      const topRisk = risks.length > 0 ? risks.reduce((w, r) => (r.severity === "critical" || r.severity === "high") && r.impact > (w ? w.impact : 0) ? r : w, null as any) : null;
+      rows.push({
+        campaignId: input.campaignId,
+        campaignName: input.campaignName || input.campaignId,
+        overall: health.overall,
+        category: health.category,
+        riskLevel: topRisk ? topRisk.severity : "low",
+        earlyWarning: warning.triggered,
+        predictedRemainingDays: survival.predictedRemainingDays,
+        topRisk: topRisk ? topRisk.name : null,
+      });
+    }
+    rows.sort((a, b) => a.overall - b.overall);
+    const avgHealth = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.overall, 0) / rows.length * 100) / 100 : 0;
+    const atRisk = rows.filter(r => r.overall < 50 || r.riskLevel === "critical" || r.earlyWarning).length;
+    const summary = `${rows.length} campaigns scanned, average health ${avgHealth}, ${atRisk} at risk, ${earlyWarnings} early warnings active`;
+    return { generatedAt: new Date().toISOString(), campaigns: rows, totals: { scanned: rows.length, averageHealth: avgHealth, atRisk, earlyWarnings, summary } };
+  }
 }
 
 export const campaignHealthPredictorService = new CampaignHealthPredictorService();

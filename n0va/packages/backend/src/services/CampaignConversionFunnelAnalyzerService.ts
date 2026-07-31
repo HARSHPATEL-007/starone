@@ -383,6 +383,32 @@ export class CampaignConversionFunnelAnalyzerService {
     const recommendations = bottlenecks.length > 0 ? [`Address ${bottlenecks.length} critical bottlenecks`, "A/B test underperforming stages", "Implement retargeting for drop-off points"] : ["Maintain current funnel performance", "Test incremental improvements in mid-funnel stages", "Monitor for emerging bottlenecks"];
     return { campaignId, campaignName: funnel.campaignName, score, grade, dimensions, bottlenecks, recommendations };
   }
+
+  funnelPortfolioHealth(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; score: number; grade: string; overallConversionRate: number; bottleneckCount: number; criticalBottlenecks: string[] }[]; totals: { scanned: number; averageScore: number; campaignsNeedingAttention: number; topBottleneckStage: string | null } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    for (const a of portfolio.analyses) {
+      const funnel = this.analyzeFunnel(a.campaignId, tenantId);
+      const health = this.funnelHealthScore(a.campaignId, tenantId);
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        score: health.score, grade: health.grade,
+        overallConversionRate: Math.round(funnel.overallConversionRate * 100) / 100,
+        bottleneckCount: funnel.bottlenecks.length,
+        criticalBottlenecks: funnel.bottlenecks.filter(b => b.severity === "critical" || b.severity === "high").map(b => b.stage),
+      });
+    }
+    rows.sort((x, y) => x.score - y.score);
+    const avgScore = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length * 100) / 100 : 0;
+    const stageCounts: Record<string, number> = {};
+    for (const r of rows) for (const s of r.criticalBottlenecks) stageCounts[s] = (stageCounts[s] || 0) + 1;
+    const topStage = Object.keys(stageCounts).length > 0 ? Object.keys(stageCounts).reduce((a, b) => stageCounts[a] > stageCounts[b] ? a : b) : null;
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: { scanned: rows.length, averageScore: avgScore, campaignsNeedingAttention: rows.filter(r => r.score < 65).length, topBottleneckStage: topStage },
+    };
+  }
 }
 
 export const campaignConversionFunnelAnalyzer = new CampaignConversionFunnelAnalyzerService();

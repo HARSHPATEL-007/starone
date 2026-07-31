@@ -2130,6 +2130,13 @@ export const api = {
     goalDashboard: () => request<any>("/ads-marketing-module/goal-dashboard"),
     goalQuickCheck: () => request<any>("/ads-marketing-module/goal-quick-check"),
     scorecardDailySnapshot: () => request<any>("/ads-marketing-module/scorecard-daily-snapshot"),
+    realTimePortfolioSummary: () => request<any>("/ads-marketing-module/real-time-portfolio-summary"),
+    realTimeBatchResolveAlerts: (campaignId: string, alertIds: string[], action?: string) =>
+      request<any>("/ads-marketing-module/real-time-batch-resolve-alerts", { method: "POST", body: JSON.stringify({ campaignId, alertIds, action }) }),
+    diagnosticsPriorityList: () => request<any>("/ads-marketing-module/diagnostics-priority-list"),
+    funnelPortfolioHealth: () => request<any>("/ads-marketing-module/funnel-portfolio-health"),
+    healthPredictorQuickView: (campaignInputs: { campaignId: string; campaignName?: string; metrics: any[] }[]) =>
+      request<any>("/ads-marketing-module/health-predictor-quick-view", { method: "POST", body: JSON.stringify({ campaignInputs }) }),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

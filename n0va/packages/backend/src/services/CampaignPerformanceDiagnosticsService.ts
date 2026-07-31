@@ -542,6 +542,38 @@ export class CampaignPerformanceDiagnosticsService {
       nextReviewDate: nextReview.toISOString().slice(0, 10),
     };
   }
+
+  diagnosticsPriorityList(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; score: number; grade: string; critical: number; high: number; total: number; topFinding: string | null; suggestedAction: string }[]; totals: { campaignsScanned: number; criticalFindings: number; highFindings: number; campaignsNeedingAttention: number } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let criticalFindings = 0;
+    let highFindings = 0;
+    for (const a of portfolio.analyses) {
+      const report = this.diagnoseCampaign(a.campaignId, tenantId);
+      const critical = report.summary.criticalCount;
+      const high = report.summary.highCount;
+      criticalFindings += critical;
+      highFindings += high;
+      const topFinding = report.findings.length > 0 ? report.findings.reduce((w, f) => (f.severity === "critical" || f.severity === "high") && f.confidence > (w ? w.confidence : 0) ? f : w, null as any) : null;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName, score: report.score, grade: report.grade,
+        critical, high, total: report.summary.totalFindings,
+        topFinding: topFinding ? `${topFinding.metric}: ${topFinding.rootCause}` : null,
+        suggestedAction: topFinding ? topFinding.recommendation : "No immediate action needed",
+      });
+    }
+    rows.sort((x, y) => x.critical !== y.critical ? y.critical - x.critical : y.high - x.high);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        campaignsScanned: rows.length,
+        criticalFindings: criticalFindings,
+        highFindings: highFindings,
+        campaignsNeedingAttention: rows.filter(r => r.critical > 0 || r.high > 0).length,
+      },
+    };
+  }
 }
 
 export const campaignPerformanceDiagnostics = new CampaignPerformanceDiagnosticsService();

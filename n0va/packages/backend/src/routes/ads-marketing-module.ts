@@ -982,4 +982,25 @@ router.get("/scorecard-daily-snapshot", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.scorecardDailySnapshot(req.user!.tenantId));
 }));
 
+router.get("/real-time-portfolio-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.realTimePortfolioSummary(req.user!.tenantId));
+}));
+
+router.post("/real-time-batch-resolve-alerts", asyncHandler(async (req, res) => {
+  const { campaignId, alertIds, action } = req.body;
+  sendSuccess(res, adsMarketingModule.realTimeBatchResolveAlerts(campaignId, req.user!.tenantId, alertIds || [], action || "resolve"));
+}));
+
+router.get("/diagnostics-priority-list", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.diagnosticsPriorityList(req.user!.tenantId));
+}));
+
+router.get("/funnel-portfolio-health", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.funnelPortfolioHealth(req.user!.tenantId));
+}));
+
+router.post("/health-predictor-quick-view", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.healthPredictorQuickView(req.body.campaignInputs || []));
+}));
+
 export default router;

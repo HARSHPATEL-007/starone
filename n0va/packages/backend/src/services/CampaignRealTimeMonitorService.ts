@@ -1,3 +1,6 @@
+import { autonomousCampaignManager } from "./AutonomousCampaignManagerService";
+import { DataStore } from "./DataStore";
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
@@ -625,6 +628,34 @@ export class CampaignRealTimeMonitorService {
       healthScore: anomalyResult.overallHealthScore,
       lastUpdated: live.timestamp,
     };
+  }
+
+  portfolioRealTimeSummary(tenantId: string): { totalCampaigns: number; alertsActive: number; campaignsWithAnomalies: number; budgetPacingIssues: number; topConcerns: { campaignId: string; campaignName: string; issue: string; severity: string }[]; summary: string } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    let alertsActive = 0;
+    let campaignsWithAnomalies = 0;
+    let budgetPacingIssues = 0;
+    const topConcerns: any[] = [];
+    for (const a of portfolio.analyses) {
+      const alerts = this.generateLiveAlerts(a.campaignId, tenantId);
+      const active = alerts.filter(al => al.status === "active" || al.status === "new");
+      alertsActive += active.length;
+      if (active.length > 0) campaignsWithAnomalies++;
+      if (active.some(al => al.severity === "critical" || al.severity === "high")) {
+        const worst = active.reduce((w, al) => al.severity === "critical" ? al : w, active[0]);
+        topConcerns.push({ campaignId: a.campaignId, campaignName: a.campaignName, issue: worst.message, severity: worst.severity });
+      }
+      const pacing = this.getBudgetPacing(a.campaignId, tenantId);
+      if (pacing.pacingStatus === "over_spending" || pacing.pacingStatus === "under_spending") budgetPacingIssues++;
+    }
+    const summary = `${alertsActive} active alerts across ${campaignsWithAnomalies} campaigns, ${budgetPacingIssues} budget pacing issues`;
+    return { totalCampaigns: portfolio.analyses.length, alertsActive, campaignsWithAnomalies, budgetPacingIssues, topConcerns: topConcerns.slice(0, 10), summary };
+  }
+
+  batchResolveAlerts(campaignId: string, tenantId: string, alertIds: string[], action: "acknowledge" | "resolve" | "dismiss" = "resolve"): { processed: number; campaignId: string; action: string } {
+    const alerts = this.generateLiveAlerts(campaignId, tenantId);
+    const matched = alerts.filter(al => alertIds.includes(al.id));
+    return { processed: matched.length, campaignId, action };
   }
 }
 
