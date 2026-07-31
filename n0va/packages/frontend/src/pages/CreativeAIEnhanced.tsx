@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Lightbulb, Play, RotateCcw, TrendingUp, Target, BarChart3, Layers } from "lucide-react";
+import { Lightbulb, Play, RotateCcw, TrendingUp, TrendingDown, Target, BarChart3, Layers } from "lucide-react";
 import { useToast } from "../components/Toast";
 import { api } from "../api/client";
 

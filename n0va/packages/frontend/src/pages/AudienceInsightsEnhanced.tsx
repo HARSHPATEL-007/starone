@@ -158,7 +158,7 @@ export default function AudienceInsightsEnhanced() {
                 <YAxis dataKey="y" tick={{ fill: "#9ca3af" }} />
                 <Tooltip contentStyle={{ backgroundColor: "#1f2937", border: "none" }} />
                 <Scatter data={scatterData}>
-                  {scatterData.map((entry, i) => (
+                  {scatterData.map((entry: any, i: number) => (
                     <Cell key={i} fill={COLORS[entry.cluster % COLORS.length]} />
                   ))}
                 </Scatter>

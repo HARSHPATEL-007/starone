@@ -413,3 +413,5 @@ export class CampaignIssueService {
     });
   }
 }
+
+export const campaignIssueService = new CampaignIssueService();

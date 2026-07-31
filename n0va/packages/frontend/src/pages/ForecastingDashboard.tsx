@@ -23,7 +23,7 @@ const revenueData = [50000, 52000, 48000, 55000, 62000, 58000, 56000, 59000, 610
 const creativeData = [3.2, 3.5, 3.8, 3.6, 4.1, 3.9, 4.3, 4.0, 4.5, 4.2];
 
 interface ForecastResult {
-  forecast: number[];
+  forecast?: number[];
   seasonalFactors?: number[];
   smoothed?: number[];
   trend?: number[];
@@ -33,7 +33,7 @@ interface ForecastResult {
 }
 
 export default function ForecastingDashboard() {
-  const { showToast } = useToast();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState("demand");
   const [result, setResult] = useState<ForecastResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,9 +56,9 @@ export default function ForecastingDashboard() {
       const forecast = res.forecast || [];
       const factors = res.seasonalFactors || [];
       setResult({ forecast, seasonalFactors: factors });
-      showToast("Demand forecast complete", "success");
+      addToast("success", "Demand forecast complete");
     } catch {
-      showToast("Demand forecast failed", "error");
+      addToast("error", "Demand forecast failed");
     }
     setLoading(false);
   };
@@ -74,9 +74,9 @@ export default function ForecastingDashboard() {
         lowerBound: res.lowerBound || [],
         upperBound: res.upperBound || [],
       });
-      showToast("Revenue simulation complete", "success");
+      addToast("success", "Revenue simulation complete");
     } catch {
-      showToast("Revenue simulation failed", "error");
+      addToast("error", "Revenue simulation failed");
     }
     setLoading(false);
   };
@@ -92,9 +92,9 @@ export default function ForecastingDashboard() {
         smoothed: res.smoothed || [],
         trend: res.trend || [],
       });
-      showToast("Creative forecast complete", "success");
+      addToast("success", "Creative forecast complete");
     } catch {
-      showToast("Creative forecast failed", "error");
+      addToast("error", "Creative forecast failed");
     }
     setLoading(false);
   };
@@ -107,9 +107,9 @@ export default function ForecastingDashboard() {
     const data: { name: string; Historical?: number; Forecast?: number }[] = [];
     demandData.forEach((v, i) => data.push({ name: `M${i + 1}`, Historical: v }));
     if (result) {
-      for (let i = 0; i < result.forecast.length; i++) {
+      for (let i = 0; i < (result.forecast?.length || 0); i++) {
         const idx = demandData.length + i;
-        data.push({ name: `M${idx + 1}`, Forecast: result.forecast[i] });
+        data.push({ name: `M${idx + 1}`, Forecast: result.forecast![i] });
       }
     }
     return data;

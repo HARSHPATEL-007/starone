@@ -602,3 +602,5 @@ export class CampaignOptimizerService {
     return sched;
   }
 }
+
+export const campaignOptimizerService = new CampaignOptimizerService();

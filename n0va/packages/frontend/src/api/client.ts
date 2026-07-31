@@ -527,6 +527,15 @@ export const api = {
       request<any>("/creative-ai/suggest-tone", { method: "POST", body: JSON.stringify(data) }),
     expand: (data: Record<string, unknown>) =>
       request<any>("/creative-ai/expand", { method: "POST", body: JSON.stringify(data) }),
+    mabSelect: (variants: string[]) =>
+      request<any>("/creative-ai/enhanced/mab/select", { method: "POST", body: JSON.stringify({ variants }) }),
+    mabRecord: (variantKey: string, converted: boolean) =>
+      request<any>("/creative-ai/enhanced/mab/record", { method: "POST", body: JSON.stringify({ variantKey, converted }) }),
+    mabVariants: () => request<any>("/creative-ai/enhanced/mab/variants"),
+    detectFatigue: (creativeHistory: Record<string, unknown>[]) =>
+      request<any>("/creative-ai/enhanced/fatigue", { method: "POST", body: JSON.stringify({ creativeHistory }) }),
+    simulateABTest: (variants: Record<string, unknown>[], visitorsPerDay?: number, days?: number) =>
+      request<any>("/creative-ai/enhanced/ab-test-simulate", { method: "POST", body: JSON.stringify({ variants, visitorsPerDay, days }) }),
   },
   snapshots: {
     capture: (data: Record<string, unknown>) =>
@@ -825,7 +834,14 @@ export const api = {
   audienceInsights: {
     insights: (audienceId?: string) =>
       request<any>(`/audience-insights/insights${audienceId ? `?audienceId=${audienceId}` : ""}`),
-    lookalike: () => request<any>("/audience-insights/lookalike"),
+    pca: (data: number[][], nComponents?: number) =>
+      request<any>("/audience-insights/enhanced/pca", { method: "POST", body: JSON.stringify({ data, nComponents }) }),
+    gmm: (data: number[][], k?: number) =>
+      request<any>("/audience-insights/enhanced/gmm", { method: "POST", body: JSON.stringify({ data, k }) }),
+    rfm: (customers: Record<string, unknown>[]) =>
+      request<any>("/audience-insights/enhanced/rfm", { method: "POST", body: JSON.stringify({ customers }) }),
+    lookalike: (seedAudience: Record<string, unknown>[], candidatePool: Record<string, unknown>[], targetSize?: number) =>
+      request<any>("/audience-insights/enhanced/lookalike", { method: "POST", body: JSON.stringify({ seedAudience, candidatePool, targetSize }) }),
   },
   reportBuilder: {
     list: () => request<any[]>("/report-builder/reports"),
@@ -1051,27 +1067,6 @@ export const api = {
     publisherScore: (publisherId: string) => request<any>(`/real-time-bidding/publisher-score/${publisherId}`),
     winRateModel: () => request<any>("/real-time-bidding/win-rate-model"),
     sampleRequest: () => request<any>("/real-time-bidding/sample-request"),
-  },
-  creativeAI: {
-    mabSelect: (variants: string[]) =>
-      request<any>("/creative-ai/enhanced/mab/select", { method: "POST", body: JSON.stringify({ variants }) }),
-    mabRecord: (variantKey: string, converted: boolean) =>
-      request<any>("/creative-ai/enhanced/mab/record", { method: "POST", body: JSON.stringify({ variantKey, converted }) }),
-    mabVariants: () => request<any>("/creative-ai/enhanced/mab/variants"),
-    detectFatigue: (creativeHistory: Record<string, unknown>[]) =>
-      request<any>("/creative-ai/enhanced/fatigue", { method: "POST", body: JSON.stringify({ creativeHistory }) }),
-    simulateABTest: (variants: Record<string, unknown>[], visitorsPerDay?: number, days?: number) =>
-      request<any>("/creative-ai/enhanced/ab-test-simulate", { method: "POST", body: JSON.stringify({ variants, visitorsPerDay, days }) }),
-  },
-  audienceInsights: {
-    pca: (data: number[][], nComponents?: number) =>
-      request<any>("/audience-insights/enhanced/pca", { method: "POST", body: JSON.stringify({ data, nComponents }) }),
-    gmm: (data: number[][], k?: number) =>
-      request<any>("/audience-insights/enhanced/gmm", { method: "POST", body: JSON.stringify({ data, k }) }),
-    rfm: (customers: Record<string, unknown>[]) =>
-      request<any>("/audience-insights/enhanced/rfm", { method: "POST", body: JSON.stringify({ customers }) }),
-    lookalike: (seedAudience: Record<string, unknown>[], candidatePool: Record<string, unknown>[], targetSize?: number) =>
-      request<any>("/audience-insights/enhanced/lookalike", { method: "POST", body: JSON.stringify({ seedAudience, candidatePool, targetSize }) }),
   },
   adCopyPersonalization: {
     scoreElement: (element: Record<string, unknown>, userContext: Record<string, unknown>) =>
@@ -1815,10 +1810,6 @@ export const api = {
     marketingRoiDecomposition: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/marketing/roi-decomposition", { method: "POST", body: JSON.stringify(data) }),
     // Depth 10: Advanced Graph
-    stoerWagner: (data: Record<string, unknown>) =>
-      request<any>("/ds-algorithms/graph/stoer-wagner", { method: "POST", body: JSON.stringify(data) }),
-    minCostFlow: (data: Record<string, unknown>) =>
-      request<any>("/ds-algorithms/graph/min-cost-flow", { method: "POST", body: JSON.stringify(data) }),
     kCenters: (data: Record<string, unknown>) =>
       request<any>("/ds-algorithms/graph/k-centers", { method: "POST", body: JSON.stringify(data) }),
     maxBipMatch: (data: Record<string, unknown>) =>
@@ -1961,8 +1952,6 @@ export const api = {
       request<any>("/ds-algorithms/depth11/sieve-of-eratosthenes", { method: "POST", body: JSON.stringify({ limit }) }),
     extendedEuclidean: (a: number, b: number) =>
       request<any>("/ds-algorithms/depth11/extended-euclidean", { method: "POST", body: JSON.stringify({ a, b }) }),
-    chineseRemainder: (remainders: number[], moduli: number[]) =>
-      request<any>("/ds-algorithms/depth11/chinese-remainder", { method: "POST", body: JSON.stringify({ remainders, moduli }) }),
     binomialCoefficient: (n: number, k: number) =>
       request<any>("/ds-algorithms/depth11/binomial-coefficient", { method: "POST", body: JSON.stringify({ n, k }) }),
     catalanNumber: (n: number) =>
@@ -1977,20 +1966,12 @@ export const api = {
       request<any>("/ds-algorithms/depth11/newton-raphson", { method: "POST", body: JSON.stringify({ guess, tolerance, maxIter }) }),
     secantMethod: (x0: number, x1: number, tolerance?: number, maxIter?: number) =>
       request<any>("/ds-algorithms/depth11/secant-method", { method: "POST", body: JSON.stringify({ x0, x1, tolerance, maxIter }) }),
-    simulatedAnnealing: (bounds: number[], initialTemp?: number, coolingRate?: number, steps?: number) =>
-      request<any>("/ds-algorithms/depth11/simulated-annealing", { method: "POST", body: JSON.stringify({ bounds, initialTemp, coolingRate, steps }) }),
-    geneticAlgorithm: (bounds: number[], populationSize?: number, generations?: number, mutationRate?: number, crossoverRate?: number) =>
-      request<any>("/ds-algorithms/depth11/genetic-algorithm", { method: "POST", body: JSON.stringify({ bounds, populationSize, generations, mutationRate, crossoverRate }) }),
     particleSwarm: (bounds: number[], swarmSize?: number, iterations?: number) =>
       request<any>("/ds-algorithms/depth11/particle-swarm", { method: "POST", body: JSON.stringify({ bounds, swarmSize, iterations }) }),
     hillClimbing: (bounds: number[], maxIter?: number, stepSize?: number) =>
       request<any>("/ds-algorithms/depth11/hill-climbing", { method: "POST", body: JSON.stringify({ bounds, maxIter, stepSize }) }),
     smithWaterman: (seqA: string, seqB: string, matchScore?: number, mismatchPenalty?: number, gapPenalty?: number) =>
       request<any>("/ds-algorithms/depth11/smith-waterman", { method: "POST", body: JSON.stringify({ seqA, seqB, matchScore, mismatchPenalty, gapPenalty }) }),
-    needlemanWunsch: (seqA: string, seqB: string, matchScore?: number, mismatchPenalty?: number, gapPenalty?: number) =>
-      request<any>("/ds-algorithms/depth11/needleman-wunsch", { method: "POST", body: JSON.stringify({ seqA, seqB, matchScore, mismatchPenalty, gapPenalty }) }),
-    damerauLevenshtein: (a: string, b: string) =>
-      request<any>("/ds-algorithms/depth11/damerau-levenshtein", { method: "POST", body: JSON.stringify({ a, b }) }),
     nGramModel: (text: string, n: number) =>
       request<any>("/ds-algorithms/depth11/ngram-model", { method: "POST", body: JSON.stringify({ text, n }) }),
     tfidfVectorize: (documents: string[]) =>
@@ -2305,7 +2286,6 @@ export const api = {
     segmentTargeting: () => request<any>("/ads-marketing-module/segment-targeting"),
     segmentComparison: () => request<any>("/ads-marketing-module/segment-comparison"),
     segmentTrends: () => request<any>("/ads-marketing-module/segment-trends"),
-    segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),
     goalProgress: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-progress`),
     goalAttainment: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-attainment`),
     goalAdjustments: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/goal-adjustments`),
