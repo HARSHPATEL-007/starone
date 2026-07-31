@@ -48,6 +48,9 @@ import { campaignLaunchWizard } from "./CampaignLaunchWizardService";
 import { creativeAutoRefresh } from "./CreativeAutoRefreshService";
 import { quickFix } from "./QuickFixService";
 import { crossModuleWorkflow } from "./CrossModuleWorkflowService";
+import { brandSafetyGuardian } from "./BrandSafetyGuardianService";
+import { attributionReportService } from "./AttributionReportService";
+import { crossPlatformPerformance } from "./CrossPlatformPerformanceService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3393,6 +3396,46 @@ export class AdsMarketingModuleService {
 
   workflowLog(tenantId: string) {
     return crossModuleWorkflow.workflowLog(tenantId);
+  }
+
+  fraudProtectionStatus(tenantId: string) {
+    return brandSafetyGuardian.fraudProtectionStatus(tenantId);
+  }
+
+  placementMonitor(tenantId: string) {
+    return brandSafetyGuardian.monitorPlacements(tenantId);
+  }
+
+  placementAutoPause(tenantId: string) {
+    return brandSafetyGuardian.autoPauseSuspicious(tenantId);
+  }
+
+  crisisResponse(tenantId: string) {
+    return brandSafetyGuardian.crisisResponse(tenantId);
+  }
+
+  escalateToLegal(tenantId: string, crisisId: string) {
+    return brandSafetyGuardian.escalateToLegal(tenantId, crisisId);
+  }
+
+  resumeOnSafeInventory(tenantId: string, crisisId: string) {
+    return brandSafetyGuardian.resumeOnSafeInventory(tenantId, crisisId);
+  }
+
+  guardianLog(tenantId: string) {
+    return brandSafetyGuardian.guardianLog(tenantId);
+  }
+
+  attributionReport(tenantId: string) {
+    return attributionReportService.attributionReport(tenantId);
+  }
+
+  attributionQuery(tenantId: string, query: string) {
+    return attributionReportService.attributionQuery(tenantId, query);
+  }
+
+  crossPlatformPerformance(tenantId: string) {
+    return crossPlatformPerformance.crossPlatformPerformance(tenantId);
   }
 
   async dailyExecutionDashboard(tenantId: string): Promise<any> {

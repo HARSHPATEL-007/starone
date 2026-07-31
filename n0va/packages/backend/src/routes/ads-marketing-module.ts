@@ -1252,4 +1252,44 @@ router.get("/workflow-log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.workflowLog(req.user!.tenantId));
 }));
 
+router.get("/fraud-protection-status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.fraudProtectionStatus(req.user!.tenantId));
+}));
+
+router.get("/placements/monitor", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.placementMonitor(req.user!.tenantId));
+}));
+
+router.post("/placements/auto-pause", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.placementAutoPause(req.user!.tenantId));
+}));
+
+router.get("/brand-safety/crisis", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.crisisResponse(req.user!.tenantId));
+}));
+
+router.post("/brand-safety/escalate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.escalateToLegal(req.user!.tenantId, req.body.crisisId || ""));
+}));
+
+router.post("/brand-safety/resume", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.resumeOnSafeInventory(req.user!.tenantId, req.body.crisisId || ""));
+}));
+
+router.get("/guardian-log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.guardianLog(req.user!.tenantId));
+}));
+
+router.get("/attribution-report", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.attributionReport(req.user!.tenantId));
+}));
+
+router.post("/attribution-query", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.attributionQuery(req.user!.tenantId, req.body.query || ""));
+}));
+
+router.get("/cross-platform-performance", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.crossPlatformPerformance(req.user!.tenantId));
+}));
+
 export default router;

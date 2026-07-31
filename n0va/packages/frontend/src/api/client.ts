@@ -2222,6 +2222,19 @@ export const api = {
     campaignWorkflow: (campaignId: string) =>
       request<any>("/ads-marketing-module/campaigns/workflow", { method: "POST", body: JSON.stringify({ campaignId }) }),
     workflowLog: () => request<any>("/ads-marketing-module/workflow-log"),
+    fraudProtectionStatus: () => request<any>("/ads-marketing-module/fraud-protection-status"),
+    placementMonitor: () => request<any>("/ads-marketing-module/placements/monitor"),
+    placementAutoPause: () => request<any>("/ads-marketing-module/placements/auto-pause", { method: "POST" }),
+    crisisResponse: () => request<any>("/ads-marketing-module/brand-safety/crisis"),
+    escalateToLegal: (crisisId: string) =>
+      request<any>("/ads-marketing-module/brand-safety/escalate", { method: "POST", body: JSON.stringify({ crisisId }) }),
+    resumeOnSafeInventory: (crisisId: string) =>
+      request<any>("/ads-marketing-module/brand-safety/resume", { method: "POST", body: JSON.stringify({ crisisId }) }),
+    guardianLog: () => request<any>("/ads-marketing-module/guardian-log"),
+    attributionReport: () => request<any>("/ads-marketing-module/attribution-report"),
+    attributionQuery: (query: string) =>
+      request<any>("/ads-marketing-module/attribution-query", { method: "POST", body: JSON.stringify({ query }) }),
+    crossPlatformPerformance: () => request<any>("/ads-marketing-module/cross-platform-performance"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),
