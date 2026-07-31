@@ -116,6 +116,15 @@ export default function AIAssistant() {
     });
   }, []);
 
+  useEffect(() => {
+    function toggle() {
+      setOpen((o) => !o);
+      setMinimized(false);
+    }
+    window.addEventListener("n0va:toggle-assistant", toggle);
+    return () => window.removeEventListener("n0va:toggle-assistant", toggle);
+  }, []);
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   function sendMessage(text: string) {
@@ -150,15 +159,15 @@ export default function AIAssistant() {
       {/* Chat bubble */}
       <button
         onClick={() => { setOpen(true); setMinimized(false); }}
-        className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-n0va-600 hover:bg-n0va-500 text-white flex items-center justify-center shadow-lg shadow-n0va-600/30 transition-all hover:scale-105 ${open ? "hidden" : ""}`}
-        title="AI Assistant"
+        className={`fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-40 w-14 h-14 rounded-full bg-n0va-600 hover:bg-n0va-500 text-white flex items-center justify-center shadow-lg shadow-n0va-600/30 transition-all hover:scale-105 ${open ? "hidden" : ""}`}
+        title="AI Assistant (Ctrl+/)"
       >
         <Bot className="w-6 h-6" />
       </button>
 
       {/* Chat panel */}
       {open && (
-        <div className={`fixed bottom-6 right-6 z-50 w-[380px] bg-n0va-800 border border-gray-800 rounded-xl shadow-2xl shadow-black/40 flex flex-col transition-all ${minimized ? "h-14" : "h-[560px]"}`}>
+        <div className={`fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 w-[calc(100vw-2rem)] max-w-[380px] bg-n0va-800 border border-gray-800 rounded-xl shadow-2xl shadow-black/40 flex flex-col transition-all ${minimized ? "h-14" : "h-[60vh] lg:h-[560px]"}`}>
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-gray-800 shrink-0">
             <div className="flex items-center gap-2.5">

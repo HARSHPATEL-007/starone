@@ -76,6 +76,12 @@ export default function CommandCenter() {
   useEffect(() => { loadData(); }, [loadData]);
 
   useEffect(() => {
+    function refresh() { loadData(); }
+    window.addEventListener("n0va:refresh-data", refresh);
+    return () => window.removeEventListener("n0va:refresh-data", refresh);
+  }, [loadData]);
+
+  useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
