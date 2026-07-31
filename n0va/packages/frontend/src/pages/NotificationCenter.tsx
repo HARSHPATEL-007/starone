@@ -72,7 +72,7 @@ export default function NotificationCenter() {
 
   async function loadNotifications() {
     setLoading(true);
-    try { setNotifications(await api.notifications.list()); } finally { setLoading(false); }
+    try { const r: any = await api.notifications.list(); setNotifications(Array.isArray(r) ? r : r?.data || []); } finally { setLoading(false); }
   }
 
   const liveAlerts = [
@@ -182,7 +182,7 @@ export default function NotificationCenter() {
           </h1>
           <p className="text-gray-500 mt-1">{unreadCount} unread{liveAlerts.length > 0 ? ` · ${liveAlerts.length} live` : ""} · {allItems.length} total</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           {selectMode ? (
             <div className="flex items-center gap-1.5">
               <button onClick={() => { setSelected(new Set()); setSelectMode(false); }} className="btn-ghost text-xs">Cancel</button>

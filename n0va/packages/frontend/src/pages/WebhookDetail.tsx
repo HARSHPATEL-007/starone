@@ -43,7 +43,8 @@ export default function WebhookDetail() {
     if (!id) return;
     setDeliveriesLoading(true);
     try {
-      setDeliveries(await api.webhooks.deliveries(id));
+      const r: any = await api.webhooks.deliveries(id);
+      setDeliveries(Array.isArray(r) ? r : r?.data || []);
     } finally {
       setDeliveriesLoading(false);
     }

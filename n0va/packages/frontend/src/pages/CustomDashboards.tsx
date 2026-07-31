@@ -254,7 +254,7 @@ function AgentStatusWidget() {
 
 function GoalsProgressWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => { api.entities.list("goals").then((r) => setData(r || [])).catch(() => {}); }, []);
+  useEffect(() => { api.entities.list("goals").then((r: any) => setData(Array.isArray(r) ? r : r?.data || [])).catch(() => {}); }, []);
   const goals = Array.isArray(data) ? data.slice(0, 4) : [];
   return (
     <div className="card p-4">
@@ -273,7 +273,7 @@ function GoalsProgressWidget() {
 
 function ABTestStatusWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => { api.entities.list("ab_tests").then((r) => setData(r || [])).catch(() => {}); }, []);
+  useEffect(() => { api.entities.list("ab_tests").then((r: any) => setData(Array.isArray(r) ? r : r?.data || [])).catch(() => {}); }, []);
   const tests = Array.isArray(data) ? data : [];
   const running = tests.filter((t: any) => t.status === "running").length;
   const completed = tests.filter((t: any) => t.status === "completed").length;
@@ -324,7 +324,7 @@ function ApprovalQueueWidget() {
 
 function CompetitiveSnapshotWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => { api.entities.list("competitive_intel").then((r) => setData(r || [])).catch(() => {}); }, []);
+  useEffect(() => { api.entities.list("competitive_intel").then((r: any) => setData(Array.isArray(r) ? r : r?.data || [])).catch(() => {}); }, []);
   const competitors = Array.isArray(data) ? data : [];
   return (
     <div className="card p-4">
@@ -339,7 +339,7 @@ function CompetitiveSnapshotWidget() {
 
 function RecentCommentsWidget() {
   const [data, setData] = useState<any>(null);
-  useEffect(() => { api.comments.list("dashboard", "recent").then((r) => setData((r || []).slice(0, 4))).catch(() => {}); }, []);
+  useEffect(() => { api.comments.list("dashboard", "recent").then((r: any) => setData((Array.isArray(r) ? r : r?.data || []).slice(0, 4))).catch(() => {}); }, []);
   const comments = data || [];
   return (
     <div className="card p-4">
@@ -402,8 +402,8 @@ export default function CustomDashboards() {
 
   useEffect(() => {
     setLoading(true);
-    api.entities.list(DASHBOARD_ENTITY).then((r) => {
-      const loaded = (r || []) as CustomDashboard[];
+    api.entities.list(DASHBOARD_ENTITY).then((r: any) => {
+      const loaded = (Array.isArray(r) ? r : r?.data || []) as CustomDashboard[];
       setDashboards(loaded);
       if (loaded.length > 0 && !activeId) setActiveId(loaded[0].id);
       setLoading(false);

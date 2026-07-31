@@ -37,7 +37,7 @@ export default function AutonomousCampaignManager() {
   }, []);
 
   function loadScheduled() {
-    api.autonomousCampaignManager.scheduledChanges().then(setScheduledChanges).catch(() => {});
+    api.autonomousCampaignManager.scheduledChanges().then((r: any) => setScheduledChanges(Array.isArray(r) ? r : r?.data || r?.changes || [])).catch(() => {});
   }
 
   function loadAnomalies() {

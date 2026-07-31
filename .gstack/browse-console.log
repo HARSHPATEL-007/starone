@@ -1,0 +1,1409 @@
+[2026-07-31T06:35:53.483Z] [debug] [vite] connecting...
+[2026-07-31T06:35:53.504Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T06:35:53.544Z] [debug] [vite] connected.
+[2026-07-31T06:35:53.601Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T06:35:53.601Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T06:36:21.045Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:36:21.045Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:36:21.183Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:36:21.184Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:36:21.185Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:37:25.431Z] [debug] [vite] connecting...
+[2026-07-31T06:37:25.443Z] [debug] [vite] connected.
+[2026-07-31T06:37:25.480Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T06:37:25.648Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T06:37:25.648Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T06:37:25.649Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:37:25.652Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:37:39.925Z] [debug] [vite] connecting...
+[2026-07-31T06:37:39.932Z] [debug] [vite] connected.
+[2026-07-31T06:37:39.952Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T06:37:40.026Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T06:37:40.026Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T06:37:40.027Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:37:40.027Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:38:52.271Z] [debug] [vite] hot updated: /src/pages/Campaigns.tsx
+[2026-07-31T06:38:52.271Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T06:45:32.676Z] [debug] [vite] connecting...
+[2026-07-31T06:45:32.679Z] [debug] [vite] connected.
+[2026-07-31T06:45:32.699Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T06:45:32.760Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T06:45:32.760Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T06:45:32.760Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:45:32.760Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:45:32.928Z] [error] The above error occurred in the <Audiences> component:
+
+    at Audiences (http://localhost:5173/src/pages/Audiences.tsx:28:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785479931730:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T06:45:59.063Z] [debug] [vite] hot updated: /src/pages/Audiences.tsx
+[2026-07-31T06:45:59.063Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T06:45:59.113Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:45:59.114Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:46:21.732Z] [debug] [vite] connecting...
+[2026-07-31T06:46:21.735Z] [debug] [vite] connected.
+[2026-07-31T06:46:21.747Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T06:46:21.810Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T06:46:21.810Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T06:46:21.810Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:46:21.810Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:46:21.904Z] [error] The above error occurred in the <Approvals> component:
+
+    at Approvals (http://localhost:5173/src/pages/Approvals.tsx:27:20)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785480358896:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T06:48:25.767Z] [debug] [vite] hot updated: /src/pages/Approvals.tsx
+[2026-07-31T06:48:25.767Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T06:48:25.823Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T06:48:25.823Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:07:10.574Z] [log] [vite] server connection lost. Polling for restart...
+[2026-07-31T07:07:10.578Z] [debug] [vite] connecting...
+[2026-07-31T07:07:12.317Z] [debug] [vite] connected.
+[2026-07-31T07:07:12.343Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:07:12.401Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:07:12.401Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:07:12.402Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:07:12.402Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:14:47.252Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:14:47.955Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:15:17.662Z] [debug] [vite] connecting...
+[2026-07-31T07:15:17.664Z] [debug] [vite] connected.
+[2026-07-31T07:15:17.679Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:15:17.746Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:15:17.746Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:15:17.746Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:15:17.746Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:15:29.347Z] [debug] [vite] hot updated: /src/pages/Audiences.tsx
+[2026-07-31T07:15:29.347Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:15:36.419Z] [debug] [vite] connecting...
+[2026-07-31T07:15:36.422Z] [debug] [vite] connected.
+[2026-07-31T07:15:36.436Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:15:36.504Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:15:36.504Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:15:36.504Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:15:36.505Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:15:54.196Z] [debug] [vite] hot updated: /src/pages/Approvals.tsx
+[2026-07-31T07:15:54.196Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:16:25.496Z] [debug] [vite] connecting...
+[2026-07-31T07:16:25.497Z] [debug] [vite] connected.
+[2026-07-31T07:16:25.511Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:25.573Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:25.573Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:25.574Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:25.574Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:27.875Z] [debug] [vite] connecting...
+[2026-07-31T07:16:27.878Z] [debug] [vite] connected.
+[2026-07-31T07:16:27.892Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:27.945Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:27.945Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:27.945Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:27.945Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:30.207Z] [debug] [vite] connecting...
+[2026-07-31T07:16:30.209Z] [debug] [vite] connected.
+[2026-07-31T07:16:30.214Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:30.274Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:30.274Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:30.274Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:30.274Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:32.569Z] [debug] [vite] connecting...
+[2026-07-31T07:16:32.574Z] [debug] [vite] connected.
+[2026-07-31T07:16:32.582Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:32.627Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:32.627Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:32.627Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:32.627Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:34.921Z] [debug] [vite] connecting...
+[2026-07-31T07:16:34.925Z] [debug] [vite] connected.
+[2026-07-31T07:16:34.935Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:34.990Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:34.991Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:34.991Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:34.991Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:37.253Z] [debug] [vite] connecting...
+[2026-07-31T07:16:37.256Z] [debug] [vite] connected.
+[2026-07-31T07:16:37.267Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:37.322Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:37.322Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:37.322Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:37.322Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:39.616Z] [debug] [vite] connecting...
+[2026-07-31T07:16:39.624Z] [debug] [vite] connected.
+[2026-07-31T07:16:39.630Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:39.695Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:39.695Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:39.695Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:39.695Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:39.790Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:16:41.944Z] [debug] [vite] connecting...
+[2026-07-31T07:16:41.949Z] [debug] [vite] connected.
+[2026-07-31T07:16:41.956Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:42.007Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:42.007Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:42.007Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:42.007Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:42.085Z] [error] Warning: Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s 
+
+Check the render method of `LandingPages`.  
+    at button
+    at LandingPages (http://localhost:5173/src/pages/LandingPages.tsx?t=1785481913159:41:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+[2026-07-31T07:16:42.092Z] [error] The above error occurred in the <LandingPages> component:
+
+    at LandingPages (http://localhost:5173/src/pages/LandingPages.tsx?t=1785481913159:41:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:16:44.284Z] [debug] [vite] connecting...
+[2026-07-31T07:16:44.296Z] [debug] [vite] connected.
+[2026-07-31T07:16:44.300Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:44.361Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:44.361Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:44.361Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:44.361Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:44.425Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:44.425Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:46.615Z] [debug] [vite] connecting...
+[2026-07-31T07:16:46.618Z] [debug] [vite] connected.
+[2026-07-31T07:16:46.625Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:46.679Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:46.679Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:46.679Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:46.679Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:46.827Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:46.827Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:46.827Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:59.401Z] [debug] [vite] connecting...
+[2026-07-31T07:16:59.404Z] [debug] [vite] connected.
+[2026-07-31T07:16:59.412Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:16:59.446Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:16:59.446Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:16:59.446Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:59.446Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:16:59.471Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:16:59.472Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:18:22.616Z] [debug] [vite] connecting...
+[2026-07-31T07:18:22.618Z] [debug] [vite] connected.
+[2026-07-31T07:18:22.627Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:18:22.661Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:18:22.661Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:18:22.661Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:18:22.661Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:18:22.697Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:19:03.907Z] [debug] [vite] connecting...
+[2026-07-31T07:19:03.909Z] [debug] [vite] connected.
+[2026-07-31T07:19:03.920Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:19:03.943Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:19:03.943Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:19:04.228Z] [debug] [vite] connecting...
+[2026-07-31T07:19:04.229Z] [debug] [vite] connected.
+[2026-07-31T07:19:04.243Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:19:04.272Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:19:04.272Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:19:04.272Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:19:04.272Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:19:04.301Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:19:04.302Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:20:31.141Z] [debug] [vite] connecting...
+[2026-07-31T07:20:31.143Z] [debug] [vite] connected.
+[2026-07-31T07:20:31.152Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:20:31.186Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:20:31.186Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:20:31.187Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:20:31.187Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:20:31.217Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:20:31.218Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:11.068Z] [debug] [vite] connecting...
+[2026-07-31T07:22:11.069Z] [debug] [vite] connected.
+[2026-07-31T07:22:11.080Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:22:11.116Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:22:11.116Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:22:11.116Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:11.116Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:11.140Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:22:11.140Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:11.140Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:22.914Z] [debug] [vite] connecting...
+[2026-07-31T07:22:22.916Z] [debug] [vite] connected.
+[2026-07-31T07:22:22.920Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:22:22.965Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:22:22.965Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:22:22.965Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:22.965Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:22:22.977Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785481911703:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:22:22.978Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:25:10.963Z] [debug] [vite] hot updated: /src/pages/Segmentation.tsx
+[2026-07-31T07:25:10.963Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:25:11.019Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:25:11.020Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:25:11.044Z] [error] The above error occurred in the <SegmentationInner> component:
+
+    at SegmentationInner (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482710790:81:24)
+    at Segmentation
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482153974:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:25:11.044Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:25:18.269Z] [debug] [vite] connecting...
+[2026-07-31T07:25:18.270Z] [debug] [vite] connected.
+[2026-07-31T07:25:18.285Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:25:18.339Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:25:18.339Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:25:18.340Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:25:18.340Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:25:18.374Z] [error] The above error occurred in the <SegmentationInner> component:
+
+    at SegmentationInner (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482710790:81:24)
+    at Segmentation
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482710790:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:25:18.374Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:26:18.884Z] [debug] [vite] connecting...
+[2026-07-31T07:26:18.886Z] [debug] [vite] connected.
+[2026-07-31T07:26:18.899Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:26:18.937Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:26:18.937Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:26:18.937Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:26:18.937Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:26:18.997Z] [error] The above error occurred in the <SegmentationInner> component:
+
+    at SegmentationInner (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482710790:81:24)
+    at Segmentation
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482710790:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:28:24.468Z] [debug] [vite] hot updated: /src/pages/Segmentation.tsx
+[2026-07-31T07:28:24.468Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:28:24.503Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:24.503Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:24.539Z] [error] The above error occurred in the <SegmentationInner> component:
+
+    at SegmentationInner (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482904296:81:24)
+    at Segmentation
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482710790:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:28:24.541Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:24.541Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:25.254Z] [debug] [vite] hot updated: /src/pages/Segmentation.tsx
+[2026-07-31T07:28:25.254Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:28:25.285Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:25.285Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:25.312Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482710790:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:28:25.312Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:25.312Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:28:49.849Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:28:55.801Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:29:02.975Z] [debug] [vite] connecting...
+[2026-07-31T07:29:02.976Z] [debug] [vite] connected.
+[2026-07-31T07:29:02.985Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:29:03.018Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:29:03.018Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:29:03.018Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:29:03.018Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:29:03.053Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:29:06.337Z] [debug] [vite] connecting...
+[2026-07-31T07:29:06.338Z] [debug] [vite] connected.
+[2026-07-31T07:29:06.348Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:29:06.374Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:29:06.374Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:29:06.374Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:29:06.374Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:29:06.467Z] [error] Warning: Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s 
+
+Check the render method of `LandingPages`.  
+    at button
+    at LandingPages (http://localhost:5173/src/pages/LandingPages.tsx?t=1785482935713:41:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+[2026-07-31T07:29:06.471Z] [error] The above error occurred in the <LandingPages> component:
+
+    at LandingPages (http://localhost:5173/src/pages/LandingPages.tsx?t=1785482935713:41:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:29:21.316Z] [debug] [vite] connecting...
+[2026-07-31T07:29:21.319Z] [debug] [vite] connected.
+[2026-07-31T07:29:21.324Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:29:21.357Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:29:21.357Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:29:21.357Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:29:21.357Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:29:21.379Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:29:21.379Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:32:25.191Z] [debug] [vite] connecting...
+[2026-07-31T07:32:25.193Z] [debug] [vite] connected.
+[2026-07-31T07:32:25.203Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:32:25.234Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:32:25.234Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:32:25.234Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:32:25.234Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:32:25.259Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:32:25.260Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:25.997Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:34:25.997Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:34:26.047Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:26.047Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:26.098Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483265845:50:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:34:26.100Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:32.779Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:34:32.779Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:34:32.810Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:32.810Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:32.847Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483272665:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483272665:50:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785482935713:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:34:42.630Z] [debug] [vite] connecting...
+[2026-07-31T07:34:42.634Z] [debug] [vite] connected.
+[2026-07-31T07:34:42.647Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:34:42.693Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:34:42.693Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:34:42.693Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:42.693Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:34:42.730Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483272665:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483272665:50:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483272665:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:37:19.929Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:37:19.929Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:37:19.971Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483272665:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:37:32.088Z] [debug] [vite] connecting...
+[2026-07-31T07:37:32.090Z] [debug] [vite] connected.
+[2026-07-31T07:37:32.099Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:37:32.132Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:37:32.132Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:37:32.132Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:37:32.132Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:37:32.158Z] [error] The above error occurred in the <Segmentation> component:
+
+    at Segmentation (http://localhost:5173/src/pages/Segmentation.tsx?t=1785482905135:61:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483439825:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:38:03.710Z] [debug] [vite] hot updated: /src/pages/Segmentation.tsx
+[2026-07-31T07:38:03.710Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:38:11.096Z] [debug] [vite] hot updated: /src/pages/Segmentation.tsx
+[2026-07-31T07:38:11.096Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:38:15.638Z] [debug] [vite] hot updated: /src/pages/Segmentation.tsx
+[2026-07-31T07:38:15.638Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:38:23.216Z] [debug] [vite] connecting...
+[2026-07-31T07:38:23.218Z] [debug] [vite] connected.
+[2026-07-31T07:38:23.227Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:38:23.262Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:38:23.262Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:38:23.262Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:38:23.262Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:38:23.300Z] [error] Warning: Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s 
+
+Check the render method of `LandingPages`.  
+    at button
+    at LandingPages (http://localhost:5173/src/pages/LandingPages.tsx?t=1785482935713:41:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483495516:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+[2026-07-31T07:38:23.306Z] [error] The above error occurred in the <LandingPages> component:
+
+    at LandingPages (http://localhost:5173/src/pages/LandingPages.tsx?t=1785482935713:41:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483439825:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483495516:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:39:08.716Z] [debug] [vite] hot updated: /src/pages/LandingPages.tsx
+[2026-07-31T07:39:08.716Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:39:11.235Z] [debug] [vite] hot updated: /src/pages/LandingPages.tsx
+[2026-07-31T07:39:11.235Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:39:33.061Z] [debug] [vite] hot updated: /src/pages/LandingPages.tsx
+[2026-07-31T07:39:33.061Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:39:34.333Z] [debug] [vite] hot updated: /src/pages/LandingPages.tsx
+[2026-07-31T07:39:34.333Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:39:41.015Z] [debug] [vite] connecting...
+[2026-07-31T07:39:41.016Z] [debug] [vite] connected.
+[2026-07-31T07:39:41.026Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:39:41.057Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:39:41.057Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:39:41.058Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:39:41.058Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:39:45.351Z] [debug] [vite] connecting...
+[2026-07-31T07:39:45.353Z] [debug] [vite] connected.
+[2026-07-31T07:39:45.361Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:39:45.388Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:39:45.389Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:39:45.389Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:39:45.389Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:39:58.159Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:39:58.159Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:39:58.177Z] [error] The above error occurred in the <Layout> component:
+
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483598053:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483574221:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:39:58.955Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:39:58.956Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:39:58.986Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:39:58.986Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:06.326Z] [debug] [vite] connecting...
+[2026-07-31T07:40:06.328Z] [debug] [vite] connected.
+[2026-07-31T07:40:06.338Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:06.369Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:06.369Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:06.369Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:06.369Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:06.390Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:06.390Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:11.693Z] [debug] [vite] connecting...
+[2026-07-31T07:40:11.696Z] [debug] [vite] connected.
+[2026-07-31T07:40:11.711Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:11.748Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:11.749Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:11.749Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:11.749Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:11.820Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:11.820Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:11.820Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:15.023Z] [debug] [vite] connecting...
+[2026-07-31T07:40:15.026Z] [debug] [vite] connected.
+[2026-07-31T07:40:15.037Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:15.069Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:15.069Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:15.069Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:15.069Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:15.123Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-07-31T07:40:15.132Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-07-31T07:40:18.337Z] [debug] [vite] connecting...
+[2026-07-31T07:40:18.339Z] [debug] [vite] connected.
+[2026-07-31T07:40:18.348Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:18.377Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:18.378Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:18.378Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:18.379Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:21.656Z] [debug] [vite] connecting...
+[2026-07-31T07:40:21.658Z] [debug] [vite] connected.
+[2026-07-31T07:40:21.664Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:21.699Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:21.699Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:21.699Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:21.699Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:24.963Z] [debug] [vite] connecting...
+[2026-07-31T07:40:24.965Z] [debug] [vite] connected.
+[2026-07-31T07:40:24.975Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:25.003Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:25.003Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:25.003Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:25.003Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:28.379Z] [debug] [vite] connecting...
+[2026-07-31T07:40:28.382Z] [debug] [vite] connected.
+[2026-07-31T07:40:28.391Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:28.443Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:28.443Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:28.443Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:28.443Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:28.542Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-07-31T07:40:28.547Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-07-31T07:40:31.784Z] [debug] [vite] connecting...
+[2026-07-31T07:40:31.786Z] [debug] [vite] connected.
+[2026-07-31T07:40:31.812Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:31.854Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:31.854Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:31.855Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:31.855Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:35.123Z] [debug] [vite] connecting...
+[2026-07-31T07:40:35.125Z] [debug] [vite] connected.
+[2026-07-31T07:40:35.136Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:35.165Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:35.165Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:35.165Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:35.165Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:38.426Z] [debug] [vite] connecting...
+[2026-07-31T07:40:38.428Z] [debug] [vite] connected.
+[2026-07-31T07:40:38.432Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:38.460Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:38.461Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:38.461Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:38.461Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:38.507Z] [error] The above error occurred in the <Automation> component:
+
+    at Automation (http://localhost:5173/src/pages/Automation.tsx?t=1785481997799:55:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483598879:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483598879:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:40:41.732Z] [debug] [vite] connecting...
+[2026-07-31T07:40:41.735Z] [debug] [vite] connected.
+[2026-07-31T07:40:41.737Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:41.766Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:41.766Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:41.766Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:41.766Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:41.805Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:41.805Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:41.805Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:45.044Z] [debug] [vite] connecting...
+[2026-07-31T07:40:45.046Z] [debug] [vite] connected.
+[2026-07-31T07:40:45.060Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:45.090Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:45.090Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:45.090Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:45.090Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:45.135Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:45.135Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:45.136Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:48.363Z] [debug] [vite] connecting...
+[2026-07-31T07:40:48.366Z] [debug] [vite] connected.
+[2026-07-31T07:40:48.369Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:48.399Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:48.399Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:48.399Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:48.399Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:48.446Z] [error] The above error occurred in the <WebhooksPage> component:
+
+    at WebhooksPage (http://localhost:5173/src/pages/WebhooksPage.tsx:40:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483598879:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483598879:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:40:51.656Z] [debug] [vite] connecting...
+[2026-07-31T07:40:51.659Z] [debug] [vite] connected.
+[2026-07-31T07:40:51.662Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:40:51.694Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:40:51.695Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:40:51.695Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:40:51.695Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:04.060Z] [debug] [vite] connecting...
+[2026-07-31T07:41:04.062Z] [debug] [vite] connected.
+[2026-07-31T07:41:04.072Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:41:04.101Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:41:04.101Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:41:04.101Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:04.101Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:04.126Z] [error] The above error occurred in the <Automation> component:
+
+    at Automation (http://localhost:5173/src/pages/Automation.tsx?t=1785481997799:55:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483598879:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483598879:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:41:04.127Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:23.995Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:41:23.995Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:41:24.027Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:24.027Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:24.045Z] [error] The above error occurred in the <Automation> component:
+
+    at Automation (http://localhost:5173/src/pages/Automation.tsx?t=1785481997799:55:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483683900:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483598879:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:41:24.046Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:24.046Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:24.640Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:41:24.640Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:41:24.671Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:24.671Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:24.693Z] [error] The above error occurred in the <Automation> component:
+
+    at Automation (http://localhost:5173/src/pages/Automation.tsx?t=1785481997799:55:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483598879:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:41:31.378Z] [debug] [vite] connecting...
+[2026-07-31T07:41:31.380Z] [debug] [vite] connected.
+[2026-07-31T07:41:31.389Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:41:31.415Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:41:31.416Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:41:31.416Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:31.416Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:31.440Z] [error] The above error occurred in the <Automation> component:
+
+    at Automation (http://localhost:5173/src/pages/Automation.tsx?t=1785481997799:55:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483684589:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:41:35.717Z] [debug] [vite] connecting...
+[2026-07-31T07:41:35.718Z] [debug] [vite] connected.
+[2026-07-31T07:41:35.728Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:41:35.753Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:41:35.753Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:41:35.753Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:35.753Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:41:35.779Z] [error] The above error occurred in the <WebhooksPage> component:
+
+    at WebhooksPage (http://localhost:5173/src/pages/WebhooksPage.tsx:40:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483684589:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrBoundary.
+[2026-07-31T07:42:52.658Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:42:53.475Z] [debug] [vite] hot updated: /src/pages/WebhooksPage.tsx
+[2026-07-31T07:42:53.475Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:43:03.791Z] [debug] [vite] hot updated: /src/pages/WebhooksPage.tsx
+[2026-07-31T07:43:03.791Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:43:11.543Z] [debug] [vite] connecting...
+[2026-07-31T07:43:11.545Z] [debug] [vite] connected.
+[2026-07-31T07:43:11.554Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:43:11.587Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:43:11.587Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:43:11.587Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:43:11.587Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:43:11.658Z] [error] Warning: Each child in a list should have a unique "key" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s 
+
+Check the render method of `Automation`.  
+    at div
+    at Automation (http://localhost:5173/src/pages/Automation.tsx?t=1785483772572:55:24)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at Suspense
+    at ErrBoundary (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:28:1)
+    at div
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785483684589:53:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785483783687:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+[2026-07-31T07:43:15.909Z] [debug] [vite] connecting...
+[2026-07-31T07:43:15.910Z] [debug] [vite] connected.
+[2026-07-31T07:43:15.919Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:43:15.945Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:43:15.945Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:43:15.945Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:43:15.945Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:43:26.946Z] [debug] [vite] hot updated: /src/pages/WebhooksPage.tsx
+[2026-07-31T07:43:26.946Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:43:36.307Z] [debug] [vite] hot updated: /src/pages/WebhooksPage.tsx
+[2026-07-31T07:43:36.307Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:43:55.829Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:44:05.402Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:44:19.692Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:44:29.821Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:44:30.464Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:44:39.797Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:44:48.041Z] [debug] [vite] connecting...
+[2026-07-31T07:44:48.042Z] [debug] [vite] connected.
+[2026-07-31T07:44:48.052Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:44:48.086Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:44:48.086Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:44:48.086Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:48.086Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:51.545Z] [debug] [vite] connecting...
+[2026-07-31T07:44:51.547Z] [debug] [vite] connected.
+[2026-07-31T07:44:51.558Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:44:51.594Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:44:51.594Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:44:51.594Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:51.594Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:51.656Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:51.657Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:54.837Z] [debug] [vite] connecting...
+[2026-07-31T07:44:54.838Z] [debug] [vite] connected.
+[2026-07-31T07:44:54.847Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:44:54.876Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:44:54.876Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:44:54.876Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:54.876Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:54.916Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:54.916Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:54.916Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:58.150Z] [debug] [vite] connecting...
+[2026-07-31T07:44:58.151Z] [debug] [vite] connected.
+[2026-07-31T07:44:58.156Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:44:58.188Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:44:58.188Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:44:58.189Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:44:58.189Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:45:31.024Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:45:31.708Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:45:31.708Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:45:55.898Z] [debug] [vite] connecting...
+[2026-07-31T07:45:55.899Z] [debug] [vite] connected.
+[2026-07-31T07:45:55.907Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:45:55.937Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:45:55.937Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:45:55.937Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:45:55.937Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:45:58.245Z] [debug] [vite] connecting...
+[2026-07-31T07:45:58.248Z] [debug] [vite] connected.
+[2026-07-31T07:45:58.255Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:45:58.280Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:45:58.280Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:45:58.280Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:45:58.280Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:00.551Z] [debug] [vite] connecting...
+[2026-07-31T07:46:00.553Z] [debug] [vite] connected.
+[2026-07-31T07:46:00.555Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:00.587Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:00.587Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:00.588Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:00.588Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:02.860Z] [debug] [vite] connecting...
+[2026-07-31T07:46:02.862Z] [debug] [vite] connected.
+[2026-07-31T07:46:02.872Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:02.898Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:02.898Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:02.898Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:02.898Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:05.172Z] [debug] [vite] connecting...
+[2026-07-31T07:46:05.173Z] [debug] [vite] connected.
+[2026-07-31T07:46:05.177Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:05.212Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:05.212Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:05.212Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:05.212Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:07.493Z] [debug] [vite] connecting...
+[2026-07-31T07:46:07.494Z] [debug] [vite] connected.
+[2026-07-31T07:46:07.498Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:07.524Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:07.524Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:07.524Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:07.525Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:07.544Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-07-31T07:46:07.553Z] [error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[2026-07-31T07:46:11.627Z] [debug] [vite] connecting...
+[2026-07-31T07:46:11.628Z] [debug] [vite] connected.
+[2026-07-31T07:46:11.632Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:11.657Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:11.657Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:11.657Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:11.657Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:13.918Z] [debug] [vite] connecting...
+[2026-07-31T07:46:13.919Z] [debug] [vite] connected.
+[2026-07-31T07:46:13.922Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:13.946Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:13.946Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:13.946Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:13.946Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:13.972Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-07-31T07:46:13.975Z] [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+[2026-07-31T07:46:16.221Z] [debug] [vite] connecting...
+[2026-07-31T07:46:16.223Z] [debug] [vite] connected.
+[2026-07-31T07:46:16.226Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:16.251Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:16.251Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:16.251Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:16.251Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:18.524Z] [debug] [vite] connecting...
+[2026-07-31T07:46:18.525Z] [debug] [vite] connected.
+[2026-07-31T07:46:18.528Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:18.554Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:18.555Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:18.555Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:18.555Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:20.820Z] [debug] [vite] connecting...
+[2026-07-31T07:46:20.821Z] [debug] [vite] connected.
+[2026-07-31T07:46:20.830Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:20.854Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:20.854Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:20.854Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:20.854Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:23.114Z] [debug] [vite] connecting...
+[2026-07-31T07:46:23.118Z] [debug] [vite] connected.
+[2026-07-31T07:46:23.119Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:23.147Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:23.147Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:23.147Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:23.147Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:25.399Z] [debug] [vite] connecting...
+[2026-07-31T07:46:25.400Z] [debug] [vite] connected.
+[2026-07-31T07:46:25.404Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:25.428Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:25.428Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:25.428Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:25.428Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:27.711Z] [debug] [vite] connecting...
+[2026-07-31T07:46:27.712Z] [debug] [vite] connected.
+[2026-07-31T07:46:27.715Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:46:27.739Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:46:27.739Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:46:27.739Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:27.739Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:46:58.987Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:47:11.390Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:47:18.757Z] [debug] [vite] connecting...
+[2026-07-31T07:47:18.761Z] [debug] [vite] connected.
+[2026-07-31T07:47:18.781Z] [info] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold
+[2026-07-31T07:47:18.883Z] [warning] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+[2026-07-31T07:47:18.883Z] [warning] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+[2026-07-31T07:47:18.883Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:47:18.883Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:47:47.341Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:47:47.341Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:47:47.371Z] [error] The above error occurred in the <Layout> component:
+
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1785484067240:33:34)
+    at ToastProvider (http://localhost:5173/src/components/Toast.tsx:50:33)
+    at AuthGuard (http://localhost:5173/src/App.tsx?t=1785484031258:298:22)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4122:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4592:5)
+    at App
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=dab0c3d9:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+[2026-07-31T07:47:48.065Z] [debug] [vite] hot updated: /src/components/Layout.tsx
+[2026-07-31T07:47:48.065Z] [debug] [vite] hot updated: /src/index.css
+[2026-07-31T07:47:48.138Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.
+[2026-07-31T07:47:48.138Z] [warning] WebSocket connection to 'ws://localhost:5173/socket.io/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.

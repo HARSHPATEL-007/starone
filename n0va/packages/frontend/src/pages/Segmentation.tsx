@@ -65,6 +65,15 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
+const normSeg = (s: any) => ({
+  ...s,
+  id: s.id || s._id,
+  description: s.description || "",
+  groups: s.groups || [],
+  estimatedSize: s.estimatedSize ?? s.size ?? 0,
+  updatedAt: s.updatedAt || s.createdAt || new Date().toISOString(),
+});
+
 export default function Segmentation() {
   const { addToast } = useToast();
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -78,7 +87,7 @@ export default function Segmentation() {
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
-  useEffect(() => { api.segmentation.list().then(setSegments); }, []);
+  useEffect(() => { api.segmentation.list().then((r: any) => setSegments((Array.isArray(r) ? r : r?.data || []).map(normSeg))); }, []);
 
   function toggle(id: string) { setExpanded(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
 
@@ -130,7 +139,8 @@ export default function Segmentation() {
     };
     if (editingId) { await api.segmentation.update(editingId, segment); addToast("success", "Segment updated"); }
     else { await api.segmentation.create(segment); addToast("success", "Segment created"); }
-    setSegments(await api.segmentation.list());
+    const sr: any = await api.segmentation.list();
+    setSegments((Array.isArray(sr) ? sr : sr?.data || []).map(normSeg));
     setShowForm(false);
   }
 
@@ -145,7 +155,8 @@ export default function Segmentation() {
     const s = segments.find(seg => seg.id === id);
     if (!s) return;
     await api.segmentation.create({ ...s, name: `${s.name} (Copy)`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-    setSegments(await api.segmentation.list());
+    const sr: any = await api.segmentation.list();
+    setSegments((Array.isArray(sr) ? sr : sr?.data || []).map(normSeg));
     addToast("success", "Segment duplicated");
   }
 
@@ -163,7 +174,7 @@ export default function Segmentation() {
   const filtered = segments.filter(s => {
     if (filterType !== "all" && s.type !== filterType) return false;
     if (filterStatus !== "all" && s.status !== filterStatus) return false;
-    return !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase());
+    return !search || s.name.toLowerCase().includes(search.toLowerCase()) || (s.description || "").toLowerCase().includes(search.toLowerCase());
   });
 
   const sizeChart = [...segments].sort((a, b) => b.estimatedSize - a.estimatedSize).slice(0, 10).map(s => ({ name: s.name.length > 16 ? s.name.substring(0, 16) + "..." : s.name, size: s.estimatedSize }));

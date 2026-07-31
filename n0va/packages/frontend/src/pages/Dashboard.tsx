@@ -60,7 +60,7 @@ export default function Dashboard() {
       api.summaries.portfolio().catch(() => null),
     ])
       .then(([d, analytics, fraud, agentList, attr, crossPlatform, prevAnalytics, campaignList, summary]) => {
-        setData(d); setDailyData(analytics.dailyMetrics || []); setFraudHealth(fraud); setAgents(agentList); setAttribution(attr);
+        setData(d); setDailyData(analytics.dailyMetrics || []); setFraudHealth(fraud); setAgents(Array.isArray(agentList) ? agentList : (agentList as any)?.data || []); setAttribution(attr);
         setCrossPlatformData(crossPlatform);
         setPrevPeriodData(prevAnalytics);
         setCampaigns(Array.isArray(campaignList) ? campaignList : campaignList?.campaigns || []);
@@ -69,7 +69,13 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [days]);
 
-  useEffect(() => { loadData(); api.activity.list().then((r) => setActivities(r || [])).catch(() => {}); }, [loadData]);
+  useEffect(() => { loadData(); api.activity.list().then((r: any) => setActivities(r?.data || r || [])).catch(() => {}); }, [loadData]);
+
+  useEffect(() => {
+    function refresh() { loadData(); }
+    window.addEventListener("n0va:refresh-data", refresh);
+    return () => window.removeEventListener("n0va:refresh-data", refresh);
+  }, [loadData]);
 
   useEffect(() => {
     if (liveActivities.length > 0) {
@@ -170,7 +176,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-white">Marketing Dashboard</h1>
           <p className="text-gray-500 mt-1">Real-time overview of your advertising performance</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
           <div className="flex bg-gray-800 rounded-lg p-0.5">
             {["7", "30", "90"].map((d) => (
               <button

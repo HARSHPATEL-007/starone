@@ -40,7 +40,7 @@ export default function Agents() {
 
   async function loadAgents() {
     setLoading(true);
-    try { setAgents(await api.agents.list()); } finally { setLoading(false); }
+    try { const r: any = await api.agents.list(); setAgents(Array.isArray(r) ? r : r?.data || []); } finally { setLoading(false); }
   }
 
   async function toggleAgent(id: string, currentStatus: string) {
@@ -157,7 +157,7 @@ export default function Agents() {
           <h1 className="text-2xl font-bold text-white">AI Agents</h1>
           <p className="text-gray-500 mt-1">Autonomous agent swarm for 24/7 campaign optimization</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button className="btn-ghost text-xs" onClick={() => bulkAction("start")}>Start All</button>
           <button className="btn-ghost text-xs" onClick={() => bulkAction("pause")}>Pause All</button>
           {agents.length > 0 && (

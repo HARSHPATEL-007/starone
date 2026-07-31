@@ -35,10 +35,10 @@ export default function ReportBuilder() {
   async function load() {
     setLoading(true);
     try {
-      const [r, m] = await Promise.all([api.reportBuilder.list(), api.reportBuilder.metrics()]);
-      setReports(r);
-      setMetricsDef(m.metrics);
-      setChartTypes(m.chartTypes);
+      const [r, m]: any = await Promise.all([api.reportBuilder.list(), api.reportBuilder.metrics()]);
+      setReports(Array.isArray(r) ? r : r?.data || []);
+      setMetricsDef(m?.data?.metrics ?? m?.metrics);
+      setChartTypes(m?.data?.chartTypes ?? m?.chartTypes);
     } catch { addToast("error", "Failed to load reports"); }
     setLoading(false);
   }

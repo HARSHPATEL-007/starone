@@ -52,7 +52,7 @@ export default function KeywordManager() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [form, setForm] = useState<{ term: string; volume: number; difficulty: number; position: number; previousPosition: number; cpc: number; bid: number; group: string; status: string; matchType: string }>({ term: "", volume: 0, difficulty: 0, position: 0, previousPosition: 0, cpc: 0, bid: 0, group: "Product", status: "active", matchType: "exact" });
 
-  useEffect(() => { api.keywords.list().then(setKeywords); }, []);
+  useEffect(() => { api.keywords.list().then((r: any) => setKeywords(Array.isArray(r) ? r : r?.data || [])); }, []);
 
   const avgPos = keywords.length > 0 ? (keywords.reduce((s, k) => s + k.position, 0) / keywords.length) : 0;
   const totalVolume = keywords.reduce((s, k) => s + k.volume, 0);
@@ -69,7 +69,8 @@ export default function KeywordManager() {
     const kw = { ...form, term: form.term.trim(), traffic: Math.floor(form.volume * (11 - Math.min(form.position, 10)) / 20), lastUpdated: now };
     if (editingId) { await api.keywords.update(editingId, kw); addToast("success", "Keyword updated"); }
     else { await api.keywords.create(kw); addToast("success", "Keyword added"); }
-    setKeywords(await api.keywords.list());
+    const kr: any = await api.keywords.list();
+    setKeywords(Array.isArray(kr) ? kr : kr?.data || []);
     setShowForm(false);
     setEditingId(null);
   }
@@ -80,11 +81,11 @@ export default function KeywordManager() {
     setKeywords(prev => prev.filter(k => k.id !== id));
     addToast("success", `"${name}" removed`);
   }
-
   async function handleBulkDelete() {
     const count = selected.size;
     for (const id of selected) await api.keywords.delete(id);
-    setKeywords(await api.keywords.list());
+    const kr: any = await api.keywords.list();
+    setKeywords(Array.isArray(kr) ? kr : kr?.data || []);
     addToast("success", `Deleted ${count} keywords`);
     setSelected(new Set());
   }
@@ -95,7 +96,8 @@ export default function KeywordManager() {
       const kw = keywords.find(k => k.id === id);
       if (kw) await api.keywords.update(id, { ...kw, group });
     }
-    setKeywords(await api.keywords.list());
+    const kr: any = await api.keywords.list();
+    setKeywords(Array.isArray(kr) ? kr : kr?.data || []);
     addToast("success", `Moved ${count} keywords to ${group}`);
     setSelected(new Set());
   }
@@ -169,7 +171,8 @@ export default function KeywordManager() {
           if (entry.term) imported.push(entry as Keyword);
         }
         for (const kw of imported) await api.keywords.create(kw as any);
-        setKeywords(await api.keywords.list());
+        const kr: any = await api.keywords.list();
+        setKeywords(Array.isArray(kr) ? kr : kr?.data || []);
         addToast("success", `Imported ${imported.length} keywords`);
       } catch { addToast("error", "Failed to parse CSV"); }
     };

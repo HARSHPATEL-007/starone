@@ -78,14 +78,14 @@ export default function Automation() {
   const [bulkEnabled, setBulkEnabled] = useState(false);
 
   useEffect(() => {
-    api.automationRules.list().then(rules => {
-      setRules(rules || []);
+    api.automationRules.list().then((r: any) => {
+      setRules(Array.isArray(r) ? r : r?.data || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
   const loadExecutions = useCallback(() => {
-    api.automationRules.executions().then(setExecutions).catch(() => {});
+    api.automationRules.executions().then((r: any) => setExecutions(Array.isArray(r) ? r : r?.data || [])).catch(() => {});
   }, []);
 
   useEffect(() => {

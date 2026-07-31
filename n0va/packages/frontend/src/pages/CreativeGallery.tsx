@@ -30,7 +30,7 @@ export default function CreativeGallery() {
 
   async function loadData() {
     setLoading(true);
-    try { setCreatives(await api.creatives.list()); }
+    try { const r: any = await api.creatives.list(); setCreatives(Array.isArray(r) ? r : r?.data || []); }
     catch { addToast("error", "Failed to load creatives"); }
     finally { setLoading(false); }
   }

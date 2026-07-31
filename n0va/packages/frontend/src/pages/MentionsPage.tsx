@@ -12,7 +12,7 @@ export default function MentionsPage() {
 
   async function load() {
     setLoading(true);
-    try { setMentions(await api.mentions.list()); }
+    try { const r: any = await api.mentions.list(); setMentions(Array.isArray(r) ? r : r?.data || []); }
     catch { /* ignore */ }
     finally { setLoading(false); }
   }

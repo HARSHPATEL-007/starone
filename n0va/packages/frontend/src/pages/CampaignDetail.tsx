@@ -59,7 +59,7 @@ export default function CampaignDetail() {
 
   useEffect(() => {
     if (campaignId) {
-      api.annotations.list(campaignId).then(setAnnotations).catch(() => {});
+      api.annotations.list(campaignId).then((r: any) => setAnnotations(Array.isArray(r) ? r : r?.data || [])).catch(() => {});
     }
   }, [campaignId]);
 

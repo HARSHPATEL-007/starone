@@ -76,7 +76,7 @@ export default function CampaignWizard() {
   })();
 
   useEffect(() => {
-    api.audiences.list().then(setAudiences).catch(() => {});
+    api.audiences.list().then((r: any) => setAudiences(Array.isArray(r) ? r : r?.data || [])).catch(() => {});
     const tplId = searchParams.get("template");
     if (tplId) {
       const tpl = getTemplate(tplId);

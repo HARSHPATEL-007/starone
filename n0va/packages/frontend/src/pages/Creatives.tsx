@@ -28,7 +28,7 @@ export default function Creatives() {
 
   async function loadCreatives() {
     setLoading(true);
-    try { setCreatives(await api.creatives.list()); } finally { setLoading(false); }
+    try { const r: any = await api.creatives.list(); setCreatives(Array.isArray(r) ? r : r?.data || []); } finally { setLoading(false); }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -97,7 +97,7 @@ export default function Creatives() {
           <h1 className="text-2xl font-bold text-white">Creatives</h1>
           <p className="text-gray-500 mt-1">Manage your ad creatives and assets</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button className="btn-secondary flex items-center gap-2" onClick={handleExport} disabled={creatives.length === 0}>
             <Download className="w-4 h-4" /> Export
           </button>

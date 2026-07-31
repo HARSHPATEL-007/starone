@@ -41,7 +41,7 @@ export default function Approvals() {
 
   useEffect(() => {
     loadData();
-    api.entities.list(HISTORY_ENTITY).then((r) => { setHistory(r || []); setHistoryLoading(false); }).catch(() => { setHistoryLoading(false); });
+    api.entities.list(HISTORY_ENTITY).then((r: any) => { setHistory(Array.isArray(r) ? r : r?.data || []); setHistoryLoading(false); }).catch(() => { setHistoryLoading(false); });
   }, []);
 
   async function loadData() {
@@ -147,7 +147,7 @@ export default function Approvals() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
             <Clock className="w-5 h-5 text-amber-400" />

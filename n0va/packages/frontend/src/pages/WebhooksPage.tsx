@@ -33,13 +33,14 @@ export default function WebhooksPage() {
   async function loadWebhooks() {
     setLoading(true);
     try {
-      const list = await api.webhooks.list();
-      setWebhooks(list || []);
+      const r: any = await api.webhooks.list();
+      const list: any[] = Array.isArray(r) ? r : r?.data || [];
+      setWebhooks(list);
       const deliveryMap: Record<string, any[]> = {};
       for (const wh of (list || [])) {
         try {
-          const dlv = await api.webhooks.deliveries(wh._id || wh.id);
-          deliveryMap[wh._id || wh.id] = dlv || [];
+          const dlv: any = await api.webhooks.deliveries(wh._id || wh.id);
+          deliveryMap[wh._id || wh.id] = Array.isArray(dlv) ? dlv : dlv?.data || [];
         } catch { deliveryMap[wh._id || wh.id] = []; }
       }
       setDeliveries(deliveryMap);
@@ -158,7 +159,7 @@ export default function WebhooksPage() {
           <h1 className="text-2xl font-bold text-white">Webhooks</h1>
           <p className="text-gray-500 mt-1">Bidirectional triggers for cross-module integration</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={handleExport}><Download className="w-3.5 h-3.5" /> Export</button>
           <button className="btn-secondary flex items-center gap-2 text-sm" onClick={() => { setShowTest(true); setTestResult(null); }}>
             <Play className="w-3.5 h-3.5" /> Test Emit

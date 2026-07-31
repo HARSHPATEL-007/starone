@@ -22,7 +22,7 @@ export default function Recipes() {
 
   const loadRecipes = useCallback(async () => {
     setLoading(true);
-    try { setRecipes(await api.recipes.list()); } finally { setLoading(false); }
+    try { const r: any = await api.recipes.list(); setRecipes(Array.isArray(r) ? r : r?.data || []); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { loadRecipes(); }, [loadRecipes]);

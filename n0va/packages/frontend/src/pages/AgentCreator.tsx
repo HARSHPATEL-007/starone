@@ -29,7 +29,7 @@ export default function AgentCreator() {
   const { addToast } = useToast();
   const [agents, setAgents] = useState<any[]>([]);
 
-  useEffect(() => { api.agents.list().then(setAgents).catch(() => {}); }, []);
+  useEffect(() => { api.agents.list().then((r: any) => setAgents(Array.isArray(r) ? r : r?.data || [])).catch(() => {}); }, []);
 
   const typeColors: Record<string, string> = { budget: "#10b981", creative: "#8b5cf6", audience: "#6366f1", bid: "#f59e0b", fraud: "#ef4444" };
   const agentTypeData = AGENT_TYPES.map(t => ({ name: t.label, value: agents.filter(a => a.type === t.id).length, color: typeColors[t.id] })).filter(d => d.value > 0);

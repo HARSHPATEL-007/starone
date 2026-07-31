@@ -13,7 +13,7 @@ export default function AudienceInsights() {
 
   async function load() {
     setLoading(true);
-    try { setInsights(await api.audienceInsights.insights()); }
+    try { const r: any = await api.audienceInsights.insights(); setInsights(r?.data ?? r); }
     catch { addToast("error", "Failed to load audience insights"); }
     setLoading(false);
   }

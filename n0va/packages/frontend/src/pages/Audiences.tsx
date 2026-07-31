@@ -25,7 +25,7 @@ export default function Audiences() {
 
   async function loadAudiences() {
     setLoading(true);
-    try { setAudiences(await api.audiences.list()); } finally { setLoading(false); }
+    try { const r: any = await api.audiences.list(); setAudiences(Array.isArray(r) ? r : r?.data || []); } finally { setLoading(false); }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -87,12 +87,12 @@ export default function Audiences() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Audiences</h1>
           <p className="text-gray-500 mt-1">Manage audience segments for targeting</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button className="btn-secondary flex items-center gap-2" onClick={handleExport} disabled={audiences.length === 0}>
             <Download className="w-4 h-4" /> Export
           </button>

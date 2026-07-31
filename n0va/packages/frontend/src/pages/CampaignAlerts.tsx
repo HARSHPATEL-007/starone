@@ -51,7 +51,7 @@ export default function CampaignAlerts() {
 
   const loadAlerts = useCallback(() => {
     setLoading(true);
-    api.entities.list(ENTITY_TYPE).then(setAlerts).catch(() => addToast("error", "Failed to load alerts")).finally(() => setLoading(false));
+    api.entities.list(ENTITY_TYPE).then((r: any) => setAlerts(Array.isArray(r) ? r : r?.data || [])).catch(() => addToast("error", "Failed to load alerts")).finally(() => setLoading(false));
   }, [addToast]);
 
   useEffect(() => { loadAlerts(); }, [loadAlerts]);

@@ -61,7 +61,7 @@ export default function ReportCenter() {
   }, []);
 
   useEffect(() => {
-    api.entities.list("report_history").then((r) => setHistory((r || []).map((e: any) => ({ id: e.id || e._id || "", name: e.name, time: e.time || e.createdAt, rows: e.rows || 0 })))).catch(() => {});
+    api.entities.list("report_history").then((r: any) => setHistory((Array.isArray(r) ? r : r?.data || []).map((e: any) => ({ id: e.id || e._id || "", name: e.name, time: e.time || e.createdAt, rows: e.rows || 0 })))).catch(() => {});
   }, []);
 
   async function saveHistory(entry: { id: string; name: string; time: string; rows: number }) {

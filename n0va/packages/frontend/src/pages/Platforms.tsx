@@ -26,10 +26,10 @@ export default function Platforms() {
 
   useEffect(() => {
     Promise.all([
-      api.platforms.list().then(setPlatforms),
-      api.platforms.health().then(setHealth),
-      api.platforms.connected().then(setConnectedAccounts).catch(() => {}),
-      api.oauth.status().then(setOauthStatus).catch(() => {}),
+      api.platforms.list().then((r: any) => setPlatforms(Array.isArray(r) ? r : r?.data || [])),
+      api.platforms.health().then((r: any) => setHealth(r?.data ?? r)),
+      api.platforms.connected().then((r: any) => setConnectedAccounts(Array.isArray(r) ? r : r?.data || [])).catch(() => {}),
+      api.oauth.status().then((r: any) => setOauthStatus(r?.data ?? r)).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -41,7 +41,7 @@ export default function Platforms() {
       setShowConnect(false);
       setForm({ platform: "meta", label: "", accessToken: "" });
       const accounts = await api.platforms.connected();
-      setConnectedAccounts(accounts);
+      setConnectedAccounts(Array.isArray(accounts) ? accounts : (accounts as any)?.data || []);
     } catch { addToast("error", "Failed to connect platform"); }
   }
 
@@ -122,7 +122,7 @@ export default function Platforms() {
           <p className="text-gray-500 mt-1">N0VA1O Gateway — connect and manage ad platforms</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={() => { Promise.all([api.platforms.list().then(setPlatforms), api.platforms.health().then(setHealth), api.platforms.connected().then(setConnectedAccounts).catch(() => {}), api.oauth.status().then(setOauthStatus).catch(() => {})]); addToast("success", "Refreshed"); }}>
+          <button className="btn-ghost text-xs flex items-center gap-1.5" onClick={() => { Promise.all([api.platforms.list().then((r: any) => setPlatforms(Array.isArray(r) ? r : r?.data || [])), api.platforms.health().then((r: any) => setHealth(r?.data ?? r)), api.platforms.connected().then((r: any) => setConnectedAccounts(Array.isArray(r) ? r : r?.data || [])).catch(() => {}), api.oauth.status().then((r: any) => setOauthStatus(r?.data ?? r)).catch(() => {})]); addToast("success", "Refreshed"); }}>
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
           <button className="btn-primary flex items-center gap-2" onClick={() => setShowConnect(true)}>

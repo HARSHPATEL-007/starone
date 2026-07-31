@@ -221,8 +221,8 @@ export default function CampaignIssues() {
 
   async function loadCampaigns() {
     try {
-      const data = await api.campaigns.list();
-      setCampaigns(data || []);
+      const data: any = await api.campaigns.list();
+      setCampaigns(Array.isArray(data) ? data : data?.campaigns || data?.data || []);
     } catch {}
     setLoading(false);
   }

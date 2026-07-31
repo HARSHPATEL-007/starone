@@ -9,6 +9,8 @@ interface LoginCredentials {
   name?: string;
 }
 
+const unwrap = (r: any) => (r && r.data !== undefined ? r.data : r);
+
 export default function Login() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -23,9 +25,9 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const data = mode === "login"
+      const data = unwrap(mode === "login"
         ? await api.auth.login(credentials.email, credentials.password)
-        : await api.auth.register(credentials.email, credentials.password, credentials.name || "");
+        : await api.auth.register(credentials.email, credentials.password, credentials.name || ""));
 
       localStorage.setItem("n0va_token", data.token);
       localStorage.setItem("n0va_user", JSON.stringify(data.user));

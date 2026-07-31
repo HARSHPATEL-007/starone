@@ -22,10 +22,28 @@ interface LandingPage {
 }
 
 function fmt(n: number): string {
+  n = n || 0;
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
   return n.toLocaleString();
 }
+
+const normLp = (p: any) => ({
+  id: p.id || p._id,
+  name: p.name || p.title || "",
+  title: p.title || p.name || "",
+  slug: p.slug || "",
+  url: p.url || `/${p.slug || ""}`,
+  campaignName: p.campaignName || "",
+  description: p.description || "",
+  tags: p.tags || [],
+  status: p.status || "draft",
+  seoScore: p.seoScore || 0,
+  views: p.views || 0,
+  conversions: p.conversions || 0,
+  createdAt: p.createdAt || new Date().toISOString(),
+  updatedAt: p.updatedAt || p.createdAt || new Date().toISOString(),
+});
 
 function scoreColor(score: number): string {
   if (score >= 80) return "text-green-400";
@@ -53,7 +71,7 @@ export default function LandingPages() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [form, setForm] = useState({ name: "", slug: "", url: "", campaignName: "", description: "", tags: "", status: "active", seoScore: 0, views: 0, conversions: 0 });
 
-  useEffect(() => { api.landingPages.list().then(setPages); }, []);
+  useEffect(() => { api.landingPages.list().then((r: any) => setPages((Array.isArray(r) ? r : r?.data || []).map(normLp))); }, []);
 
   const allTags = useMemo(() => [...new Set(pages.flatMap(p => p.tags))], [pages]);
 
@@ -76,7 +94,8 @@ export default function LandingPages() {
     };
     if (editingId) { await api.landingPages.update(editingId, lp); addToast("success", "Landing page updated"); }
     else { await api.landingPages.create(lp); addToast("success", "Landing page added"); }
-    setPages(await api.landingPages.list());
+    const pr: any = await api.landingPages.list();
+    setPages((Array.isArray(pr) ? pr : pr?.data || []).map(normLp));
     setShowForm(false);
     setEditingId(null);
   }
@@ -92,7 +111,8 @@ export default function LandingPages() {
     const p = pages.find(pp => pp.id === id);
     if (!p) return;
     await api.landingPages.create({ ...p, name: `${p.name} (Copy)`, views: 0, conversions: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-    setPages(await api.landingPages.list());
+    const pr: any = await api.landingPages.list();
+    setPages((Array.isArray(pr) ? pr : pr?.data || []).map(normLp));
     addToast("success", "Landing page duplicated");
   }
 
@@ -116,9 +136,9 @@ export default function LandingPages() {
   }
 
   const filtered = pages.filter(p => {
-    if (filterTag !== "all" && !p.tags.includes(filterTag)) return false;
+    if (filterTag !== "all" && !(p.tags || []).includes(filterTag)) return false;
     if (filterStatus !== "all" && p.status !== filterStatus) return false;
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.slug.toLowerCase().includes(search.toLowerCase()) && !p.url.toLowerCase().includes(search.toLowerCase()) && !p.campaignName.toLowerCase().includes(search.toLowerCase()) && !p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))) return false;
+    if (search && !(p.name || (p as any).title || "").toLowerCase().includes(search.toLowerCase()) && !(p.slug || "").toLowerCase().includes(search.toLowerCase()) && !(p.url || "").toLowerCase().includes(search.toLowerCase()) && !(p.campaignName || "").toLowerCase().includes(search.toLowerCase()) && !(p.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))) return false;
     return true;
   });
 
