@@ -811,6 +811,41 @@ export class CampaignSaturationService {
       },
     };
   }
+
+  saturationBatchMitigation(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; saturationLevel: string; saturationScore: number; actions: { action: string; expectedImpact: string; priority: string; timeToEffect: string }[]; projectedImprovement: number }[]; totals: { scanned: number; requiringAction: number; highPriorityActions: number; summary: string } } {
+    const all = this.analyzeAll(tenantId);
+    const rows: any[] = [];
+    let requiringAction = 0;
+    let highPriorityActions = 0;
+    for (const a of all.analyses) {
+      if (a.saturationLevel === "none") continue;
+      const suggestions = this.saturationOptimizationSuggestions(a.campaignId, tenantId);
+      const recovery = this.saturationRecoveryAnalysis(a.campaignId, tenantId);
+      requiringAction++;
+      highPriorityActions += suggestions.filter(s => s.priority === "high").length;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        saturationLevel: a.saturationLevel,
+        saturationScore: Math.round(a.saturationScore * 100) / 100,
+        actions: suggestions.map(s => ({
+          action: s.action, expectedImpact: s.expectedImpact,
+          priority: s.priority, timeToEffect: s.timeToEffect,
+        })),
+        projectedImprovement: recovery ? Math.round(recovery.projectedImprovement * 100) / 100 : 0,
+      });
+    }
+    rows.sort((x, y) => y.saturationScore - x.saturationScore);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: all.analyses.length,
+        requiringAction,
+        highPriorityActions,
+        summary: `${requiringAction} campaigns need saturation action (${highPriorityActions} high-priority fixes ready to apply)`,
+      },
+    };
+  }
 }
 
 export const campaignSaturationService = new CampaignSaturationService();

@@ -538,6 +538,40 @@ export class CampaignCreativeOptimizerService {
       },
     };
   }
+
+  creativeBatchRefreshPlan(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; assets: { assetId: string; assetName: string; fatigueLevel: string; fatigueRate: number; recommendation: string; suggestedRefreshDate: string }[]; topRefresh: string | null }[]; totals: { campaignsScanned: number; assetsToRefresh: number; severeAssets: number; summary: string } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let assetsToRefresh = 0;
+    let severeAssets = 0;
+    for (const a of portfolio.analyses) {
+      const fatigue = this.analyzeCreativeFatigue(a.campaignId, tenantId);
+      const fatigued = fatigue.filter(f => f.fatigueLevel === "severe" || f.fatigueLevel === "moderate");
+      if (fatigued.length === 0) continue;
+      assetsToRefresh += fatigued.length;
+      severeAssets += fatigued.filter(f => f.fatigueLevel === "severe").length;
+      const sorted = [...fatigued].sort((x, y) => y.fatigueRate - x.fatigueRate);
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        assets: sorted.map(f => ({
+          assetId: f.assetId, assetName: f.assetName, fatigueLevel: f.fatigueLevel,
+          fatigueRate: Math.round(f.fatigueRate * 100) / 100,
+          recommendation: f.recommendation, suggestedRefreshDate: f.suggestedRefreshDate,
+        })),
+        topRefresh: sorted[0] ? `${sorted[0].assetName} (${sorted[0].fatigueLevel})` : null,
+      });
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        campaignsScanned: portfolio.analyses.length,
+        assetsToRefresh,
+        severeAssets,
+        summary: `${assetsToRefresh} fatigued assets across ${rows.length} campaigns (${severeAssets} severe)`,
+      },
+    };
+  }
 }
 
 export const campaignCreativeOptimizer = new CampaignCreativeOptimizerService();

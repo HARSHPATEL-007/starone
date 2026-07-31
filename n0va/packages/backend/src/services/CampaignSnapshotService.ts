@@ -696,6 +696,27 @@ export class CampaignSnapshotService {
     };
   }
 
+  async snapshotBatchCapture(tenantId: string, name: string = "Daily Ops Capture"): Promise<{ generatedAt: string; captured: { campaignId: string; campaignName: string; snapshotId: string; capturedAt: string }[]; failed: string[]; total: number; summary: string }> {
+    const campaigns = DataStore.mem().find("campaigns", (c: any) => c.tenantId === tenantId) as any[];
+    const captured: any[] = [];
+    const failed: string[] = [];
+    for (const c of campaigns) {
+      try {
+        const snap = await this.captureSnapshot(tenantId, c._id, `${name} - ${new Date().toISOString().split("T")[0]}`, `Auto capture for ${c.name || c._id}`);
+        captured.push({ campaignId: c._id, campaignName: c.name || c._id, snapshotId: snap._id, capturedAt: snap.capturedAt });
+      } catch (e: any) {
+        failed.push(c._id);
+      }
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      captured,
+      failed,
+      total: captured.length,
+      summary: `Captured snapshots for ${captured.length}/${campaigns.length} campaigns${failed.length > 0 ? ` (${failed.length} failed)` : ""}`,
+    };
+  }
+
   // ─── Standard Normal CDF ──────────────────────────────────────────────
 
   private normalCDF(x: number): number {

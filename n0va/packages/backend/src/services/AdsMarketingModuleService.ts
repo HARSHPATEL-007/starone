@@ -3164,6 +3164,86 @@ export class AdsMarketingModuleService {
     return campaignSummaryService.summaryPortfolioQuickView(tenantId);
   }
 
+  biddingBatchApplyAdjustments(tenantId: string, priorityOnly: boolean = true) {
+    return campaignAIBiddingAgent.biddingBatchApplyAdjustments(tenantId, priorityOnly);
+  }
+
+  snapshotBatchCapture(tenantId: string, name?: string) {
+    return campaignSnapshotService.snapshotBatchCapture(tenantId, name);
+  }
+
+  saturationBatchMitigation(tenantId: string) {
+    return campaignSaturationService.saturationBatchMitigation(tenantId);
+  }
+
+  diagnosticsBatchFixPlan(tenantId: string) {
+    return campaignPerformanceDiagnostics.diagnosticsBatchFixPlan(tenantId);
+  }
+
+  creativeBatchRefreshPlan(tenantId: string) {
+    return campaignCreativeOptimizer.creativeBatchRefreshPlan(tenantId);
+  }
+
+  goalBatchStatus(tenantId: string) {
+    return campaignGoalTracker.goalBatchStatus(tenantId);
+  }
+
+  budgetRebalancePlan(tenantId: string) {
+    return campaignBudgetSimulator.budgetRebalancePlan(tenantId);
+  }
+
+  async dailyExecutionDashboard(tenantId: string): Promise<any> {
+    const realTime = this.realTimePortfolioSummary(tenantId);
+    const diagnostics = this.diagnosticsPriorityList(tenantId);
+    const creative = this.creativePortfolioHealth(tenantId);
+    const saturation = this.saturationPortfolioOverview(tenantId);
+    const bidding = this.biddingPortfolioOverview(tenantId);
+    const summary = this.summaryPortfolioQuickView(tenantId);
+    const goals = this.goalQuickCheck(tenantId);
+    const scorecard = this.scorecardDailySnapshot(tenantId);
+    const budget = this.budgetPortfolioOverview(tenantId);
+    const snapshot = await campaignSnapshotService.snapshotPortfolioSummary(tenantId);
+    const bidActions = this.biddingBatchApplyAdjustments(tenantId);
+    const satActions = this.saturationBatchMitigation(tenantId);
+    const fixPlan = this.diagnosticsBatchFixPlan(tenantId);
+    const refreshPlan = this.creativeBatchRefreshPlan(tenantId);
+    const goalStatus = this.goalBatchStatus(tenantId);
+    const rebalance = this.budgetRebalancePlan(tenantId);
+
+    const issues = diagnostics.totals.criticalFindings + diagnostics.totals.highFindings;
+    const actionsReady = bidActions.aggregateImpact.totalAdjustments + satActions.totals.highPriorityActions + fixPlan.totals.totalSteps + refreshPlan.totals.assetsToRefresh;
+    const atRiskCampaigns = Math.max(diagnostics.totals.campaignsNeedingAttention, saturation.totals.criticalOrHigh, bidding.totals.highRisk, summary.totals.highRisk, goals.atRisk);
+    const healthVerdict = issues > 0 ? "Needs attention" : atRiskCampaigns > 0 ? "Fair" : "All clear";
+    const morningReport = `Morning report: ${diagnostics.totals.campaignsScanned} campaigns — ${issues} critical/high findings, ${goals.onTrack}/${goals.totalGoals} goals on track, ${saturation.totals.criticalOrHigh} campaigns saturated, ${actionsReady} actions ready to apply in one click. Verdict: ${healthVerdict}.`;
+
+    const topActions: { priority: string; action: string; count: number }[] = [
+      { priority: "high", action: "Apply bid adjustments", count: bidActions.aggregateImpact.totalAdjustments },
+      { priority: "high", action: "Apply saturation mitigation", count: satActions.totals.highPriorityActions },
+      { priority: "medium", action: "Execute diagnostics fix plans", count: fixPlan.totals.totalSteps },
+      { priority: "medium", action: "Refresh fatigued creatives", count: refreshPlan.totals.assetsToRefresh },
+      { priority: "low", action: "Rebalance portfolio budget", count: rebalance.totals.scanned },
+    ].filter(t => t.count > 0).sort((a, b) => a.priority === b.priority ? b.count - a.count : (a.priority === "high" ? -1 : 1));
+
+    return {
+      generatedAt: new Date().toISOString(),
+      tenantId,
+      morningReport,
+      healthVerdict,
+      atRiskCampaigns,
+      actionsReady,
+      sections: { realTime, diagnostics, creative, saturation, bidding, summary, goals, scorecard, budget, snapshot },
+      readyActions: {
+        bidAdjustments: { count: bidActions.aggregateImpact.totalAdjustments, campaigns: bidActions.aggregateImpact.campaignsUpdated },
+        saturationMitigation: { count: satActions.totals.highPriorityActions, campaigns: satActions.totals.requiringAction },
+        fixPlans: { count: fixPlan.totals.totalSteps, campaigns: fixPlan.totals.withPlan },
+        creativeRefresh: { count: refreshPlan.totals.assetsToRefresh, campaigns: refreshPlan.campaigns.length },
+        budgetRebalance: { count: rebalance.totals.toIncrease + rebalance.totals.toDecrease, campaigns: rebalance.totals.scanned },
+        goalFollowUp: { count: goalStatus.totals.projectedToMiss, campaigns: goalStatus.totals.projectedToMiss },
+      },
+      topActions,
+    };
+  }
+
   insightAcknowledgeBatch(tenantId: string, insightIds: string[], action: string) {
     return campaignInsightsEngine.insightAcknowledgeBatch(tenantId, insightIds, action as any);
   }

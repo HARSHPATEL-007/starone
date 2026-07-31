@@ -1023,4 +1023,37 @@ router.get("/summary-portfolio-quick-view", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.summaryPortfolioQuickView(req.user!.tenantId));
 }));
 
+router.post("/bidding-batch-apply-adjustments", asyncHandler(async (req, res) => {
+  const { priorityOnly } = req.body;
+  sendSuccess(res, adsMarketingModule.biddingBatchApplyAdjustments(req.user!.tenantId, priorityOnly !== false));
+}));
+
+router.post("/snapshot-batch-capture", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.snapshotBatchCapture(req.user!.tenantId, req.body.name));
+}));
+
+router.get("/saturation-batch-mitigation", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.saturationBatchMitigation(req.user!.tenantId));
+}));
+
+router.get("/diagnostics-batch-fix-plan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.diagnosticsBatchFixPlan(req.user!.tenantId));
+}));
+
+router.get("/creative-batch-refresh-plan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.creativeBatchRefreshPlan(req.user!.tenantId));
+}));
+
+router.get("/goal-batch-status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.goalBatchStatus(req.user!.tenantId));
+}));
+
+router.get("/budget-rebalance-plan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.budgetRebalancePlan(req.user!.tenantId));
+}));
+
+router.get("/daily-execution-dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, await adsMarketingModule.dailyExecutionDashboard(req.user!.tenantId));
+}));
+
 export default router;

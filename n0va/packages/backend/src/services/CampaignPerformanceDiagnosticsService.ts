@@ -574,6 +574,44 @@ export class CampaignPerformanceDiagnosticsService {
       },
     };
   }
+
+  diagnosticsBatchFixPlan(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; score: number; grade: string; steps: { order: number; description: string; effort: string; expectedImprovement: string; timeline: string }[]; estimatedRecoveryDays: number }[]; totals: { campaignsScanned: number; withPlan: number; totalSteps: number; highEffortFixes: number; summary: string } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let withPlan = 0;
+    let totalSteps = 0;
+    let highEffortFixes = 0;
+    for (const a of portfolio.analyses) {
+      const report = this.diagnoseCampaign(a.campaignId, tenantId);
+      const needsFix = report.summary.criticalCount > 0 || report.summary.highCount > 0;
+      if (!needsFix) continue;
+      const plan = this.generateRecoveryPlan(a.campaignId, tenantId);
+      withPlan++;
+      if (plan) totalSteps += plan.steps.length;
+      if (plan) highEffortFixes += plan.steps.filter(s => s.effort === "high").length;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        score: report.score, grade: report.grade,
+        steps: plan ? plan.steps.map(s => ({
+          order: s.order, description: s.action, effort: s.effort,
+          expectedImprovement: s.expectedImpact, timeline: s.timeframe,
+        })) : [],
+        estimatedRecoveryDays: plan ? plan.estimatedRecoveryDays : 0,
+      });
+    }
+    rows.sort((x, y) => x.score - y.score);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        campaignsScanned: portfolio.analyses.length,
+        withPlan,
+        totalSteps,
+        highEffortFixes,
+        summary: `${withPlan} campaigns have ready-to-apply fix plans (${totalSteps} total steps)`,
+      },
+    };
+  }
 }
 
 export const campaignPerformanceDiagnostics = new CampaignPerformanceDiagnosticsService();

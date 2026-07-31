@@ -365,6 +365,58 @@ export class CampaignBudgetSimulatorService {
       summary: lastSim ? `Portfolio shows ${underfunded} underfunded, ${optimal} optimal, ${overfunded} overfunded campaigns` : "No simulation data available",
     };
   }
+
+  budgetRebalancePlan(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; currentBudget: number; recommendedBudget: number; delta: number; deltaPercent: number; direction: "increase" | "decrease" | "hold"; expectedROAS: number }[]; totals: { scanned: number; toIncrease: number; toDecrease: number; totalShift: number; summary: string } } {
+    const campaigns = DataStore.mem().find("campaigns", (c: any) => c.tenantId === tenantId) as any[];
+    const metricsAll = DataStore.mem().find("metrics", (m: any) => m.tenantId === tenantId) as any[];
+    const inputs = campaigns.map((c: any) => {
+      const ms = metricsAll.filter((m: any) => m.campaignId === c._id);
+      const spend = ms.reduce((s, m) => s + (m.spend || 0), 0);
+      const revenue = ms.reduce((s, m) => s + (m.revenue || 0), 0);
+      const conversions = ms.reduce((s, m) => s + (m.conversions || 0), 0);
+      const roas = spend > 0 ? revenue / spend : 1.2;
+      const seed = c._id.split("").reduce((s, ch) => s + ch.charCodeAt(0), 0);
+      return {
+        campaignId: c._id,
+        budget: c.budget?.remaining || 0,
+        expectedROAS: Math.round(roas * 100) / 100,
+        roasVariance: Math.round((0.15 + (seed % 25) / 100) * 100) / 100,
+        expectedConversions: Math.round(conversions * 1.1) || 10,
+        convVariance: Math.round((0.2 + (seed % 20) / 100) * 100) / 100,
+      };
+    });
+    const totalBudget = inputs.reduce((s, c) => s + c.budget, 0);
+    const result = this.budgetOptimizationAllocation(inputs, totalBudget);
+    const rows: any[] = [];
+    let toIncrease = 0, toDecrease = 0, totalShift = 0;
+    for (const a of result.allocations) {
+      const c = campaigns.find((x: any) => x._id === a.campaignId);
+      const current = inputs.find((x: any) => x.campaignId === a.campaignId)?.budget || 0;
+      const delta = Math.round((a.allocatedBudget - current) * 100) / 100;
+      const deltaPercent = current > 0 ? Math.round(delta / current * 10000) / 100 : 0;
+      if (delta > 1) toIncrease++;
+      if (delta < -1) toDecrease++;
+      totalShift += Math.abs(delta);
+      rows.push({
+        campaignId: a.campaignId, campaignName: c?.name || a.campaignId,
+        currentBudget: Math.round(current * 100) / 100,
+        recommendedBudget: a.allocatedBudget,
+        delta, deltaPercent,
+        direction: delta > 1 ? "increase" : delta < -1 ? "decrease" : "hold",
+        expectedROAS: a.expectedROAS,
+      });
+    }
+    rows.sort((x, y) => y.delta - x.delta);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: rows.length, toIncrease, toDecrease,
+        totalShift: Math.round(totalShift * 100) / 100,
+        summary: `Shift $${Math.round(totalShift).toLocaleString()} across ${rows.length} campaigns: ${toIncrease} to increase, ${toDecrease} to decrease`,
+      },
+    };
+  }
 }
 
 export const campaignBudgetSimulator = new CampaignBudgetSimulatorService();

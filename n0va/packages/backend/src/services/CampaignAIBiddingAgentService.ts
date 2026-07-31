@@ -585,6 +585,50 @@ export class CampaignAIBiddingAgentService {
       },
     };
   }
+
+  biddingBatchApplyAdjustments(tenantId: string, priorityOnly: boolean = true): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; adjustments: { channel: string; currentBid: number; recommendedBid: number; changePercent: number; rationale: string; confidence: number; priority: string }[]; expectedCPCChange: number; expectedWinRateChange: number; expectedSpendChange: number }[]; aggregateImpact: { campaignsUpdated: number; totalAdjustments: number; avgCPCChange: number; avgWinRateChange: number; avgSpendChange: number }; summary: string } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let totalAdjustments = 0;
+    let sumCPC = 0;
+    let sumWin = 0;
+    let sumSpend = 0;
+    let campaignsUpdated = 0;
+    for (const a of portfolio.analyses) {
+      const adj = this.recommendBidAdjustments(a.campaignId, tenantId);
+      const selected = priorityOnly ? adj.adjustments.filter(x => x.priority === "high" || x.priority === "medium") : adj.adjustments;
+      if (selected.length === 0) continue;
+      campaignsUpdated++;
+      totalAdjustments += selected.length;
+      sumCPC += adj.aggregateImpact.expectedCPCChange;
+      sumWin += adj.aggregateImpact.expectedWinRateChange;
+      sumSpend += adj.aggregateImpact.expectedSpendChange;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        adjustments: selected.map(x => ({
+          channel: x.channel, currentBid: x.currentBid, recommendedBid: x.recommendedBid,
+          changePercent: Math.round(x.changePercent * 100) / 100, rationale: x.rationale,
+          confidence: Math.round(x.confidence * 100) / 100, priority: x.priority,
+        })),
+        expectedCPCChange: Math.round(adj.aggregateImpact.expectedCPCChange * 100) / 100,
+        expectedWinRateChange: Math.round(adj.aggregateImpact.expectedWinRateChange * 100) / 100,
+        expectedSpendChange: Math.round(adj.aggregateImpact.expectedSpendChange * 100) / 100,
+      });
+    }
+    const n = Math.max(1, campaignsUpdated);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      aggregateImpact: {
+        campaignsUpdated,
+        totalAdjustments,
+        avgCPCChange: Math.round((sumCPC / n) * 100) / 100,
+        avgWinRateChange: Math.round((sumWin / n) * 100) / 100,
+        avgSpendChange: Math.round((sumSpend / n) * 100) / 100,
+      },
+      summary: `One-click apply: ${totalAdjustments} bid adjustments across ${campaignsUpdated} campaigns`,
+    };
+  }
 }
 
 export const campaignAIBiddingAgent = new CampaignAIBiddingAgentService();

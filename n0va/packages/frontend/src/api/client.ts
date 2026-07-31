@@ -2142,6 +2142,16 @@ export const api = {
     biddingPortfolioOverview: () => request<any>("/ads-marketing-module/bidding-portfolio-overview"),
     snapshotPortfolioSummary: () => request<any>("/ads-marketing-module/snapshot-portfolio-summary"),
     summaryPortfolioQuickView: () => request<any>("/ads-marketing-module/summary-portfolio-quick-view"),
+    biddingBatchApplyAdjustments: (priorityOnly: boolean = true) =>
+      request<any>("/ads-marketing-module/bidding-batch-apply-adjustments", { method: "POST", body: JSON.stringify({ priorityOnly }) }),
+    snapshotBatchCapture: (name?: string) =>
+      request<any>("/ads-marketing-module/snapshot-batch-capture", { method: "POST", body: JSON.stringify({ name }) }),
+    saturationBatchMitigation: () => request<any>("/ads-marketing-module/saturation-batch-mitigation"),
+    diagnosticsBatchFixPlan: () => request<any>("/ads-marketing-module/diagnostics-batch-fix-plan"),
+    creativeBatchRefreshPlan: () => request<any>("/ads-marketing-module/creative-batch-refresh-plan"),
+    goalBatchStatus: () => request<any>("/ads-marketing-module/goal-batch-status"),
+    budgetRebalancePlan: () => request<any>("/ads-marketing-module/budget-rebalance-plan"),
+    dailyExecutionDashboard: () => request<any>("/ads-marketing-module/daily-execution-dashboard"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

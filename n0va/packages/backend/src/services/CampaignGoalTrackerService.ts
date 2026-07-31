@@ -502,6 +502,43 @@ export class CampaignGoalTrackerService {
     const summary = `${onTrack}/${totalGoals} goals on track (${pctOnTrack}%) — ${dashboard.totals.totalCampaigns} campaigns tracked`;
     return { totalGoals, onTrack, atRisk: dashboard.totals.atRisk, behind, healthStatus, summary };
   }
+
+  goalBatchStatus(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; overallStatus: string; compositeProgress: number; willAttainCount: number; totalGoals: number; topRecommendation: string; suggestedAdjustment: { metric: string; currentTarget: number; recommendedTarget: number; priority: string } | null }[]; totals: { scanned: number; onTrack: number; atRisk: number; behind: number; projectedToMiss: number; summary: string } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let onTrack = 0, atRisk = 0, behind = 0, projectedToMiss = 0;
+    for (const a of portfolio.analyses) {
+      const report = this.trackGoalProgress(a.campaignId, tenantId);
+      if (!report) continue;
+      const predictions = this.predictGoalAttainment(a.campaignId, tenantId);
+      const willAttain = predictions.filter(p => p.willAttain).length;
+      const miss = predictions.length - willAttain;
+      if (report.overallStatus === "ahead" || report.overallStatus === "on-track") onTrack++;
+      else if (report.overallStatus === "at-risk") atRisk++;
+      else behind++;
+      if (miss > 0) projectedToMiss++;
+      const adj = this.recommendGoalAdjustments(a.campaignId, tenantId)[0] || null;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        overallStatus: report.overallStatus, compositeProgress: Math.round(report.compositeProgress * 100) / 100,
+        willAttainCount: willAttain, totalGoals: predictions.length,
+        topRecommendation: report.recommendations[0] || "On track — continue current pace",
+        suggestedAdjustment: adj ? {
+          metric: adj.metric, currentTarget: adj.currentTarget,
+          recommendedTarget: adj.recommendedTarget, priority: adj.priority,
+        } : null,
+      });
+    }
+    rows.sort((x, y) => y.compositeProgress - x.compositeProgress);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: rows.length, onTrack, atRisk, behind, projectedToMiss,
+        summary: `${onTrack} campaigns on track, ${atRisk} at risk, ${behind} behind, ${projectedToMiss} projected to miss targets`,
+      },
+    };
+  }
 }
 
 export const campaignGoalTracker = new CampaignGoalTrackerService();
