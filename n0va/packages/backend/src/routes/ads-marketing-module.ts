@@ -1196,4 +1196,60 @@ router.get("/ai-optimization-log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.aiOptimizationLog(req.user!.tenantId));
 }));
 
+router.post("/launch-wizard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.launchWizard(req.user!.tenantId, req.body.request || {}));
+}));
+
+router.post("/campaigns/duplicate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.duplicateCampaign(req.user!.tenantId, req.body.campaignId || ""));
+}));
+
+router.post("/campaigns/mirror", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mirrorCampaign(req.user!.tenantId, req.body.campaignId || "", req.body.platforms || []));
+}));
+
+router.get("/campaigns/:campaignId/launch-readiness", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.launchReadiness(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.post("/creatives/generate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.creativeGenerate(req.user!.tenantId, req.body.description || "", req.body.count || 3));
+}));
+
+router.get("/creatives/fatigue", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.creativeDetectFatigue(req.user!.tenantId));
+}));
+
+router.post("/creatives/auto-refresh", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.creativeRunAutoRefresh(req.user!.tenantId));
+}));
+
+router.post("/assets/upload", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.assetUpload(req.user!.tenantId, req.body.asset || {}));
+}));
+
+router.get("/assets/library-status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.assetLibraryStatus(req.user!.tenantId));
+}));
+
+router.get("/quick-fixes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.quickFixes(req.user!.tenantId));
+}));
+
+router.post("/quick-fixes/apply", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.applyQuickFix(req.user!.tenantId, req.body.fixId || ""));
+}));
+
+router.post("/quick-fixes/fix-all", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.fixAll(req.user!.tenantId));
+}));
+
+router.post("/campaigns/workflow", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.campaignWorkflow(req.user!.tenantId, req.body.campaignId || ""));
+}));
+
+router.get("/workflow-log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.workflowLog(req.user!.tenantId));
+}));
+
 export default router;

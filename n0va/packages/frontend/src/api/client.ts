@@ -2201,6 +2201,27 @@ export const api = {
     weeklyReview: () => request<any>("/ads-marketing-module/weekly-review"),
     monthlyStrategyDeck: () => request<any>("/ads-marketing-module/monthly-strategy-deck"),
     aiOptimizationLog: () => request<any>("/ads-marketing-module/ai-optimization-log"),
+    launchWizard: (request: Record<string, any>) =>
+      request<any>("/ads-marketing-module/launch-wizard", { method: "POST", body: JSON.stringify({ request }) }),
+    duplicateCampaign: (campaignId: string) =>
+      request<any>("/ads-marketing-module/campaigns/duplicate", { method: "POST", body: JSON.stringify({ campaignId }) }),
+    mirrorCampaign: (campaignId: string, platforms: string[]) =>
+      request<any>("/ads-marketing-module/campaigns/mirror", { method: "POST", body: JSON.stringify({ campaignId, platforms }) }),
+    launchReadiness: (campaignId: string) => request<any>(`/ads-marketing-module/campaigns/${campaignId}/launch-readiness`),
+    creativeGenerate: (description: string, count: number = 3) =>
+      request<any>("/ads-marketing-module/creatives/generate", { method: "POST", body: JSON.stringify({ description, count }) }),
+    creativeDetectFatigue: () => request<any>("/ads-marketing-module/creatives/fatigue"),
+    creativeRunAutoRefresh: () => request<any>("/ads-marketing-module/creatives/auto-refresh", { method: "POST" }),
+    assetUpload: (asset: Record<string, any>) =>
+      request<any>("/ads-marketing-module/assets/upload", { method: "POST", body: JSON.stringify({ asset }) }),
+    assetLibraryStatus: () => request<any>("/ads-marketing-module/assets/library-status"),
+    quickFixes: () => request<any>("/ads-marketing-module/quick-fixes"),
+    applyQuickFix: (fixId: string) =>
+      request<any>("/ads-marketing-module/quick-fixes/apply", { method: "POST", body: JSON.stringify({ fixId }) }),
+    fixAll: () => request<any>("/ads-marketing-module/quick-fixes/fix-all", { method: "POST" }),
+    campaignWorkflow: (campaignId: string) =>
+      request<any>("/ads-marketing-module/campaigns/workflow", { method: "POST", body: JSON.stringify({ campaignId }) }),
+    workflowLog: () => request<any>("/ads-marketing-module/workflow-log"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

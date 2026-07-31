@@ -44,6 +44,10 @@ import { commandCenter } from "./CommandCenterService";
 import { campaignAudienceBuilder } from "./CampaignAudienceBuilderService";
 import { budgetAutopilot } from "./BudgetAutopilotService";
 import { weeklyMonthlyRoutines } from "./WeeklyMonthlyRoutinesService";
+import { campaignLaunchWizard } from "./CampaignLaunchWizardService";
+import { creativeAutoRefresh } from "./CreativeAutoRefreshService";
+import { quickFix } from "./QuickFixService";
+import { crossModuleWorkflow } from "./CrossModuleWorkflowService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3333,6 +3337,62 @@ export class AdsMarketingModuleService {
 
   aiOptimizationLog(tenantId: string) {
     return weeklyMonthlyRoutines.aiOptimizationLog(tenantId);
+  }
+
+  launchWizard(tenantId: string, request: any) {
+    return campaignLaunchWizard.launchWizard(tenantId, request);
+  }
+
+  duplicateCampaign(tenantId: string, campaignId: string) {
+    return campaignLaunchWizard.duplicateCampaign(tenantId, campaignId);
+  }
+
+  mirrorCampaign(tenantId: string, campaignId: string, platforms: string[]) {
+    return campaignLaunchWizard.mirrorCampaign(tenantId, campaignId, platforms);
+  }
+
+  launchReadiness(tenantId: string, campaignId: string) {
+    return campaignLaunchWizard.launchReadiness(tenantId, campaignId);
+  }
+
+  creativeGenerate(tenantId: string, description: string, count: number = 3) {
+    return creativeAutoRefresh.generateCreative(tenantId, description, count);
+  }
+
+  creativeDetectFatigue(tenantId: string) {
+    return creativeAutoRefresh.detectFatigue(tenantId);
+  }
+
+  creativeRunAutoRefresh(tenantId: string) {
+    return creativeAutoRefresh.runAutoRefresh(tenantId);
+  }
+
+  assetUpload(tenantId: string, asset: any) {
+    return creativeAutoRefresh.uploadAsset(tenantId, asset);
+  }
+
+  assetLibraryStatus(tenantId: string) {
+    return creativeAutoRefresh.assetLibraryStatus(tenantId);
+  }
+
+  quickFixes(tenantId: string) {
+    return quickFix.quickFixes(tenantId);
+  }
+
+  applyQuickFix(tenantId: string, fixId: string) {
+    return quickFix.applyQuickFix(tenantId, fixId);
+  }
+
+  fixAll(tenantId: string) {
+    return quickFix.fixAll(tenantId);
+  }
+
+  campaignWorkflow(tenantId: string, campaignId: string) {
+    return crossModuleWorkflow.campaignCreationWorkflow(tenantId, campaignId);
+  }
+
+  workflowLog(tenantId: string) {
+    return crossModuleWorkflow.workflowLog(tenantId);
   }
 
   async dailyExecutionDashboard(tenantId: string): Promise<any> {
