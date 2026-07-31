@@ -15,6 +15,7 @@ interface SearchResult {
 
 const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Dashboard", route: "/", icon: BarChart3 },
+  { type: "page", label: "Command Center", route: "/command-center", icon: LayoutDashboard },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

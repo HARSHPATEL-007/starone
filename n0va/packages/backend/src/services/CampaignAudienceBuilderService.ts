@@ -112,7 +112,7 @@ export class CampaignAudienceBuilderService {
     let fullySynced = 0;
     const rows = all.map((a: any) => {
       const syncedCount = (a.syncedTo || []).filter((s: any) => s.status === "synced").length;
-      if (syncedCount === a.platforms.length) fullySynced++;
+      if (syncedCount === (a.platforms || []).length) fullySynced++;
       return {
         audienceId: a._id, name: a.name, estimatedSize: a.estimatedSize,
         platforms: a.platforms, syncedCount, qualityScore: a.qualityScore || 50,

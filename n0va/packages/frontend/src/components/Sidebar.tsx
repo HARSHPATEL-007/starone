@@ -83,6 +83,7 @@ import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/command-center", icon: LayoutDashboard, label: "Command Center" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

@@ -2201,8 +2201,8 @@ export const api = {
     weeklyReview: () => request<any>("/ads-marketing-module/weekly-review"),
     monthlyStrategyDeck: () => request<any>("/ads-marketing-module/monthly-strategy-deck"),
     aiOptimizationLog: () => request<any>("/ads-marketing-module/ai-optimization-log"),
-    launchWizard: (request: Record<string, any>) =>
-      request<any>("/ads-marketing-module/launch-wizard", { method: "POST", body: JSON.stringify({ request }) }),
+    launchWizard: (payload: Record<string, any>) =>
+      request<any>("/ads-marketing-module/launch-wizard", { method: "POST", body: JSON.stringify({ request: payload }) }),
     duplicateCampaign: (campaignId: string) =>
       request<any>("/ads-marketing-module/campaigns/duplicate", { method: "POST", body: JSON.stringify({ campaignId }) }),
     mirrorCampaign: (campaignId: string, platforms: string[]) =>
@@ -2873,6 +2873,8 @@ export const api = {
     alertHistory: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/alert-history`),
     dashboard: (campaignId: string) => request<any>(`/campaign-real-time-monitor/campaign/${campaignId}/dashboard`),
   },
+
+  campaignAttributionModeling: {
     attribution: (campaignId: string, model?: string) => {
       const params = model ? `?model=${model}` : "";
       return request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution${params}`);
@@ -2882,11 +2884,11 @@ export const api = {
     compare: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/compare`),
     channels: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/channels`),
     insights: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/insights`),
-    customModel: (campaignId: string, config: any) => request.post(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/custom`, { config }),
+    customModel: (campaignId: string, config: any) => request(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/custom`, { method: "POST", body: JSON.stringify({ config }) }),
     channelContribution: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/channel-contribution`),
     roiDistribution: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/roi-distribution`),
     timeToConvert: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/time-to-convert`),
-    crossCampaign: (campaignIds: string[]) => request.post("/campaign-attribution-modeling/attribution/cross-campaign", { campaignIds }),
+    crossCampaign: (campaignIds: string[]) => request("/campaign-attribution-modeling/attribution/cross-campaign", { method: "POST", body: JSON.stringify({ campaignIds }) }),
     whatIf: (campaignId: string) => request<any>(`/campaign-attribution-modeling/campaign/${campaignId}/attribution/what-if`),
   },
 
@@ -2894,7 +2896,7 @@ export const api = {
     biddingDashboard: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bidding-dashboard`),
     auctionInsights: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/auction-insights`),
     bidAdjustments: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-adjustments`),
-    bidScenario: (campaignId: string, scenario: any) => request.post(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-scenario`, scenario),
+    bidScenario: (campaignId: string, scenario: any) => request(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-scenario`, { method: "POST", body: JSON.stringify(scenario) }),
     bidEfficiency: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-efficiency`),
     bidStrategy: (campaignId: string, goal?: string) => {
       const params = goal ? `?goal=${goal}` : "";
@@ -2903,8 +2905,8 @@ export const api = {
     competitorAnalysis: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/competitor-analysis`),
     historicalTrends: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/historical-trends`),
     opportunityAnalysis: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/opportunity-analysis`),
-    portfolioOptimization: (campaigns: any[]) => request.post("/campaign-ai-bidding-agent/portfolio-optimization", { campaigns }),
+    portfolioOptimization: (campaigns: any[]) => request("/campaign-ai-bidding-agent/portfolio-optimization", { method: "POST", body: JSON.stringify({ campaigns }) }),
     bidAnomalies: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-anomalies`),
-    scenarioComparison: (campaignId: string, scenarios: any[]) => request.post(`/campaign-ai-bidding-agent/campaign/${campaignId}/scenario-comparison`, { scenarios }),
+    scenarioComparison: (campaignId: string, scenarios: any[]) => request(`/campaign-ai-bidding-agent/campaign/${campaignId}/scenario-comparison`, { method: "POST", body: JSON.stringify({ scenarios }) }),
   },
 };

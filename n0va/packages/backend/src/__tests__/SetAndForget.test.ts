@@ -72,6 +72,16 @@ describe("CampaignAudienceBuilderService", () => {
     const status = audienceBuilder.audienceSyncStatus(T);
     expect(status.audiences.some((a: any) => a.autoStatus !== null)).toBe(true);
   });
+
+  it("tolerates audience records without a platforms field in sync status", () => {
+    DataStore.mem().insert("audiences", { _id: "aud_legacy", tenantId: T, name: "Legacy Segment", segments: [], estimatedSize: 100, qualityScore: 40 });
+    const status = audienceBuilder.audienceSyncStatus(T);
+    const legacy = status.audiences.find((a: any) => a.audienceId === "aud_legacy");
+    expect(legacy).toBeTruthy();
+    expect(legacy.syncedCount).toBe(0);
+    expect(status.totals.total).toBeGreaterThanOrEqual(3);
+    expect(status.totals.summary).toMatch(/fully synced/);
+  });
 });
 
 describe("BudgetAutopilotService", () => {

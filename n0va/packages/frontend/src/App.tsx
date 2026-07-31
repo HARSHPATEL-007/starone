@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { ToastProvider } from "./components/Toast";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import CommandCenter from "./pages/CommandCenter";
 import AutonomousCampaignManager from "./pages/AutonomousCampaignManager";
 import UnifiedAdsPipeline from "./pages/UnifiedAdsPipeline";
 import Campaigns from "./pages/Campaigns";
@@ -160,6 +161,7 @@ export default function App() {
             <Layout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/command-center" element={<CommandCenter />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
