@@ -1003,4 +1003,24 @@ router.post("/health-predictor-quick-view", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.healthPredictorQuickView(req.body.campaignInputs || []));
 }));
 
+router.get("/creative-portfolio-health", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.creativePortfolioHealth(req.user!.tenantId));
+}));
+
+router.get("/saturation-portfolio-overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.saturationPortfolioOverview(req.user!.tenantId));
+}));
+
+router.get("/bidding-portfolio-overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.biddingPortfolioOverview(req.user!.tenantId));
+}));
+
+router.get("/snapshot-portfolio-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.snapshotPortfolioSummary(req.user!.tenantId));
+}));
+
+router.get("/summary-portfolio-quick-view", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.summaryPortfolioQuickView(req.user!.tenantId));
+}));
+
 export default router;

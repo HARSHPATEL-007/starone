@@ -1,3 +1,5 @@
+import { autonomousCampaignManager } from "./AutonomousCampaignManagerService";
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
@@ -543,6 +545,45 @@ export class CampaignAIBiddingAgentService {
     const bestScenario = sorted[0]?.name || "";
     const ranking = results.sort((a, b) => b.projectedROAS - a.projectedROAS).map(r => r.name);
     return { scenarios: results, bestScenario, ranking };
+  }
+
+  biddingPortfolioOverview(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; overallWinRate: number; budgetUtilization: number; riskLevel: string; avgCPC: number; bidEfficiency: number; recommendedAction: string }[]; totals: { scanned: number; highRisk: number; lowEfficiency: number; overBudget: number; summary: string } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let highRisk = 0;
+    let lowEfficiency = 0;
+    let overBudget = 0;
+    for (const a of portfolio.analyses) {
+      const dash = this.getBiddingDashboard(a.campaignId, tenantId);
+      const eff = this.analyzeBidEfficiency(a.campaignId, tenantId);
+      const risks = dash.riskIndicators.filter(r => r.severity === "high").length;
+      const inefficiency = eff.efficiencyScore < 60;
+      const overBudgeted = dash.aggregateStats.budgetUtilization > 90;
+      if (risks > 0) highRisk++;
+      if (inefficiency) lowEfficiency++;
+      if (overBudgeted) overBudget++;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        overallWinRate: Math.round(dash.aggregateStats.overallWinRate * 100) / 100,
+        budgetUtilization: Math.round(dash.aggregateStats.budgetUtilization * 100) / 100,
+        riskLevel: risks > 0 ? "high" : dash.riskIndicators.length > 0 ? "medium" : "low",
+        avgCPC: Math.round(dash.aggregateStats.avgCPC * 100) / 100,
+        bidEfficiency: Math.round(eff.efficiencyScore * 100) / 100,
+        recommendedAction: risks > 0 ? "Review high-risk bid indicators immediately" : inefficiency ? "Rebalance bids toward efficiency curve" : overBudgeted ? "Cap spend — budget utilization over 90%" : "Keep current bid strategy",
+      });
+    }
+    rows.sort((x, y) => y.bidEfficiency - x.bidEfficiency);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: rows.length,
+        highRisk,
+        lowEfficiency,
+        overBudget,
+        summary: `${highRisk} high-risk campaigns, ${lowEfficiency} with low bid efficiency, ${overBudget} over 90% budget utilization`,
+      },
+    };
   }
 }
 

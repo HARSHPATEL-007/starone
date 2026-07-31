@@ -777,6 +777,40 @@ export class CampaignSaturationService {
     }
     return parts.join(" ");
   }
+
+  saturationPortfolioOverview(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; saturationScore: number; saturationLevel: string; fatigueDetected: boolean; projectedScore: number; recommendation: string }[]; totals: { scanned: number; criticalOrHigh: number; fatigued: number; projectedRisers: number; summary: string } } {
+    const all = this.analyzeAll(tenantId);
+    const rows: any[] = [];
+    let fatigued = 0;
+    let projectedRisers = 0;
+    for (const a of all.analyses) {
+      const forecast = this.saturationForecast(a.campaignId, tenantId, 4);
+      const projected = forecast && forecast.projectedSpendLevels.length > 0 ? Math.round(forecast.projectedSpendLevels[forecast.projectedSpendLevels.length - 1].marginalROI * 100) / 100 : a.currentMarginalROI;
+      if (a.fatigueMetrics.fatigueDetected) fatigued++;
+      if (projected < a.currentMarginalROI) projectedRisers++;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        saturationScore: Math.round(a.saturationScore * 100) / 100,
+        saturationLevel: a.saturationLevel,
+        fatigueDetected: a.fatigueMetrics.fatigueDetected,
+        projectedScore: projected,
+        recommendation: a.recommendation || this.buildRecommendation(a.saturationLevel, a.fatigueMetrics.fatigueSeverity, a.saturationScore, a.currentMarginalROI, a.fatigueMetrics.fatigueDetected),
+      });
+    }
+    rows.sort((x, y) => y.saturationScore - x.saturationScore);
+    const criticalOrHigh = all.summary.critical + all.summary.high;
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: rows.length,
+        criticalOrHigh,
+        fatigued,
+        projectedRisers,
+        summary: `${criticalOrHigh} campaigns at critical/high saturation, ${fatigued} with fatigue, ${projectedRisers} projected to worsen`,
+      },
+    };
+  }
 }
 
 export const campaignSaturationService = new CampaignSaturationService();

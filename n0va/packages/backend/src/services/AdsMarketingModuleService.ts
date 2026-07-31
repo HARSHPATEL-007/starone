@@ -3144,6 +3144,26 @@ export class AdsMarketingModuleService {
     return campaignHealthPredictorService.healthPredictorQuickView(campaignInputs);
   }
 
+  creativePortfolioHealth(tenantId: string) {
+    return campaignCreativeOptimizer.creativePortfolioHealth(tenantId);
+  }
+
+  saturationPortfolioOverview(tenantId: string) {
+    return campaignSaturationService.saturationPortfolioOverview(tenantId);
+  }
+
+  biddingPortfolioOverview(tenantId: string) {
+    return campaignAIBiddingAgent.biddingPortfolioOverview(tenantId);
+  }
+
+  snapshotPortfolioSummary(tenantId: string) {
+    return campaignSnapshotService.snapshotPortfolioSummary(tenantId);
+  }
+
+  summaryPortfolioQuickView(tenantId: string) {
+    return campaignSummaryService.summaryPortfolioQuickView(tenantId);
+  }
+
   insightAcknowledgeBatch(tenantId: string, insightIds: string[], action: string) {
     return campaignInsightsEngine.insightAcknowledgeBatch(tenantId, insightIds, action as any);
   }

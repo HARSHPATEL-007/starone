@@ -2137,6 +2137,11 @@ export const api = {
     funnelPortfolioHealth: () => request<any>("/ads-marketing-module/funnel-portfolio-health"),
     healthPredictorQuickView: (campaignInputs: { campaignId: string; campaignName?: string; metrics: any[] }[]) =>
       request<any>("/ads-marketing-module/health-predictor-quick-view", { method: "POST", body: JSON.stringify({ campaignInputs }) }),
+    creativePortfolioHealth: () => request<any>("/ads-marketing-module/creative-portfolio-health"),
+    saturationPortfolioOverview: () => request<any>("/ads-marketing-module/saturation-portfolio-overview"),
+    biddingPortfolioOverview: () => request<any>("/ads-marketing-module/bidding-portfolio-overview"),
+    snapshotPortfolioSummary: () => request<any>("/ads-marketing-module/snapshot-portfolio-summary"),
+    summaryPortfolioQuickView: () => request<any>("/ads-marketing-module/summary-portfolio-quick-view"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),

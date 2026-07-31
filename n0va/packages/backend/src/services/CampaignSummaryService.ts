@@ -1,3 +1,5 @@
+import { DataStore } from "./DataStore";
+
 function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
@@ -585,6 +587,51 @@ export class CampaignSummaryService {
     const total = sorted.reduce((s, v) => s + v, 0);
     if (total === 0) return 0;
     return (2 * cumSum) / (n * total) - (n + 1) / n;
+  }
+
+  summaryPortfolioQuickView(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; shortSummary: string; healthScore: number; momentum: string; riskLevel: string; action: string }[]; totals: { scanned: number; highRisk: number; lowHealth: number; negativeMomentum: number; summary: string } } {
+    const raw = DataStore.mem().find("campaigns", (c: any) => c.tenantId === tenantId) as any[];
+    const campaigns: CampaignSummaryInput[] = raw.map((c: any) => ({
+      name: c.name || c._id,
+      status: c.status || "unknown",
+      type: c.type || "generic",
+      platforms: c.platforms || ["all"],
+      budget: c.budget || { daily: 0, lifetime: 0, spent: 0, remaining: 0 },
+      metrics: c.metrics,
+      startDate: c.startDate,
+      endDate: c.endDate,
+      tags: c.tags,
+    }));
+    const summaries = this.generateAll(campaigns);
+    const risk = this.summaryRiskAssessment(campaigns);
+    const rows: any[] = [];
+    let highRisk = 0;
+    let lowHealth = 0;
+    let negativeMomentum = 0;
+    for (let i = 0; i < campaigns.length; i++) {
+      const s = summaries[i];
+      const perf = this.summaryPerformanceSnapshot(campaigns[i]);
+      const r = risk.campaigns[i];
+      const riskLevel = r?.riskLevel || "low";
+      if (riskLevel === "high" || riskLevel === "critical") highRisk++;
+      if (perf.healthScore < 50) lowHealth++;
+      if (perf.momentum === "negative") negativeMomentum++;
+      rows.push({
+        campaignId: raw[i]._id, campaignName: campaigns[i].name,
+        shortSummary: s.shortSummary, healthScore: perf.healthScore,
+        momentum: perf.momentum, riskLevel,
+        action: s.recommendations[0] || "Monitor",
+      });
+    }
+    rows.sort((a, b) => a.healthScore - b.healthScore);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: rows.length, highRisk, lowHealth, negativeMomentum,
+        summary: `${highRisk} high-risk campaigns, ${lowHealth} with health below 50, ${negativeMomentum} with negative momentum`,
+      },
+    };
   }
 }
 

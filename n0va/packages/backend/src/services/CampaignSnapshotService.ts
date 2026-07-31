@@ -650,6 +650,52 @@ export class CampaignSnapshotService {
     return { forecastPeriod: "Next period", projectedMetrics: projected, expectedOutcome };
   }
 
+  async snapshotPortfolioSummary(tenantId: string): Promise<{ generatedAt: string; campaigns: { campaignId: string; campaignName: string; snapshotCount: number; lastCapturedAt: string | null; healthScore: number | null; rating: string | null; trendDirection: string; topIssue: string | null }[]; totals: { scanned: number; withSnapshots: number; healthy: number; atRisk: number; declining: number; summary: string } }> {
+    const campaigns = DataStore.mem().find("campaigns", (c: any) => c.tenantId === tenantId) as any[];
+    const rows: any[] = [];
+    let withSnapshots = 0;
+    let healthy = 0;
+    let atRisk = 0;
+    let declining = 0;
+    for (const c of campaigns) {
+      const snaps = DataStore.mem().find("campaign_snapshots", (s: any) => s.tenantId === tenantId && s.campaignId === c._id) as any[];
+      let healthScore: number | null = null;
+      let rating: string | null = null;
+      let trendDirection = "none";
+      let lastCapturedAt: string | null = null;
+      let topIssue: string | null = null;
+      if (snaps.length > 0) {
+        withSnapshots++;
+        lastCapturedAt = snaps.sort((a: any, b: any) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())[0].capturedAt;
+        const health = await this.snapshotHealthScore(tenantId, c._id);
+        if (health) { healthScore = health.healthScore; rating = health.rating; topIssue = health.topIssues[0] || null; }
+        const trend = await this.snapshotPerformanceTrend(tenantId, c._id);
+        if (trend) trendDirection = trend.direction;
+        if (healthScore !== null && healthScore >= 70) healthy++;
+        if (healthScore !== null && healthScore < 50) atRisk++;
+        if (trendDirection === "declining") declining++;
+      }
+      rows.push({
+        campaignId: c._id, campaignName: c.name || c._id,
+        snapshotCount: snaps.length, lastCapturedAt,
+        healthScore: healthScore === null ? null : Math.round(healthScore * 100) / 100,
+        rating, trendDirection, topIssue,
+      });
+    }
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        scanned: rows.length,
+        withSnapshots,
+        healthy,
+        atRisk,
+        declining,
+        summary: `${withSnapshots}/${rows.length} campaigns have snapshots, ${healthy} healthy, ${atRisk} at risk, ${declining} declining`,
+      },
+    };
+  }
+
   // ─── Standard Normal CDF ──────────────────────────────────────────────
 
   private normalCDF(x: number): number {

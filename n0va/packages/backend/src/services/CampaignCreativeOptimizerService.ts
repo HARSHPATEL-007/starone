@@ -506,6 +506,38 @@ export class CampaignCreativeOptimizerService {
       return { assetId: a.id, name: a.name, type: a.type, changes, totalImprovement: Math.round(totalImprovement * 100) / 100, currentStatus: a.status };
     });
   }
+
+  creativePortfolioHealth(tenantId: string): { generatedAt: string; campaigns: { campaignId: string; campaignName: string; fatiguedAssets: number; totalAssets: number; avgFatigueScore: number; status: "good" | "watch" | "refresh_needed"; topRecommendation: string }[]; totals: { campaignsScanned: number; refreshNeeded: number; fatiguedAssets: number; summary: string } } {
+    const portfolio = autonomousCampaignManager.analyzePortfolio(tenantId);
+    const rows: any[] = [];
+    let fatiguedAssets = 0;
+    let refreshNeeded = 0;
+    for (const a of portfolio.analyses) {
+      const fatigue = this.analyzeCreativeFatigue(a.campaignId, tenantId);
+      const recommendations = this.generateCreativeRecommendations(a.campaignId, tenantId);
+      const fatigued = fatigue.filter(f => f.fatigueLevel === "severe" || f.fatigueLevel === "moderate").length;
+      const avgScore = fatigue.length > 0 ? Math.round(fatigue.reduce((s, f) => s + f.fatigueRate, 0) / fatigue.length * 100) / 100 : 0;
+      fatiguedAssets += fatigued;
+      const needsRefresh = fatigued > 0 || avgScore > 60;
+      if (needsRefresh) refreshNeeded++;
+      rows.push({
+        campaignId: a.campaignId, campaignName: a.campaignName,
+        fatiguedAssets: fatigued, totalAssets: fatigue.length, avgFatigueScore: avgScore,
+        status: fatigued > 0 ? "refresh_needed" : avgScore > 45 ? "watch" : "good",        topRecommendation: recommendations.length > 0 ? recommendations[0].recommendation : "No action needed",
+      });
+    }
+    rows.sort((x, y) => y.avgFatigueScore - x.avgFatigueScore);
+    return {
+      generatedAt: new Date().toISOString(),
+      campaigns: rows,
+      totals: {
+        campaignsScanned: rows.length,
+        refreshNeeded,
+        fatiguedAssets,
+        summary: `${refreshNeeded}/${rows.length} campaigns need creative refresh, ${fatiguedAssets} fatigued assets detected`,
+      },
+    };
+  }
 }
 
 export const campaignCreativeOptimizer = new CampaignCreativeOptimizerService();
