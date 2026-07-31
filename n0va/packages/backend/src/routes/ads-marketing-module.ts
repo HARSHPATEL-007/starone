@@ -1056,4 +1056,144 @@ router.get("/daily-execution-dashboard", asyncHandler(async (req, res) => {
   sendSuccess(res, await adsMarketingModule.dailyExecutionDashboard(req.user!.tenantId));
 }));
 
+router.get("/command-center-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.commandCenterSummary(req.user!.tenantId));
+}));
+
+router.get("/daily-briefing", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.dailyBriefing(req.user!.tenantId));
+}));
+
+router.post("/parse-voice-command", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.parseVoiceCommand(req.body.text || ""));
+}));
+
+router.get("/quick-actions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.quickActions(req.user!.tenantId));
+}));
+
+router.get("/approval-settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.approvalGetSettings(req.user!.tenantId));
+}));
+
+router.post("/approval-settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.approvalUpdateSettings(req.user!.tenantId, req.body.updates || {}));
+}));
+
+router.post("/approval-evaluate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.approvalEvaluate(req.user!.tenantId, req.body.action || {}));
+}));
+
+router.post("/approval-evaluate-batch", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.approvalEvaluateBatch(req.user!.tenantId, req.body.actions || []));
+}));
+
+router.post("/approval-approve-all", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.approvalApproveAll(req.user!.tenantId, req.body.actions || []));
+}));
+
+router.post("/approval-decide", asyncHandler(async (req, res) => {
+  const { actionId, decision } = req.body;
+  sendSuccess(res, adsMarketingModule.approvalDecide(req.user!.tenantId, actionId, decision || "approve"));
+}));
+
+router.get("/approval-decision-log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.approvalDecisionLog(req.user!.tenantId));
+}));
+
+router.post("/triage-alert", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.triageAlert(req.body.alert || {}));
+}));
+
+router.post("/triage-batch", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.triageBatch(req.body.alerts || []));
+}));
+
+router.post("/triage-execute", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.triageExecute(req.user!.tenantId, req.body.alert || {}));
+}));
+
+router.get("/triage-history", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.triageHistory(req.user!.tenantId));
+}));
+
+router.get("/campaign-templates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.templateList());
+}));
+
+router.get("/campaign-templates/launch-history", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.templateLaunchHistory(req.user!.tenantId));
+}));
+
+router.get("/campaign-templates/:templateId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.templateGet(req.params.templateId));
+}));
+
+router.post("/campaign-templates/instantiate", asyncHandler(async (req, res) => {
+  const { templateId, inputs } = req.body;
+  sendSuccess(res, adsMarketingModule.templateInstantiate(templateId, inputs || {}));
+}));
+
+router.post("/campaign-templates/launch", asyncHandler(async (req, res) => {
+  const { templateId, inputs } = req.body;
+  sendSuccess(res, adsMarketingModule.templateLaunch(req.user!.tenantId, templateId, inputs || {}));
+}));
+
+router.post("/audiences/build", asyncHandler(async (req, res) => {
+  const { name, segments, options } = req.body;
+  sendSuccess(res, adsMarketingModule.audienceBuild(req.user!.tenantId, name || "", segments || [], options || {}));
+}));
+
+router.post("/audiences/sync", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.audienceSyncToPlatforms(req.user!.tenantId, req.body.audienceId || ""));
+}));
+
+router.get("/audiences/quality", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.audienceQualityScoring(req.user!.tenantId));
+}));
+
+router.get("/audiences/ltv-ranking", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.audienceLtvRanking(req.user!.tenantId));
+}));
+
+router.post("/audiences/auto-actions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.audienceApplyAutoActions(req.user!.tenantId));
+}));
+
+router.get("/audiences/sync-status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.audienceSyncStatus(req.user!.tenantId));
+}));
+
+router.post("/autopilot/enable", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.autopilotEnable(req.user!.tenantId, req.body.config || {}));
+}));
+
+router.get("/autopilot/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.autopilotStatus(req.user!.tenantId));
+}));
+
+router.post("/autopilot/cycle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.autopilotRunCycle(req.user!.tenantId));
+}));
+
+router.get("/autopilot/alerts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.autopilotSpendAlerts(req.user!.tenantId));
+}));
+
+router.get("/autopilot/daily-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.autopilotDailySummary(req.user!.tenantId));
+}));
+
+router.get("/weekly-review", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.weeklyReview(req.user!.tenantId));
+}));
+
+router.get("/monthly-strategy-deck", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.monthlyStrategyDeck(req.user!.tenantId));
+}));
+
+router.get("/ai-optimization-log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aiOptimizationLog(req.user!.tenantId));
+}));
+
 export default router;

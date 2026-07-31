@@ -37,6 +37,13 @@ import { campaignSimulationService } from "./CampaignSimulationService";
 import { campaignIssueService } from "./CampaignIssueService";
 import { campaignService } from "./CampaignService";
 import { DataStore } from "./DataStore";
+import { campaignAutoApprove } from "./CampaignAutoApproveService";
+import { campaignTriage } from "./CampaignTriageService";
+import { campaignTemplateService } from "./CampaignTemplateService";
+import { commandCenter } from "./CommandCenterService";
+import { campaignAudienceBuilder } from "./CampaignAudienceBuilderService";
+import { budgetAutopilot } from "./BudgetAutopilotService";
+import { weeklyMonthlyRoutines } from "./WeeklyMonthlyRoutinesService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3190,6 +3197,142 @@ export class AdsMarketingModuleService {
 
   budgetRebalancePlan(tenantId: string) {
     return campaignBudgetSimulator.budgetRebalancePlan(tenantId);
+  }
+
+  approvalGetSettings(tenantId: string) {
+    return campaignAutoApprove.getApprovalSettings(tenantId);
+  }
+
+  approvalUpdateSettings(tenantId: string, updates: any) {
+    return campaignAutoApprove.updateApprovalSettings(tenantId, updates);
+  }
+
+  approvalEvaluate(tenantId: string, action: any) {
+    return campaignAutoApprove.evaluateAction(tenantId, action);
+  }
+
+  approvalEvaluateBatch(tenantId: string, actions: any[]) {
+    return campaignAutoApprove.evaluateBatch(tenantId, actions);
+  }
+
+  approvalApproveAll(tenantId: string, actions: any[]) {
+    return campaignAutoApprove.approveAll(tenantId, actions);
+  }
+
+  approvalDecide(tenantId: string, actionId: string, decision: string) {
+    return campaignAutoApprove.decideAction(tenantId, actionId, decision as any);
+  }
+
+  approvalDecisionLog(tenantId: string) {
+    return campaignAutoApprove.getDecisionLog(tenantId);
+  }
+
+  triageAlert(alert: any) {
+    return campaignTriage.triageAlert(alert);
+  }
+
+  triageBatch(alerts: any[]) {
+    return campaignTriage.triageBatch(alerts);
+  }
+
+  triageExecute(tenantId: string, alert: any) {
+    return campaignTriage.executeTriage(tenantId, alert);
+  }
+
+  triageHistory(tenantId: string) {
+    return campaignTriage.getTriageHistory(tenantId);
+  }
+
+  templateList() {
+    return campaignTemplateService.listTemplates();
+  }
+
+  templateGet(templateId: string) {
+    return campaignTemplateService.getTemplate(templateId);
+  }
+
+  templateInstantiate(templateId: string, inputs: Record<string, any>) {
+    return campaignTemplateService.instantiateTemplate(templateId, inputs);
+  }
+
+  templateLaunch(tenantId: string, templateId: string, inputs: Record<string, any>) {
+    return campaignTemplateService.launchTemplate(tenantId, templateId, inputs);
+  }
+
+  templateLaunchHistory(tenantId: string) {
+    return campaignTemplateService.getLaunchHistory(tenantId);
+  }
+
+  commandCenterSummary(tenantId: string) {
+    return commandCenter.commandCenterSummary(tenantId);
+  }
+
+  dailyBriefing(tenantId: string) {
+    return commandCenter.dailyBriefing(tenantId);
+  }
+
+  parseVoiceCommand(text: string) {
+    return commandCenter.parseVoiceCommand(text);
+  }
+
+  quickActions(tenantId: string) {
+    return commandCenter.quickActions(tenantId);
+  }
+
+  audienceBuild(tenantId: string, name: string, segments: any[], options: any = {}) {
+    return campaignAudienceBuilder.buildAudience(tenantId, name, segments, options);
+  }
+
+  audienceSyncToPlatforms(tenantId: string, audienceId: string) {
+    return campaignAudienceBuilder.syncAudienceToPlatforms(tenantId, audienceId);
+  }
+
+  audienceQualityScoring(tenantId: string) {
+    return campaignAudienceBuilder.audienceQualityScoring(tenantId);
+  }
+
+  audienceLtvRanking(tenantId: string) {
+    return campaignAudienceBuilder.audienceLtvRanking(tenantId);
+  }
+
+  audienceApplyAutoActions(tenantId: string) {
+    return campaignAudienceBuilder.applyAudienceAutoActions(tenantId);
+  }
+
+  audienceSyncStatus(tenantId: string) {
+    return campaignAudienceBuilder.audienceSyncStatus(tenantId);
+  }
+
+  autopilotEnable(tenantId: string, config: any) {
+    return budgetAutopilot.enableAutopilot(tenantId, config);
+  }
+
+  autopilotStatus(tenantId: string) {
+    return budgetAutopilot.autopilotStatus(tenantId);
+  }
+
+  autopilotRunCycle(tenantId: string) {
+    return budgetAutopilot.runAutopilotCycle(tenantId);
+  }
+
+  autopilotSpendAlerts(tenantId: string) {
+    return budgetAutopilot.spendAlerts(tenantId);
+  }
+
+  autopilotDailySummary(tenantId: string) {
+    return budgetAutopilot.autopilotDailySummary(tenantId);
+  }
+
+  weeklyReview(tenantId: string) {
+    return weeklyMonthlyRoutines.weeklyReview(tenantId);
+  }
+
+  monthlyStrategyDeck(tenantId: string) {
+    return weeklyMonthlyRoutines.monthlyStrategyDeck(tenantId);
+  }
+
+  aiOptimizationLog(tenantId: string) {
+    return weeklyMonthlyRoutines.aiOptimizationLog(tenantId);
   }
 
   async dailyExecutionDashboard(tenantId: string): Promise<any> {

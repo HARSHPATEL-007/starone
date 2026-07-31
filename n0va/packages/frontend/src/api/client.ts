@@ -2152,6 +2152,55 @@ export const api = {
     goalBatchStatus: () => request<any>("/ads-marketing-module/goal-batch-status"),
     budgetRebalancePlan: () => request<any>("/ads-marketing-module/budget-rebalance-plan"),
     dailyExecutionDashboard: () => request<any>("/ads-marketing-module/daily-execution-dashboard"),
+    commandCenterSummary: () => request<any>("/ads-marketing-module/command-center-summary"),
+    dailyBriefing: () => request<any>("/ads-marketing-module/daily-briefing"),
+    parseVoiceCommand: (text: string) =>
+      request<any>("/ads-marketing-module/parse-voice-command", { method: "POST", body: JSON.stringify({ text }) }),
+    quickActions: () => request<any>("/ads-marketing-module/quick-actions"),
+    approvalGetSettings: () => request<any>("/ads-marketing-module/approval-settings"),
+    approvalUpdateSettings: (updates: Record<string, any>) =>
+      request<any>("/ads-marketing-module/approval-settings", { method: "POST", body: JSON.stringify({ updates }) }),
+    approvalEvaluate: (action: Record<string, any>) =>
+      request<any>("/ads-marketing-module/approval-evaluate", { method: "POST", body: JSON.stringify({ action }) }),
+    approvalEvaluateBatch: (actions: Record<string, any>[]) =>
+      request<any>("/ads-marketing-module/approval-evaluate-batch", { method: "POST", body: JSON.stringify({ actions }) }),
+    approvalApproveAll: (actions: Record<string, any>[]) =>
+      request<any>("/ads-marketing-module/approval-approve-all", { method: "POST", body: JSON.stringify({ actions }) }),
+    approvalDecide: (actionId: string, decision: string) =>
+      request<any>("/ads-marketing-module/approval-decide", { method: "POST", body: JSON.stringify({ actionId, decision }) }),
+    approvalDecisionLog: () => request<any>("/ads-marketing-module/approval-decision-log"),
+    triageAlert: (alert: Record<string, any>) =>
+      request<any>("/ads-marketing-module/triage-alert", { method: "POST", body: JSON.stringify({ alert }) }),
+    triageBatch: (alerts: Record<string, any>[]) =>
+      request<any>("/ads-marketing-module/triage-batch", { method: "POST", body: JSON.stringify({ alerts }) }),
+    triageExecute: (alert: Record<string, any>) =>
+      request<any>("/ads-marketing-module/triage-execute", { method: "POST", body: JSON.stringify({ alert }) }),
+    triageHistory: () => request<any>("/ads-marketing-module/triage-history"),
+    campaignTemplates: () => request<any>("/ads-marketing-module/campaign-templates"),
+    campaignTemplateGet: (templateId: string) => request<any>(`/ads-marketing-module/campaign-templates/${templateId}`),
+    campaignTemplateInstantiate: (templateId: string, inputs: Record<string, any>) =>
+      request<any>("/ads-marketing-module/campaign-templates/instantiate", { method: "POST", body: JSON.stringify({ templateId, inputs }) }),
+    campaignTemplateLaunch: (templateId: string, inputs: Record<string, any>) =>
+      request<any>("/ads-marketing-module/campaign-templates/launch", { method: "POST", body: JSON.stringify({ templateId, inputs }) }),
+    campaignTemplateLaunchHistory: () => request<any>("/ads-marketing-module/campaign-templates/launch-history"),
+    audienceBuild: (name: string, segments: Record<string, any>[], options: Record<string, any> = {}) =>
+      request<any>("/ads-marketing-module/audiences/build", { method: "POST", body: JSON.stringify({ name, segments, options }) }),
+    audienceSyncToPlatforms: (audienceId: string) =>
+      request<any>("/ads-marketing-module/audiences/sync", { method: "POST", body: JSON.stringify({ audienceId }) }),
+    audienceQualityScoring: () => request<any>("/ads-marketing-module/audiences/quality"),
+    audienceLtvRanking: () => request<any>("/ads-marketing-module/audiences/ltv-ranking"),
+    audienceApplyAutoActions: () =>
+      request<any>("/ads-marketing-module/audiences/auto-actions", { method: "POST" }),
+    audienceSyncStatus: () => request<any>("/ads-marketing-module/audiences/sync-status"),
+    autopilotEnable: (config: Record<string, any>) =>
+      request<any>("/ads-marketing-module/autopilot/enable", { method: "POST", body: JSON.stringify({ config }) }),
+    autopilotStatus: () => request<any>("/ads-marketing-module/autopilot/status"),
+    autopilotRunCycle: () => request<any>("/ads-marketing-module/autopilot/cycle", { method: "POST" }),
+    autopilotSpendAlerts: () => request<any>("/ads-marketing-module/autopilot/alerts"),
+    autopilotDailySummary: () => request<any>("/ads-marketing-module/autopilot/daily-summary"),
+    weeklyReview: () => request<any>("/ads-marketing-module/weekly-review"),
+    monthlyStrategyDeck: () => request<any>("/ads-marketing-module/monthly-strategy-deck"),
+    aiOptimizationLog: () => request<any>("/ads-marketing-module/ai-optimization-log"),
     adCompliance: (adCopy: string) => request<any>("/ads-marketing-module/ad-compliance", { method: "POST", body: JSON.stringify({ adCopy }) }),
     taxonomyAudit: () => request<any>("/ads-marketing-module/taxonomy-audit"),
     segmentOverlap: () => request<any>("/ads-marketing-module/segment-overlap"),
