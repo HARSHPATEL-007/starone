@@ -51,6 +51,11 @@ import { crossModuleWorkflow } from "./CrossModuleWorkflowService";
 import { brandSafetyGuardian } from "./BrandSafetyGuardianService";
 import { attributionReportService } from "./AttributionReportService";
 import { crossPlatformPerformance } from "./CrossPlatformPerformanceService";
+import { mailboxService } from "./MailboxService";
+import { mailMessage } from "./MailMessageService";
+import { mailRules } from "./MailRulesService";
+import { mailSearch } from "./MailSearchService";
+import { mailAI } from "./MailAIService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3544,6 +3549,203 @@ export class AdsMarketingModuleService {
 
   scorecardDailySnapshot(tenantId: string) {
     return campaignScorecardService.scorecardDailySnapshot(tenantId);
+  }
+
+  // ── N0VA MAIL (Round 15) ──────────────────────────────────────────────
+  mailMailboxes(tenantId: string) {
+    return mailboxService.listMailboxes(tenantId);
+  }
+
+  mailCreateMailbox(tenantId: string, input: Record<string, any>) {
+    return mailboxService.createMailbox(tenantId, input);
+  }
+
+  mailMailbox(tenantId: string, mailboxId: string) {
+    return mailboxService.getMailbox(tenantId, mailboxId);
+  }
+
+  mailUpdateMailbox(tenantId: string, mailboxId: string, patch: Record<string, any>) {
+    return mailboxService.updateMailbox(tenantId, mailboxId, patch);
+  }
+
+  mailDeleteMailbox(tenantId: string, mailboxId: string) {
+    return mailboxService.deleteMailbox(tenantId, mailboxId);
+  }
+
+  mailMailboxQuota(tenantId: string, mailboxId: string) {
+    return mailboxService.mailboxQuota(tenantId, mailboxId);
+  }
+
+  mailStorageAnalytics(tenantId: string) {
+    return mailboxService.storageAnalytics(tenantId);
+  }
+
+  mailMessages(tenantId: string, opts: Record<string, any>) {
+    return mailMessage.listMessages(tenantId, opts);
+  }
+
+  mailMessage(tenantId: string, messageId: string) {
+    return mailMessage.getMessage(tenantId, messageId);
+  }
+
+  mailThread(tenantId: string, threadId: string) {
+    return mailMessage.getThread(tenantId, threadId);
+  }
+
+  mailSend(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailMessage.composeSend(tenantId, mailboxId, input);
+  }
+
+  mailSaveDraft(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailMessage.saveDraft(tenantId, mailboxId, input);
+  }
+
+  mailSendDraft(tenantId: string, messageId: string) {
+    return mailMessage.sendDraft(tenantId, messageId);
+  }
+
+  mailReceive(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailMessage.receiveMessage(tenantId, mailboxId, input);
+  }
+
+  mailMarkRead(tenantId: string, messageId: string, read: boolean) {
+    return mailMessage.markRead(tenantId, messageId, read);
+  }
+
+  mailToggleStar(tenantId: string, messageId: string) {
+    return mailMessage.toggleStar(tenantId, messageId);
+  }
+
+  mailMove(tenantId: string, messageId: string, folder: string) {
+    return mailMessage.moveToFolder(tenantId, messageId, folder);
+  }
+
+  mailArchive(tenantId: string, messageId: string) {
+    return mailMessage.archiveMessage(tenantId, messageId);
+  }
+
+  mailTrash(tenantId: string, messageId: string) {
+    return mailMessage.trashMessage(tenantId, messageId);
+  }
+
+  mailRestore(tenantId: string, messageId: string) {
+    return mailMessage.restoreMessage(tenantId, messageId);
+  }
+
+  mailDeleteMessage(tenantId: string, messageId: string) {
+    return mailMessage.deleteMessage(tenantId, messageId);
+  }
+
+  mailApplyLabel(tenantId: string, messageId: string, label: string) {
+    return mailMessage.applyLabel(tenantId, messageId, label);
+  }
+
+  mailRemoveLabel(tenantId: string, messageId: string, label: string) {
+    return mailMessage.removeLabel(tenantId, messageId, label);
+  }
+
+  mailFolders(tenantId: string, mailboxId?: string) {
+    return mailMessage.listFolders(tenantId, mailboxId);
+  }
+
+  mailCreateFolder(tenantId: string, input: Record<string, any>) {
+    return mailMessage.createFolder(tenantId, input);
+  }
+
+  mailDeleteFolder(tenantId: string, folderId: string) {
+    return mailMessage.deleteFolder(tenantId, folderId);
+  }
+
+  mailUnreadSummary(tenantId: string) {
+    return mailMessage.unreadSummary(tenantId);
+  }
+
+  mailRules(tenantId: string) {
+    return mailRules.listRules(tenantId);
+  }
+
+  mailRule(tenantId: string, ruleId: string) {
+    return mailRules.getRule(tenantId, ruleId);
+  }
+
+  mailCreateRule(tenantId: string, input: Record<string, any>) {
+    return mailRules.createRule(tenantId, input);
+  }
+
+  mailUpdateRule(tenantId: string, ruleId: string, patch: Record<string, any>) {
+    return mailRules.updateRule(tenantId, ruleId, patch);
+  }
+
+  mailToggleRule(tenantId: string, ruleId: string, enabled?: boolean) {
+    return mailRules.toggleRule(tenantId, ruleId, enabled);
+  }
+
+  mailDeleteRule(tenantId: string, ruleId: string) {
+    return mailRules.deleteRule(tenantId, ruleId);
+  }
+
+  mailRuleTemplates() {
+    return mailRules.ruleTemplates();
+  }
+
+  mailInstantiateRuleTemplate(tenantId: string, templateId: string) {
+    return mailRules.instantiateTemplate(tenantId, templateId);
+  }
+
+  mailEvaluateRule(tenantId: string, ruleId: string, messageId: string) {
+    return mailRules.evaluateRule(tenantId, ruleId, messageId);
+  }
+
+  mailEvaluateAllRules(tenantId: string, messageId: string) {
+    return mailRules.evaluateAllRules(tenantId, messageId);
+  }
+
+  mailTestRule(tenantId: string, ruleId: string, sample: Record<string, any>) {
+    return mailRules.testRule(tenantId, ruleId, sample);
+  }
+
+  mailRunScriptRule(tenantId: string, ruleId: string, messageId: string) {
+    return mailRules.runScriptRule(tenantId, ruleId, messageId);
+  }
+
+  mailRulesDashboard(tenantId: string) {
+    return mailRules.rulesDashboard(tenantId);
+  }
+
+  mailSearch(tenantId: string, opts: Record<string, any>) {
+    return mailSearch.searchMessages(tenantId, opts);
+  }
+
+  mailSemanticSearch(tenantId: string, q: string) {
+    return mailSearch.semanticQuery(tenantId, q);
+  }
+
+  mailSearchSuggestions(tenantId: string, q: string) {
+    return mailSearch.searchSuggestions(tenantId, q);
+  }
+
+  mailSearchStats(tenantId: string) {
+    return mailSearch.searchStats(tenantId);
+  }
+
+  mailEnrich(tenantId: string, messageId: string) {
+    return mailAI.enrichMessage(tenantId, messageId);
+  }
+
+  mailSmartReply(tenantId: string, messageId: string) {
+    return mailAI.smartReply(tenantId, messageId);
+  }
+
+  mailSummarizeThread(tenantId: string, threadId: string) {
+    return mailAI.summarizeThread(tenantId, threadId);
+  }
+
+  mailMeetingPrep(tenantId: string, threadId: string) {
+    return mailAI.meetingPrep(tenantId, threadId);
+  }
+
+  mailIntelligence(tenantId: string) {
+    return mailAI.emailIntelligence(tenantId);
   }
 }
 

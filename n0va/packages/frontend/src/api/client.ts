@@ -2311,6 +2311,100 @@ export const api = {
       request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-scenario-simulation`, { method: "POST", body: JSON.stringify({ targetStage, improvementPct }) }),
     funnelChannelBreakdown: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-channel-breakdown`),
     funnelHealthScore: (campaignId: string) => request<any>(`/ads-marketing-module/campaign/${campaignId}/funnel-health-score`),
+    // ── N0VA MAIL (Round 15) ──
+    mailMailboxes: () => request<any>("/ads-marketing-module/mail/mailboxes"),
+    mailCreateMailbox: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/mailboxes", { method: "POST", body: JSON.stringify(input) }),
+    mailMailbox: (mailboxId: string) => request<any>(`/ads-marketing-module/mail/mailboxes/${mailboxId}`),
+    mailUpdateMailbox: (mailboxId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/mailboxes/${mailboxId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    mailDeleteMailbox: (mailboxId: string) =>
+      request<any>(`/ads-marketing-module/mail/mailboxes/${mailboxId}`, { method: "DELETE" }),
+    mailMailboxQuota: (mailboxId: string) => request<any>(`/ads-marketing-module/mail/mailboxes/${mailboxId}/quota`),
+    mailStorageAnalytics: () => request<any>("/ads-marketing-module/mail/storage-analytics"),
+    mailMessages: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/messages${qs ? `?${qs}` : ""}`);
+    },
+    mailMessage: (messageId: string) => request<any>(`/ads-marketing-module/mail/messages/${messageId}`),
+    mailThread: (threadId: string) => request<any>(`/ads-marketing-module/mail/threads/${threadId}`),
+    mailSend: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/messages/send", { method: "POST", body: JSON.stringify({ mailboxId, ...input }) }),
+    mailSaveDraft: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/messages/draft", { method: "POST", body: JSON.stringify({ mailboxId, ...input }) }),
+    mailSendDraft: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/send`, { method: "POST" }),
+    mailReceive: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/messages/receive", { method: "POST", body: JSON.stringify({ mailboxId, ...input }) }),
+    mailMarkRead: (messageId: string, read: boolean = true) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/read`, { method: "POST", body: JSON.stringify({ read }) }),
+    mailToggleStar: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/star`, { method: "POST" }),
+    mailMove: (messageId: string, folder: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/move`, { method: "POST", body: JSON.stringify({ folder }) }),
+    mailArchive: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/archive`, { method: "POST" }),
+    mailTrash: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/trash`, { method: "POST" }),
+    mailRestore: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/restore`, { method: "POST" }),
+    mailDeleteMessage: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}`, { method: "DELETE" }),
+    mailApplyLabel: (messageId: string, label: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/labels`, { method: "POST", body: JSON.stringify({ label }) }),
+    mailRemoveLabel: (messageId: string, label: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/labels/${encodeURIComponent(label)}`, { method: "DELETE" }),
+    mailFolders: (mailboxId?: string) =>
+      request<any>(`/ads-marketing-module/mail/folders${mailboxId ? `?mailboxId=${mailboxId}` : ""}`),
+    mailCreateFolder: (name: string) =>
+      request<any>("/ads-marketing-module/mail/folders", { method: "POST", body: JSON.stringify({ name }) }),
+    mailDeleteFolder: (folderId: string) =>
+      request<any>(`/ads-marketing-module/mail/folders/${folderId}`, { method: "DELETE" }),
+    mailUnreadSummary: () => request<any>("/ads-marketing-module/mail/unread-summary"),
+    mailRules: () => request<any>("/ads-marketing-module/mail/rules"),
+    mailRule: (ruleId: string) => request<any>(`/ads-marketing-module/mail/rules/${ruleId}`),
+    mailCreateRule: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/rules", { method: "POST", body: JSON.stringify(input) }),
+    mailUpdateRule: (ruleId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/rules/${ruleId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    mailToggleRule: (ruleId: string, enabled?: boolean) =>
+      request<any>(`/ads-marketing-module/mail/rules/${ruleId}/toggle`, { method: "POST", body: JSON.stringify({ enabled }) }),
+    mailDeleteRule: (ruleId: string) =>
+      request<any>(`/ads-marketing-module/mail/rules/${ruleId}`, { method: "DELETE" }),
+    mailRuleTemplates: () => request<any>("/ads-marketing-module/mail/rules/templates"),
+    mailInstantiateRuleTemplate: (templateId: string) =>
+      request<any>(`/ads-marketing-module/mail/rules/templates/${templateId}/instantiate`, { method: "POST" }),
+    mailRulesDashboard: () => request<any>("/ads-marketing-module/mail/rules/dashboard"),
+    mailEvaluateRule: (ruleId: string, messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/rules/${ruleId}/evaluate`, { method: "POST", body: JSON.stringify({ messageId }) }),
+    mailEvaluateAllRules: (messageId: string) =>
+      request<any>("/ads-marketing-module/mail/evaluate-all", { method: "POST", body: JSON.stringify({ messageId }) }),
+    mailRunScriptRule: (ruleId: string, messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/rules/${ruleId}/script-run`, { method: "POST", body: JSON.stringify({ messageId }) }),
+    mailTestRule: (ruleId: string, sample: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/rules/test", { method: "POST", body: JSON.stringify({ ruleId, sample }) }),
+    mailSearch: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/search${qs ? `?${qs}` : ""}`);
+    },
+    mailSemanticSearch: (query: string) =>
+      request<any>("/ads-marketing-module/mail/search/semantic", { method: "POST", body: JSON.stringify({ query }) }),
+    mailSearchSuggestions: (q: string) =>
+      request<any>(`/ads-marketing-module/mail/search/suggestions?q=${encodeURIComponent(q)}`),
+    mailSearchStats: () => request<any>("/ads-marketing-module/mail/search/stats"),
+    mailEnrich: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/ai/enrich/${messageId}`, { method: "POST" }),
+    mailSmartReply: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/ai/smart-reply/${messageId}`, { method: "POST" }),
+    mailSummarizeThread: (threadId: string) =>
+      request<any>(`/ads-marketing-module/mail/ai/summarize-thread/${threadId}`, { method: "POST" }),
+    mailMeetingPrep: (threadId: string) =>
+      request<any>(`/ads-marketing-module/mail/ai/meeting-prep/${threadId}`, { method: "POST" }),
+    mailIntelligence: () => request<any>("/ads-marketing-module/mail/ai/intelligence"),
   },
 
   agentSwarm: {

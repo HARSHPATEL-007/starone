@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -16,6 +16,11 @@ interface SearchResult {
 const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Dashboard", route: "/", icon: BarChart3 },
   { type: "page", label: "Command Center", route: "/command-center", icon: LayoutDashboard },
+  { type: "page", label: "Mail", route: "/mail", icon: Mail },
+  { type: "page", label: "Mail Search", route: "/mail/search", icon: Search },
+  { type: "page", label: "Mail Rules", route: "/mail/rules", icon: Zap },
+  { type: "page", label: "Mailboxes", route: "/mail/mailboxes", icon: Mailbox },
+  { type: "page", label: "Mail AI", route: "/mail/ai", icon: Sparkles },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

@@ -116,7 +116,7 @@ export class WorkflowBuilderService {
   saveWorkflow(tenantId: string, data: { name: string; description?: string; category?: string; nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }): WorkflowDefinition {
     const mem = DataStore["mem"]();
     const wf: WorkflowDefinition = {
-      id: `wf_${Date.now()}`, tenantId, name: data.name, description: data.description || "",
+      id: `wf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, tenantId, name: data.name, description: data.description || "",
       category: (data.category as any) || "custom", nodes: data.nodes || [], edges: data.edges || [],
       status: "draft", version: 1, stats: { totalRuns: 0, successfulRuns: 0, failedRuns: 0 },
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),

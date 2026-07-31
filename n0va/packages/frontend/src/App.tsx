@@ -4,6 +4,11 @@ import { ToastProvider } from "./components/Toast";
 import Layout from "./components/Layout";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
+const MailInbox = lazy(() => import("./pages/MailInbox"));
+const MailSearch = lazy(() => import("./pages/MailSearch"));
+const MailRules = lazy(() => import("./pages/MailRules"));
+const Mailboxes = lazy(() => import("./pages/Mailboxes"));
+const MailAI = lazy(() => import("./pages/MailAI"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -163,6 +168,11 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/command-center" element={<CommandCenter />} />
+                <Route path="/mail" element={<MailInbox />} />
+                <Route path="/mail/search" element={<MailSearch />} />
+                <Route path="/mail/rules" element={<MailRules />} />
+                <Route path="/mail/mailboxes" element={<Mailboxes />} />
+                <Route path="/mail/ai" element={<MailAI />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

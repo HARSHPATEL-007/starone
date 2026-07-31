@@ -397,5 +397,102 @@ export class MemoryStore {
     for (const s of campaignSnapshots) this.insert("campaign_snapshots", { tenantId: "tenant_001", ...s });
 
     this.insert("notification_prefs", { tenantId: "tenant_001", email_alerts: true, push_alerts: true, fraud_alerts: true, budget_alerts: true, campaign_updates: true, agent_status: true, digest_frequency: "realtime", quiet_hours_start: "22:00", quiet_hours_end: "07:00" });
+
+    const mailboxes = [
+      { tenantId: "tenant_001", name: "Jane Personal", type: "personal", email: "jane@n0va.mail", displayName: "Jane Doe", plan: "pro", quotaBytes: 100 * 1024 * 1024 * 1024, signature: "Jane Doe — N0VA", aliases: ["j.doe@n0va.mail"], settings: { autoEnrich: true, aiPriority: true, autoSummarize: true, smartReply: true }, status: "active", createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "Work", type: "work", email: "jane@n0va.work", displayName: "Jane Doe (Work)", plan: "business", quotaBytes: 1024 * 1024 * 1024 * 1024, signature: "Jane Doe — N0VA Marketing", aliases: [], settings: { autoEnrich: true, aiPriority: true, autoSummarize: true, smartReply: true }, status: "active", createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "Team Inbox", type: "team", email: "team@n0va.work", displayName: "N0VA Team", plan: "business", quotaBytes: 1024 * 1024 * 1024 * 1024, signature: "N0VA Team", aliases: ["marketing@n0va.work"], settings: { autoEnrich: true, aiPriority: false, autoSummarize: true, smartReply: false }, status: "active", createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "Ani Neural", type: "neural", email: "ani@n0va.mail", displayName: "Ani (AI)", plan: "n0va1o", quotaBytes: 5 * 1024 * 1024 * 1024 * 1024, signature: "— Ani", aliases: [], settings: { autoEnrich: true, aiPriority: true, autoSummarize: true, smartReply: true }, status: "active", createdBy: "user_001" },
+      { tenantId: "tenant_001", name: "Archive Vault", type: "archive", email: "archive@n0va.work", displayName: "Archive", plan: "business", quotaBytes: 1024 * 1024 * 1024 * 1024, signature: "", aliases: [], settings: { autoEnrich: false, aiPriority: false, autoSummarize: false, smartReply: false }, status: "active", createdBy: "user_001" },
+    ];
+    const insertedMailboxes = [];
+    for (const mb of mailboxes) insertedMailboxes.push(this.insert("mailboxes", mb));
+
+    const mailFolders = ["Personal", "Travel", "Invoices", "Newsletter", "Meetings"];
+    for (const f of mailFolders) this.insert("mail_folders", { tenantId: "tenant_001", name: f, system: false });
+
+    const contacts = [
+      { tenantId: "tenant_001", name: "John Smith", email: "john.smith@partner.com", tags: ["partner"] },
+      { tenantId: "tenant_001", name: "Accounts Team", email: "accounts@company.com", tags: ["finance"] },
+      { tenantId: "tenant_001", name: "Marketing Hub", email: "newsletter@marketinghub.com", tags: ["newsletter"] },
+      { tenantId: "tenant_001", name: "Sarah Chen", email: "sarah@design.co", tags: ["vendor"] },
+      { tenantId: "tenant_001", name: "Calendar Bot", email: "meet@calendar.com", tags: ["automation"] },
+      { tenantId: "tenant_001", name: "N0VA Security", email: "security@n0va.io", tags: ["internal"] },
+    ];
+    for (const c of contacts) this.insert("mail_contacts", c);
+
+    const inboxMsgs = [
+      { mailbox: "Work", from: { name: "John Smith", email: "john.smith@partner.com" }, subject: "Q3 invoice attached", body: "Hi Jane, please find the Q3 invoice attached. Payment terms are 30 days net. Let me know if anything is missing.", importance: "high", read: false, attachments: [{ name: "q3-invoice.pdf", sizeBytes: 245760, type: "pdf" }], labels: ["Invoices"] },
+      { mailbox: "Work", from: { name: "Marketing Hub", email: "newsletter@marketinghub.com" }, subject: "Weekly newsletter: AI marketing trends", body: "This week: creative fatigue, lookalike audiences, and the rise of AI copywriters. Read the full issue here.", importance: "normal", read: false, labels: ["Newsletter"] },
+      { mailbox: "Work", from: { name: "Sarah Chen", email: "sarah@design.co" }, subject: "Campaign creative review — Thu 10am", body: "Hi, we booked a creative review for Thursday at 10am. Please bring the Q3 assets. Here is the agenda and the link.", importance: "high", read: false, labels: ["Meetings"] },
+      { mailbox: "Work", from: { name: "N0VA Security", email: "security@n0va.io" }, subject: "Alert: unusual login detected", body: "We detected a sign-in from a new device. If this was you, no action needed. Otherwise reset your password.", importance: "normal", read: false },
+      { mailbox: "Work", from: { name: "Accounts Team", email: "accounts@company.com" }, subject: "Budget approval needed", body: "The Q3 marketing budget increase needs your approval before Friday. Please review the attached summary.", importance: "high", read: false, attachments: [{ name: "q3-budget-summary.pdf", sizeBytes: 524288, type: "pdf" }] },
+      { mailbox: "Work", from: { name: "Calendar Bot", email: "meet@calendar.com" }, subject: "Invitation: Product webinar", body: "You are invited to the Product Webinar next Tuesday at 2pm. Add to calendar: [link]", importance: "normal", read: false, labels: ["Meetings"] },
+      { mailbox: "Work", from: { name: "John Smith", email: "john.smith@partner.com" }, subject: "Follow up on partnership", body: "Quick follow-up on our partnership proposal — are you available for a call this week?", importance: "normal", read: false },
+      { mailbox: "Work", from: { name: "Store Deals", email: "deals@store.com" }, subject: "Black Friday promo — 50% off", body: "Everything 50% off this weekend only. Shop now before it ends!", importance: "normal", read: false, labels: ["Promotions"] },
+      { mailbox: "Work", from: { name: "Sarah Chen", email: "sarah@design.co" }, subject: "Contract draft for review", body: "Please review the updated contract draft. We need the signature before the end of the month.", importance: "high", read: false, attachments: [{ name: "contract-draft-v3.pdf", sizeBytes: 1280000, type: "pdf" }], labels: ["Invoices"] },
+      { mailbox: "Jane Personal", from: { name: "Mom", email: "mom@example.com" }, subject: "Lunch tomorrow?", body: "Are you free for lunch tomorrow at noon? Let me know!", importance: "normal", read: false },
+      { mailbox: "Work", from: { name: "Calendar Bot", email: "meet@calendar.com" }, subject: "Travel itinerary — SF trip", body: "Your SF trip itinerary: flight at 9am, hotel check-in 3pm, client meeting Thursday 10am.", importance: "normal", read: true, labels: ["Travel"] },
+      { mailbox: "Work", from: { name: "Marketing Hub", email: "newsletter@marketinghub.com" }, subject: "Your password reset", body: "Reset your password using this link. It expires in 24 hours.", importance: "normal", read: true, labels: ["Newsletter"] },
+    ];
+    for (const m of inboxMsgs) {
+      const mb = insertedMailboxes.find(b => b.name === m.mailbox)!;
+      this.insert("messages", {
+        tenantId: "tenant_001", mailboxId: mb._id, threadId: `thr_${(m.subject.match(/[a-z0-9]+/gi) || []).join("").toLowerCase()}`,
+        messageId: `<${m.subject.replace(/[^a-z0-9]/gi, "").toLowerCase()}@n0va.mail>`, from: m.from,
+        to: [{ name: mb.displayName, email: mb.email }], cc: [], bcc: [], subject: m.subject, body: m.body,
+        preview: m.body.slice(0, 120), folder: "inbox", labels: ["Inbox", ...(m.labels || [])], read: m.read, starred: false,
+        attachments: m.attachments || [], receivedAt: new Date(now - (inboxMsgs.indexOf(m) + 1) * 3600000).toISOString(),
+        sentAt: undefined, importance: m.importance, flags: [],
+      });
+    }
+    const workMb = insertedMailboxes[1];
+    const sentMsg = this.insert("messages", {
+      tenantId: "tenant_001", mailboxId: workMb._id, threadId: "thr_quantumreport", messageId: "<quantumreport@n0va.mail>",
+      from: { name: "Jane Doe", email: "jane@n0va.work" }, to: [{ name: "John Smith", email: "john.smith@partner.com" }], cc: [], bcc: [],
+      subject: "Re: Quantum report", body: "Thanks John — the quantum report looks great. I'll share feedback by Friday.", preview: "Thanks John — the quantum report looks great.",
+      folder: "sent", labels: ["Sent"], read: true, starred: false, attachments: [], receivedAt: new Date(now - 2 * 3600000).toISOString(),
+      sentAt: new Date(now - 2 * 3600000).toISOString(), importance: "normal", flags: [],
+    });
+    this.insert("messages", {
+      tenantId: "tenant_001", mailboxId: workMb._id, threadId: "thr_quantumreport", messageId: "<quantumreport1@n0va.mail>",
+      from: { name: "John Smith", email: "john.smith@partner.com" }, to: [{ name: "Jane Doe", email: "jane@n0va.work" }], cc: [], bcc: [],
+      subject: "Quantum report", body: "Hi Jane, here is the quantum report draft as discussed.", preview: "Hi Jane, here is the quantum report draft.",
+      folder: "inbox", labels: ["Inbox"], read: true, starred: true, attachments: [{ name: "quantum-report.pdf", sizeBytes: 890000, type: "pdf" }],
+      receivedAt: new Date(now - 3 * 3600000).toISOString(), sentAt: undefined, importance: "normal", flags: [],
+    });
+    this.insert("messages", {
+      tenantId: "tenant_001", mailboxId: workMb._id, threadId: "thr_launchplan", messageId: "<launchplan@n0va.mail>",
+      from: { name: "Jane Doe", email: "jane@n0va.work" }, to: [{ name: "Sarah Chen", email: "sarah@design.co" }], cc: [], bcc: [],
+      subject: "Launch plan draft", body: "Here is the draft launch plan — please review before Thursday.", preview: "Here is the draft launch plan.",
+      folder: "drafts", labels: ["Drafts"], read: true, starred: false, attachments: [], receivedAt: new Date(now - 3600000).toISOString(),
+      sentAt: undefined, importance: "normal", flags: [],
+    });
+    this.insert("messages", {
+      tenantId: "tenant_001", mailboxId: insertedMailboxes[4]._id, threadId: "thr_q2archive", messageId: "<q2archive@n0va.mail>",
+      from: { name: "Marketing Hub", email: "newsletter@marketinghub.com" }, to: [{ name: "Archive", email: "archive@n0va.work" }], cc: [], bcc: [],
+      subject: "Q2 digest archive", body: "Archived Q2 digest for reference.", preview: "Archived Q2 digest for reference.",
+      folder: "archive", labels: ["Archive"], read: true, starred: false, attachments: [], receivedAt: new Date(now - 10 * 86400000).toISOString(),
+      sentAt: undefined, importance: "normal", flags: [],
+    });
+    this.insert("messages", {
+      tenantId: "tenant_001", mailboxId: workMb._id, threadId: "thr_spamorder", messageId: "<spamorder@n0va.mail>",
+      from: { name: "Cheap Deals", email: "spam@cheapdeals.biz" }, to: [{ name: "Jane Doe (Work)", email: "jane@n0va.work" }], cc: [], bcc: [],
+      subject: "You won a prize!", body: "Claim your prize now — click here!", preview: "Claim your prize now.",
+      folder: "trash", labels: ["Trash"], read: true, starred: false, attachments: [], receivedAt: new Date(now - 2 * 86400000).toISOString(),
+      sentAt: undefined, importance: "normal", flags: [],
+    });
+
+    this.insert("mail_rules", {
+      tenantId: "tenant_001", name: "Tame newsletters", kind: "visual", templateId: "newsletters",
+      conditions: [{ field: "category", operator: "is", value: "newsletter" }],
+      actions: [{ action: "label", target: "Newsletter" }, { action: "archive", target: "" }],
+      trigger: "on_receive", enabled: true, matchCount: 0, createdBy: "user_001",
+    });
+    this.insert("mail_rules", {
+      tenantId: "tenant_001", name: "Invoice handler", kind: "script", templateId: null,
+      script: 'if subject contains "invoice" then label "Invoices"\nif subject contains "invoice" then forward "accounts@company.com"',
+      trigger: "on_receive", enabled: true, matchCount: 0, createdBy: "user_001",
+    });
   }
 }

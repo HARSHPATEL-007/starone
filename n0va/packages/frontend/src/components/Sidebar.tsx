@@ -78,12 +78,18 @@ import {
   Binary,
   Search,
   ScanLine,
+  Mailbox,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/command-center", icon: LayoutDashboard, label: "Command Center" },
+  { to: "/mail", icon: Mail, label: "Mail" },
+  { to: "/mail/search", icon: Search, label: "Mail Search" },
+  { to: "/mail/rules", icon: Zap, label: "Mail Rules" },
+  { to: "/mail/mailboxes", icon: Mailbox, label: "Mailboxes" },
+  { to: "/mail/ai", icon: Sparkles, label: "Mail AI" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

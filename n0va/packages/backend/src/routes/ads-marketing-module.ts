@@ -1292,4 +1292,219 @@ router.get("/cross-platform-performance", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.crossPlatformPerformance(req.user!.tenantId));
 }));
 
+// ── N0VA MAIL (Round 15) ────────────────────────────────────────────────
+router.get("/mail/mailboxes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMailboxes(req.user!.tenantId));
+}));
+
+router.post("/mail/mailboxes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateMailbox(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/mailboxes/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMailbox(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.patch("/mail/mailboxes/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateMailbox(req.user!.tenantId, req.params.mailboxId, req.body || {}));
+}));
+
+router.delete("/mail/mailboxes/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteMailbox(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.get("/mail/mailboxes/:mailboxId/quota", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMailboxQuota(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.get("/mail/storage-analytics", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageAnalytics(req.user!.tenantId));
+}));
+
+router.get("/mail/messages", asyncHandler(async (req, res) => {
+  const opts: Record<string, any> = {};
+  for (const key of ["mailboxId", "folder", "label", "from", "to", "startDate", "endDate", "limit"]) {
+    if (req.query[key] !== undefined) opts[key] = req.query[key];
+  }
+  if (req.query.unread === "true") opts.unread = true;
+  if (req.query.starred === "true") opts.starred = true;
+  if (req.query.hasAttachment === "true") opts.hasAttachment = true;
+  sendSuccess(res, adsMarketingModule.mailMessages(req.user!.tenantId, opts));
+}));
+
+router.get("/mail/messages/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMessage(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/threads/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThread(req.user!.tenantId, req.params.threadId));
+}));
+
+router.post("/mail/messages/send", asyncHandler(async (req, res) => {
+  const { mailboxId, ...input } = req.body || {};
+  sendSuccess(res, adsMarketingModule.mailSend(req.user!.tenantId, mailboxId, input));
+}));
+
+router.post("/mail/messages/draft", asyncHandler(async (req, res) => {
+  const { mailboxId, ...input } = req.body || {};
+  sendSuccess(res, adsMarketingModule.mailSaveDraft(req.user!.tenantId, mailboxId, input));
+}));
+
+router.post("/mail/messages/:messageId/send", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSendDraft(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/messages/receive", asyncHandler(async (req, res) => {
+  const { mailboxId, ...input } = req.body || {};
+  sendSuccess(res, adsMarketingModule.mailReceive(req.user!.tenantId, mailboxId, input));
+}));
+
+router.post("/mail/messages/:messageId/read", asyncHandler(async (req, res) => {
+  const read = req.body && req.body.read !== undefined ? !!req.body.read : true;
+  sendSuccess(res, adsMarketingModule.mailMarkRead(req.user!.tenantId, req.params.messageId, read));
+}));
+
+router.post("/mail/messages/:messageId/star", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailToggleStar(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/messages/:messageId/move", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMove(req.user!.tenantId, req.params.messageId, req.body.folder || "inbox"));
+}));
+
+router.post("/mail/messages/:messageId/archive", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailArchive(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/messages/:messageId/trash", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailTrash(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/messages/:messageId/restore", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRestore(req.user!.tenantId, req.params.messageId));
+}));
+
+router.delete("/mail/messages/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteMessage(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/messages/:messageId/labels", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailApplyLabel(req.user!.tenantId, req.params.messageId, req.body.label || ""));
+}));
+
+router.delete("/mail/messages/:messageId/labels/:label", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRemoveLabel(req.user!.tenantId, req.params.messageId, req.params.label));
+}));
+
+router.get("/mail/folders", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFolders(req.user!.tenantId, req.query.mailboxId as string | undefined));
+}));
+
+router.post("/mail/folders", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateFolder(req.user!.tenantId, req.body || {}));
+}));
+
+router.delete("/mail/folders/:folderId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteFolder(req.user!.tenantId, req.params.folderId));
+}));
+
+router.get("/mail/unread-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUnreadSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/rules", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRules(req.user!.tenantId));
+}));
+
+router.get("/mail/rules/templates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRuleTemplates());
+}));
+
+router.post("/mail/rules/templates/:templateId/instantiate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailInstantiateRuleTemplate(req.user!.tenantId, req.params.templateId));
+}));
+
+router.get("/mail/rules/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRulesDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/rules/:ruleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRule(req.user!.tenantId, req.params.ruleId));
+}));
+
+router.post("/mail/rules", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateRule(req.user!.tenantId, req.body || {}));
+}));
+
+router.patch("/mail/rules/:ruleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateRule(req.user!.tenantId, req.params.ruleId, req.body || {}));
+}));
+
+router.post("/mail/rules/:ruleId/toggle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailToggleRule(req.user!.tenantId, req.params.ruleId, req.body ? req.body.enabled : undefined));
+}));
+
+router.delete("/mail/rules/:ruleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteRule(req.user!.tenantId, req.params.ruleId));
+}));
+
+router.post("/mail/rules/:ruleId/evaluate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailEvaluateRule(req.user!.tenantId, req.params.ruleId, req.body.messageId || ""));
+}));
+
+router.post("/mail/rules/:ruleId/script-run", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRunScriptRule(req.user!.tenantId, req.params.ruleId, req.body.messageId || ""));
+}));
+
+router.post("/mail/rules/test", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailTestRule(req.user!.tenantId, req.body.ruleId || "", req.body.sample || {}));
+}));
+
+router.post("/mail/evaluate-all", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailEvaluateAllRules(req.user!.tenantId, req.body.messageId || ""));
+}));
+
+router.get("/mail/search", asyncHandler(async (req, res) => {
+  const opts: Record<string, any> = {};
+  for (const key of ["query", "mailboxId", "folder", "label", "from", "to", "startDate", "endDate"]) {
+    if (req.query[key] !== undefined) opts[key] = req.query[key];
+  }
+  if (req.query.unread === "true") opts.unread = true;
+  if (req.query.hasAttachment === "true") opts.hasAttachment = true;
+  if (req.query.priority) opts.priority = req.query.priority;
+  sendSuccess(res, adsMarketingModule.mailSearch(req.user!.tenantId, opts));
+}));
+
+router.post("/mail/search/semantic", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSemanticSearch(req.user!.tenantId, req.body.query || ""));
+}));
+
+router.get("/mail/search/suggestions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchSuggestions(req.user!.tenantId, (req.query.q as string) || ""));
+}));
+
+router.get("/mail/search/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchStats(req.user!.tenantId));
+}));
+
+router.post("/mail/ai/enrich/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailEnrich(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/ai/smart-reply/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSmartReply(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/ai/summarize-thread/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSummarizeThread(req.user!.tenantId, req.params.threadId));
+}));
+
+router.post("/mail/ai/meeting-prep/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMeetingPrep(req.user!.tenantId, req.params.threadId));
+}));
+
+router.get("/mail/ai/intelligence", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntelligence(req.user!.tenantId));
+}));
+
 export default router;
