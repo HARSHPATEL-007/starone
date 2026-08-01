@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -24,6 +24,12 @@ const PAGE_ITEMS: SearchResult[] = [
 { type: "page", label: "Mail Contacts", route: "/mail/contacts", icon: Users },
 { type: "page", label: "Mail Agent", route: "/mail/agent", icon: Bot },
 { type: "page", label: "Mail Compliance", route: "/mail/compliance", icon: Shield },
+{ type: "page", label: "Mail Templates", route: "/mail/templates", icon: FileText },
+{ type: "page", label: "Signatures", route: "/mail/signatures", icon: Signature },
+{ type: "page", label: "Spam", route: "/mail/spam", icon: ShieldAlert },
+{ type: "page", label: "Follow-ups", route: "/mail/followups", icon: AlarmClock },
+{ type: "page", label: "Mail Analytics", route: "/mail/analytics", icon: BarChart3 },
+{ type: "page", label: "Mail Files", route: "/mail/files", icon: Paperclip },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

@@ -2462,6 +2462,101 @@ export const api = {
     mailExecuteVoiceCommand: (command: string) =>
       request<any>("/ads-marketing-module/mail/voice/execute", { method: "POST", body: JSON.stringify({ command }) }),
     mailVoiceHelp: () => request<any>("/ads-marketing-module/mail/voice/help"),
+    mailTemplates: () => request<any>("/ads-marketing-module/mail/templates"),
+    mailTemplate: (templateId: string) => request<any>(`/ads-marketing-module/mail/templates/${templateId}`),
+    mailTemplateStats: () => request<any>("/ads-marketing-module/mail/templates/stats"),
+    mailTemplateUsage: (limit: number = 20) => request<any>(`/ads-marketing-module/mail/templates/usage?limit=${limit}`),
+    mailCreateTemplate: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/templates", { method: "POST", body: JSON.stringify(input) }),
+    mailUpdateTemplate: (templateId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/templates/${templateId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    mailDeleteTemplate: (templateId: string) =>
+      request<any>(`/ads-marketing-module/mail/templates/${templateId}`, { method: "DELETE" }),
+    mailRenderTemplate: (templateId: string, variables: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/templates/render", { method: "POST", body: JSON.stringify({ templateId, variables }) }),
+    mailSendFromTemplate: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/templates/send", { method: "POST", body: JSON.stringify({ ...input, mailboxId }) }),
+    mailSendBulkTemplate: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/templates/bulk", { method: "POST", body: JSON.stringify({ ...input, mailboxId }) }),
+    mailSignatures: () => request<any>("/ads-marketing-module/mail/signatures"),
+    mailSignaturesDashboard: () => request<any>("/ads-marketing-module/mail/signatures/dashboard"),
+    mailDefaultSignature: () => request<any>("/ads-marketing-module/mail/signatures/default"),
+    mailSignature: (mailboxId: string) => request<any>(`/ads-marketing-module/mail/signatures/${mailboxId}`),
+    mailUpdateSignature: (mailboxId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/signatures/${mailboxId}`, { method: "PUT", body: JSON.stringify(input) }),
+    mailToggleSignature: (mailboxId: string, enabled: boolean) =>
+      request<any>(`/ads-marketing-module/mail/signatures/${mailboxId}/toggle`, { method: "POST", body: JSON.stringify({ enabled }) }),
+    mailSignaturePreview: (mailboxId: string, body: string) =>
+      request<any>(`/ads-marketing-module/mail/signatures/${mailboxId}/preview`, { method: "POST", body: JSON.stringify({ body }) }),
+    mailSpamStatus: () => request<any>("/ads-marketing-module/mail/spam/status"),
+    mailQuarantine: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/spam/quarantine${qs ? `?${qs}` : ""}`);
+    },
+    mailScanMessage: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/spam/scan/${messageId}`, { method: "POST" }),
+    mailScanAllSpam: () => request<any>("/ads-marketing-module/mail/spam/scan-all", { method: "POST" }),
+    mailReportSpam: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/spam/${messageId}/report`, { method: "POST" }),
+    mailReportNotSpam: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/spam/${messageId}/not-spam`, { method: "POST" }),
+    mailBlockedSenders: () => request<any>("/ads-marketing-module/mail/spam/blocked"),
+    mailBlockSender: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/spam/blocked", { method: "POST", body: JSON.stringify(input) }),
+    mailUnblockSender: (email: string) =>
+      request<any>(`/ads-marketing-module/mail/spam/blocked/${encodeURIComponent(email)}`, { method: "DELETE" }),
+    mailAllowedSenders: () => request<any>("/ads-marketing-module/mail/spam/allowed"),
+    mailAllowSender: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/spam/allowed", { method: "POST", body: JSON.stringify(input) }),
+    mailRemoveAllowedSender: (email: string) =>
+      request<any>(`/ads-marketing-module/mail/spam/allowed/${encodeURIComponent(email)}`, { method: "DELETE" }),
+    mailSpamLog: (limit: number = 20) => request<any>(`/ads-marketing-module/mail/spam/log?limit=${limit}`),
+    mailSnooze: (messageId: string, until: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/snooze`, { method: "POST", body: JSON.stringify({ until }) }),
+    mailUnsnooze: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/unsnooze`, { method: "POST" }),
+    mailListSnoozed: () => request<any>("/ads-marketing-module/mail/followups/snoozed"),
+    mailMarkAwaitingResponse: (messageId: string, deadline?: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/awaiting`, { method: "POST", body: JSON.stringify({ deadline }) }),
+    mailMarkResponded: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/messages/${messageId}/responded`, { method: "POST" }),
+    mailFollowUps: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/followups${qs ? `?${qs}` : ""}`);
+    },
+    mailFollowUpSummary: () => request<any>("/ads-marketing-module/mail/followups/summary"),
+    mailFollowUpSuggestions: () => request<any>("/ads-marketing-module/mail/followups/suggestions"),
+    mailCreateFollowUp: (messageId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/followups", { method: "POST", body: JSON.stringify({ ...input, messageId }) }),
+    mailCompleteFollowUp: (followUpId: string) =>
+      request<any>(`/ads-marketing-module/mail/followups/${followUpId}/complete`, { method: "POST" }),
+    mailDeleteFollowUp: (followUpId: string) =>
+      request<any>(`/ads-marketing-module/mail/followups/${followUpId}`, { method: "DELETE" }),
+    mailAnalyticsOverview: () => request<any>("/ads-marketing-module/mail/analytics/overview"),
+    mailAnalyticsTrend: (days: number = 14) => request<any>(`/ads-marketing-module/mail/analytics/trend?days=${days}`),
+    mailAnalyticsCategories: () => request<any>("/ads-marketing-module/mail/analytics/categories"),
+    mailAnalyticsSenders: (limit: number = 5) => request<any>(`/ads-marketing-module/mail/analytics/senders?limit=${limit}`),
+    mailAnalyticsResponseTimes: () => request<any>("/ads-marketing-module/mail/analytics/response-times"),
+    mailAnalyticsHours: () => request<any>("/ads-marketing-module/mail/analytics/hours"),
+    mailAnalyticsFolders: () => request<any>("/ads-marketing-module/mail/analytics/folders"),
+    mailAnalyticsMailboxes: () => request<any>("/ads-marketing-module/mail/analytics/mailboxes"),
+    mailAnalyticsExecutive: () => request<any>("/ads-marketing-module/mail/analytics/executive"),
+    mailAttachments: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/attachments${qs ? `?${qs}` : ""}`);
+    },
+    mailAttachmentStats: () => request<any>("/ads-marketing-module/mail/attachments/stats"),
+    mailAttachment: (attachmentId: string) => request<any>(`/ads-marketing-module/mail/attachments/${attachmentId}`),
+    mailScanAttachment: (attachmentId: string) =>
+      request<any>(`/ads-marketing-module/mail/attachments/${attachmentId}/scan`, { method: "POST" }),
+    mailQuarantineAttachment: (attachmentId: string) =>
+      request<any>(`/ads-marketing-module/mail/attachments/${attachmentId}/quarantine`, { method: "POST" }),
   },
 
   agentSwarm: {

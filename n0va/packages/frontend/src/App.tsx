@@ -12,6 +12,12 @@ const MailAI = lazy(() => import("./pages/MailAI"));
 const MailContacts = lazy(() => import("./pages/MailContacts"));
 const MailAgent = lazy(() => import("./pages/MailAgent"));
 const MailCompliance = lazy(() => import("./pages/MailCompliance"));
+const MailTemplates = lazy(() => import("./pages/MailTemplates"));
+const MailSignatures = lazy(() => import("./pages/MailSignatures"));
+const MailSpam = lazy(() => import("./pages/MailSpam"));
+const MailFollowUps = lazy(() => import("./pages/MailFollowUps"));
+const MailAnalytics = lazy(() => import("./pages/MailAnalytics"));
+const MailFiles = lazy(() => import("./pages/MailFiles"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -179,6 +185,12 @@ export default function App() {
                 <Route path="/mail/contacts" element={<MailContacts />} />
                 <Route path="/mail/agent" element={<MailAgent />} />
                 <Route path="/mail/compliance" element={<MailCompliance />} />
+                <Route path="/mail/templates" element={<MailTemplates />} />
+                <Route path="/mail/signatures" element={<MailSignatures />} />
+                <Route path="/mail/spam" element={<MailSpam />} />
+                <Route path="/mail/followups" element={<MailFollowUps />} />
+                <Route path="/mail/analytics" element={<MailAnalytics />} />
+                <Route path="/mail/files" element={<MailFiles />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

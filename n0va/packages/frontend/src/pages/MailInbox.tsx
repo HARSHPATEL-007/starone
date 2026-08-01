@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Inbox, Send, FileText, Archive, Trash2, Star, RotateCcw, AlertTriangle,
   SquarePen, RefreshCw, X, Tag, Paperclip, ChevronLeft, Folder, ShieldAlert,
-  Reply, CheckCheck, Mail,
+  Reply, CheckCheck, Mail, Clock,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -38,6 +38,21 @@ function priorityBadge(p: string): string {
   if (p === "high") return "bg-orange-500/15 text-orange-400";
   if (p === "low") return "bg-gray-500/15 text-gray-400";
   return "";
+}
+
+function snoozePresets(): { label: string; until: string }[] {
+  const at = (days: number, hour: number) => {
+    const d = new Date(Date.now() + days * 86400000);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  };
+  const laterToday = at(0, 18);
+  if (laterToday <= new Date()) laterToday.setDate(laterToday.getDate() + 1);
+  return [
+    { label: "Later today", until: laterToday.toISOString() },
+    { label: "Tomorrow", until: at(1, 9).toISOString() },
+    { label: "Next week", until: at(7, 9).toISOString() },
+  ];
 }
 
 export default function MailInbox() {
@@ -163,6 +178,14 @@ export default function MailInbox() {
 
   async function moveTo(m: any, target: string) {
     await act(api.adsMarketingModule.mailMove(m._id, target), `Moved to ${target}`);
+  }
+
+  async function snoozeMessage(m: any, until: string) {
+    await act(api.adsMarketingModule.mailSnooze(m._id, until), `Snoozed until ${new Date(until).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`);
+  }
+
+  async function unsnoozeMessage(m: any) {
+    await act(api.adsMarketingModule.mailUnsnooze(m._id), "Snooze removed");
   }
 
   async function sendMail() {
@@ -389,6 +412,19 @@ export default function MailInbox() {
                     className="select text-xs !w-auto !py-1.5"
                     value=""
                     disabled={busy}
+                    onChange={(e) => { if (e.target.value && selectedMsg) snoozeMessage(selectedMsg, e.target.value); e.target.value = ""; }}
+                  >
+                    <option value="">Snooze…</option>
+                    {snoozePresets().map((p) => (
+                      <option key={p.label} value={p.until}>{p.label}</option>
+                    ))}
+                  </select>
+                )}
+                {folder !== "trash" && (
+                  <select
+                    className="select text-xs !w-auto !py-1.5"
+                    value=""
+                    disabled={busy}
                     onChange={(e) => { if (e.target.value && selectedMsg) moveTo(selectedMsg, e.target.value); e.target.value = ""; }}
                   >
                     <option value="">Move to…</option>
@@ -402,6 +438,12 @@ export default function MailInbox() {
               {selectedMsg && (
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
                   <Tag className="w-3.5 h-3.5 text-gray-500" />
+                  {selectedMsg.snoozed && selectedMsg.snoozedUntil && (
+                    <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-violet-500/15 text-violet-300">
+                      <Clock className="w-3 h-3" /> Snoozed until {new Date(selectedMsg.snoozedUntil).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      <button onClick={() => unsnoozeMessage(selectedMsg)} className="hover:text-white" title="Unsnooze"><X className="w-3 h-3" /></button>
+                    </span>
+                  )}
                   {(selectedMsg.labels || []).filter((l: string) => l !== "Inbox").map((l: string) => (
                     <span key={l} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-gray-700/60 text-gray-300">
                       {l}

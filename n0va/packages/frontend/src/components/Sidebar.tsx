@@ -79,6 +79,10 @@ import {
   Search,
   ScanLine,
   Mailbox,
+  Signature,
+  ShieldAlert,
+  AlarmClock,
+  Paperclip,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -93,6 +97,12 @@ const navItems = [
   { to: "/mail/contacts", icon: Users, label: "Mail Contacts" },
   { to: "/mail/agent", icon: Bot, label: "Mail Agent" },
   { to: "/mail/compliance", icon: Shield, label: "Mail Compliance" },
+  { to: "/mail/templates", icon: FileText, label: "Mail Templates" },
+  { to: "/mail/signatures", icon: Signature, label: "Signatures" },
+  { to: "/mail/spam", icon: ShieldAlert, label: "Spam" },
+  { to: "/mail/followups", icon: AlarmClock, label: "Follow-ups" },
+  { to: "/mail/analytics", icon: BarChart3, label: "Mail Analytics" },
+  { to: "/mail/files", icon: Paperclip, label: "Mail Files" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
