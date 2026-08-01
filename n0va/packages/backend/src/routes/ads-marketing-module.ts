@@ -2260,4 +2260,76 @@ router.post("/mail/command-center/smart-archive", asyncHandler(async (req, res) 
   sendSuccess(res, adsMarketingModule.mailCommandSmartArchive(req.user!.tenantId, typeof req.body.olderThanDays === "number" ? req.body.olderThanDays : undefined));
 }));
 
+router.get("/mail/ops/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/ops/incidents", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsIncidents(req.user!.tenantId));
+}));
+
+router.post("/mail/ops/incidents", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsCreateIncident(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/ops/incidents/:incidentId/ack", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsAckIncident(req.user!.tenantId, req.params.incidentId));
+}));
+
+router.post("/mail/ops/incidents/:incidentId/resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsResolveIncident(req.user!.tenantId, req.params.incidentId));
+}));
+
+router.post("/mail/ops/incidents/:incidentId/escalate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsEscalateIncident(req.user!.tenantId, req.params.incidentId));
+}));
+
+router.get("/mail/ops/incident-log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsIncidentLog(req.user!.tenantId));
+}));
+
+router.post("/mail/ops/retry-queue", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsRetryQueue(req.user!.tenantId));
+}));
+
+router.post("/mail/ops/housekeeping", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsHousekeeping(req.user!.tenantId));
+}));
+
+router.post("/mail/ops/checkpoint", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsCheckpoint(req.user!.tenantId, typeof req.body.label === "string" ? req.body.label : undefined));
+}));
+
+router.post("/mail/ops/threat-rule", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsThreatRule(req.user!.tenantId));
+}));
+
+router.get("/mail/ops/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOpsLog(req.user!.tenantId));
+}));
+
+router.get("/mail/storage/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageDashboard(req.user!.tenantId));
+}));
+
+router.put("/mail/storage/policy", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageSetPolicy(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/storage/tiering", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageRunTiering(req.user!.tenantId));
+}));
+
+router.get("/mail/storage/suggestions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageSuggestions(req.user!.tenantId));
+}));
+
+router.post("/mail/storage/suggestions/apply-all", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageApplyAllCleanups(req.user!.tenantId));
+}));
+
+router.post("/mail/storage/suggestions/:suggestionId/apply", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStorageApplyCleanup(req.user!.tenantId, req.params.suggestionId));
+}));
+
 export default router;

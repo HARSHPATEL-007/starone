@@ -2722,6 +2722,31 @@ export const api = {
     },
     mailCommandSmartArchive: (olderThanDays?: number) =>
       request<any>("/ads-marketing-module/mail/command-center/smart-archive", { method: "POST", body: JSON.stringify({ olderThanDays }) }),
+    mailOpsDashboard: () => request<any>("/ads-marketing-module/mail/ops/dashboard"),
+    mailOpsIncidents: () => request<any>("/ads-marketing-module/mail/ops/incidents"),
+    mailOpsCreateIncident: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/ops/incidents", { method: "POST", body: JSON.stringify(input) }),
+    mailOpsAckIncident: (incidentId: string) =>
+      request<any>(`/ads-marketing-module/mail/ops/incidents/${incidentId}/ack`, { method: "POST" }),
+    mailOpsResolveIncident: (incidentId: string) =>
+      request<any>(`/ads-marketing-module/mail/ops/incidents/${incidentId}/resolve`, { method: "POST" }),
+    mailOpsEscalateIncident: (incidentId: string) =>
+      request<any>(`/ads-marketing-module/mail/ops/incidents/${incidentId}/escalate`, { method: "POST" }),
+    mailOpsIncidentLog: () => request<any>("/ads-marketing-module/mail/ops/incident-log"),
+    mailOpsRetryQueue: () => request<any>("/ads-marketing-module/mail/ops/retry-queue", { method: "POST" }),
+    mailOpsHousekeeping: () => request<any>("/ads-marketing-module/mail/ops/housekeeping", { method: "POST" }),
+    mailOpsCheckpoint: (label?: string) =>
+      request<any>("/ads-marketing-module/mail/ops/checkpoint", { method: "POST", body: JSON.stringify({ label }) }),
+    mailOpsThreatRule: () => request<any>("/ads-marketing-module/mail/ops/threat-rule", { method: "POST" }),
+    mailOpsLog: () => request<any>("/ads-marketing-module/mail/ops/log"),
+    mailStorageDashboard: () => request<any>("/ads-marketing-module/mail/storage/dashboard"),
+    mailStorageSetPolicy: (policy: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/storage/policy", { method: "PUT", body: JSON.stringify(policy) }),
+    mailStorageRunTiering: () => request<any>("/ads-marketing-module/mail/storage/tiering", { method: "POST" }),
+    mailStorageSuggestions: () => request<any>("/ads-marketing-module/mail/storage/suggestions"),
+    mailStorageApplyCleanup: (suggestionId: string) =>
+      request<any>(`/ads-marketing-module/mail/storage/suggestions/${suggestionId}/apply`, { method: "POST" }),
+    mailStorageApplyAllCleanups: () => request<any>("/ads-marketing-module/mail/storage/suggestions/apply-all", { method: "POST" }),
   },
 
   agentSwarm: {

@@ -75,6 +75,8 @@ import { mailVoiceNote } from "./MailVoiceNoteService";
 import { mailMultimodal } from "./MailMultimodalService";
 import { mailNeural } from "./MailNeuralService";
 import { mailCommand } from "./MailCommandCenterService";
+import { mailOps } from "./MailOpsService";
+import { mailStorage } from "./MailStorageService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -4510,6 +4512,78 @@ export class AdsMarketingModuleService {
 
   mailCommandSmartArchive(tenantId: string, olderThanDays?: number) {
     return mailCommand.smartArchiveNow(tenantId, olderThanDays);
+  }
+
+  mailOpsDashboard(tenantId: string) {
+    return mailOps.opsDashboard(tenantId);
+  }
+
+  mailOpsIncidents(tenantId: string) {
+    return mailOps.incidents(tenantId);
+  }
+
+  mailOpsCreateIncident(tenantId: string, input: any) {
+    return mailOps.createIncident(tenantId, input);
+  }
+
+  mailOpsAckIncident(tenantId: string, incidentId: string) {
+    return mailOps.acknowledgeIncident(tenantId, incidentId);
+  }
+
+  mailOpsResolveIncident(tenantId: string, incidentId: string) {
+    return mailOps.resolveIncident(tenantId, incidentId);
+  }
+
+  mailOpsEscalateIncident(tenantId: string, incidentId: string) {
+    return mailOps.escalateIncident(tenantId, incidentId);
+  }
+
+  mailOpsIncidentLog(tenantId: string) {
+    return mailOps.incidentLog(tenantId);
+  }
+
+  mailOpsRetryQueue(tenantId: string) {
+    return mailOps.retryFailedQueue(tenantId);
+  }
+
+  mailOpsHousekeeping(tenantId: string) {
+    return mailOps.runHousekeeping(tenantId);
+  }
+
+  mailOpsCheckpoint(tenantId: string, label?: string) {
+    return mailOps.takeCheckpoint(tenantId, label);
+  }
+
+  mailOpsThreatRule(tenantId: string) {
+    return mailOps.deployThreatRule(tenantId);
+  }
+
+  mailOpsLog(tenantId: string) {
+    return mailOps.opsLog(tenantId);
+  }
+
+  mailStorageDashboard(tenantId: string) {
+    return mailStorage.storageDashboard(tenantId);
+  }
+
+  mailStorageSetPolicy(tenantId: string, policy: any) {
+    return mailStorage.setTieringPolicy(tenantId, policy);
+  }
+
+  mailStorageRunTiering(tenantId: string) {
+    return mailStorage.runTiering(tenantId);
+  }
+
+  mailStorageSuggestions(tenantId: string) {
+    return mailStorage.cleanupSuggestions(tenantId);
+  }
+
+  mailStorageApplyCleanup(tenantId: string, suggestionId: string) {
+    return mailStorage.applyCleanup(tenantId, suggestionId);
+  }
+
+  mailStorageApplyAllCleanups(tenantId: string) {
+    return mailStorage.applyAllCleanups(tenantId);
   }
 }
 

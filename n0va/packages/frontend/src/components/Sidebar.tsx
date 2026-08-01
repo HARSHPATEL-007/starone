@@ -114,6 +114,7 @@ const navItems = [
   { to: "/mail/domains", icon: Globe, label: "Domains" },
   { to: "/mail/voice", icon: Mic, label: "Voice & Media" },
   { to: "/mail/command-center", icon: LayoutDashboard, label: "Mail Command" },
+  { to: "/mail/ops", icon: Activity, label: "Mail Ops" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
