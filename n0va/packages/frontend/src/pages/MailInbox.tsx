@@ -91,6 +91,18 @@ export default function MailInbox() {
     return () => window.removeEventListener("n0va:refresh-data", refresh);
   }, [loadAll]);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") closeThread();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setCompose((prev: any) => prev || { mailboxId: mailboxes[0]?.mailboxId || "", to: "", subject: "", body: "", importance: "normal" });
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mailboxes]);
+
   async function openMessage(m: any) {
     if (!m.read) {
       api.adsMarketingModule.mailMarkRead(m._id, true).catch(() => null);

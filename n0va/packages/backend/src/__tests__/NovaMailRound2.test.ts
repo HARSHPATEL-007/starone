@@ -250,7 +250,7 @@ describe("MailComplianceService (Round 17)", () => {
     expect(result.skippedHeld).toBeGreaterThanOrEqual(1);
     const after = DataStore.mem().findOne("messages", (m: any) => m._id === oldSentId);
     expect(after.folder).toBe("sent");
-    compliance.releaseHold(T, compliance.listHolds(T).holds[0].holdId);
+    compliance.releaseHold(T, compliance.listHolds(T).holds[0]._id);
   });
 
   it("applies retention: deletes expired mail without a hold", () => {

@@ -90,6 +90,9 @@ const navItems = [
   { to: "/mail/rules", icon: Zap, label: "Mail Rules" },
   { to: "/mail/mailboxes", icon: Mailbox, label: "Mailboxes" },
   { to: "/mail/ai", icon: Sparkles, label: "Mail AI" },
+  { to: "/mail/contacts", icon: Users, label: "Mail Contacts" },
+  { to: "/mail/agent", icon: Bot, label: "Mail Agent" },
+  { to: "/mail/compliance", icon: Shield, label: "Mail Compliance" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
@@ -226,11 +229,22 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [mentionCount, setMentionCount] = useState(0);
+  const [mailUnread, setMailUnread] = useState(0);
   const [recent, setRecent] = useState<RecentItem[]>([]);
 
   useEffect(() => {
     api.notifications.unreadCount().then((res) => setUnreadCount(res.count)).catch(() => {});
     api.mentions.unreadCount().then((res) => setMentionCount(res.count)).catch(() => {});
+    const loadMailUnread = () => {
+      api.adsMarketingModule.mailUnreadSummary().then((r) => {
+        const s = r && r.data !== undefined ? r.data : r;
+        setMailUnread(s?.totals?.totalUnread || 0);
+      }).catch(() => {});
+    };
+    loadMailUnread();
+    function refresh() { loadMailUnread(); }
+    window.addEventListener("n0va:refresh-data", refresh);
+    return () => window.removeEventListener("n0va:refresh-data", refresh);
   }, []);
 
   function handleLogout() {
@@ -272,6 +286,11 @@ export default function Sidebar() {
             {item.to === "/notifications" && unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                 {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+            {item.to === "/mail" && mailUnread > 0 && (
+              <span className="bg-n0va-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                {mailUnread > 99 ? "99+" : mailUnread}
               </span>
             )}
             {item.to === "/mentions" && mentionCount > 0 && (
