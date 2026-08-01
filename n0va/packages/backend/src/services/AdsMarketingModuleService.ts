@@ -56,6 +56,10 @@ import { mailMessage } from "./MailMessageService";
 import { mailRules } from "./MailRulesService";
 import { mailSearch } from "./MailSearchService";
 import { mailAI } from "./MailAIService";
+import { mailContacts } from "./MailContactService";
+import { mailAgent } from "./MailAgentService";
+import { mailCompliance } from "./MailComplianceService";
+import { mailVoice } from "./MailVoiceService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3746,6 +3750,143 @@ export class AdsMarketingModuleService {
 
   mailIntelligence(tenantId: string) {
     return mailAI.emailIntelligence(tenantId);
+  }
+
+  // ── N0VA MAIL Round 17: contacts / agent / compliance / voice ─────────
+  mailContacts(tenantId: string, opts: Record<string, any>) {
+    return mailContacts.listContacts(tenantId, opts);
+  }
+
+  mailContact(tenantId: string, contactId: string) {
+    return mailContacts.getContact(tenantId, contactId);
+  }
+
+  mailCreateContact(tenantId: string, input: Record<string, any>) {
+    return mailContacts.createContact(tenantId, input);
+  }
+
+  mailUpdateContact(tenantId: string, contactId: string, patch: Record<string, any>) {
+    return mailContacts.updateContact(tenantId, contactId, patch);
+  }
+
+  mailDeleteContact(tenantId: string, contactId: string) {
+    return mailContacts.deleteContact(tenantId, contactId);
+  }
+
+  mailContactGroups(tenantId: string) {
+    return mailContacts.contactGroups(tenantId);
+  }
+
+  mailMostContacted(tenantId: string, limit?: number) {
+    return mailContacts.mostContacted(tenantId, limit);
+  }
+
+  mailContactProfile(tenantId: string, contactId: string) {
+    return mailContacts.contactProfile(tenantId, contactId);
+  }
+
+  mailContactsDashboard(tenantId: string) {
+    return mailContacts.contactsDashboard(tenantId);
+  }
+
+  mailSetOutOfOffice(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailAgent.setOutOfOffice(tenantId, mailboxId, input);
+  }
+
+  mailOutOfOfficeStatus(tenantId: string, mailboxId: string) {
+    return mailAgent.outOfOfficeStatus(tenantId, mailboxId);
+  }
+
+  mailScheduleSend(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailAgent.scheduleSend(tenantId, mailboxId, input);
+  }
+
+  mailListScheduled(tenantId: string, mailboxId?: string) {
+    return mailAgent.listScheduled(tenantId, mailboxId);
+  }
+
+  mailCancelSchedule(tenantId: string, scheduleId: string) {
+    return mailAgent.cancelSchedule(tenantId, scheduleId);
+  }
+
+  mailExtractTasks(tenantId: string, messageId: string) {
+    return mailAgent.extractTasks(tenantId, messageId);
+  }
+
+  mailListTasks(tenantId: string) {
+    return mailAgent.listTasks(tenantId);
+  }
+
+  mailCompleteTask(tenantId: string, taskId: string) {
+    return mailAgent.completeTask(tenantId, taskId);
+  }
+
+  mailRunAgentCycle(tenantId: string, mailboxId?: string) {
+    return mailAgent.runAgentCycle(tenantId, mailboxId);
+  }
+
+  mailAgentLog(tenantId: string, limit?: number) {
+    return mailAgent.agentLog(tenantId, limit);
+  }
+
+  mailAgentStatus(tenantId: string) {
+    return mailAgent.agentStatus(tenantId);
+  }
+
+  mailSetRetentionPolicy(tenantId: string, input: Record<string, any>) {
+    return mailCompliance.setRetentionPolicy(tenantId, input);
+  }
+
+  mailRetentionPolicies(tenantId: string) {
+    return mailCompliance.retentionPolicies(tenantId);
+  }
+
+  mailDeleteRetentionPolicy(tenantId: string, policyId: string) {
+    return mailCompliance.deleteRetentionPolicy(tenantId, policyId);
+  }
+
+  mailApplyRetention(tenantId: string) {
+    return mailCompliance.applyRetention(tenantId);
+  }
+
+  mailPlaceHold(tenantId: string, input: Record<string, any>) {
+    return mailCompliance.placeHold(tenantId, input);
+  }
+
+  mailListHolds(tenantId: string) {
+    return mailCompliance.listHolds(tenantId);
+  }
+
+  mailReleaseHold(tenantId: string, holdId: string) {
+    return mailCompliance.releaseHold(tenantId, holdId);
+  }
+
+  mailHoldStatus(tenantId: string) {
+    return mailCompliance.holdStatus(tenantId);
+  }
+
+  mailAuditLog(tenantId: string, limit?: number) {
+    return mailCompliance.auditLog(tenantId, limit);
+  }
+
+  mailScanPii(tenantId: string) {
+    return mailCompliance.scanForPii(tenantId);
+  }
+
+  mailComplianceSummary(tenantId: string) {
+    return mailCompliance.complianceSummary(tenantId);
+  }
+
+  mailParseVoiceCommand(tenantId: string, command: string) {
+    return mailVoice.parseMailCommand(tenantId, command);
+  }
+
+  mailExecuteVoiceCommand(tenantId: string, command: string) {
+    return mailVoice.executeMailCommand(tenantId, command);
+  }
+
+  mailVoiceHelp() {
+    return mailVoice.voiceCommandHelp();
   }
 }
 

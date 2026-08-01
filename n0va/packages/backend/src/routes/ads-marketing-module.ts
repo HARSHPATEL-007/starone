@@ -1507,4 +1507,148 @@ router.get("/mail/ai/intelligence", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailIntelligence(req.user!.tenantId));
 }));
 
+// ── N0VA MAIL Round 17: contacts / agent / compliance / voice ───────────
+router.get("/mail/contacts", asyncHandler(async (req, res) => {
+  const opts: Record<string, any> = {};
+  for (const key of ["query", "group", "limit", "sort"]) {
+    if (req.query[key] !== undefined) opts[key] = req.query[key];
+  }
+  sendSuccess(res, adsMarketingModule.mailContacts(req.user!.tenantId, opts));
+}));
+
+router.get("/mail/contacts/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactsDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/contacts/groups", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactGroups(req.user!.tenantId));
+}));
+
+router.get("/mail/contacts/most-contacted", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 5;
+  sendSuccess(res, adsMarketingModule.mailMostContacted(req.user!.tenantId, limit));
+}));
+
+router.post("/mail/contacts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateContact(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/contacts/:contactId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContact(req.user!.tenantId, req.params.contactId));
+}));
+
+router.patch("/mail/contacts/:contactId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateContact(req.user!.tenantId, req.params.contactId, req.body || {}));
+}));
+
+router.delete("/mail/contacts/:contactId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteContact(req.user!.tenantId, req.params.contactId));
+}));
+
+router.get("/mail/contacts/:contactId/profile", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactProfile(req.user!.tenantId, req.params.contactId));
+}));
+
+router.get("/mail/agent/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/agent/log", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
+  sendSuccess(res, adsMarketingModule.mailAgentLog(req.user!.tenantId, limit));
+}));
+
+router.post("/mail/agent/cycle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRunAgentCycle(req.user!.tenantId, req.body?.mailboxId || undefined));
+}));
+
+router.get("/mail/agent/ooo/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOutOfOfficeStatus(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.post("/mail/agent/ooo/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSetOutOfOffice(req.user!.tenantId, req.params.mailboxId, req.body || {}));
+}));
+
+router.get("/mail/agent/scheduled", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailListScheduled(req.user!.tenantId, req.query.mailboxId ? String(req.query.mailboxId) : undefined));
+}));
+
+router.post("/mail/agent/scheduled", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailScheduleSend(req.user!.tenantId, req.body?.mailboxId || undefined, req.body || {}));
+}));
+
+router.post("/mail/agent/scheduled/:scheduleId/cancel", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCancelSchedule(req.user!.tenantId, req.params.scheduleId));
+}));
+
+router.post("/mail/agent/tasks/extract/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailExtractTasks(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/agent/tasks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailListTasks(req.user!.tenantId));
+}));
+
+router.post("/mail/agent/tasks/:taskId/complete", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCompleteTask(req.user!.tenantId, req.params.taskId));
+}));
+
+router.get("/mail/compliance/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComplianceSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/compliance/policies", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRetentionPolicies(req.user!.tenantId));
+}));
+
+router.post("/mail/compliance/policies", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSetRetentionPolicy(req.user!.tenantId, req.body || {}));
+}));
+
+router.delete("/mail/compliance/policies/:policyId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteRetentionPolicy(req.user!.tenantId, req.params.policyId));
+}));
+
+router.post("/mail/compliance/retention/apply", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailApplyRetention(req.user!.tenantId));
+}));
+
+router.get("/mail/compliance/holds", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailListHolds(req.user!.tenantId));
+}));
+
+router.post("/mail/compliance/holds", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPlaceHold(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/compliance/holds/:holdId/release", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailReleaseHold(req.user!.tenantId, req.params.holdId));
+}));
+
+router.get("/mail/compliance/hold-status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailHoldStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/compliance/audit", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 30;
+  sendSuccess(res, adsMarketingModule.mailAuditLog(req.user!.tenantId, limit));
+}));
+
+router.post("/mail/compliance/pii/scan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailScanPii(req.user!.tenantId));
+}));
+
+router.post("/mail/voice/parse", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailParseVoiceCommand(req.user!.tenantId, req.body?.command || ""));
+}));
+
+router.post("/mail/voice/execute", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailExecuteVoiceCommand(req.user!.tenantId, req.body?.command || ""));
+}));
+
+router.get("/mail/voice/help", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailVoiceHelp());
+}));
+
 export default router;
