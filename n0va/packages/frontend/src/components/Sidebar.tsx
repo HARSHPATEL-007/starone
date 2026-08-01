@@ -86,6 +86,7 @@ import {
   MessagesSquare,
   BrainCircuit,
   FolderSearch,
+  Mic,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -111,6 +112,7 @@ const navItems = [
   { to: "/mail/campaigns", icon: Megaphone, label: "Mail Campaigns" },
   { to: "/mail/discovery", icon: FolderSearch, label: "eDiscovery" },
   { to: "/mail/domains", icon: Globe, label: "Domains" },
+  { to: "/mail/voice", icon: Mic, label: "Voice & Media" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

@@ -71,6 +71,9 @@ import { mailPredict } from "./MailPredictiveService";
 import { mailCampaign } from "./MailCampaignService";
 import { mailDiscovery } from "./MailDiscoveryService";
 import { mailDomain } from "./MailDomainService";
+import { mailVoiceNote } from "./MailVoiceNoteService";
+import { mailMultimodal } from "./MailMultimodalService";
+import { mailNeural } from "./MailNeuralService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3603,6 +3606,10 @@ export class AdsMarketingModuleService {
     return mailMessage.getMessage(tenantId, messageId);
   }
 
+  mailBatchOps(tenantId: string, operation: string, messageIds: string[], opts: Record<string, any>) {
+    return mailMessage.batchOps(tenantId, operation, messageIds, opts);
+  }
+
   mailThread(tenantId: string, threadId: string) {
     return mailMessage.getThread(tenantId, threadId);
   }
@@ -3701,6 +3708,10 @@ export class AdsMarketingModuleService {
 
   mailRuleTemplates() {
     return mailRules.ruleTemplates();
+  }
+
+  mailAiGenerateRule(tenantId: string, naturalLanguage: string, opts: Record<string, any>) {
+    return mailRules.aiGenerateRule(tenantId, naturalLanguage, opts);
   }
 
   mailInstantiateRuleTemplate(tenantId: string, templateId: string) {
@@ -4350,6 +4361,110 @@ export class AdsMarketingModuleService {
 
   mailDomainSummary(tenantId: string) {
     return mailDomain.domainSummary(tenantId);
+  }
+
+  mailCreateVoiceNote(tenantId: string, input: any) {
+    return mailVoiceNote.createVoiceNote(tenantId, input);
+  }
+
+  mailVoiceNotes(tenantId: string, opts: any) {
+    return mailVoiceNote.listVoiceNotes(tenantId, opts);
+  }
+
+  mailVoiceNote(tenantId: string, noteId: string) {
+    return mailVoiceNote.getVoiceNote(tenantId, noteId);
+  }
+
+  mailDeleteVoiceNote(tenantId: string, noteId: string) {
+    return mailVoiceNote.deleteVoiceNote(tenantId, noteId);
+  }
+
+  mailVoiceNoteDashboard(tenantId: string) {
+    return mailVoiceNote.voiceNoteDashboard(tenantId);
+  }
+
+  mailAttachVideo(tenantId: string, input: any) {
+    return mailMultimodal.attachVideo(tenantId, input);
+  }
+
+  mailAttachScreenRecording(tenantId: string, input: any) {
+    return mailMultimodal.attachScreenRecording(tenantId, input);
+  }
+
+  mailAttachCodeSnippet(tenantId: string, input: any) {
+    return mailMultimodal.attachCodeSnippet(tenantId, input);
+  }
+
+  mailCreatePoll(tenantId: string, input: any) {
+    return mailMultimodal.createPoll(tenantId, input);
+  }
+
+  mailVotePoll(tenantId: string, pollId: string, optionIndex: number, voter: string) {
+    return mailMultimodal.votePoll(tenantId, pollId, optionIndex, voter);
+  }
+
+  mailPollResults(tenantId: string, pollId: string) {
+    return mailMultimodal.pollResults(tenantId, pollId);
+  }
+
+  mailContentBlocks(tenantId: string, opts: any) {
+    return mailMultimodal.listContentBlocks(tenantId, opts);
+  }
+
+  mailContentBlock(tenantId: string, blockId: string) {
+    return mailMultimodal.getContentBlock(tenantId, blockId);
+  }
+
+  mailDeleteContentBlock(tenantId: string, blockId: string) {
+    return mailMultimodal.deleteContentBlock(tenantId, blockId);
+  }
+
+  mailPolls(tenantId: string) {
+    return mailMultimodal.listPolls(tenantId);
+  }
+
+  mailClosePoll(tenantId: string, pollId: string) {
+    return mailMultimodal.closePoll(tenantId, pollId);
+  }
+
+  mailMultimodalDashboard(tenantId: string) {
+    return mailMultimodal.multimodalDashboard(tenantId);
+  }
+
+  mailNeuralOverview(tenantId: string, mailboxId?: string) {
+    return mailNeural.neuralOverview(tenantId, mailboxId);
+  }
+
+  mailNeuralSuggestions(tenantId: string, limit?: number) {
+    return mailNeural.smartDraftSuggestions(tenantId, limit);
+  }
+
+  mailNeuralTasks(tenantId: string) {
+    return mailNeural.taskExtraction(tenantId);
+  }
+
+  mailNeuralUnsubscribe(tenantId: string) {
+    return mailNeural.predictiveUnsubscribe(tenantId);
+  }
+
+  mailNeuralArchive(tenantId: string, opts: any) {
+    return mailNeural.smartArchive(tenantId, opts);
+  }
+
+  mailNeuralHealth(tenantId: string) {
+    return mailNeural.conversationHealth(tenantId);
+  }
+
+  mailNeuralEscalations(tenantId: string) {
+    return mailNeural.escalationQueue(tenantId);
+  }
+
+  mailNeuralLearning(tenantId: string, action: string, item: any) {
+    return mailNeural.learningLoop(tenantId, action, item);
+  }
+
+  mailNeuralDashboard(tenantId: string, mailboxId?: string) {
+    return mailNeural.neuralMailboxDashboard(tenantId, mailboxId);
   }
 }
 

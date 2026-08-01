@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   RefreshCw, AlertTriangle, Plus, X, Zap, PauseCircle, CheckCircle2,
-  Target, FlaskConical, Trash2, Code2, Eye,
+  Target, FlaskConical, Trash2, Code2, Eye, Sparkles,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -35,6 +35,10 @@ export default function MailRules() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiText, setAiText] = useState("");
+  const [aiTestBefore, setAiTestBefore] = useState(true);
+  const [aiRes, setAiRes] = useState<any>(null);
   const [testing, setTesting] = useState<any>(null);
   const [testRes, setTestRes] = useState<any>(null);
   const [form, setForm] = useState<any>({
@@ -159,6 +163,39 @@ export default function MailRules() {
     }
   }
 
+  async function generateRule() {
+    if (!aiText.trim()) {
+      addToast("warning", "Describe the rule", "e.g. \u201CArchive all marketing newsletters and mark them read\u201D");
+      return;
+    }
+    setBusy(true);
+    setAiRes(null);
+    try {
+      const res = unwrap(await api.adsMarketingModule.mailAiGenerateRule(aiText.trim(), { testBeforeEnable: aiTestBefore }));
+      setAiRes(res);
+      addToast("success", "Rule generated", res?.summary || "");
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Generation failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleGenerated() {
+    if (!aiRes) return;
+    setBusy(true);
+    try {
+      const res = unwrap(await api.adsMarketingModule.mailToggleRule(aiRes.ruleId, !aiRes.enabled));
+      setAiRes({ ...aiRes, enabled: res.enabled });
+      addToast("success", res.enabled ? "Rule enabled" : "Rule paused", res?.summary || "");
+    } catch (e: any) {
+      addToast("error", "Toggle failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const rules = dash?.rules || [];
   const totals = dash?.totals;
 
@@ -184,6 +221,9 @@ export default function MailRules() {
         </div>
         <div className="flex items-center gap-2">
           <button className="btn-secondary p-2" onClick={loadData} title="Refresh"><RefreshCw className="w-4 h-4" /></button>
+          <button className="btn-secondary flex items-center gap-2" onClick={() => { setAiOpen(true); setAiText(""); setAiRes(null); }}>
+            <Sparkles className="w-4 h-4 text-n0va-400" /> <span className="hidden sm:inline">AI rule</span>
+          </button>
           <button className="btn-primary flex items-center gap-2" onClick={() => setCreating(true)}><Plus className="w-4 h-4" /> <span className="hidden sm:inline">New rule</span></button>
         </div>
       </div>
@@ -409,6 +449,70 @@ export default function MailRules() {
                 <button className="btn-secondary text-sm" onClick={() => setCreating(false)}>Cancel</button>
                 <button className="btn-primary text-sm" disabled={busy} onClick={createRule}>Create rule</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aiOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h2 className="font-semibold text-white flex items-center gap-2"><Sparkles className="w-4 h-4 text-n0va-400" /> AI rule generator</h2>
+              <button className="text-gray-500 hover:text-white" onClick={() => setAiOpen(false)}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Describe the rule in plain English</label>
+                <textarea
+                  className="input min-h-[90px]"
+                  placeholder="e.g. Archive all marketing newsletters and mark them read"
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                <input type="checkbox" className="accent-n0va-500" checked={aiTestBefore} onChange={(e) => setAiTestBefore(e.target.checked)} />
+                Dry-run against recent messages before enabling
+              </label>
+              <button className="btn-primary text-sm w-full" disabled={busy} onClick={generateRule}>
+                <Sparkles className="w-4 h-4" /> Generate rule
+              </button>
+              {aiRes && (
+                <div className="rounded-lg bg-gray-800/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-white">{aiRes.name}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold ${aiRes.enabled ? "bg-green-500/10 text-green-400" : "bg-amber-500/10 text-amber-400"}`}>
+                      {aiRes.enabled ? "active" : "paused — enable to run"}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(aiRes.conditions || []).map((c: any, i: number) => (
+                      <span key={`c${i}`} className="text-[10px] px-2 py-0.5 rounded bg-gray-700/60 text-gray-300">
+                        <span className="text-n0va-400">{c.field}</span> {c.operator} "{c.value}"
+                      </span>
+                    ))}
+                    {(aiRes.actions || []).map((a: any, i: number) => (
+                      <span key={`a${i}`} className={`text-[10px] px-2 py-0.5 rounded ${ACTION_BADGE[a.action] || "bg-gray-700 text-gray-300"}`}>
+                        {a.action}{a.target ? ` → ${a.target}` : ""}
+                      </span>
+                    ))}
+                  </div>
+                  {aiRes.test?.tested ? (
+                    <p className="text-xs text-gray-400">
+                      Dry run over {aiRes.test.scanned} recent messages — <span className="text-n0va-400">{aiRes.test.wouldMatch} would match</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400">{aiRes.summary}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button className="btn-secondary text-xs flex-1" disabled={busy} onClick={toggleGenerated}>
+                      {aiRes.enabled ? "Pause rule" : "Enable rule"}
+                    </button>
+                    <button className="btn-primary text-xs flex-1" onClick={() => setAiOpen(false)}>Done</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

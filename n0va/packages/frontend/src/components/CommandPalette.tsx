@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare, BrainCircuit, FolderSearch, Globe } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare, BrainCircuit, FolderSearch, Globe, Mic } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -35,6 +35,7 @@ const PAGE_ITEMS: SearchResult[] = [
 { type: "page", label: "Mail Campaigns", route: "/mail/campaigns", icon: Megaphone },
 { type: "page", label: "eDiscovery", route: "/mail/discovery", icon: FolderSearch },
 { type: "page", label: "Domains", route: "/mail/domains", icon: Globe },
+{ type: "page", label: "Voice & Media", route: "/mail/voice", icon: Mic },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

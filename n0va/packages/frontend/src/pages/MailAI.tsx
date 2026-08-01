@@ -34,11 +34,24 @@ export default function MailAI() {
   const [copied, setCopied] = useState("");
   const [threadId, setThreadId] = useState("");
   const [threadInfo, setThreadInfo] = useState<any>(null);
+  const [neural, setNeural] = useState<any>(null);
+  const [neuralTasks, setNeuralTasks] = useState<any[]>([]);
+  const [neuralSugg, setNeuralSugg] = useState<any[]>([]);
+  const [archiveRes, setArchiveRes] = useState<any>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     const i = unwrap(await api.adsMarketingModule.mailIntelligence().catch(() => null));
     setIntel(i);
+    const [nd, nt, ns] = await Promise.all([
+      api.adsMarketingModule.mailNeuralDashboard().then(unwrap).catch(() => null),
+      api.adsMarketingModule.mailNeuralTasks().then(unwrap).catch(() => null),
+      api.adsMarketingModule.mailNeuralSuggestions().then(unwrap).catch(() => null),
+    ]);
+    setNeural(nd);
+    setNeuralTasks(nt?.tasks || []);
+    setNeuralSugg(ns?.suggestions || []);
+    setArchiveRes(null);
     setLoading(false);
   }, []);
 
@@ -87,6 +100,33 @@ export default function MailAI() {
       setThreadInfo({ summary: unwrap(sum), prep: unwrap(prep) });
     } catch (e: any) {
       addToast("error", "Thread analysis failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runSmartArchive(apply: boolean) {
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailNeuralArchive(apply ? { apply: true } : {}));
+      setArchiveRes(r);
+      addToast("success", apply ? "Smart archive applied" : "Archive scan done", r?.summary || "");
+      if (apply) loadData();
+    } catch (e: any) {
+      addToast("error", "Smart archive failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function learn(action: string, item: any) {
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailNeuralLearning(action, item));
+      addToast("success", r?.summary || `${action}ed`, r?.detail || "");
+      loadData();
+    } catch (e: any) {
+      addToast("error", "Learning failed", e?.message);
     } finally {
       setBusy(false);
     }
@@ -314,6 +354,137 @@ export default function MailAI() {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="card">
+            <div className="flex items-center gap-2 mb-3"><BrainCircuit className="w-4 h-4 text-emerald-400" /><span className="text-xs text-gray-500 uppercase tracking-wider">N0VA1O neural mailbox</span></div>
+            {neural?.attention && (
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="rounded-lg bg-gray-800/40 p-3 text-center">
+                  <p className="text-2xl font-bold text-white">{neural.attention.total}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Inbox</p>
+                </div>
+                <div className="rounded-lg bg-gray-800/40 p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-400">{neural.attention.warnings}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Warnings</p>
+                </div>
+                <div className="rounded-lg bg-gray-800/40 p-3 text-center">
+                  <p className="text-2xl font-bold text-red-400">{neural.attention.critical}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Critical</p>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Auto-priority queue</p>
+                {neural?.overview?.length ? (
+                  <ul className="space-y-2">
+                    {neural.overview.slice(0, 5).map((m: any) => (
+                      <li key={m.messageId} className="rounded-lg border border-gray-800 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-gray-300 truncate">{m.subject}</span>
+                          <span className="text-xs text-n0va-400 shrink-0">{m.predictedImportance}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">{m.from}</p>
+                        <p className="text-[10px] text-gray-600 mt-0.5">{m.reason}</p>
+                        <div className="flex gap-1.5 mt-2">
+                          <button className="text-[10px] px-2 py-1 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30" disabled={busy} onClick={() => learn("accept", { subject: m.subject, suggestion: "prioritize" })}>Accept</button>
+                          <button className="text-[10px] px-2 py-1 rounded bg-gray-700/60 text-gray-400 hover:text-white" disabled={busy} onClick={() => learn("reject", { subject: m.subject, suggestion: "prioritize" })}>Reject</button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No unread messages to rank.</p>
+                )}
+
+                <p className="text-xs text-gray-500 uppercase tracking-wider mt-5 mb-2">Smart drafts</p>
+                {neuralSugg.length ? (
+                  <ul className="space-y-2">
+                    {neuralSugg.map((s: any, i: number) => (
+                      <li key={i} className="rounded-lg border border-gray-800 p-3">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-sm text-gray-300 truncate">{s.subject}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold bg-n0va-600/20 text-n0va-400">{s.tone}</span>
+                        </div>
+                        <p className="text-xs text-gray-400">{s.suggestedReply}</p>
+                        <div className="flex gap-1.5 mt-2">
+                          <button className="text-[10px] px-2 py-1 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30" disabled={busy} onClick={() => learn("accept", { subject: s.subject, suggestion: s.suggestedReply })}>Accept</button>
+                          <button className="text-[10px] px-2 py-1 rounded bg-gray-700/60 text-gray-400 hover:text-white" disabled={busy} onClick={() => learn("reject", { subject: s.subject, suggestion: s.suggestedReply })}>Reject</button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No drafts suggested yet.</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">Extracted tasks ({neuralTasks.length})</p>
+                  {neural?.archiveCandidates > 0 && (
+                    <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runSmartArchive(true)}>
+                      Smart archive {neural.archiveCandidates} old
+                    </button>
+                  )}
+                </div>
+                {archiveRes && (
+                  <p className="text-xs text-n0va-400 mb-2">{archiveRes.summary} — {archiveRes.applied} archived</p>
+                )}
+                {neuralTasks.length ? (
+                  <ul className="space-y-1.5 mb-4">
+                    {neuralTasks.slice(0, 6).map((t: any, i: number) => (
+                      <li key={i} className="flex items-center gap-2 text-xs text-gray-300 border-b border-gray-800/50 last:border-0 pb-1.5">
+                        <ListTodo className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="truncate">{t.task}</span>
+                        <span className="text-gray-600 shrink-0 ml-auto text-[10px]">{t.subject}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500 mb-4">No checklist tasks found in email bodies.</p>
+                )}
+
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Unsubscribe intelligence</p>
+                {neural?.unsubscribeOffers ? (
+                  <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                    {neural.unsubscribeOffers} sender(s) flagged for declining engagement — consider cleaning up subscriptions
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 mb-4">No declining senders detected.</p>
+                )}
+
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Escalations</p>
+                {neural?.escalationQueue?.length ? (
+                  <ul className="space-y-1.5 mb-4">
+                    {neural.escalationQueue.map((m: any, i: number) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs border-b border-gray-800/50 last:border-0 pb-1.5">
+                        <span className="text-red-300 truncate flex items-center gap-1.5"><AlertTriangle className="w-3 h-3 shrink-0" />{m.subject}</span>
+                        <span className="text-gray-600 shrink-0">urgency {m.urgencyScore}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-gray-500 mb-4">Nothing escalated.</p>
+                )}
+
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Recent learning</p>
+                {neural?.recentActions?.length ? (
+                  <ul className="space-y-1">
+                    {neural.recentActions.map((a: any, i: number) => (
+                      <li key={i} className="flex items-center gap-2 text-xs text-gray-400 border-b border-gray-800/50 last:border-0 pb-1">
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold shrink-0 ${a.category.includes("accept") ? "bg-emerald-500/15 text-emerald-400" : "bg-gray-600/20 text-gray-500"}`}>{a.category}</span>
+                        <span className="truncate">{a.subject}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-gray-500">No learning events yet.</p>
+                )}
+              </div>
+            </div>
           </div>
         </>
       )}

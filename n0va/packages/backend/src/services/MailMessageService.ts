@@ -287,6 +287,50 @@ export class MailMessageService {
       summary: `${totalUnread} unread across ${folders.length} folders`,
     };
   }
+
+  batchOps(tenantId: string, operation: string, messageIds: string[], opts: any = {}) {
+    if (!operation) throw new Error("Batch operation is required");
+    if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) throw new Error("messageIds must be a non-empty array");
+    const ops = ["move", "archive", "trash", "restore", "delete", "star", "unstar", "mark_read", "mark_unread", "apply_label", "remove_label"];
+    if (!ops.includes(operation)) throw new Error(`Unknown batch operation "${operation}" — use one of: ${ops.join(", ")}`);
+    const all = DataStore.mem().find("messages", (m: any) => m.tenantId === tenantId);
+    const subjects: string[] = [];
+    let processed = 0;
+    const found: any[] = [];
+    for (const id of messageIds) {
+      const msg = all.find((m: any) => m._id === id);
+      if (msg) { found.push(msg); subjects.push(msg.subject); }
+    }
+    const skipped = messageIds.length - found.length;
+    for (const msg of found) {
+      switch (operation) {
+        case "move": this.moveToFolder(tenantId, msg._id, opts.destination); break;
+        case "archive": this.archiveMessage(tenantId, msg._id); break;
+        case "trash": this.trashMessage(tenantId, msg._id); break;
+        case "restore": this.restoreMessage(tenantId, msg._id); break;
+        case "delete": this.deleteMessage(tenantId, msg._id); break;
+        case "star": DataStore.mem().update("messages", (m: any) => m._id === msg._id, { starred: true }); break;
+        case "unstar": DataStore.mem().update("messages", (m: any) => m._id === msg._id, { starred: false }); break;
+        case "mark_read": DataStore.mem().update("messages", (m: any) => m._id === msg._id, { read: true }); break;
+        case "mark_unread": DataStore.mem().update("messages", (m: any) => m._id === msg._id, { read: false }); break;
+        case "apply_label":
+          if (!opts.label) throw new Error("apply_label needs a label");
+          this.applyLabel(tenantId, msg._id, opts.label); break;
+        case "remove_label":
+          if (!opts.label) throw new Error("remove_label needs a label");
+          this.removeLabel(tenantId, msg._id, opts.label); break;
+      }
+      processed++;
+    }
+    const detail = operation === "move" ? ` to "${opts.destination}"` : operation.includes("label") ? ` "${opts.label}"` : "";
+    return {
+      operation,
+      processed,
+      skipped,
+      affected: subjects,
+      summary: `${processed} message(s) ${operation.replace(/_/g, " ")}${detail}${skipped > 0 ? ` — ${skipped} skipped (not found)` : ""}`,
+    };
+  }
 }
 
 export const mailMessage = new MailMessageService();

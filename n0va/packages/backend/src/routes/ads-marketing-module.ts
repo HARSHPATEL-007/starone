@@ -2104,4 +2104,116 @@ router.post("/mail/domains/:domainId/policies", asyncHandler(async (req, res) =>
   sendSuccess(res, adsMarketingModule.mailSetDomainPolicy(req.user!.tenantId, req.params.domainId, req.body || {}));
 }));
 
+router.post("/mail/messages/batch", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBatchOps(req.user!.tenantId, req.body.operation, req.body.messageIds || [], req.body));
+}));
+
+router.post("/mail/rules/ai-generate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGenerateRule(req.user!.tenantId, req.body.naturalLanguage, req.body || {}));
+}));
+
+router.post("/mail/voice-notes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateVoiceNote(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/voice-notes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailVoiceNotes(req.user!.tenantId, req.query || {}));
+}));
+
+router.get("/mail/voice-notes/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailVoiceNoteDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/voice-notes/:noteId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailVoiceNote(req.user!.tenantId, req.params.noteId));
+}));
+
+router.delete("/mail/voice-notes/:noteId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteVoiceNote(req.user!.tenantId, req.params.noteId));
+}));
+
+router.post("/mail/multimodal/videos", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAttachVideo(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/multimodal/recordings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAttachScreenRecording(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/multimodal/snippets", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAttachCodeSnippet(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/multimodal/blocks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContentBlocks(req.user!.tenantId, req.query || {}));
+}));
+
+router.get("/mail/multimodal/blocks/:blockId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContentBlock(req.user!.tenantId, req.params.blockId));
+}));
+
+router.delete("/mail/multimodal/blocks/:blockId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteContentBlock(req.user!.tenantId, req.params.blockId));
+}));
+
+router.get("/mail/multimodal/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMultimodalDashboard(req.user!.tenantId));
+}));
+
+router.post("/mail/polls", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreatePoll(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/polls", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPolls(req.user!.tenantId));
+}));
+
+router.get("/mail/polls/:pollId/results", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPollResults(req.user!.tenantId, req.params.pollId));
+}));
+
+router.post("/mail/polls/:pollId/vote", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailVotePoll(req.user!.tenantId, req.params.pollId, req.body.optionIndex, req.body.voter || "user_001"));
+}));
+
+router.post("/mail/polls/:pollId/close", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailClosePoll(req.user!.tenantId, req.params.pollId));
+}));
+
+router.get("/mail/neural/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralOverview(req.user!.tenantId, typeof req.query.mailboxId === "string" ? req.query.mailboxId : undefined));
+}));
+
+router.get("/mail/neural/suggestions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralSuggestions(req.user!.tenantId, req.query.limit ? parseInt(String(req.query.limit), 10) : undefined));
+}));
+
+router.get("/mail/neural/tasks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralTasks(req.user!.tenantId));
+}));
+
+router.get("/mail/neural/unsubscribe", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralUnsubscribe(req.user!.tenantId));
+}));
+
+router.post("/mail/neural/archive", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralArchive(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/neural/health", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralHealth(req.user!.tenantId));
+}));
+
+router.get("/mail/neural/escalations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralEscalations(req.user!.tenantId));
+}));
+
+router.post("/mail/neural/learning", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralLearning(req.user!.tenantId, req.body.action, req.body.item || {}));
+}));
+
+router.get("/mail/neural/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNeuralDashboard(req.user!.tenantId, typeof req.query.mailboxId === "string" ? req.query.mailboxId : undefined));
+}));
+
 export default router;

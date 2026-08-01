@@ -2642,6 +2642,66 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/domains/${domainId}/policies`, { method: "POST", body: JSON.stringify(input) }),
     mailDomainLog: () => request<any>("/ads-marketing-module/mail/domains/log"),
     mailDomainSummary: () => request<any>("/ads-marketing-module/mail/domains/summary"),
+    mailBatchOps: (operation: string, messageIds: string[], opts: Record<string, any> = {}) =>
+      request<any>("/ads-marketing-module/mail/messages/batch", { method: "POST", body: JSON.stringify({ operation, messageIds, ...opts }) }),
+    mailAiGenerateRule: (naturalLanguage: string, opts: Record<string, any> = {}) =>
+      request<any>("/ads-marketing-module/mail/rules/ai-generate", { method: "POST", body: JSON.stringify({ naturalLanguage, ...opts }) }),
+    mailCreateVoiceNote: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/voice-notes", { method: "POST", body: JSON.stringify(input) }),
+    mailVoiceNotes: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/voice-notes${qs ? `?${qs}` : ""}`);
+    },
+    mailVoiceNoteDashboard: () => request<any>("/ads-marketing-module/mail/voice-notes/dashboard"),
+    mailVoiceNote: (noteId: string) => request<any>(`/ads-marketing-module/mail/voice-notes/${noteId}`),
+    mailDeleteVoiceNote: (noteId: string) =>
+      request<any>(`/ads-marketing-module/mail/voice-notes/${noteId}`, { method: "DELETE" }),
+    mailAttachVideo: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/multimodal/videos", { method: "POST", body: JSON.stringify(input) }),
+    mailAttachScreenRecording: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/multimodal/recordings", { method: "POST", body: JSON.stringify(input) }),
+    mailAttachCodeSnippet: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/multimodal/snippets", { method: "POST", body: JSON.stringify(input) }),
+    mailContentBlocks: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/multimodal/blocks${qs ? `?${qs}` : ""}`);
+    },
+    mailContentBlock: (blockId: string) => request<any>(`/ads-marketing-module/mail/multimodal/blocks/${blockId}`),
+    mailDeleteContentBlock: (blockId: string) =>
+      request<any>(`/ads-marketing-module/mail/multimodal/blocks/${blockId}`, { method: "DELETE" }),
+    mailMultimodalDashboard: () => request<any>("/ads-marketing-module/mail/multimodal/dashboard"),
+    mailCreatePoll: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/polls", { method: "POST", body: JSON.stringify(input) }),
+    mailPolls: () => request<any>("/ads-marketing-module/mail/polls"),
+    mailPollResults: (pollId: string) => request<any>(`/ads-marketing-module/mail/polls/${pollId}/results`),
+    mailVotePoll: (pollId: string, optionIndex: number, voter: string) =>
+      request<any>(`/ads-marketing-module/mail/polls/${pollId}/vote`, { method: "POST", body: JSON.stringify({ optionIndex, voter }) }),
+    mailClosePoll: (pollId: string) =>
+      request<any>(`/ads-marketing-module/mail/polls/${pollId}/close`, { method: "POST" }),
+    mailNeuralOverview: (mailboxId?: string) => {
+      const qs = mailboxId ? `?mailboxId=${encodeURIComponent(mailboxId)}` : "";
+      return request<any>(`/ads-marketing-module/mail/neural/overview${qs}`);
+    },
+    mailNeuralSuggestions: (limit?: number) => {
+      const qs = limit ? `?limit=${limit}` : "";
+      return request<any>(`/ads-marketing-module/mail/neural/suggestions${qs}`);
+    },
+    mailNeuralTasks: () => request<any>("/ads-marketing-module/mail/neural/tasks"),
+    mailNeuralUnsubscribe: () => request<any>("/ads-marketing-module/mail/neural/unsubscribe"),
+    mailNeuralArchive: (opts: Record<string, any> = {}) =>
+      request<any>("/ads-marketing-module/mail/neural/archive", { method: "POST", body: JSON.stringify(opts) }),
+    mailNeuralHealth: () => request<any>("/ads-marketing-module/mail/neural/health"),
+    mailNeuralEscalations: () => request<any>("/ads-marketing-module/mail/neural/escalations"),
+    mailNeuralLearning: (action: string, item: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/neural/learning", { method: "POST", body: JSON.stringify({ action, item }) }),
+    mailNeuralDashboard: (mailboxId?: string) => {
+      const qs = mailboxId ? `?mailboxId=${encodeURIComponent(mailboxId)}` : "";
+      return request<any>(`/ads-marketing-module/mail/neural/dashboard${qs}`);
+    },
   },
 
   agentSwarm: {

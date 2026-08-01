@@ -249,6 +249,77 @@ export class MailRulesService {
       executedAt: new Date().toISOString(),
     });
   }
+
+  aiGenerateRule(tenantId: string, naturalLanguage: string, opts: any = {}) {
+    if (!naturalLanguage || !String(naturalLanguage).trim()) throw new Error("Describe the rule in natural language first");
+    const text = String(naturalLanguage).trim();
+    const lower = text.toLowerCase();
+
+    const conditions: any[] = [];
+    const actions: any[] = [];
+
+    const fromMatch = lower.match(/from\s+([\w.+-]+@[\w.-]+|@[\w.-]+)/);
+    if (fromMatch) conditions.push({ field: "from", operator: "contains", value: fromMatch[1] });
+    const quoted = text.match(/"([^"]+)"/);
+    if (quoted) conditions.push({ field: "subject", operator: "contains", value: quoted[1] });
+    const categoryMatch = lower.match(/(newsletter|invoice|social|promotion|updates?|receipt|meeting)/);
+    if (categoryMatch) conditions.push({ field: "category", operator: "is", value: categoryMatch[1].replace(/s$/, "") });
+    if (/attachment/i.test(lower)) conditions.push({ field: "has_attachment", operator: "is", value: "true" });
+    if (/high importance|important|urgent/i.test(lower)) conditions.push({ field: "importance", operator: "is", value: "high" });
+    if (conditions.length === 0) {
+      const keyword = text.split(/\s+/).find(w => w.length > 4) || text.slice(0, 12);
+      conditions.push({ field: "subject", operator: "contains", value: keyword });
+    }
+
+    const forwardMatch = lower.match(/forward\s+to\s+([\w.+-]+@[\w.-]+)/);
+    if (/archive/i.test(lower)) actions.push({ action: "archive", target: "" });
+    if (/mark\s*(them|it)?\s*(as)?\s*read|marked read/i.test(lower)) actions.push({ action: "mark_read", target: "" });
+    const moveMatch = lower.match(/move\s+(?:them\s+)?to\s+([a-z_ ]+)/i);
+    if (moveMatch && !/inbox/i.test(moveMatch[1])) actions.push({ action: "move", target: moveMatch[1].trim() });
+    const labelMatch = lower.match(/label\s+(?:them\s+)?(?:as\s+|with\s+)?([a-z0-9 _-]+)/i);
+    if (labelMatch) actions.push({ action: "label", target: labelMatch[1].trim() });
+    if (forwardMatch) actions.push({ action: "forward", target: forwardMatch[1] });
+    if (/star/i.test(lower)) actions.push({ action: "star", target: "" });
+    if (/notify/i.test(lower)) actions.push({ action: "notify", target: "" });
+    if (/delete|trash/i.test(lower)) actions.push({ action: "move", target: "trash" });
+    if (actions.length === 0) actions.push({ action: "label", target: "AI" });
+
+    const rule = this.createRule(tenantId, {
+      name: opts.name || `AI rule: ${text.slice(0, 48)}`,
+      conditions,
+      actions,
+      enabled: opts.testBeforeEnable ? false : true,
+      createdBy: "n0va1o",
+    });
+
+    const test: { tested: boolean; scanned: number; wouldMatch: number | null; samples: { subject: string; from: string; category: string }[]; summary: string } = opts.testBeforeEnable
+      ? this.aiTestRule(tenantId, rule._id, rule)
+      : { tested: false, wouldMatch: null, scanned: 0, samples: [], summary: "Rule created and enabled — dry run skipped" };
+
+    return {
+      ruleId: rule._id,
+      name: rule.name,
+      naturalLanguage: text,
+      conditions,
+      actions,
+      enabled: rule.enabled,
+      test,
+      summary: `Rule generated from "${text.slice(0, 60)}" — ${conditions.length} condition(s), ${actions.length} action(s)${test && test.tested ? `; dry run matched ${test.wouldMatch} of ${test.scanned} messages` : ""}`,
+    };
+  }
+
+  private aiTestRule(tenantId: string, ruleId: string, rule: any) {
+    const messages = DataStore.mem().find("messages", (m: any) => m.tenantId === tenantId).slice(0, 20);
+    const matches = messages.filter(m => this.matchesRule(rule, m).matched);
+    const samples = matches.slice(0, 3).map(m => ({ subject: m.subject, from: (m.from || {}).email, category: (m.ai || {}).category }));
+    return {
+      tested: true,
+      scanned: messages.length,
+      wouldMatch: matches.length,
+      samples,
+      summary: `Dry run over ${messages.length} recent messages — ${matches.length} would match`,
+    };
+  }
 }
 
 export const mailRules = new MailRulesService();
