@@ -1651,4 +1651,228 @@ router.get("/mail/voice/help", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailVoiceHelp());
 }));
 
+router.get("/mail/templates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailTemplates(req.user!.tenantId));
+}));
+
+router.get("/mail/templates/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailTemplateStats(req.user!.tenantId));
+}));
+
+router.get("/mail/templates/usage", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
+  sendSuccess(res, adsMarketingModule.mailTemplateUsageLog(req.user!.tenantId, limit));
+}));
+
+router.post("/mail/templates/send", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSendFromTemplate(req.user!.tenantId, req.body?.mailboxId || "", req.body || {}));
+}));
+
+router.post("/mail/templates/bulk", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSendBulkTemplate(req.user!.tenantId, req.body?.mailboxId || "", req.body || {}));
+}));
+
+router.post("/mail/templates/render", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRenderTemplate(req.user!.tenantId, req.body?.templateId || "", (req.body?.variables || {})));
+}));
+
+router.get("/mail/templates/:templateId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailTemplate(req.user!.tenantId, req.params.templateId));
+}));
+
+router.post("/mail/templates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateTemplate(req.user!.tenantId, req.body || {}));
+}));
+
+router.patch("/mail/templates/:templateId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateTemplate(req.user!.tenantId, req.params.templateId, req.body || {}));
+}));
+
+router.delete("/mail/templates/:templateId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteTemplate(req.user!.tenantId, req.params.templateId));
+}));
+
+router.get("/mail/signatures", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSignatures(req.user!.tenantId));
+}));
+
+router.get("/mail/signatures/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSignaturesDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/signatures/default", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDefaultSignature(req.user!.tenantId));
+}));
+
+router.get("/mail/signatures/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSignature(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.put("/mail/signatures/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateSignature(req.user!.tenantId, req.params.mailboxId, req.body || {}));
+}));
+
+router.post("/mail/signatures/:mailboxId/toggle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailToggleSignature(req.user!.tenantId, req.params.mailboxId, !!req.body?.enabled));
+}));
+
+router.post("/mail/signatures/:mailboxId/preview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSignaturePreview(req.user!.tenantId, req.params.mailboxId, req.body?.body || ""));
+}));
+
+router.get("/mail/spam/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSpamStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/spam/quarantine", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuarantine(req.user!.tenantId, req.query || {}));
+}));
+
+router.post("/mail/spam/scan/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailScanMessage(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/spam/scan-all", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailScanAll(req.user!.tenantId));
+}));
+
+router.post("/mail/spam/:messageId/report", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailReportSpam(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/spam/:messageId/not-spam", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailReportNotSpam(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/spam/blocked", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBlockedSenders(req.user!.tenantId));
+}));
+
+router.post("/mail/spam/blocked", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBlockSender(req.user!.tenantId, req.body || {}));
+}));
+
+router.delete("/mail/spam/blocked/:email", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUnblockSender(req.user!.tenantId, decodeURIComponent(req.params.email)));
+}));
+
+router.get("/mail/spam/allowed", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAllowedSenders(req.user!.tenantId));
+}));
+
+router.post("/mail/spam/allowed", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAllowSender(req.user!.tenantId, req.body || {}));
+}));
+
+router.delete("/mail/spam/allowed/:email", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRemoveAllowedSender(req.user!.tenantId, decodeURIComponent(req.params.email)));
+}));
+
+router.get("/mail/spam/log", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 20;
+  sendSuccess(res, adsMarketingModule.mailSpamLog(req.user!.tenantId, limit));
+}));
+
+router.post("/mail/messages/:messageId/snooze", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSnooze(req.user!.tenantId, req.params.messageId, req.body?.until || ""));
+}));
+
+router.post("/mail/messages/:messageId/unsnooze", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUnsnooze(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/followups/snoozed", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailListSnoozed(req.user!.tenantId));
+}));
+
+router.post("/mail/messages/:messageId/awaiting", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarkAwaitingResponse(req.user!.tenantId, req.params.messageId, req.body?.deadline || undefined));
+}));
+
+router.post("/mail/messages/:messageId/responded", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarkResponded(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/followups", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailListFollowUps(req.user!.tenantId, req.query || {}));
+}));
+
+router.get("/mail/followups/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFollowUpSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/followups/suggestions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFollowUpSuggestions(req.user!.tenantId));
+}));
+
+router.post("/mail/followups", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateFollowUp(req.user!.tenantId, req.body?.messageId || "", req.body || {}));
+}));
+
+router.post("/mail/followups/:followUpId/complete", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCompleteFollowUp(req.user!.tenantId, req.params.followUpId));
+}));
+
+router.delete("/mail/followups/:followUpId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteFollowUp(req.user!.tenantId, req.params.followUpId));
+}));
+
+router.get("/mail/analytics/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsOverview(req.user!.tenantId));
+}));
+
+router.get("/mail/analytics/trend", asyncHandler(async (req, res) => {
+  const days = req.query.days ? parseInt(String(req.query.days), 10) : 14;
+  sendSuccess(res, adsMarketingModule.mailAnalyticsTrend(req.user!.tenantId, days));
+}));
+
+router.get("/mail/analytics/categories", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsCategories(req.user!.tenantId));
+}));
+
+router.get("/mail/analytics/senders", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 5;
+  sendSuccess(res, adsMarketingModule.mailAnalyticsSenders(req.user!.tenantId, limit));
+}));
+
+router.get("/mail/analytics/response-times", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsResponseTimes(req.user!.tenantId));
+}));
+
+router.get("/mail/analytics/hours", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsHours(req.user!.tenantId));
+}));
+
+router.get("/mail/analytics/folders", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsFolders(req.user!.tenantId));
+}));
+
+router.get("/mail/analytics/mailboxes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsMailboxes(req.user!.tenantId));
+}));
+
+router.get("/mail/analytics/executive", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAnalyticsExecutive(req.user!.tenantId));
+}));
+
+router.get("/mail/attachments", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAttachments(req.user!.tenantId, req.query || {}));
+}));
+
+router.get("/mail/attachments/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAttachmentStats(req.user!.tenantId));
+}));
+
+router.get("/mail/attachments/:attachmentId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAttachment(req.user!.tenantId, req.params.attachmentId));
+}));
+
+router.post("/mail/attachments/:attachmentId/scan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailScanAttachment(req.user!.tenantId, req.params.attachmentId));
+}));
+
+router.post("/mail/attachments/:attachmentId/quarantine", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuarantineAttachment(req.user!.tenantId, req.params.attachmentId));
+}));
+
 export default router;

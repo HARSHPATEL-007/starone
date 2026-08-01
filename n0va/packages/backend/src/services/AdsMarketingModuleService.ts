@@ -60,6 +60,12 @@ import { mailContacts } from "./MailContactService";
 import { mailAgent } from "./MailAgentService";
 import { mailCompliance } from "./MailComplianceService";
 import { mailVoice } from "./MailVoiceService";
+import { mailTemplates } from "./MailTemplateService";
+import { mailSignature } from "./MailSignatureService";
+import { mailSpam } from "./MailSpamService";
+import { mailFollowUp } from "./MailFollowUpService";
+import { mailAnalytics } from "./MailAnalyticsService";
+import { mailAttachment } from "./MailAttachmentService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3887,6 +3893,230 @@ export class AdsMarketingModuleService {
 
   mailVoiceHelp() {
     return mailVoice.voiceCommandHelp();
+  }
+
+  mailTemplates(tenantId: string) {
+    return mailTemplates.templates(tenantId);
+  }
+
+  mailTemplate(tenantId: string, templateId: string) {
+    return mailTemplates.getTemplatePublic(tenantId, templateId);
+  }
+
+  mailCreateTemplate(tenantId: string, input: Record<string, any>) {
+    return mailTemplates.createTemplate(tenantId, input);
+  }
+
+  mailUpdateTemplate(tenantId: string, templateId: string, patch: Record<string, any>) {
+    return mailTemplates.updateTemplate(tenantId, templateId, patch);
+  }
+
+  mailDeleteTemplate(tenantId: string, templateId: string) {
+    return mailTemplates.deleteTemplate(tenantId, templateId);
+  }
+
+  mailRenderTemplate(tenantId: string, templateId: string, variables: Record<string, any>) {
+    return mailTemplates.renderTemplate(tenantId, templateId, variables);
+  }
+
+  mailSendFromTemplate(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailTemplates.sendFromTemplate(tenantId, mailboxId, input);
+  }
+
+  mailSendBulkTemplate(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailTemplates.sendBulk(tenantId, mailboxId, input);
+  }
+
+  mailTemplateStats(tenantId: string) {
+    return mailTemplates.templateStats(tenantId);
+  }
+
+  mailTemplateUsageLog(tenantId: string, limit?: number) {
+    return mailTemplates.templateUsageLog(tenantId, limit);
+  }
+
+  mailSignatures(tenantId: string) {
+    return mailSignature.listSignatures(tenantId);
+  }
+
+  mailSignature(tenantId: string, mailboxId: string) {
+    return mailSignature.getSignature(tenantId, mailboxId);
+  }
+
+  mailUpdateSignature(tenantId: string, mailboxId: string, input: Record<string, any>) {
+    return mailSignature.updateSignature(tenantId, mailboxId, input);
+  }
+
+  mailToggleSignature(tenantId: string, mailboxId: string, enabled: boolean) {
+    return mailSignature.toggleSignature(tenantId, mailboxId, enabled);
+  }
+
+  mailDefaultSignature(tenantId: string) {
+    return mailSignature.defaultSignature(tenantId);
+  }
+
+  mailSignaturePreview(tenantId: string, mailboxId: string, body: string) {
+    return mailSignature.composePreview(tenantId, mailboxId, body);
+  }
+
+  mailSignaturesDashboard(tenantId: string) {
+    return mailSignature.signaturesDashboard(tenantId);
+  }
+
+  mailSpamStatus(tenantId: string) {
+    return mailSpam.spamStatus(tenantId);
+  }
+
+  mailScanMessage(tenantId: string, messageId: string) {
+    return mailSpam.scanMessage(tenantId, messageId);
+  }
+
+  mailScanAll(tenantId: string) {
+    return mailSpam.scanAll(tenantId);
+  }
+
+  mailQuarantine(tenantId: string, opts: Record<string, any>) {
+    return mailSpam.quarantine(tenantId, opts);
+  }
+
+  mailMoveToSpam(tenantId: string, messageId: string) {
+    return mailSpam.moveToSpam(tenantId, messageId);
+  }
+
+  mailReportSpam(tenantId: string, messageId: string) {
+    return mailSpam.reportSpam(tenantId, messageId);
+  }
+
+  mailReportNotSpam(tenantId: string, messageId: string) {
+    return mailSpam.reportNotSpam(tenantId, messageId);
+  }
+
+  mailBlockSender(tenantId: string, input: Record<string, any>) {
+    return mailSpam.blockSender(tenantId, input);
+  }
+
+  mailUnblockSender(tenantId: string, email: string) {
+    return mailSpam.unblockSender(tenantId, email);
+  }
+
+  mailBlockedSenders(tenantId: string) {
+    return mailSpam.blockedSenders(tenantId);
+  }
+
+  mailAllowSender(tenantId: string, input: Record<string, any>) {
+    return mailSpam.allowSender(tenantId, input);
+  }
+
+  mailRemoveAllowedSender(tenantId: string, email: string) {
+    return mailSpam.removeAllowedSender(tenantId, email);
+  }
+
+  mailAllowedSenders(tenantId: string) {
+    return mailSpam.allowedSenders(tenantId);
+  }
+
+  mailSpamLog(tenantId: string, limit?: number) {
+    return mailSpam.spamLog(tenantId, limit);
+  }
+
+  mailSnooze(tenantId: string, messageId: string, until: string) {
+    return mailFollowUp.snooze(tenantId, messageId, until);
+  }
+
+  mailUnsnooze(tenantId: string, messageId: string) {
+    return mailFollowUp.unsnooze(tenantId, messageId);
+  }
+
+  mailListSnoozed(tenantId: string) {
+    return mailFollowUp.listSnoozed(tenantId);
+  }
+
+  mailMarkAwaitingResponse(tenantId: string, messageId: string, deadline?: string) {
+    return mailFollowUp.markAwaitingResponse(tenantId, messageId, deadline);
+  }
+
+  mailMarkResponded(tenantId: string, messageId: string) {
+    return mailFollowUp.markResponded(tenantId, messageId);
+  }
+
+  mailCreateFollowUp(tenantId: string, messageId: string, input: Record<string, any>) {
+    return mailFollowUp.createFollowUp(tenantId, messageId, input);
+  }
+
+  mailListFollowUps(tenantId: string, opts: Record<string, any>) {
+    return mailFollowUp.listFollowUps(tenantId, opts);
+  }
+
+  mailCompleteFollowUp(tenantId: string, followUpId: string) {
+    return mailFollowUp.completeFollowUp(tenantId, followUpId);
+  }
+
+  mailDeleteFollowUp(tenantId: string, followUpId: string) {
+    return mailFollowUp.deleteFollowUp(tenantId, followUpId);
+  }
+
+  mailFollowUpSummary(tenantId: string) {
+    return mailFollowUp.followUpSummary(tenantId);
+  }
+
+  mailFollowUpSuggestions(tenantId: string) {
+    return mailFollowUp.suggestions(tenantId);
+  }
+
+  mailAnalyticsOverview(tenantId: string) {
+    return mailAnalytics.overview(tenantId);
+  }
+
+  mailAnalyticsTrend(tenantId: string, days?: number) {
+    return mailAnalytics.volumeTrend(tenantId, days || 14);
+  }
+
+  mailAnalyticsCategories(tenantId: string) {
+    return mailAnalytics.categoryMix(tenantId);
+  }
+
+  mailAnalyticsSenders(tenantId: string, limit?: number) {
+    return mailAnalytics.topSenders(tenantId, limit || 5);
+  }
+
+  mailAnalyticsResponseTimes(tenantId: string) {
+    return mailAnalytics.responseTimeStats(tenantId);
+  }
+
+  mailAnalyticsHours(tenantId: string) {
+    return mailAnalytics.busiestHours(tenantId);
+  }
+
+  mailAnalyticsFolders(tenantId: string) {
+    return mailAnalytics.activityByFolder(tenantId);
+  }
+
+  mailAnalyticsMailboxes(tenantId: string) {
+    return mailAnalytics.mailboxStats(tenantId);
+  }
+
+  mailAnalyticsExecutive(tenantId: string) {
+    return mailAnalytics.executiveSummary(tenantId);
+  }
+
+  mailAttachments(tenantId: string, opts: Record<string, any>) {
+    return mailAttachment.listAttachments(tenantId, opts);
+  }
+
+  mailAttachment(tenantId: string, attachmentId: string) {
+    return mailAttachment.getAttachment(tenantId, attachmentId);
+  }
+
+  mailScanAttachment(tenantId: string, attachmentId: string) {
+    return mailAttachment.scanAttachment(tenantId, attachmentId);
+  }
+
+  mailQuarantineAttachment(tenantId: string, attachmentId: string) {
+    return mailAttachment.quarantineAttachment(tenantId, attachmentId);
+  }
+
+  mailAttachmentStats(tenantId: string) {
+    return mailAttachment.attachmentStats(tenantId);
   }
 }
 
