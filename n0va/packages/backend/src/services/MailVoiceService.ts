@@ -33,7 +33,7 @@ export class MailVoiceService {
       return { intent: "help", params: {}, explanation: "Here's what I can do with your mail" };
     }
 
-    const scheduleMatch = lower.match(/^schedule (?:an |a )?(?:email |mail )?(?:to )?(.+?) (?:at|for) ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:Z|[+-][0-9]{2}:?[0-9]{2})?)$/);
+    const scheduleMatch = text.match(/^schedule (?:an |a )?(?:email |mail )?(?:to )?(.+?) (?:at|for) ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(?::[0-9]{2})?(?:Z|[+-][0-9]{2}:?[0-9]{2})?)$/i);
     if (scheduleMatch) {
       return {
         intent: "schedule_email",
@@ -42,7 +42,7 @@ export class MailVoiceService {
       };
     }
 
-    const sendMatch = lower.match(/^send (?:an |a )?(?:email |mail )?(?:to )?(.+?)(?: about | regarding | with subject )(.+)$/);
+    const sendMatch = text.match(/^send (?:an |a )?(?:email |mail )?(?:to )?(.+?)(?: about | regarding | with subject )(.+)$/i);
     if (sendMatch) {
       return {
         intent: "send_email",

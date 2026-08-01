@@ -235,6 +235,7 @@ describe("MailComplianceService (Round 17)", () => {
   });
 
   it("applies retention: archives expired inbox mail", () => {
+    compliance.setRetentionPolicy(T, { folder: "inbox", days: 5 });
     const result = compliance.applyRetention(T);
     expect(result.swept).toBeGreaterThanOrEqual(1);
     const old = DataStore.mem().findOne("messages", (m: any) => m._id === oldInboxId);
@@ -242,7 +243,7 @@ describe("MailComplianceService (Round 17)", () => {
   });
 
   it("applies retention: skips messages under legal hold", () => {
-    compliance.placeHold(T, { subject: "legal", reason: "Pending litigation" });
+    compliance.placeHold(T, { subject: "old quote", reason: "Pending litigation" });
     const before = DataStore.mem().findOne("messages", (m: any) => m._id === oldSentId);
     compliance.setRetentionPolicy(T, { folder: "sent", days: 1, action: "delete" });
     const result = compliance.applyRetention(T);

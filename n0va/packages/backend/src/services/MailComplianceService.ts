@@ -8,7 +8,7 @@ function hashStr(s: string): number {
 
 const PII_PATTERNS: { type: string; label: string; regex: RegExp }[] = [
   { type: "email", label: "Email address", regex: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
-  { type: "phone", label: "Phone number", regex: /\b\d{3}[-.)\s]\d{3}[-.]\d{4}\b/g },
+  { type: "phone", label: "Phone number", regex: /\b\d{3}[-.)\s]\s*\d{3}[-.]\d{4}\b/g },
   { type: "ssn", label: "Social security number", regex: /\b\d{3}-\d{2}-\d{4}\b/g },
   { type: "credit_card", label: "Credit card number", regex: /\b(?:\d[ -]*?){13,16}\b/g },
 ];
@@ -27,7 +27,7 @@ export class MailComplianceService {
   }
 
   setRetentionPolicy(tenantId: string, input: any) {
-    if (!input || !input.folder || !input.days) throw new Error("folder and days are required");
+    if (!input || !input.folder || input.days === undefined || input.days === null) throw new Error("folder and days are required");
     const days = parseInt(String(input.days), 10);
     if (!(days > 0)) throw new Error("days must be a positive number");
     const action = input.action === "delete" ? "delete" : "archive";
