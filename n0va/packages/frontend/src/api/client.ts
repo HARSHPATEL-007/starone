@@ -2405,6 +2405,63 @@ export const api = {
     mailMeetingPrep: (threadId: string) =>
       request<any>(`/ads-marketing-module/mail/ai/meeting-prep/${threadId}`, { method: "POST" }),
     mailIntelligence: () => request<any>("/ads-marketing-module/mail/ai/intelligence"),
+    mailContacts: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/contacts${qs ? `?${qs}` : ""}`);
+    },
+    mailContactsDashboard: () => request<any>("/ads-marketing-module/mail/contacts/dashboard"),
+    mailContactGroups: () => request<any>("/ads-marketing-module/mail/contacts/groups"),
+    mailMostContacted: (limit: number = 5) => request<any>(`/ads-marketing-module/mail/contacts/most-contacted?limit=${limit}`),
+    mailContact: (contactId: string) => request<any>(`/ads-marketing-module/mail/contacts/${contactId}`),
+    mailContactProfile: (contactId: string) => request<any>(`/ads-marketing-module/mail/contacts/${contactId}/profile`),
+    mailCreateContact: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/contacts", { method: "POST", body: JSON.stringify(input) }),
+    mailUpdateContact: (contactId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/contacts/${contactId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    mailDeleteContact: (contactId: string) =>
+      request<any>(`/ads-marketing-module/mail/contacts/${contactId}`, { method: "DELETE" }),
+    mailAgentStatus: () => request<any>("/ads-marketing-module/mail/agent/status"),
+    mailAgentLog: (limit: number = 20) => request<any>(`/ads-marketing-module/mail/agent/log?limit=${limit}`),
+    mailRunAgentCycle: (mailboxId?: string) =>
+      request<any>("/ads-marketing-module/mail/agent/cycle", { method: "POST", body: JSON.stringify({ mailboxId }) }),
+    mailOutOfOfficeStatus: (mailboxId: string) => request<any>(`/ads-marketing-module/mail/agent/ooo/${mailboxId}`),
+    mailSetOutOfOffice: (mailboxId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/agent/ooo/${mailboxId}`, { method: "POST", body: JSON.stringify(input) }),
+    mailListScheduled: (mailboxId?: string) => {
+      const qs = mailboxId ? `?mailboxId=${encodeURIComponent(mailboxId)}` : "";
+      return request<any>(`/ads-marketing-module/mail/agent/scheduled${qs}`);
+    },
+    mailScheduleSend: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/agent/scheduled", { method: "POST", body: JSON.stringify({ ...input, mailboxId }) }),
+    mailCancelSchedule: (scheduleId: string) =>
+      request<any>(`/ads-marketing-module/mail/agent/scheduled/${scheduleId}/cancel`, { method: "POST" }),
+    mailExtractTasks: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/agent/tasks/extract/${messageId}`, { method: "POST" }),
+    mailListTasks: () => request<any>("/ads-marketing-module/mail/agent/tasks"),
+    mailCompleteTask: (taskId: string) =>
+      request<any>(`/ads-marketing-module/mail/agent/tasks/${taskId}/complete`, { method: "POST" }),
+    mailComplianceSummary: () => request<any>("/ads-marketing-module/mail/compliance/summary"),
+    mailRetentionPolicies: () => request<any>("/ads-marketing-module/mail/compliance/policies"),
+    mailSetRetentionPolicy: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/compliance/policies", { method: "POST", body: JSON.stringify(input) }),
+    mailDeleteRetentionPolicy: (policyId: string) =>
+      request<any>(`/ads-marketing-module/mail/compliance/policies/${policyId}`, { method: "DELETE" }),
+    mailApplyRetention: () => request<any>("/ads-marketing-module/mail/compliance/retention/apply", { method: "POST" }),
+    mailListHolds: () => request<any>("/ads-marketing-module/mail/compliance/holds"),
+    mailPlaceHold: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/compliance/holds", { method: "POST", body: JSON.stringify(input) }),
+    mailReleaseHold: (holdId: string) =>
+      request<any>(`/ads-marketing-module/mail/compliance/holds/${holdId}/release`, { method: "POST" }),
+    mailHoldStatus: () => request<any>("/ads-marketing-module/mail/compliance/hold-status"),
+    mailAuditLog: (limit: number = 30) => request<any>(`/ads-marketing-module/mail/compliance/audit?limit=${limit}`),
+    mailScanPii: () => request<any>("/ads-marketing-module/mail/compliance/pii/scan", { method: "POST" }),
+    mailParseVoiceCommand: (command: string) =>
+      request<any>("/ads-marketing-module/mail/voice/parse", { method: "POST", body: JSON.stringify({ command }) }),
+    mailExecuteVoiceCommand: (command: string) =>
+      request<any>("/ads-marketing-module/mail/voice/execute", { method: "POST", body: JSON.stringify({ command }) }),
+    mailVoiceHelp: () => request<any>("/ads-marketing-module/mail/voice/help"),
   },
 
   agentSwarm: {
