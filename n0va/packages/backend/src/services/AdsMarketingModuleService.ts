@@ -66,6 +66,11 @@ import { mailSpam } from "./MailSpamService";
 import { mailFollowUp } from "./MailFollowUpService";
 import { mailAnalytics } from "./MailAnalyticsService";
 import { mailAttachment } from "./MailAttachmentService";
+import { mailCollab } from "./MailCollaborationService";
+import { mailPredict } from "./MailPredictiveService";
+import { mailCampaign } from "./MailCampaignService";
+import { mailDiscovery } from "./MailDiscoveryService";
+import { mailDomain } from "./MailDomainService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -4117,6 +4122,234 @@ export class AdsMarketingModuleService {
 
   mailAttachmentStats(tenantId: string) {
     return mailAttachment.attachmentStats(tenantId);
+  }
+
+  mailAddComment(tenantId: string, messageId: string, input: any) {
+    return mailCollab.addComment(tenantId, messageId, input);
+  }
+
+  mailCommentsForMessage(tenantId: string, messageId: string) {
+    return mailCollab.commentsForMessage(tenantId, messageId);
+  }
+
+  mailCommentsForThread(tenantId: string, threadId: string) {
+    return mailCollab.commentsForThread(tenantId, threadId);
+  }
+
+  mailDeleteComment(tenantId: string, commentId: string) {
+    return mailCollab.deleteComment(tenantId, commentId);
+  }
+
+  mailAddReaction(tenantId: string, messageId: string, input: any) {
+    return mailCollab.addReaction(tenantId, messageId, input);
+  }
+
+  mailRemoveReaction(tenantId: string, messageId: string, input: any) {
+    return mailCollab.removeReaction(tenantId, messageId, input);
+  }
+
+  mailMessageReactions(tenantId: string, messageId: string) {
+    return mailCollab.messageReactions(tenantId, messageId);
+  }
+
+  mailCreateSharedDraft(tenantId: string, mailboxId: string, input: any) {
+    return mailCollab.createSharedDraft(tenantId, mailboxId, input);
+  }
+
+  mailSharedDrafts(tenantId: string, opts: Record<string, any>) {
+    return mailCollab.sharedDrafts(tenantId, opts);
+  }
+
+  mailUpdateSharedDraft(tenantId: string, draftId: string, patch: any) {
+    return mailCollab.updateSharedDraft(tenantId, draftId, patch);
+  }
+
+  mailDeleteSharedDraft(tenantId: string, draftId: string) {
+    return mailCollab.deleteSharedDraft(tenantId, draftId);
+  }
+
+  mailPresence(tenantId: string) {
+    return mailCollab.presence(tenantId);
+  }
+
+  mailCollaborationState(tenantId: string, messageId: string) {
+    return mailCollab.collaborationState(tenantId, messageId);
+  }
+
+  mailCollaborationSummary(tenantId: string) {
+    return mailCollab.collaborationSummary(tenantId);
+  }
+
+  mailResponseTimePrediction(tenantId: string, threadId: string) {
+    return mailPredict.responseTimePrediction(tenantId, threadId);
+  }
+
+  mailOutcomePrediction(tenantId: string, messageId: string) {
+    return mailPredict.outcomePrediction(tenantId, messageId);
+  }
+
+  mailChurnRisk(tenantId: string, threadId: string) {
+    return mailPredict.churnRisk(tenantId, threadId);
+  }
+
+  mailOptimalSendTime(tenantId: string) {
+    return mailPredict.optimalSendTime(tenantId);
+  }
+
+  mailRelationshipHealth(tenantId: string, contactOrEmail: string) {
+    return mailPredict.relationshipHealth(tenantId, contactOrEmail);
+  }
+
+  mailIntentPrediction(tenantId: string, messageId: string) {
+    return mailPredict.intentPrediction(tenantId, messageId);
+  }
+
+  mailNudgeSuggestions(tenantId: string) {
+    return mailPredict.nudgeSuggestions(tenantId);
+  }
+
+  mailWorkloadForecast(tenantId: string, days?: number) {
+    return mailPredict.workloadForecast(tenantId, days || 7);
+  }
+
+  mailSendTimeSuggestion(tenantId: string) {
+    return mailPredict.sendTimeSuggestion(tenantId);
+  }
+
+  mailPredictiveDashboard(tenantId: string) {
+    return mailPredict.predictiveDashboard(tenantId);
+  }
+
+  mailCreateCampaign(tenantId: string, mailboxId: string, input: any) {
+    return mailCampaign.createCampaign(tenantId, mailboxId, input);
+  }
+
+  mailCampaigns(tenantId: string) {
+    return mailCampaign.listCampaigns(tenantId);
+  }
+
+  mailCampaign(tenantId: string, campaignId: string) {
+    return mailCampaign.getCampaignPublic(tenantId, campaignId);
+  }
+
+  mailDeleteCampaign(tenantId: string, campaignId: string) {
+    return mailCampaign.deleteCampaign(tenantId, campaignId);
+  }
+
+  mailLaunchCampaign(tenantId: string, campaignId: string) {
+    return mailCampaign.launchCampaign(tenantId, campaignId);
+  }
+
+  mailApproveCampaign(tenantId: string, campaignId: string, approver?: string) {
+    return mailCampaign.approveCampaign(tenantId, campaignId, approver);
+  }
+
+  mailRejectCampaign(tenantId: string, campaignId: string, reason?: string) {
+    return mailCampaign.rejectCampaign(tenantId, campaignId, reason);
+  }
+
+  mailPauseCampaign(tenantId: string, campaignId: string) {
+    return mailCampaign.pauseCampaign(tenantId, campaignId);
+  }
+
+  mailResumeCampaign(tenantId: string, campaignId: string) {
+    return mailCampaign.resumeCampaign(tenantId, campaignId);
+  }
+
+  mailCampaignStats(tenantId: string, campaignId: string) {
+    return mailCampaign.campaignStats(tenantId, campaignId);
+  }
+
+  mailCampaignsDashboard(tenantId: string) {
+    return mailCampaign.campaignsDashboard(tenantId);
+  }
+
+  mailCampaignResponseHandling(tenantId: string, campaignId: string) {
+    return mailCampaign.campaignResponseHandling(tenantId, campaignId);
+  }
+
+  mailCampaignLog(tenantId: string) {
+    return mailCampaign.campaignLog(tenantId);
+  }
+
+  mailDiscoverySearch(tenantId: string, scope: Record<string, any>, opts: Record<string, any>) {
+    return mailDiscovery.scopeSearch(tenantId, scope, opts);
+  }
+
+  mailSaveSearch(tenantId: string, input: any) {
+    return mailDiscovery.saveSearch(tenantId, input);
+  }
+
+  mailSavedSearches(tenantId: string) {
+    return mailDiscovery.listSavedSearches(tenantId);
+  }
+
+  mailDeleteSavedSearch(tenantId: string, searchId: string) {
+    return mailDiscovery.deleteSavedSearch(tenantId, searchId);
+  }
+
+  mailRunSavedSearch(tenantId: string, searchId: string) {
+    return mailDiscovery.runSavedSearch(tenantId, searchId);
+  }
+
+  mailCreateExport(tenantId: string, input: any) {
+    return mailDiscovery.createExport(tenantId, input);
+  }
+
+  mailExports(tenantId: string) {
+    return mailDiscovery.exports(tenantId);
+  }
+
+  mailExport(tenantId: string, exportId: string) {
+    return mailDiscovery.getExport(tenantId, exportId);
+  }
+
+  mailDeleteExport(tenantId: string, exportId: string) {
+    return mailDiscovery.deleteExport(tenantId, exportId);
+  }
+
+  mailDiscoverySummary(tenantId: string) {
+    return mailDiscovery.discoverySummary(tenantId);
+  }
+
+  mailRegisterDomain(tenantId: string, input: any) {
+    return mailDomain.registerDomain(tenantId, input);
+  }
+
+  mailDomains(tenantId: string) {
+    return mailDomain.listDomains(tenantId);
+  }
+
+  mailDomain(tenantId: string, domainId: string) {
+    return mailDomain.getDomainPublic(tenantId, domainId);
+  }
+
+  mailDeleteDomain(tenantId: string, domainId: string) {
+    return mailDomain.deleteDomain(tenantId, domainId);
+  }
+
+  mailVerifyDomain(tenantId: string, domainId: string) {
+    return mailDomain.verifyDomain(tenantId, domainId);
+  }
+
+  mailDomainHealth(tenantId: string, domainId: string) {
+    return mailDomain.domainHealth(tenantId, domainId);
+  }
+
+  mailReputationMonitor(tenantId: string) {
+    return mailDomain.reputationMonitor(tenantId);
+  }
+
+  mailSetDomainPolicy(tenantId: string, domainId: string, input: any) {
+    return mailDomain.setDomainPolicy(tenantId, domainId, input);
+  }
+
+  mailDomainLog(tenantId: string) {
+    return mailDomain.domainLog(tenantId);
+  }
+
+  mailDomainSummary(tenantId: string) {
+    return mailDomain.domainSummary(tenantId);
   }
 }
 

@@ -1875,4 +1875,233 @@ router.post("/mail/attachments/:attachmentId/quarantine", asyncHandler(async (re
   sendSuccess(res, adsMarketingModule.mailQuarantineAttachment(req.user!.tenantId, req.params.attachmentId));
 }));
 
+router.get("/mail/collab/presence", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPresence(req.user!.tenantId));
+}));
+
+router.get("/mail/collab/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollaborationSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/collab/comments/message/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommentsForMessage(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/collab/comments/thread/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommentsForThread(req.user!.tenantId, req.params.threadId));
+}));
+
+router.post("/mail/collab/comments", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAddComment(req.user!.tenantId, req.body.messageId, req.body));
+}));
+
+router.delete("/mail/collab/comments/:commentId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteComment(req.user!.tenantId, req.params.commentId));
+}));
+
+router.get("/mail/collab/reactions/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMessageReactions(req.user!.tenantId, req.params.messageId));
+}));
+
+router.post("/mail/collab/reactions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAddReaction(req.user!.tenantId, req.body.messageId, req.body));
+}));
+
+router.delete("/mail/collab/reactions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRemoveReaction(req.user!.tenantId, req.body.messageId, req.body));
+}));
+
+router.get("/mail/collab/state/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollaborationState(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/collab/drafts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSharedDrafts(req.user!.tenantId, req.query || {}));
+}));
+
+router.post("/mail/collab/drafts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateSharedDraft(req.user!.tenantId, req.body.mailboxId, req.body));
+}));
+
+router.put("/mail/collab/drafts/:draftId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateSharedDraft(req.user!.tenantId, req.params.draftId, req.body || {}));
+}));
+
+router.delete("/mail/collab/drafts/:draftId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteSharedDraft(req.user!.tenantId, req.params.draftId));
+}));
+
+router.get("/mail/predict/response/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResponseTimePrediction(req.user!.tenantId, req.params.threadId));
+}));
+
+router.get("/mail/predict/outcome/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOutcomePrediction(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/predict/churn/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChurnRisk(req.user!.tenantId, req.params.threadId));
+}));
+
+router.get("/mail/predict/intent/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntentPrediction(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/predict/relationship/:contact", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRelationshipHealth(req.user!.tenantId, req.params.contact));
+}));
+
+router.get("/mail/predict/optimal-time", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailOptimalSendTime(req.user!.tenantId));
+}));
+
+router.get("/mail/predict/workload", asyncHandler(async (req, res) => {
+  const days = req.query.days ? parseInt(String(req.query.days), 10) : 7;
+  sendSuccess(res, adsMarketingModule.mailWorkloadForecast(req.user!.tenantId, days));
+}));
+
+router.get("/mail/predict/nudges", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNudgeSuggestions(req.user!.tenantId));
+}));
+
+router.get("/mail/predict/send-time", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSendTimeSuggestion(req.user!.tenantId));
+}));
+
+router.get("/mail/predict/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPredictiveDashboard(req.user!.tenantId));
+}));
+
+router.post("/mail/campaigns", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateCampaign(req.user!.tenantId, req.body.mailboxId, req.body));
+}));
+
+router.get("/mail/campaigns/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCampaignsDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/campaigns", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCampaigns(req.user!.tenantId));
+}));
+
+router.get("/mail/campaigns/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCampaignLog(req.user!.tenantId));
+}));
+
+router.get("/mail/campaigns/:campaignId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCampaign(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.delete("/mail/campaigns/:campaignId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteCampaign(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.post("/mail/campaigns/:campaignId/launch", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLaunchCampaign(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.post("/mail/campaigns/:campaignId/approve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailApproveCampaign(req.user!.tenantId, req.params.campaignId, (req.body || {}).approver));
+}));
+
+router.post("/mail/campaigns/:campaignId/reject", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRejectCampaign(req.user!.tenantId, req.params.campaignId, (req.body || {}).reason));
+}));
+
+router.post("/mail/campaigns/:campaignId/pause", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPauseCampaign(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.post("/mail/campaigns/:campaignId/resume", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResumeCampaign(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.get("/mail/campaigns/:campaignId/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCampaignStats(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.get("/mail/campaigns/:campaignId/responses", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCampaignResponseHandling(req.user!.tenantId, req.params.campaignId));
+}));
+
+router.get("/mail/discovery/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoverySummary(req.user!.tenantId));
+}));
+
+router.post("/mail/discovery/search", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoverySearch(req.user!.tenantId, (req.body || {}).scope || {}, (req.body || {}).opts || {}));
+}));
+
+router.get("/mail/discovery/searches", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSavedSearches(req.user!.tenantId));
+}));
+
+router.post("/mail/discovery/searches", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSaveSearch(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/discovery/searches/:searchId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRunSavedSearch(req.user!.tenantId, req.params.searchId));
+}));
+
+router.delete("/mail/discovery/searches/:searchId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteSavedSearch(req.user!.tenantId, req.params.searchId));
+}));
+
+router.get("/mail/discovery/exports", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailExports(req.user!.tenantId));
+}));
+
+router.post("/mail/discovery/exports", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateExport(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/discovery/exports/:exportId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailExport(req.user!.tenantId, req.params.exportId));
+}));
+
+router.delete("/mail/discovery/exports/:exportId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteExport(req.user!.tenantId, req.params.exportId));
+}));
+
+router.post("/mail/domains", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRegisterDomain(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/domains/monitor", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailReputationMonitor(req.user!.tenantId));
+}));
+
+router.get("/mail/domains/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDomainSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/domains/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDomainLog(req.user!.tenantId));
+}));
+
+router.get("/mail/domains", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDomains(req.user!.tenantId));
+}));
+
+router.get("/mail/domains/:domainId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDomain(req.user!.tenantId, req.params.domainId));
+}));
+
+router.delete("/mail/domains/:domainId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteDomain(req.user!.tenantId, req.params.domainId));
+}));
+
+router.post("/mail/domains/:domainId/verify", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailVerifyDomain(req.user!.tenantId, req.params.domainId));
+}));
+
+router.get("/mail/domains/:domainId/health", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDomainHealth(req.user!.tenantId, req.params.domainId));
+}));
+
+router.post("/mail/domains/:domainId/policies", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSetDomainPolicy(req.user!.tenantId, req.params.domainId, req.body || {}));
+}));
+
 export default router;

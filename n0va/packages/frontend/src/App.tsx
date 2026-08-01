@@ -18,6 +18,11 @@ const MailSpam = lazy(() => import("./pages/MailSpam"));
 const MailFollowUps = lazy(() => import("./pages/MailFollowUps"));
 const MailAnalytics = lazy(() => import("./pages/MailAnalytics"));
 const MailFiles = lazy(() => import("./pages/MailFiles"));
+const MailCollaboration = lazy(() => import("./pages/MailCollaboration"));
+const MailPredict = lazy(() => import("./pages/MailPredict"));
+const MailCampaigns = lazy(() => import("./pages/MailCampaigns"));
+const MailDiscovery = lazy(() => import("./pages/MailDiscovery"));
+const MailDomains = lazy(() => import("./pages/MailDomains"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -191,6 +196,11 @@ export default function App() {
                 <Route path="/mail/followups" element={<MailFollowUps />} />
                 <Route path="/mail/analytics" element={<MailAnalytics />} />
                 <Route path="/mail/files" element={<MailFiles />} />
+                <Route path="/mail/collaboration" element={<MailCollaboration />} />
+                <Route path="/mail/predict" element={<MailPredict />} />
+                <Route path="/mail/campaigns" element={<MailCampaigns />} />
+                <Route path="/mail/discovery" element={<MailDiscovery />} />
+                <Route path="/mail/domains" element={<MailDomains />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

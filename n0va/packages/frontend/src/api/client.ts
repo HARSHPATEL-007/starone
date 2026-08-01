@@ -2557,6 +2557,91 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/attachments/${attachmentId}/scan`, { method: "POST" }),
     mailQuarantineAttachment: (attachmentId: string) =>
       request<any>(`/ads-marketing-module/mail/attachments/${attachmentId}/quarantine`, { method: "POST" }),
+    mailPresence: () => request<any>("/ads-marketing-module/mail/collab/presence"),
+    mailCollaborationSummary: () => request<any>("/ads-marketing-module/mail/collab/summary"),
+    mailCommentsForMessage: (messageId: string) => request<any>(`/ads-marketing-module/mail/collab/comments/message/${messageId}`),
+    mailCommentsForThread: (threadId: string) => request<any>(`/ads-marketing-module/mail/collab/comments/thread/${threadId}`),
+    mailAddComment: (messageId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/collab/comments", { method: "POST", body: JSON.stringify({ ...input, messageId }) }),
+    mailDeleteComment: (commentId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab/comments/${commentId}`, { method: "DELETE" }),
+    mailMessageReactions: (messageId: string) => request<any>(`/ads-marketing-module/mail/collab/reactions/${messageId}`),
+    mailAddReaction: (messageId: string, emoji: string, user?: string) =>
+      request<any>("/ads-marketing-module/mail/collab/reactions", { method: "POST", body: JSON.stringify({ messageId, emoji, user }) }),
+    mailRemoveReaction: (messageId: string, emoji: string, user?: string) =>
+      request<any>("/ads-marketing-module/mail/collab/reactions", { method: "DELETE", body: JSON.stringify({ messageId, emoji, user }) }),
+    mailCollaborationState: (messageId: string) => request<any>(`/ads-marketing-module/mail/collab/state/${messageId}`),
+    mailSharedDrafts: (opts: Record<string, any> = {}) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(opts)) if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/collab/drafts${qs ? `?${qs}` : ""}`);
+    },
+    mailCreateSharedDraft: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/collab/drafts", { method: "POST", body: JSON.stringify({ ...input, mailboxId }) }),
+    mailUpdateSharedDraft: (draftId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/collab/drafts/${draftId}`, { method: "PUT", body: JSON.stringify(patch) }),
+    mailDeleteSharedDraft: (draftId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab/drafts/${draftId}`, { method: "DELETE" }),
+    mailResponseTimePrediction: (threadId: string) => request<any>(`/ads-marketing-module/mail/predict/response/${threadId}`),
+    mailOutcomePrediction: (messageId: string) => request<any>(`/ads-marketing-module/mail/predict/outcome/${messageId}`),
+    mailChurnRisk: (threadId: string) => request<any>(`/ads-marketing-module/mail/predict/churn/${threadId}`),
+    mailIntentPrediction: (messageId: string) => request<any>(`/ads-marketing-module/mail/predict/intent/${messageId}`),
+    mailRelationshipHealth: (contact: string) => request<any>(`/ads-marketing-module/mail/predict/relationship/${encodeURIComponent(contact)}`),
+    mailOptimalSendTime: () => request<any>("/ads-marketing-module/mail/predict/optimal-time"),
+    mailWorkloadForecast: (days: number = 7) => request<any>(`/ads-marketing-module/mail/predict/workload?days=${days}`),
+    mailNudgeSuggestions: () => request<any>("/ads-marketing-module/mail/predict/nudges"),
+    mailSendTimeSuggestion: () => request<any>("/ads-marketing-module/mail/predict/send-time"),
+    mailPredictiveDashboard: () => request<any>("/ads-marketing-module/mail/predict/dashboard"),
+    mailCreateCampaign: (mailboxId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/campaigns", { method: "POST", body: JSON.stringify({ ...input, mailboxId }) }),
+    mailCampaigns: () => request<any>("/ads-marketing-module/mail/campaigns"),
+    mailCampaign: (campaignId: string) => request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}`),
+    mailDeleteCampaign: (campaignId: string) =>
+      request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}`, { method: "DELETE" }),
+    mailLaunchCampaign: (campaignId: string) =>
+      request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/launch`, { method: "POST" }),
+    mailApproveCampaign: (campaignId: string, approver?: string) =>
+      request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/approve`, { method: "POST", body: JSON.stringify({ approver }) }),
+    mailRejectCampaign: (campaignId: string, reason?: string) =>
+      request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+    mailPauseCampaign: (campaignId: string) =>
+      request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/pause`, { method: "POST" }),
+    mailResumeCampaign: (campaignId: string) =>
+      request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/resume`, { method: "POST" }),
+    mailCampaignStats: (campaignId: string) => request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/stats`),
+    mailCampaignsDashboard: () => request<any>("/ads-marketing-module/mail/campaigns/dashboard"),
+    mailCampaignResponseHandling: (campaignId: string) => request<any>(`/ads-marketing-module/mail/campaigns/${campaignId}/responses`),
+    mailCampaignLog: () => request<any>("/ads-marketing-module/mail/campaigns/log"),
+    mailDiscoverySearch: (scope: Record<string, any>, opts: Record<string, any> = {}) =>
+      request<any>("/ads-marketing-module/mail/discovery/search", { method: "POST", body: JSON.stringify({ scope, opts }) }),
+    mailSavedSearches: () => request<any>("/ads-marketing-module/mail/discovery/searches"),
+    mailSaveSearch: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/discovery/searches", { method: "POST", body: JSON.stringify(input) }),
+    mailRunSavedSearch: (searchId: string) => request<any>(`/ads-marketing-module/mail/discovery/searches/${searchId}`),
+    mailDeleteSavedSearch: (searchId: string) =>
+      request<any>(`/ads-marketing-module/mail/discovery/searches/${searchId}`, { method: "DELETE" }),
+    mailExports: () => request<any>("/ads-marketing-module/mail/discovery/exports"),
+    mailCreateExport: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/discovery/exports", { method: "POST", body: JSON.stringify(input) }),
+    mailExport: (exportId: string) => request<any>(`/ads-marketing-module/mail/discovery/exports/${exportId}`),
+    mailDeleteExport: (exportId: string) =>
+      request<any>(`/ads-marketing-module/mail/discovery/exports/${exportId}`, { method: "DELETE" }),
+    mailDiscoverySummary: () => request<any>("/ads-marketing-module/mail/discovery/summary"),
+    mailRegisterDomain: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/domains", { method: "POST", body: JSON.stringify(input) }),
+    mailDomains: () => request<any>("/ads-marketing-module/mail/domains"),
+    mailDomain: (domainId: string) => request<any>(`/ads-marketing-module/mail/domains/${domainId}`),
+    mailDeleteDomain: (domainId: string) =>
+      request<any>(`/ads-marketing-module/mail/domains/${domainId}`, { method: "DELETE" }),
+    mailVerifyDomain: (domainId: string) =>
+      request<any>(`/ads-marketing-module/mail/domains/${domainId}/verify`, { method: "POST" }),
+    mailDomainHealth: (domainId: string) => request<any>(`/ads-marketing-module/mail/domains/${domainId}/health`),
+    mailReputationMonitor: () => request<any>("/ads-marketing-module/mail/domains/monitor"),
+    mailSetDomainPolicy: (domainId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/domains/${domainId}/policies`, { method: "POST", body: JSON.stringify(input) }),
+    mailDomainLog: () => request<any>("/ads-marketing-module/mail/domains/log"),
+    mailDomainSummary: () => request<any>("/ads-marketing-module/mail/domains/summary"),
   },
 
   agentSwarm: {

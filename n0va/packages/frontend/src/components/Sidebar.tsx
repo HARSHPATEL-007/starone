@@ -83,6 +83,9 @@ import {
   ShieldAlert,
   AlarmClock,
   Paperclip,
+  MessagesSquare,
+  BrainCircuit,
+  FolderSearch,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -103,6 +106,11 @@ const navItems = [
   { to: "/mail/followups", icon: AlarmClock, label: "Follow-ups" },
   { to: "/mail/analytics", icon: BarChart3, label: "Mail Analytics" },
   { to: "/mail/files", icon: Paperclip, label: "Mail Files" },
+  { to: "/mail/collaboration", icon: MessagesSquare, label: "Collaboration" },
+  { to: "/mail/predict", icon: BrainCircuit, label: "Predictive AI" },
+  { to: "/mail/campaigns", icon: Megaphone, label: "Mail Campaigns" },
+  { to: "/mail/discovery", icon: FolderSearch, label: "eDiscovery" },
+  { to: "/mail/domains", icon: Globe, label: "Domains" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
