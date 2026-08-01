@@ -223,6 +223,39 @@ export class MailRulesService {
     return { messageId, rulesChecked: results.length, matchedRules: matched.length, summary: `${matched.length} script rule(s) acted on this message` };
   }
 
+  sweepRules(tenantId: string) {
+    const rules = DataStore.mem().find("mail_rules", (r: any) => r.tenantId === tenantId && r.enabled);
+    const inbox = DataStore.mem().find("messages", (m: any) => m.tenantId === tenantId && m.folder === "inbox");
+    if (rules.length === 0) {
+      return { messagesScanned: inbox.length, rulesChecked: 0, matchedMessages: 0, actionsApplied: 0, results: [], summary: `No enabled rules to run across ${inbox.length} inbox message(s)` };
+    }
+    const results: any[] = [];
+    let matchedMessages = 0;
+    let actionsApplied = 0;
+    for (const msg of inbox) {
+      const perRule = rules.map((rule: any) =>
+        rule.kind === "script"
+          ? this.runScriptRule(tenantId, rule._id, msg._id)
+          : this.evaluateRule(tenantId, rule._id, msg._id)
+      );
+      const matched = perRule.filter((r: any) => r.matched || (r.kind === "script" && (r.applied || []).length > 0));
+      if (matched.length > 0) {
+        matchedMessages++;
+        const actions = matched.flatMap((r: any) => r.applied || []);
+        actionsApplied += actions.length;
+        results.push({ messageId: msg._id, subject: msg.subject, from: (msg.from || {}).email, actions });
+      }
+    }
+    return {
+      messagesScanned: inbox.length,
+      rulesChecked: rules.length,
+      matchedMessages,
+      actionsApplied,
+      results: results.slice(0, 10),
+      summary: `Swept ${inbox.length} inbox message(s) with ${rules.length} rule(s) — ${matchedMessages} matched, ${actionsApplied} action(s) applied`,
+    };
+  }
+
   rulesDashboard(tenantId: string) {
     const rules = this.listRules(tenantId);
     const enabled = rules.filter(r => r.enabled);

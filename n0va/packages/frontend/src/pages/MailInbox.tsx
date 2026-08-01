@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Inbox, Send, FileText, Archive, Trash2, Star, RotateCcw, AlertTriangle,
   SquarePen, RefreshCw, X, Tag, Paperclip, ChevronLeft, Folder, ShieldAlert,
-  Reply, CheckCheck, Mail, Clock,
+  Reply, CheckCheck, Mail, Clock, CheckSquare, Square,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -71,6 +71,8 @@ export default function MailInbox() {
   const [compose, setCompose] = useState<any>(null);
   const [newLabel, setNewLabel] = useState("");
   const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [batchLabel, setBatchLabel] = useState("");
 
   const loadSummary = useCallback(async () => {
     const [sum, mb] = await Promise.all([
@@ -178,6 +180,25 @@ export default function MailInbox() {
 
   async function moveTo(m: any, target: string) {
     await act(api.adsMarketingModule.mailMove(m._id, target), `Moved to ${target}`);
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function runBatch(operation: string, opts: Record<string, any> = {}) {
+    if (!selected.length) return;
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailBatchOps(operation, selected, opts));
+      addToast("success", "Batch action done", r?.summary || "");
+      setSelected([]);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Batch action failed", e?.message || "Try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function snoozeMessage(m: any, until: string) {
@@ -294,13 +315,44 @@ export default function MailInbox() {
             )}
 
             <div className="card !p-2">
-              <div className="flex items-center justify-between px-3 py-2">
+              <div className="flex items-center justify-between px-3 py-2 gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-white capitalize">{folder}</span>
                   {listUnread > 0 && <span className="text-xs text-n0va-400">{listUnread} unread</span>}
+                  <label className="flex items-center gap-1.5 cursor-pointer ml-1" title="Select messages">
+                    <input
+                      type="checkbox"
+                      checked={selected.length > 0 && selected.length === messages.length}
+                      onChange={() => setSelected(selected.length > 0 && selected.length === messages.length ? [] : messages.map((m: any) => m._id))}
+                      className="w-3.5 h-3.5 text-n0va-600 bg-gray-700 border-gray-600 rounded"
+                    />
+                    <span className="text-xs text-gray-400">Select</span>
+                  </label>
                 </div>
                 <span className="text-xs text-gray-500">{listTotal} messages</span>
               </div>
+              {selected.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap px-3 py-2 bg-n0va-600/10 border-y border-gray-800/60">
+                  <span className="text-xs font-semibold text-white mr-1">{selected.length} selected</span>
+                  <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("mark_read")}>Read</button>
+                  <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("mark_unread")}>Unread</button>
+                  <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("star")}>Star</button>
+                  <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("unstar")}>Unstar</button>
+                  <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("archive")}>Archive</button>
+                  <button className="btn-secondary text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("trash")}>Trash</button>
+                  {folder === "trash" && (
+                    <button className="btn-danger text-[10px] px-2 py-1" disabled={busy} onClick={() => runBatch("delete")}>Delete</button>
+                  )}
+                  <input
+                    value={batchLabel}
+                    onChange={(e) => setBatchLabel(e.target.value)}
+                    placeholder="Label…"
+                    className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white w-24 outline-none focus:border-n0va-500"
+                  />
+                  <button className="btn-primary text-[10px] px-2 py-1" disabled={busy || !batchLabel.trim()} onClick={() => runBatch("apply_label", { label: batchLabel.trim() })}>Apply</button>
+                  <button className="btn-secondary text-[10px] px-2 py-1 ml-auto" onClick={() => setSelected([])} title="Clear selection"><X className="w-3 h-3" /></button>
+                </div>
+              )}
               <ul className="divide-y divide-gray-800/50">
                 {(messages.length ? messages : []).map((m: any) => (
                   <li key={m._id}>
@@ -308,6 +360,13 @@ export default function MailInbox() {
                       onClick={() => openMessage(m)}
                       className={`w-full text-left px-3 py-3 hover:bg-gray-800/40 transition-colors flex gap-3 ${m.read ? "" : "bg-n0va-600/[0.07]"}`}
                     >
+                      <span
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(m._id); }}
+                        className={`mt-0.5 shrink-0 ${selected.includes(m._id) ? "text-n0va-400" : "text-gray-600 hover:text-gray-400"}`}
+                        title={selected.includes(m._id) ? "Deselect" : "Select"}
+                      >
+                        {selected.includes(m._id) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                      </span>
                       <span
                         onClick={(e) => { e.stopPropagation(); toggleStarLocal(m); }}
                         className={`mt-0.5 shrink-0 ${m.starred ? "text-amber-400" : "text-gray-600 hover:text-gray-400"}`}

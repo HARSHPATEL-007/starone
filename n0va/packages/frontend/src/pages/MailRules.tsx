@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   RefreshCw, AlertTriangle, Plus, X, Zap, PauseCircle, CheckCircle2,
-  Target, FlaskConical, Trash2, Code2, Eye, Sparkles,
+  Target, FlaskConical, Trash2, Code2, Eye, Sparkles, Play,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -98,6 +98,19 @@ export default function MailRules() {
       await loadData();
     } catch (e: any) {
       addToast("error", "Instantiate failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sweepRules() {
+    setBusy(true);
+    try {
+      const res = unwrap(await api.adsMarketingModule.mailSweepRules());
+      addToast("success", "Rules run across inbox", res?.summary || "");
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Sweep failed", e?.message);
     } finally {
       setBusy(false);
     }
@@ -221,6 +234,9 @@ export default function MailRules() {
         </div>
         <div className="flex items-center gap-2">
           <button className="btn-secondary p-2" onClick={loadData} title="Refresh"><RefreshCw className="w-4 h-4" /></button>
+          <button className="btn-secondary flex items-center gap-2" disabled={busy} onClick={sweepRules} title="Run all rules against the inbox now">
+            <Play className="w-4 h-4 text-emerald-400" /> <span className="hidden sm:inline">Run now</span>
+          </button>
           <button className="btn-secondary flex items-center gap-2" onClick={() => { setAiOpen(true); setAiText(""); setAiRes(null); }}>
             <Sparkles className="w-4 h-4 text-n0va-400" /> <span className="hidden sm:inline">AI rule</span>
           </button>

@@ -2702,6 +2702,26 @@ export const api = {
       const qs = mailboxId ? `?mailboxId=${encodeURIComponent(mailboxId)}` : "";
       return request<any>(`/ads-marketing-module/mail/neural/dashboard${qs}`);
     },
+    mailSweepRules: () => request<any>("/ads-marketing-module/mail/rules/sweep", { method: "POST" }),
+    mailSendScheduleNow: (scheduleId: string) =>
+      request<any>(`/ads-marketing-module/mail/schedules/${scheduleId}/send-now`, { method: "POST" }),
+    mailCommandCenter: () => request<any>("/ads-marketing-module/mail/command-center"),
+    mailCommandCompleteFollowUp: (followUpId: string) =>
+      request<any>(`/ads-marketing-module/mail/command-center/follow-ups/${followUpId}/complete`, { method: "POST" }),
+    mailCommandSendScheduledNow: (scheduleId: string) =>
+      request<any>(`/ads-marketing-module/mail/command-center/schedules/${scheduleId}/send-now`, { method: "POST" }),
+    mailCommandApproveCampaign: (campaignId: string, approver?: string) =>
+      request<any>(`/ads-marketing-module/mail/command-center/campaigns/${campaignId}/approve`, { method: "POST", body: JSON.stringify({ approver }) }),
+    mailCommandRejectCampaign: (campaignId: string, reason?: string) =>
+      request<any>(`/ads-marketing-module/mail/command-center/campaigns/${campaignId}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+    mailCommandRunRulesSweep: () => request<any>("/ads-marketing-module/mail/command-center/rules-sweep", { method: "POST" }),
+    mailCommandRescanSpam: () => request<any>("/ads-marketing-module/mail/command-center/spam-rescan", { method: "POST" }),
+    mailCommandRunAgentCycle: (mailboxId?: string) => {
+      const qs = mailboxId ? `?mailboxId=${encodeURIComponent(mailboxId)}` : "";
+      return request<any>(`/ads-marketing-module/mail/command-center/agent-cycle${qs}`, { method: "POST" });
+    },
+    mailCommandSmartArchive: (olderThanDays?: number) =>
+      request<any>("/ads-marketing-module/mail/command-center/smart-archive", { method: "POST", body: JSON.stringify({ olderThanDays }) }),
   },
 
   agentSwarm: {

@@ -181,6 +181,17 @@ export class MailAgentService {
     };
   }
 
+  sendScheduleNow(tenantId: string, scheduleId: string) {
+    const s = DataStore.mem().findOne("mail_schedules", (x: any) => x._id === scheduleId && x.tenantId === tenantId);
+    if (!s) throw new Error(`Schedule "${scheduleId}" not found`);
+    if (s.status !== "scheduled") return { scheduleId: s._id, subject: s.subject, status: s.status, summary: `"${s.subject}" is ${s.status} — nothing to send` };
+    const mb = this.getMailbox(tenantId, s.mailboxId);
+    mailMessage.composeSend(tenantId, mb._id, { to: s.to, subject: s.subject, body: s.body, importance: s.importance });
+    const updated = DataStore.mem().update("mail_schedules", (x: any) => x._id === s._id, { status: "sent", sentAt: new Date().toISOString() });
+    this.log(tenantId, { action: "schedule_sent", mailboxId: mb._id, scheduleId: s._id, subject: s.subject, detail: `"${s.subject}" sent now (manual)` });
+    return { scheduleId: updated._id, subject: updated.subject, status: "sent", summary: `Email "${updated.subject}" sent now` };
+  }
+
   agentLog(tenantId: string, limit = 20) {
     const log = DataStore.mem().find("mail_agent_log", (l: any) => l.tenantId === tenantId)
       .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())

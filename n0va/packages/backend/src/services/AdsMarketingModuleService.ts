@@ -74,6 +74,7 @@ import { mailDomain } from "./MailDomainService";
 import { mailVoiceNote } from "./MailVoiceNoteService";
 import { mailMultimodal } from "./MailMultimodalService";
 import { mailNeural } from "./MailNeuralService";
+import { mailCommand } from "./MailCommandCenterService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -3738,6 +3739,10 @@ export class AdsMarketingModuleService {
     return mailRules.rulesDashboard(tenantId);
   }
 
+  mailSweepRules(tenantId: string) {
+    return mailRules.sweepRules(tenantId);
+  }
+
   mailSearch(tenantId: string, opts: Record<string, any>) {
     return mailSearch.searchMessages(tenantId, opts);
   }
@@ -3829,6 +3834,10 @@ export class AdsMarketingModuleService {
 
   mailCancelSchedule(tenantId: string, scheduleId: string) {
     return mailAgent.cancelSchedule(tenantId, scheduleId);
+  }
+
+  mailSendScheduleNow(tenantId: string, scheduleId: string) {
+    return mailAgent.sendScheduleNow(tenantId, scheduleId);
   }
 
   mailExtractTasks(tenantId: string, messageId: string) {
@@ -4465,6 +4474,42 @@ export class AdsMarketingModuleService {
 
   mailNeuralDashboard(tenantId: string, mailboxId?: string) {
     return mailNeural.neuralMailboxDashboard(tenantId, mailboxId);
+  }
+
+  mailCommandCenter(tenantId: string) {
+    return mailCommand.mailCommandCenter(tenantId);
+  }
+
+  mailCommandCompleteFollowUp(tenantId: string, followUpId: string) {
+    return mailCommand.completeFollowUp(tenantId, followUpId);
+  }
+
+  mailCommandSendScheduledNow(tenantId: string, scheduleId: string) {
+    return mailCommand.sendScheduledNow(tenantId, scheduleId);
+  }
+
+  mailCommandApproveCampaign(tenantId: string, campaignId: string, approver?: string) {
+    return mailCommand.approveCampaign(tenantId, campaignId, approver);
+  }
+
+  mailCommandRejectCampaign(tenantId: string, campaignId: string, reason?: string) {
+    return mailCommand.rejectCampaign(tenantId, campaignId, reason);
+  }
+
+  mailCommandRunRulesSweep(tenantId: string) {
+    return mailCommand.runRulesSweep(tenantId);
+  }
+
+  mailCommandRescanSpam(tenantId: string) {
+    return mailCommand.rescanSpam(tenantId);
+  }
+
+  mailCommandRunAgentCycle(tenantId: string, mailboxId?: string) {
+    return mailCommand.runAgentCycle(tenantId, mailboxId);
+  }
+
+  mailCommandSmartArchive(tenantId: string, olderThanDays?: number) {
+    return mailCommand.smartArchiveNow(tenantId, olderThanDays);
   }
 }
 

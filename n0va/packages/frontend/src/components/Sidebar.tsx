@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
@@ -113,6 +113,7 @@ const navItems = [
   { to: "/mail/discovery", icon: FolderSearch, label: "eDiscovery" },
   { to: "/mail/domains", icon: Globe, label: "Domains" },
   { to: "/mail/voice", icon: Mic, label: "Voice & Media" },
+  { to: "/mail/command-center", icon: LayoutDashboard, label: "Mail Command" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
@@ -247,6 +248,7 @@ const typeIcons: Record<string, any> = {
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [mentionCount, setMentionCount] = useState(0);
   const [mailUnread, setMailUnread] = useState(0);
@@ -266,6 +268,13 @@ export default function Sidebar() {
     window.addEventListener("n0va:refresh-data", refresh);
     return () => window.removeEventListener("n0va:refresh-data", refresh);
   }, []);
+
+  useEffect(() => {
+    api.adsMarketingModule.mailUnreadSummary().then((r) => {
+      const s = r && r.data !== undefined ? r.data : r;
+      setMailUnread(s?.totals?.totalUnread || 0);
+    }).catch(() => {});
+  }, [location.pathname]);
 
   function handleLogout() {
     localStorage.removeItem("n0va_token");

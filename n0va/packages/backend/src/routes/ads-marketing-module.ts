@@ -2216,4 +2216,48 @@ router.get("/mail/neural/dashboard", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailNeuralDashboard(req.user!.tenantId, typeof req.query.mailboxId === "string" ? req.query.mailboxId : undefined));
 }));
 
+router.post("/mail/rules/sweep", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSweepRules(req.user!.tenantId));
+}));
+
+router.post("/mail/schedules/:scheduleId/send-now", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSendScheduleNow(req.user!.tenantId, req.params.scheduleId));
+}));
+
+router.get("/mail/command-center", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandCenter(req.user!.tenantId));
+}));
+
+router.post("/mail/command-center/follow-ups/:followUpId/complete", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandCompleteFollowUp(req.user!.tenantId, req.params.followUpId));
+}));
+
+router.post("/mail/command-center/schedules/:scheduleId/send-now", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandSendScheduledNow(req.user!.tenantId, req.params.scheduleId));
+}));
+
+router.post("/mail/command-center/campaigns/:campaignId/approve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandApproveCampaign(req.user!.tenantId, req.params.campaignId, typeof req.body.approver === "string" ? req.body.approver : undefined));
+}));
+
+router.post("/mail/command-center/campaigns/:campaignId/reject", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandRejectCampaign(req.user!.tenantId, req.params.campaignId, typeof req.body.reason === "string" ? req.body.reason : undefined));
+}));
+
+router.post("/mail/command-center/rules-sweep", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandRunRulesSweep(req.user!.tenantId));
+}));
+
+router.post("/mail/command-center/spam-rescan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandRescanSpam(req.user!.tenantId));
+}));
+
+router.post("/mail/command-center/agent-cycle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandRunAgentCycle(req.user!.tenantId, typeof req.query.mailboxId === "string" ? req.query.mailboxId : undefined));
+}));
+
+router.post("/mail/command-center/smart-archive", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCommandSmartArchive(req.user!.tenantId, typeof req.body.olderThanDays === "number" ? req.body.olderThanDays : undefined));
+}));
+
 export default router;
