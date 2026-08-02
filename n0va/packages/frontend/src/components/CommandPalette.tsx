@@ -38,6 +38,7 @@ const PAGE_ITEMS: SearchResult[] = [
 { type: "page", label: "Voice & Media", route: "/mail/voice", icon: Mic },
 { type: "page", label: "Mail Command", route: "/mail/command-center", icon: LayoutDashboard },
 { type: "page", label: "Mail Ops", route: "/mail/ops", icon: Activity },
+  { type: "page", label: "Mail Protection", route: "/mail/protection", icon: Shield },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

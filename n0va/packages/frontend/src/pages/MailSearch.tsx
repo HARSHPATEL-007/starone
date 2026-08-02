@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  Search, RefreshCw, AlertTriangle, Sparkles, Paperclip, Star, Filter, X,
+  Search, RefreshCw, AlertTriangle, Sparkles, Paperclip, Star, Filter, X, SlidersHorizontal, Trash2,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -41,18 +41,38 @@ export default function MailSearch() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  const [opQuery, setOpQuery] = useState("");
+  const [opRes, setOpRes] = useState<any>(null);
+  const [opRef, setOpRef] = useState<any>(null);
+  const [opExamples, setOpExamples] = useState<any[]>([]);
+  const [opRecent, setOpRecent] = useState<any[]>([]);
+  const [opBusy, setOpBusy] = useState(false);
+
   const loadStats = useCallback(async () => {
     const s = unwrap(await api.adsMarketingModule.mailSearchStats().catch(() => null));
     setStats(s);
     setLoading(false);
   }, []);
 
+  const loadOps = useCallback(async () => {
+    const [ref, ex, recent] = await Promise.all([
+      api.adsMarketingModule.mailSearchOperatorReference().catch(() => null),
+      api.adsMarketingModule.mailSearchExamples().catch(() => null),
+      api.adsMarketingModule.mailSearchRecentQueries().catch(() => null),
+    ]);
+    setOpRef(unwrap(ref));
+    setOpExamples(unwrap(ex) || []);
+    const r = unwrap(recent);
+    setOpRecent(r?.queries || []);
+  }, []);
+
   useEffect(() => { loadStats(); }, [loadStats]);
+  useEffect(() => { loadOps(); }, [loadOps]);
   useEffect(() => {
-    function refresh() { loadStats(); }
+    function refresh() { loadStats(); loadOps(); }
     window.addEventListener("n0va:refresh-data", refresh);
     return () => window.removeEventListener("n0va:refresh-data", refresh);
-  }, [loadStats]);
+  }, [loadStats, loadOps]);
 
   async function runSearch() {
     if (!query.trim()) return;
@@ -88,7 +108,34 @@ export default function MailSearch() {
     setQuery(""); setSemantic(""); setResults(null); setSemanticRes(null); setFilters({});
   }
 
+  async function runOperator() {
+    if (!opQuery.trim()) return;
+    setOpBusy(true);
+    const r = unwrap(await api.adsMarketingModule.mailSearchOperators(opQuery).catch(() => null));
+    setOpRes(r);
+    const rec = unwrap(await api.adsMarketingModule.mailSearchRecentQueries().catch(() => null));
+    setOpRecent(rec?.queries || []);
+    setOpBusy(false);
+  }
+
+  async function runOperatorFrom(q: string) {
+    setOpQuery(q);
+    setOpBusy(true);
+    const r = unwrap(await api.adsMarketingModule.mailSearchOperators(q).catch(() => null));
+    setOpRes(r);
+    const rec = unwrap(await api.adsMarketingModule.mailSearchRecentQueries().catch(() => null));
+    setOpRecent(rec?.queries || []);
+    setOpBusy(false);
+  }
+
+  async function clearOpHistory() {
+    const r = unwrap(await api.adsMarketingModule.mailSearchClearHistory().catch(() => null));
+    setOpRecent([]);
+    if (r?.summary) addToast("info", r.summary);
+  }
+
   const rows = semanticRes?.messages || results?.messages || [];
+  const opRows = opRes?.messages || [];
 
   return (
     <div className="space-y-6">
@@ -182,6 +229,103 @@ export default function MailSearch() {
               </div>
             </div>
           </div>
+
+          <div className="card space-y-3">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1 flex items-center gap-1.5"><SlidersHorizontal className="w-3 h-3 text-n0va-400" /> Operator search</label>
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  className="input flex-1 min-w-[200px] font-mono text-xs"
+                  placeholder='e.g. from:john is:unread has:attachment size:>5MB date:last7d'
+                  value={opQuery}
+                  onChange={(e) => setOpQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") runOperator(); }}
+                />
+                <button className="btn-primary" disabled={opBusy || !opQuery.trim()} onClick={runOperator}>
+                  <SlidersHorizontal className="w-4 h-4" /> Run
+                </button>
+              </div>
+              {opRes?.parsed && (
+                <div className="mt-2 space-y-1.5">
+                  {opRes.parsed.explanation.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {opRes.parsed.explanation.map((e: string, i: number) => (
+                        <span key={i} className="text-[10px] bg-n0va-500/10 text-n0va-400 border border-n0va-500/20 rounded-full px-2 py-0.5">{e}</span>
+                      ))}
+                    </div>
+                  )}
+                  {opRes.parsed.invalid.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {opRes.parsed.invalid.map((inv: any, i: number) => (
+                        <span key={i} className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 rounded-full px-2 py-0.5" title={`${inv.op}: ${inv.reason}`}>
+                          {inv.op}:{inv.reason}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-800 pt-3">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                <span className="text-[10px] text-gray-500 uppercase tracking-wider">{opRef?.operators?.length || 0} operators</span>
+                {opRecent.length > 0 && (
+                  <button className="text-[10px] text-gray-500 hover:text-red-400 flex items-center gap-1" onClick={clearOpHistory}>
+                    <Trash2 className="w-3 h-3" /> Clear history ({opRecent.length})
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {(opRef?.operators || []).map((o: any) => (
+                  <span key={o.op} className="text-[10px] text-gray-400 bg-gray-800/70 border border-gray-700 rounded px-1.5 py-0.5 cursor-help" title={`${o.desc}\nexample: ${o.example}`}>
+                    <code className="text-n0va-400">{o.op}:</code> {o.example.replace(`${o.op}:`, "")}
+                  </span>
+                ))}
+              </div>
+              {opExamples.length > 0 && (
+                <>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-3 mb-1.5">Try one</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {opExamples.map((e: any, i: number) => (
+                      <button key={i} className="text-[10px] bg-gray-800/60 border border-gray-700 hover:border-n0va-500/50 rounded px-1.5 py-0.5 text-gray-300" title={e.explanation}
+                        onClick={() => { setOpQuery(e.query); runOperatorFrom(e.query); }}>
+                        {e.query} <span className="text-gray-500">· {e.total}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {opRows.length > 0 && (
+            <div className="card !p-2">
+              <div className="px-3 py-2 border-b border-gray-800/60 flex items-center justify-between">
+                <span className="text-sm font-semibold text-white">{opRows.length} operator result{opRows.length === 1 ? "" : "s"}</span>
+                <span className="text-xs text-n0va-400">{opRes.summary}</span>
+              </div>
+              <ul className="divide-y divide-gray-800/50">
+                {opRows.map((m: any) => (
+                  <li key={m._id} className="px-3 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm truncate ${m.read ? "text-gray-300" : "text-white font-semibold"}`}>{m.from?.name || m.from?.email}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        {m.starred && <Star className="w-3 h-3 text-amber-400" />}
+                        {m.attachments?.length > 0 && <Paperclip className="w-3 h-3 text-gray-500" />}
+                        <span className="text-[10px] text-gray-500">{fmtTime(m.receivedAt)}</span>
+                      </span>
+                    </div>
+                    <p className={`text-sm truncate mt-0.5 ${m.read ? "text-gray-500" : "text-gray-300"}`}>{m.subject}</p>
+                    <p className="text-xs text-gray-600 truncate mt-0.5">{m.preview || m.body?.slice(0, 140) || ""}</p>
+                    {typeof m.score === "number" && m.score > 0 && (
+                      <span className="text-[9px] text-n0va-500 mt-1 inline-block">score {m.score}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {!stats && !rows.length && (
             <div className="card border-red-500/30 bg-red-500/5">

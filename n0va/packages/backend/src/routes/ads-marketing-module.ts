@@ -2332,4 +2332,80 @@ router.post("/mail/storage/suggestions/:suggestionId/apply", asyncHandler(async 
   sendSuccess(res, adsMarketingModule.mailStorageApplyCleanup(req.user!.tenantId, req.params.suggestionId));
 }));
 
+router.get("/mail/search-operators", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchOperatorReference());
+}));
+
+router.post("/mail/search-operators/parse", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchParse(req.body.query || ""));
+}));
+
+router.get("/mail/search-operators/search", asyncHandler(async (req, res) => {
+  const { query, mailboxId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailSearchOperators(req.user!.tenantId, typeof query === "string" ? query : "", typeof mailboxId === "string" ? { mailboxId } : {}));
+}));
+
+router.get("/mail/search-operators/examples", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchExamples(req.user!.tenantId));
+}));
+
+router.get("/mail/search-operators/recent", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchRecentQueries(req.user!.tenantId));
+}));
+
+router.post("/mail/search-operators/clear", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchClearHistory(req.user!.tenantId));
+}));
+
+router.get("/mail/search-operators/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailSearchOperatorStats(req.user!.tenantId));
+}));
+
+router.get("/mail/abuse/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/abuse/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseOverview(req.user!.tenantId));
+}));
+
+router.post("/mail/abuse/scan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseScan(req.user!.tenantId, req.body.message));
+}));
+
+router.post("/mail/abuse/bec-scan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseBecScan(req.user!.tenantId, req.body.message));
+}));
+
+router.post("/mail/abuse/dlp-scan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseDlpScan(req.user!.tenantId, req.body.message));
+}));
+
+router.get("/mail/abuse/rate-limit", asyncHandler(async (req, res) => {
+  const { senderEmail } = req.query;
+  sendSuccess(res, adsMarketingModule.mailAbuseRateLimit(req.user!.tenantId, typeof senderEmail === "string" ? senderEmail : ""));
+}));
+
+router.get("/mail/abuse/impossible-travel", asyncHandler(async (req, res) => {
+  const { userId, city } = req.query;
+  sendSuccess(res, adsMarketingModule.mailAbuseImpossibleTravel(req.user!.tenantId, typeof userId === "string" ? userId : "user_001", typeof city === "string" ? city : undefined));
+}));
+
+router.get("/mail/abuse/pattern-anomaly", asyncHandler(async (req, res) => {
+  const { mailboxId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailAbusePatternAnomaly(req.user!.tenantId, typeof mailboxId === "string" ? mailboxId : undefined));
+}));
+
+router.get("/mail/abuse/honeypots", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseHoneypotStatus(req.user!.tenantId));
+}));
+
+router.post("/mail/abuse/threat-response", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseThreatResponse(req.user!.tenantId, req.body.action || "", req.body.target));
+}));
+
+router.get("/mail/abuse/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAbuseLog(req.user!.tenantId));
+}));
+
 export default router;

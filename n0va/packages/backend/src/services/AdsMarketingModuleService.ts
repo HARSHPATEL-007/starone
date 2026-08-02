@@ -77,6 +77,8 @@ import { mailNeural } from "./MailNeuralService";
 import { mailCommand } from "./MailCommandCenterService";
 import { mailOps } from "./MailOpsService";
 import { mailStorage } from "./MailStorageService";
+import { mailSearchOp } from "./MailSearchOperatorsService";
+import { mailAbuse } from "./MailAbuseService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -4584,6 +4586,78 @@ export class AdsMarketingModuleService {
 
   mailStorageApplyAllCleanups(tenantId: string) {
     return mailStorage.applyAllCleanups(tenantId);
+  }
+
+  mailSearchParse(query: string) {
+    return mailSearchOp.parseQuery(query);
+  }
+
+  mailSearchOperators(tenantId: string, query: string, opts?: any) {
+    return mailSearchOp.operatorSearch(tenantId, query, opts);
+  }
+
+  mailSearchOperatorReference() {
+    return mailSearchOp.operatorReference();
+  }
+
+  mailSearchExamples(tenantId: string) {
+    return mailSearchOp.searchExamples(tenantId);
+  }
+
+  mailSearchRecentQueries(tenantId: string) {
+    return mailSearchOp.recentQueries(tenantId);
+  }
+
+  mailSearchClearHistory(tenantId: string) {
+    return mailSearchOp.clearHistory(tenantId);
+  }
+
+  mailSearchOperatorStats(tenantId: string) {
+    return mailSearchOp.operatorStats(tenantId);
+  }
+
+  mailAbuseOverview(tenantId: string) {
+    return mailAbuse.abuseOverview(tenantId);
+  }
+
+  mailAbuseScan(tenantId: string, message: any) {
+    return mailAbuse.scanIncoming(tenantId, message);
+  }
+
+  mailAbuseRateLimit(tenantId: string, senderEmail: string) {
+    return mailAbuse.rateLimitCheck(tenantId, senderEmail);
+  }
+
+  mailAbuseBecScan(tenantId: string, message: any) {
+    return mailAbuse.becScan(tenantId, message);
+  }
+
+  mailAbuseDlpScan(tenantId: string, message: any) {
+    return mailAbuse.dlpScan(tenantId, message);
+  }
+
+  mailAbuseImpossibleTravel(tenantId: string, userId: string, attemptedCity?: string) {
+    return mailAbuse.impossibleTravel(tenantId, userId, attemptedCity);
+  }
+
+  mailAbusePatternAnomaly(tenantId: string, mailboxId?: string) {
+    return mailAbuse.sendingPatternAnomaly(tenantId, mailboxId);
+  }
+
+  mailAbuseHoneypotStatus(tenantId: string) {
+    return mailAbuse.honeypotStatus(tenantId);
+  }
+
+  mailAbuseThreatResponse(tenantId: string, action: string, target?: string) {
+    return mailAbuse.threatResponse(tenantId, action, target);
+  }
+
+  mailAbuseLog(tenantId: string) {
+    return mailAbuse.abuseLog(tenantId);
+  }
+
+  mailAbuseDashboard(tenantId: string) {
+    return mailAbuse.abuseDashboard(tenantId);
   }
 }
 

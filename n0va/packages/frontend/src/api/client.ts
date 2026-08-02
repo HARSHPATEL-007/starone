@@ -2747,6 +2747,28 @@ export const api = {
     mailStorageApplyCleanup: (suggestionId: string) =>
       request<any>(`/ads-marketing-module/mail/storage/suggestions/${suggestionId}/apply`, { method: "POST" }),
     mailStorageApplyAllCleanups: () => request<any>("/ads-marketing-module/mail/storage/suggestions/apply-all", { method: "POST" }),
+    mailSearchOperatorReference: () => request<any>("/ads-marketing-module/mail/search-operators"),
+    mailSearchParse: (query: string) => request<any>("/ads-marketing-module/mail/search-operators/parse", { method: "POST", body: JSON.stringify({ query }) }),
+    mailSearchOperators: (query: string, opts?: { mailboxId?: string }) =>
+      request<any>(`/ads-marketing-module/mail/search-operators/search?query=${encodeURIComponent(query)}${opts?.mailboxId ? `&mailboxId=${encodeURIComponent(opts.mailboxId)}` : ""}`),
+    mailSearchExamples: () => request<any>("/ads-marketing-module/mail/search-operators/examples"),
+    mailSearchRecentQueries: () => request<any>("/ads-marketing-module/mail/search-operators/recent"),
+    mailSearchClearHistory: () => request<any>("/ads-marketing-module/mail/search-operators/clear", { method: "POST" }),
+    mailSearchOperatorStats: () => request<any>("/ads-marketing-module/mail/search-operators/stats"),
+    mailAbuseDashboard: () => request<any>("/ads-marketing-module/mail/abuse/dashboard"),
+    mailAbuseOverview: () => request<any>("/ads-marketing-module/mail/abuse/overview"),
+    mailAbuseScan: (message: Record<string, unknown>) => request<any>("/ads-marketing-module/mail/abuse/scan", { method: "POST", body: JSON.stringify({ message }) }),
+    mailAbuseBecScan: (message: Record<string, unknown>) => request<any>("/ads-marketing-module/mail/abuse/bec-scan", { method: "POST", body: JSON.stringify({ message }) }),
+    mailAbuseDlpScan: (message: Record<string, unknown>) => request<any>("/ads-marketing-module/mail/abuse/dlp-scan", { method: "POST", body: JSON.stringify({ message }) }),
+    mailAbuseRateLimit: (senderEmail: string) => request<any>(`/ads-marketing-module/mail/abuse/rate-limit?senderEmail=${encodeURIComponent(senderEmail)}`),
+    mailAbuseImpossibleTravel: (userId: string, city?: string) =>
+      request<any>(`/ads-marketing-module/mail/abuse/impossible-travel?userId=${encodeURIComponent(userId)}${city ? `&city=${encodeURIComponent(city)}` : ""}`),
+    mailAbusePatternAnomaly: (mailboxId?: string) =>
+      request<any>(`/ads-marketing-module/mail/abuse/pattern-anomaly${mailboxId ? `?mailboxId=${encodeURIComponent(mailboxId)}` : ""}`),
+    mailAbuseHoneypotStatus: () => request<any>("/ads-marketing-module/mail/abuse/honeypots"),
+    mailAbuseThreatResponse: (action: string, target?: string) =>
+      request<any>("/ads-marketing-module/mail/abuse/threat-response", { method: "POST", body: JSON.stringify({ action, target }) }),
+    mailAbuseLog: () => request<any>("/ads-marketing-module/mail/abuse/log"),
   },
 
   agentSwarm: {

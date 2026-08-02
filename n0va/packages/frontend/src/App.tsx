@@ -26,6 +26,7 @@ const MailDomains = lazy(() => import("./pages/MailDomains"));
 const MailVoice = lazy(() => import("./pages/MailVoice"));
 const MailCommandCenter = lazy(() => import("./pages/MailCommandCenter"));
 const MailOps = lazy(() => import("./pages/MailOps"));
+const MailProtection = lazy(() => import("./pages/MailProtection"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -207,6 +208,7 @@ export default function App() {
                 <Route path="/mail/voice" element={<MailVoice />} />
                 <Route path="/mail/command-center" element={<MailCommandCenter />} />
                 <Route path="/mail/ops" element={<MailOps />} />
+          <Route path="/mail/protection" element={<MailProtection />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
