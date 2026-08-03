@@ -2593,4 +2593,104 @@ router.post("/mail/integrations/:connectionId/actions", asyncHandler(async (req,
   sendSuccess(res, adsMarketingModule.mailIntegrationAction(req.user!.tenantId, req.params.connectionId, req.body.action || "", req.body.params));
 }));
 
+router.get("/mail/billing/plans", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingPlans());
+}));
+
+router.get("/mail/billing/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/forecast", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingForecast(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/upgrade", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingUpgrade(req.user!.tenantId, req.body.plan || ""));
+}));
+
+router.get("/mail/billing/invoices", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingInvoices(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/invoices", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCreateInvoice(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/billing/invoices/:invoiceId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingInvoice(req.user!.tenantId, req.params.invoiceId));
+}));
+
+router.post("/mail/billing/invoices/:invoiceId/pay", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingPayInvoice(req.user!.tenantId, req.params.invoiceId));
+}));
+
+router.get("/mail/billing/payment-methods", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingPaymentMethods(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/payment-methods", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingAddPaymentMethod(req.user!.tenantId, req.body));
+}));
+
+router.delete("/mail/billing/payment-methods/:methodId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingRemovePaymentMethod(req.user!.tenantId, req.params.methodId));
+}));
+
+router.get("/mail/billing/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingLog(req.user!.tenantId));
+}));
+
+router.get("/mail/notifications", asyncHandler(async (req, res) => {
+  const { unreadOnly, type, limit } = req.query;
+  sendSuccess(res, adsMarketingModule.mailNotifications(req.user!.tenantId, {
+    unreadOnly: unreadOnly === "true",
+    type: typeof type === "string" ? type : undefined,
+    limit: typeof limit === "string" ? Number(limit) : undefined,
+  }));
+}));
+
+router.post("/mail/notifications", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateNotification(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/notifications/collect", asyncHandler(async (req, res) => {
+  const { now } = req.query;
+  sendSuccess(res, adsMarketingModule.mailCollectAlerts(req.user!.tenantId, {
+    now: typeof now === "string" ? now : undefined,
+  }));
+}));
+
+router.post("/mail/notifications/read-all", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarkAllNotificationsRead(req.user!.tenantId));
+}));
+
+router.delete("/mail/notifications/clear", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailClearNotifications(req.user!.tenantId));
+}));
+
+router.get("/mail/notifications/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNotificationSettings(req.user!.tenantId));
+}));
+
+router.put("/mail/notifications/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateNotificationSettings(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/notifications/center", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailNotificationCenter(req.user!.tenantId));
+}));
+
+router.post("/mail/notifications/:notificationId/read", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarkNotificationRead(req.user!.tenantId, req.params.notificationId));
+}));
+
+router.delete("/mail/notifications/:notificationId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteNotification(req.user!.tenantId, req.params.notificationId));
+}));
+
 export default router;

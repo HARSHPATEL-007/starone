@@ -2834,6 +2834,48 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/integrations/bridges/${bridgeId}`, { method: "DELETE" }),
     mailIntegrationTriggerBridge: (bridgeId: string) =>
       request<any>(`/ads-marketing-module/mail/integrations/bridges/${bridgeId}/trigger`, { method: "POST" }),
+    mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
+    mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
+    mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),
+    mailBillingForecast: () => request<any>("/ads-marketing-module/mail/billing/forecast"),
+    mailBillingUpgrade: (plan: string) =>
+      request<any>("/ads-marketing-module/mail/billing/upgrade", { method: "POST", body: JSON.stringify({ plan }) }),
+    mailBillingInvoices: () => request<any>("/ads-marketing-module/mail/billing/invoices"),
+    mailBillingCreateInvoice: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/billing/invoices", { method: "POST", body: JSON.stringify(input) }),
+    mailBillingInvoice: (invoiceId: string) => request<any>(`/ads-marketing-module/mail/billing/invoices/${invoiceId}`),
+    mailBillingPayInvoice: (invoiceId: string) =>
+      request<any>(`/ads-marketing-module/mail/billing/invoices/${invoiceId}/pay`, { method: "POST" }),
+    mailBillingPaymentMethods: () => request<any>("/ads-marketing-module/mail/billing/payment-methods"),
+    mailBillingAddPaymentMethod: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/billing/payment-methods", { method: "POST", body: JSON.stringify(input) }),
+    mailBillingRemovePaymentMethod: (methodId: string) =>
+      request<any>(`/ads-marketing-module/mail/billing/payment-methods/${methodId}`, { method: "DELETE" }),
+    mailBillingLog: () => request<any>("/ads-marketing-module/mail/billing/log"),
+    mailNotifications: (opts?: Record<string, any>) => {
+      const params = new URLSearchParams();
+      if (opts?.unreadOnly) params.set("unreadOnly", "true");
+      if (opts?.type) params.set("type", opts.type);
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/notifications${qs ? `?${qs}` : ""}`);
+    },
+    mailCreateNotification: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/notifications", { method: "POST", body: JSON.stringify(input) }),
+    mailCollectAlerts: (opts?: Record<string, any>) => {
+      const qs = opts?.now ? `?now=${encodeURIComponent(opts.now)}` : "";
+      return request<any>(`/ads-marketing-module/mail/notifications/collect${qs}`, { method: "POST" });
+    },
+    mailMarkNotificationRead: (notificationId: string) =>
+      request<any>(`/ads-marketing-module/mail/notifications/${notificationId}/read`, { method: "POST" }),
+    mailMarkAllNotificationsRead: () => request<any>("/ads-marketing-module/mail/notifications/read-all", { method: "POST" }),
+    mailDeleteNotification: (notificationId: string) =>
+      request<any>(`/ads-marketing-module/mail/notifications/${notificationId}`, { method: "DELETE" }),
+    mailClearNotifications: () => request<any>("/ads-marketing-module/mail/notifications/clear", { method: "DELETE" }),
+    mailNotificationSettings: () => request<any>("/ads-marketing-module/mail/notifications/settings"),
+    mailUpdateNotificationSettings: (patch: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/notifications/settings", { method: "PUT", body: JSON.stringify(patch) }),
+    mailNotificationCenter: () => request<any>("/ads-marketing-module/mail/notifications/center"),
   },
 
   agentSwarm: {

@@ -82,6 +82,8 @@ import { mailAbuse } from "./MailAbuseService";
 import { mailWebhook } from "./MailWebhookService";
 import { mailAgentRegistry } from "./MailAgentRegistryService";
 import { mailIntegration } from "./MailIntegrationService";
+import { mailBilling } from "./MailBillingService";
+import { mailNotifications } from "./MailNotificationService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -4841,6 +4843,98 @@ export class AdsMarketingModuleService {
 
   mailIntegrationTriggerBridge(tenantId: string, bridgeId: string) {
     return mailIntegration.triggerBridge(tenantId, bridgeId);
+  }
+
+  mailBillingPlans() {
+    return mailBilling.planCatalog();
+  }
+
+  mailBillingSummary(tenantId: string) {
+    return mailBilling.billingSummary(tenantId);
+  }
+
+  mailBillingDashboard(tenantId: string) {
+    return mailBilling.billingDashboard(tenantId);
+  }
+
+  mailBillingForecast(tenantId: string) {
+    return mailBilling.usageForecast(tenantId);
+  }
+
+  mailBillingUpgrade(tenantId: string, plan: string) {
+    return mailBilling.upgradePlan(tenantId, plan);
+  }
+
+  mailBillingInvoices(tenantId: string) {
+    return mailBilling.invoices(tenantId);
+  }
+
+  mailBillingCreateInvoice(tenantId: string, input: any) {
+    return mailBilling.createInvoice(tenantId, input);
+  }
+
+  mailBillingInvoice(tenantId: string, invoiceId: string) {
+    return mailBilling.getInvoice(invoiceId);
+  }
+
+  mailBillingPayInvoice(tenantId: string, invoiceId: string) {
+    return mailBilling.payInvoice(invoiceId);
+  }
+
+  mailBillingPaymentMethods(tenantId: string) {
+    return mailBilling.paymentMethods(tenantId);
+  }
+
+  mailBillingAddPaymentMethod(tenantId: string, input: any) {
+    return mailBilling.setPaymentMethod(tenantId, input);
+  }
+
+  mailBillingRemovePaymentMethod(tenantId: string, methodId: string) {
+    return mailBilling.removePaymentMethod(methodId);
+  }
+
+  mailBillingLog(tenantId: string) {
+    return mailBilling.billingLog(tenantId);
+  }
+
+  mailNotifications(tenantId: string, opts: any) {
+    return mailNotifications.listNotifications(tenantId, opts);
+  }
+
+  mailCreateNotification(tenantId: string, input: any) {
+    return mailNotifications.notify(tenantId, input.type || "", input);
+  }
+
+  mailCollectAlerts(tenantId: string, opts: any) {
+    return mailNotifications.collectAlerts(tenantId, opts);
+  }
+
+  mailMarkNotificationRead(tenantId: string, notificationId: string) {
+    return mailNotifications.markRead(notificationId);
+  }
+
+  mailMarkAllNotificationsRead(tenantId: string) {
+    return mailNotifications.markAllRead(tenantId);
+  }
+
+  mailDeleteNotification(tenantId: string, notificationId: string) {
+    return mailNotifications.deleteNotification(notificationId);
+  }
+
+  mailClearNotifications(tenantId: string) {
+    return mailNotifications.clearAll(tenantId);
+  }
+
+  mailNotificationSettings(tenantId: string) {
+    return mailNotifications.notificationSettings(tenantId);
+  }
+
+  mailUpdateNotificationSettings(tenantId: string, patch: any) {
+    return mailNotifications.updateNotificationSettings(tenantId, patch);
+  }
+
+  mailNotificationCenter(tenantId: string) {
+    return mailNotifications.notificationCenter(tenantId);
   }
 }
 

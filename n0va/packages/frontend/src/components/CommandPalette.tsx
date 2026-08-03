@@ -42,6 +42,8 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Mail Webhooks", route: "/mail/webhooks", icon: Webhook },
     { type: "page", label: "Mail Agents", route: "/mail/agents", icon: Bot },
     { type: "page", label: "Mail Integrations", route: "/mail/integrations", icon: Plug },
+    { type: "page", label: "Mail Billing", route: "/mail/billing", icon: CreditCard },
+    { type: "page", label: "Mail Alerts", route: "/mail/notifications", icon: Bell },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

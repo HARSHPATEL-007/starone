@@ -120,6 +120,8 @@ const navItems = [
   { to: "/mail/webhooks", icon: Webhook, label: "Mail Webhooks" },
     { to: "/mail/agents", icon: Bot, label: "Mail Agents" },
     { to: "/mail/integrations", icon: Plug, label: "Mail Integrations" },
+    { to: "/mail/billing", icon: CreditCard, label: "Mail Billing" },
+    { to: "/mail/notifications", icon: Bell, label: "Mail Alerts" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
