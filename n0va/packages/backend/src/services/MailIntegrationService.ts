@@ -24,12 +24,12 @@ export const CONNECTORS: any[] = [
   { id: "outlook", name: "Outlook", description: "Inbox, folders & calendar", category: "email", scopes: ["mail.read", "mail.send", "calendar.read"], actions: ["sync_mail", "create_event"], authType: "oauth2" },
   { id: "slack", name: "Slack", description: "Channels & direct messages", category: "chat", scopes: ["chat.write", "channel.read"], actions: ["post_to_chat", "forward_to_channel"], authType: "oauth2" },
   { id: "teams", name: "Microsoft Teams", description: "Teams, channels & meetings", category: "chat", scopes: ["channel.read", "message.write"], actions: ["post_to_chat", "forward_to_channel"], authType: "oauth2" },
-  { id: "crm", name: "CRM", description: "Contacts, leads & pipeline", category: "crm", scopes: ["contacts.read", "contacts.write", "deals.write"], actions: ["push_to_crm", "sync_contacts"], authType: "oauth2" },
-  { id: "drive", name: "Google Drive", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file"], authType: "oauth2" },
-  { id: "dropbox", name: "Dropbox", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file"], authType: "oauth2" },
+  { id: "crm", name: "CRM", description: "Contacts, leads & pipeline", category: "crm", scopes: ["contacts.read", "contacts.write", "deals.write"], actions: ["push_to_crm", "sync_contacts", "update_crm_deal"], authType: "oauth2" },
+  { id: "drive", name: "Google Drive", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file", "share_link", "create_doc"], authType: "oauth2" },
+  { id: "dropbox", name: "Dropbox", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file", "share_link"], authType: "oauth2" },
   { id: "zoom", name: "Zoom", description: "Video meetings & recordings", category: "meetings", scopes: ["meeting.write"], actions: ["schedule_meeting"], authType: "oauth2" },
   { id: "calendar", name: "Calendar", description: "Events & availability", category: "meetings", scopes: ["calendar.read", "calendar.write"], actions: ["schedule_meeting", "create_event"], authType: "oauth2" },
-  { id: "notion", name: "Notion", description: "Docs, pages & tasks", category: "docs", scopes: ["page.read", "page.write"], actions: ["create_task"], authType: "oauth2" },
+  { id: "notion", name: "Notion", description: "Docs, pages & tasks", category: "docs", scopes: ["page.read", "page.write"], actions: ["create_task", "create_doc"], authType: "oauth2" },
 ];
 
 const ACTION_LABELS: Record<string, string> = {
@@ -42,6 +42,9 @@ const ACTION_LABELS: Record<string, string> = {
   upload_file: "Upload attachment",
   schedule_meeting: "Schedule meeting",
   create_task: "Create task",
+  share_link: "Share file link",
+  update_crm_deal: "Update CRM deal",
+  create_doc: "Create document",
 };
 
 export const BRIDGE_EVENTS = [
@@ -90,6 +93,9 @@ export class MailIntegrationService {
       actionsRun: c.actionsRun || 0,
       error: c.error || null,
       tokenExpiresAt: c.tokenExpiresAt || null,
+      oauthAuthorized: !!(c.accessToken || c.oauthCompletedAt),
+      oauthState: c.oauthState || null,
+      oauthScope: c.oauthScope || null,
     };
   }
 
@@ -345,6 +351,23 @@ export class MailIntegrationService {
       const messages = DataStore.mem().find("messages", (x: any) => x.tenantId === tenantId && x.mailboxId === conn.mailboxId);
       const count = Math.min(messages.length, 2 + (hashStr(seed) % 10));
       result = { synced: count, summary: `${count} message(s) indexed into ${c.name}` };
+    } else if (action === "share_link") {
+      const messageId = params.messageId || "";
+      const msg = messageId ? DataStore.mem().findOne("messages", (m: any) => m._id === messageId && m.tenantId === tenantId) : null;
+      const name = (msg && msg.attachments && msg.attachments[0] && msg.attachments[0].name) || params.name || "n0va-share.txt";
+      const shareId = `shr_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const permission = hashStr(seed + "|perm") % 3 === 0 ? "comment" : "view";
+      result = { shareId, fileName: name, permission, shareUrl: `https://${c.id}.n0va.link/s/${shareId}`, summary: `Share link created for "${name}" (${permission})` };
+    } else if (action === "update_crm_deal") {
+      const dealId = params.dealId || `deal_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const stages = ["proposal", "negotiation", "won"];
+      const stage = stages[hashStr(seed + "|stage") % stages.length];
+      const value = (params.value as number) || 1000 + (hashStr(seed + "|value") % 9000);
+      result = { dealId, stage, value, summary: `Deal ${dealId} moved to "${stage}" ($${value})` };
+    } else if (action === "create_doc") {
+      const docId = `doc_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const title = params.title || "N0VA mail notes";
+      result = { docId, title, pageUrl: `https://${c.id}.n0va.link/${docId}`, summary: `Document "${title}" created` };
     } else {
       throw new Error(`Unsupported action "${action}"`);
     }
@@ -353,6 +376,149 @@ export class MailIntegrationService {
     });
     logEntry(tenantId, `action_${action}`, `${c.name} Â· ${ACTION_LABELS[action] || action} — ${result.summary}`, { connectionId, action });
     return { connectionId, connectorId: c.id, action, ...result, actionsRun: updated.actionsRun, summary: `${c.name}: ${result.summary}` };
+  }
+
+  oauthStart(tenantId: string, connectionId: string) {
+    const conn = DataStore.mem().findOne("mail_connections", (c: any) => c._id === connectionId && c.tenantId === tenantId);
+    if (!conn) throw new Error(`Connection "${connectionId}" not found`);
+    const c = this.connector(conn.connectorId);
+    const state = `st_${hashStr(`${conn.connectorId}|${conn.mailboxId}|${tenantId}|oauth_state`).toString(36)}`;
+    const redirect = encodeURIComponent("https://mail.n0va.io/oauth/callback");
+    const authorizationUrl = `https://${conn.connectorId}.auth.n0va.io/authorize?client_id=n0va_${conn.connectorId}&redirect_uri=${redirect}&response_type=code&scope=${encodeURIComponent(conn.scopes.join(" "))}&state=${state}`;
+    DataStore.mem().update("mail_connections", (x: any) => x._id === connectionId, {
+      oauthState: state,
+      oauthStartedAt: new Date().toISOString(),
+      status: conn.status === "connected" ? "needs_auth" : conn.status,
+      error: null,
+    });
+    logEntry(tenantId, "oauth_started", `OAuth flow started for ${c.name}`, { connectionId, state });
+    return {
+      connectionId,
+      connectorId: c.id,
+      state,
+      authorizationUrl,
+      redirectUri: "https://mail.n0va.io/oauth/callback",
+      scopes: conn.scopes,
+      expiresInSeconds: 600,
+      summary: `Open the authorization URL in your browser to grant ${c.name} access (${conn.scopes.length} scopes)`,
+    };
+  }
+
+  oauthCallback(tenantId: string, connectionId: string, input: any) {
+    const conn = DataStore.mem().findOne("mail_connections", (c: any) => c._id === connectionId && c.tenantId === tenantId);
+    if (!conn) throw new Error(`Connection "${connectionId}" not found`);
+    const c = this.connector(conn.connectorId);
+    const code = String((input && input.code) || "");
+    if (!code) throw new Error("code is required from the provider callback");
+    const state = String((input && input.state) || "");
+    if (!conn.oauthState) throw new Error("No pending authorization — start the OAuth flow first");
+    if (state !== conn.oauthState) throw new Error("State mismatch — restart the authorization flow");
+    const seed = `${conn.connectorId}|${conn.mailboxId}|${tenantId}|oauth_tokens`;
+    const accessToken = `oat_${hashStr(seed + "|at").toString(36)}${hashStr(seed + "|at2").toString(36).slice(0, 6)}`;
+    const refreshToken = `rft_${hashStr(seed + "|rt").toString(36)}${hashStr(seed + "|rt2").toString(36).slice(0, 6)}`;
+    const ttlMin = 50 + (hashStr(seed + "|ttl") % 50);
+    const tokenExpiresAt = new Date(Date.now() + ttlMin * 60 * 1000).toISOString();
+    const updated = DataStore.mem().update("mail_connections", (x: any) => x._id === connectionId, {
+      status: "connected",
+      error: null,
+      accessToken,
+      refreshToken,
+      oauthState: null,
+      oauthCompletedAt: new Date().toISOString(),
+      oauthScope: conn.scopes.join(" "),
+      tokenExpiresAt,
+    });
+    logEntry(tenantId, "oauth_completed", `${c.name} OAuth completed — ${conn.scopes.length} scopes granted`, { connectionId });
+    return {
+      connectionId,
+      connectorId: c.id,
+      status: updated.status,
+      accessToken: `${accessToken.slice(0, 8)}…`,
+      scopes: conn.scopes,
+      tokenExpiresAt,
+      expiresInMinutes: ttlMin,
+      summary: `${c.name} authorized — ${conn.scopes.length} scopes granted, token expires in ${ttlMin} min`,
+    };
+  }
+
+  oauthRefresh(tenantId: string, connectionId: string) {
+    const conn = DataStore.mem().findOne("mail_connections", (c: any) => c._id === connectionId && c.tenantId === tenantId);
+    if (!conn) throw new Error(`Connection "${connectionId}" not found`);
+    if (conn.status === "disconnected") throw new Error(`Connection is disconnected — connect it first`);
+    if (!conn.refreshToken) throw new Error("No refresh token — re-authorize the connection");
+    const c = this.connector(conn.connectorId);
+    const seed = `${conn.connectorId}|${conn.mailboxId}|${tenantId}|oauth_tokens`;
+    const ttlMin = 60 + (hashStr(seed + "|ttl2") % 60);
+    const oldExpiry = conn.tokenExpiresAt ? new Date(conn.tokenExpiresAt).getTime() : 0;
+    const newExpiry = Math.max(Date.now() + ttlMin * 60 * 1000, oldExpiry);
+    const tokenExpiresAt = new Date(newExpiry).toISOString();
+    const updated = DataStore.mem().update("mail_connections", (x: any) => x._id === connectionId, {
+      status: "connected",
+      error: null,
+      tokenExpiresAt,
+      lastTokenRefreshAt: new Date().toISOString(),
+    });
+    logEntry(tenantId, "oauth_refreshed", `${c.name} access token refreshed via refresh token`, { connectionId });
+    return {
+      connectionId,
+      connectorId: c.id,
+      status: updated.status,
+      tokenExpiresAt,
+      expiresInMinutes: ttlMin,
+      summary: `${c.name} access token refreshed — expires in ${ttlMin} min`,
+    };
+  }
+
+  oauthRevoke(tenantId: string, connectionId: string) {
+    const conn = DataStore.mem().findOne("mail_connections", (c: any) => c._id === connectionId && c.tenantId === tenantId);
+    if (!conn) throw new Error(`Connection "${connectionId}" not found`);
+    const c = this.connector(conn.connectorId);
+    const updated = DataStore.mem().update("mail_connections", (x: any) => x._id === connectionId, {
+      status: "disconnected",
+      accessToken: null,
+      refreshToken: null,
+      oauthState: null,
+      oauthCompletedAt: null,
+      oauthScope: null,
+      tokenExpiresAt: null,
+      error: null,
+    });
+    logEntry(tenantId, "oauth_revoked", `${c.name} access revoked`, { connectionId });
+    return { connectionId, connectorId: c.id, status: updated.status, summary: `${c.name} access revoked — re-authorize to reconnect` };
+  }
+
+  oauthStatus(tenantId: string, connectionId: string) {
+    const conn = DataStore.mem().findOne("mail_connections", (c: any) => c._id === connectionId && c.tenantId === tenantId);
+    if (!conn) throw new Error(`Connection "${connectionId}" not found`);
+    const c = this.connector(conn.connectorId);
+    const authorized = !!(conn.accessToken || conn.oauthCompletedAt);
+    let expired = false;
+    let expiresInHours: number | null = null;
+    if (conn.tokenExpiresAt) {
+      expiresInHours = Math.max(0, Math.round((new Date(conn.tokenExpiresAt).getTime() - Date.now()) / 3600000));
+      expired = new Date(conn.tokenExpiresAt).getTime() < Date.now();
+    }
+    return {
+      connectionId,
+      connectorId: c.id,
+      connectorName: c.name,
+      status: conn.status,
+      authorized,
+      pendingAuth: !!conn.oauthState,
+      scopes: conn.scopes,
+      grantedScope: conn.oauthScope || null,
+      tokenExpiresAt: conn.tokenExpiresAt || null,
+      expired,
+      expiresInHours,
+      lastTokenRefreshAt: conn.lastTokenRefreshAt || null,
+      summary: authorized
+        ? expired
+          ? `${c.name} token EXPIRED — refresh or re-authorize`
+          : `${c.name} authorized — token valid ~${expiresInHours} h`
+        : conn.oauthState
+          ? `${c.name} awaiting authorization callback`
+          : `${c.name} not authorized`,
+    };
   }
 
   integrationLog(tenantId: string, connectorId?: string, limit = 50) {

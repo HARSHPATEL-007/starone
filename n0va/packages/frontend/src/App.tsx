@@ -36,6 +36,7 @@ const MailIntegrations = lazy(() => import("./pages/MailIntegrations"));
 const MailBilling = lazy(() => import("./pages/MailBilling"));
 const MailNotifications = lazy(() => import("./pages/MailNotifications"));
 const MailQuantum = lazy(() => import("./pages/MailQuantum"));
+const MailImport = lazy(() => import("./pages/MailImport"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -227,6 +228,7 @@ export default function App() {
                 <Route path="/mail/billing" element={<MailBilling />} />
                 <Route path="/mail/notifications" element={<MailNotifications />} />
                 <Route path="/mail/quantum" element={<MailQuantum />} />
+                <Route path="/mail/import" element={<MailImport />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

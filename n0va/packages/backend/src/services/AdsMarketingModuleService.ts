@@ -82,6 +82,7 @@ import { mailAbuse } from "./MailAbuseService";
 import { mailWebhook } from "./MailWebhookService";
 import { mailAgentRegistry } from "./MailAgentRegistryService";
 import { mailIntegration } from "./MailIntegrationService";
+import { mailMigration } from "./MailMigrationService";
 import { mailBilling } from "./MailBillingService";
 
 import { mailNotifications } from "./MailNotificationService";
@@ -4887,6 +4888,62 @@ export class AdsMarketingModuleService {
 
   mailIntegrationTriggerBridge(tenantId: string, bridgeId: string) {
     return mailIntegration.triggerBridge(tenantId, bridgeId);
+  }
+
+  mailIntegrationOauthStart(tenantId: string, connectionId: string) {
+    return mailIntegration.oauthStart(tenantId, connectionId);
+  }
+
+  mailIntegrationOauthCallback(tenantId: string, connectionId: string, input: any) {
+    return mailIntegration.oauthCallback(tenantId, connectionId, input);
+  }
+
+  mailIntegrationOauthRefresh(tenantId: string, connectionId: string) {
+    return mailIntegration.oauthRefresh(tenantId, connectionId);
+  }
+
+  mailIntegrationOauthRevoke(tenantId: string, connectionId: string) {
+    return mailIntegration.oauthRevoke(tenantId, connectionId);
+  }
+
+  mailIntegrationOauthStatus(tenantId: string, connectionId: string) {
+    return mailIntegration.oauthStatus(tenantId, connectionId);
+  }
+
+  mailMigrations(tenantId: string) {
+    return mailMigration.listMigrations(tenantId);
+  }
+
+  mailStartMigration(tenantId: string, input: any) {
+    return mailMigration.startMigration(tenantId, input);
+  }
+
+  mailMigrationStatus(tenantId: string, migrationId: string) {
+    return mailMigration.migrationStatus(tenantId, migrationId);
+  }
+
+  mailMigrationScan(tenantId: string, migrationId: string) {
+    return mailMigration.migrationScan(tenantId, migrationId);
+  }
+
+  mailMigrationPreview(tenantId: string, migrationId: string) {
+    return mailMigration.migrationPreview(tenantId, migrationId);
+  }
+
+  mailMigrationImport(tenantId: string, migrationId: string) {
+    return mailMigration.runMigration(tenantId, migrationId);
+  }
+
+  mailDeleteMigration(tenantId: string, migrationId: string) {
+    return mailMigration.deleteMigration(tenantId, migrationId);
+  }
+
+  mailMigrationSummary(tenantId: string) {
+    return mailMigration.migrationSummary(tenantId);
+  }
+
+  mailMigrationLog(tenantId: string, limit?: number) {
+    return mailMigration.migrationLog(tenantId, limit);
   }
 
   mailBillingPlans() {

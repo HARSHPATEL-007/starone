@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  Plug, RefreshCw, AlertTriangle, Plus, Trash2, Zap, CheckCircle2, Link2, RotateCw, Activity, Send, Unplug,
+  Plug, RefreshCw, AlertTriangle, Plus, Trash2, Zap, CheckCircle2, Link2, RotateCw, Activity, Send, Unplug, KeyRound, ExternalLink,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -25,6 +25,9 @@ const ACTION_LABELS: Record<string, string> = {
   upload_file: "Upload file",
   schedule_meeting: "Schedule meeting",
   create_task: "Create task",
+  share_link: "Share link",
+  update_crm_deal: "Update deal",
+  create_doc: "Create doc",
 };
 
 export default function MailIntegrations() {
@@ -37,6 +40,7 @@ export default function MailIntegrations() {
   const [busy, setBusy] = useState<string | null>(null);
   const [showConnect, setShowConnect] = useState<string | null>(null);
   const [showBridge, setShowBridge] = useState(false);
+  const [oauthFlow, setOauthFlow] = useState<{ connectionId: string; connectorName: string; authorizationUrl: string; state: string; scopes: string[] } | null>(null);
   const [connectForm, setConnectForm] = useState<{ mailboxId: string }>({ mailboxId: "" });
   const [bridgeForm, setBridgeForm] = useState<{ name: string; event: string; connectorId: string; action: string; target: string }>({
     name: "", event: "mail.received", connectorId: "slack", action: "post_to_chat", target: "",
@@ -98,6 +102,33 @@ export default function MailIntegrations() {
     setBusy(connectionId + "a" + action);
     const r = unwrap(await api.adsMarketingModule.mailIntegrationAction(connectionId, action, { title: "N0VA follow-up", text: "N0VA mail update" }).catch(() => null));
     if (r?.summary) addToast("info", r.summary); else addToast("error", "Action failed");
+    setBusy(null);
+    load();
+  }
+
+  async function startOauth(conn: any) {
+    setBusy(conn.connectionId + "oauth");
+    const r = unwrap(await api.adsMarketingModule.mailIntegrationOauthStart(conn.connectionId).catch(() => null));
+    if (r?.authorizationUrl) {
+      setOauthFlow({ connectionId: conn.connectionId, connectorName: conn.connectorName, authorizationUrl: r.authorizationUrl, state: r.state, scopes: r.scopes || [] });
+      addToast("info", r.summary);
+    } else {
+      addToast("error", "OAuth flow failed to start");
+    }
+    setBusy(null);
+    load();
+  }
+
+  async function completeOauth() {
+    if (!oauthFlow) return;
+    setBusy(oauthFlow.connectionId + "callback");
+    const r = unwrap(await api.adsMarketingModule.mailIntegrationOauthCallback(oauthFlow.connectionId, { code: "code_n0va_authorized", state: oauthFlow.state }).catch(() => null));
+    if (r?.status === "connected") {
+      addToast("success", r.summary);
+      setOauthFlow(null);
+    } else {
+      addToast("error", "Authorization failed — restart the flow");
+    }
     setBusy(null);
     load();
   }
@@ -244,9 +275,23 @@ export default function MailIntegrations() {
                               {conn.syncCount || 0} sync(s) · {conn.itemsSynced || 0} items · {conn.actionsRun || 0} actions
                               {conn.lastSyncAt ? ` · ${new Date(conn.lastSyncAt).toLocaleTimeString()}` : ""}
                             </p>
+                            <p className="text-[9px] mt-1 flex items-center gap-1.5 flex-wrap">
+                              <span className={`px-1.5 py-0.5 rounded border font-mono ${conn.oauthAuthorized ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : conn.oauthState ? "bg-amber-500/10 text-amber-400 border-amber-500/30" : "bg-gray-800 text-gray-500 border-gray-700"}`}>
+                                {conn.oauthAuthorized ? "OAuth ✓" : conn.oauthState ? "OAuth pending" : "OAuth —"}
+                              </span>
+                              {conn.tokenExpiresAt && conn.oauthAuthorized && (
+                                <span className="text-gray-500">
+                                  token {new Date(conn.tokenExpiresAt).toLocaleTimeString()}
+                                </span>
+                              )}
+                              {conn.oauthScope && <span className="text-gray-600 font-mono truncate max-w-[140px]">{conn.oauthScope}</span>}
+                            </p>
                             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                               {conn.status === "connected" && (
                                 <>
+                                  <button className="btn-secondary p-1.5" title="OAuth 2.0 flow" onClick={() => startOauth(conn)} disabled={busy === conn.connectionId + "oauth"}>
+                                    <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                                  </button>
                                   <button className="btn-secondary p-1.5" title="Sync now" onClick={() => act(conn.connectionId, "sync")} disabled={busy === conn.connectionId + "sync"}>
                                     <RotateCw className="w-3.5 h-3.5 text-sky-400" />
                                   </button>
@@ -413,6 +458,29 @@ export default function MailIntegrations() {
               <button className="btn-secondary text-xs" onClick={() => setShowBridge(false)}>Cancel</button>
               <button className="btn-primary text-xs" onClick={createBridge} disabled={busy === "bridge" || !bridgeForm.name.trim()}>
                 {busy === "bridge" ? "Creating…" : "Create bridge"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {oauthFlow && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" onClick={() => setOauthFlow(null)}>
+          <div className="card w-full max-w-md !p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-white mb-1 flex items-center gap-2"><KeyRound className="w-4 h-4 text-emerald-400" /> Authorize {oauthFlow.connectorName}</h3>
+            <p className="text-[11px] text-gray-500 mb-3">Step 1 — open the provider URL, Step 2 — complete the simulated callback.</p>
+            <label className="block text-[11px] text-gray-400 mb-1">Authorization URL</label>
+            <div className="input font-mono text-[10px] text-n0va-300 break-all mb-2 select-all whitespace-normal">{oauthFlow.authorizationUrl}</div>
+            <label className="block text-[11px] text-gray-400 mb-1">Scopes</label>
+            <div className="flex gap-1.5 flex-wrap mb-4">
+              {(oauthFlow.scopes || []).map((s: string) => (
+                <span key={s} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-n0va-500/10 text-n0va-300 border border-n0va-500/20">{s}</span>
+              ))}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button className="btn-secondary text-xs" onClick={() => setOauthFlow(null)}>Cancel</button>
+              <button className="btn-primary text-xs" onClick={completeOauth} disabled={busy === oauthFlow.connectionId + "callback"}>
+                {busy === oauthFlow.connectionId + "callback" ? "Completing…" : "Complete authorization"}
               </button>
             </div>
           </div>

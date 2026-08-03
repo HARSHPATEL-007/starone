@@ -92,6 +92,7 @@ import {
   SendHorizonal,
   CalendarClock,
   MailOpen,
+  Import,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -130,6 +131,7 @@ const navItems = [
     { to: "/mail/billing", icon: CreditCard, label: "Mail Billing" },
     { to: "/mail/notifications", icon: Bell, label: "Mail Alerts" },
     { to: "/mail/quantum", icon: Lock, label: "Mail Quantum" },
+    { to: "/mail/import", icon: Import, label: "Mail Import" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

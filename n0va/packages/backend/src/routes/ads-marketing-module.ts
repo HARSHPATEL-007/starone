@@ -2989,4 +2989,60 @@ router.get("/mail/collab2/mentions-summary", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailCollab2MentionsSummary(req.user!.tenantId));
 }));
 
+router.post("/mail/integrations/:connectionId/oauth/start", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationOauthStart(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.post("/mail/integrations/:connectionId/oauth/callback", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationOauthCallback(req.user!.tenantId, req.params.connectionId, req.body));
+}));
+
+router.post("/mail/integrations/:connectionId/oauth/refresh", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationOauthRefresh(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.post("/mail/integrations/:connectionId/oauth/revoke", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationOauthRevoke(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.get("/mail/integrations/:connectionId/oauth/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationOauthStatus(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.get("/mail/migrations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrations(req.user!.tenantId));
+}));
+
+router.post("/mail/migrations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailStartMigration(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/migrations/summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrationSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/migrations/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrationLog(req.user!.tenantId, typeof req.query.limit === "string" ? Number(req.query.limit) : undefined));
+}));
+
+router.get("/mail/migrations/:migrationId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrationStatus(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.post("/mail/migrations/:migrationId/scan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrationScan(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.post("/mail/migrations/:migrationId/preview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrationPreview(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.post("/mail/migrations/:migrationId/import", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMigrationImport(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.delete("/mail/migrations/:migrationId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteMigration(req.user!.tenantId, req.params.migrationId));
+}));
+
 export default router;

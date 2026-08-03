@@ -2849,6 +2849,31 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/integrations/bridges/${bridgeId}`, { method: "DELETE" }),
     mailIntegrationTriggerBridge: (bridgeId: string) =>
       request<any>(`/ads-marketing-module/mail/integrations/bridges/${bridgeId}/trigger`, { method: "POST" }),
+    // ---- Round 33: OAuth 2.0 (spec §9) + migrations ----
+    mailIntegrationOauthStart: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/oauth/start`, { method: "POST" }),
+    mailIntegrationOauthCallback: (connectionId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/oauth/callback`, { method: "POST", body: JSON.stringify(input) }),
+    mailIntegrationOauthRefresh: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/oauth/refresh`, { method: "POST" }),
+    mailIntegrationOauthRevoke: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/oauth/revoke`, { method: "POST" }),
+    mailIntegrationOauthStatus: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/oauth/status`),
+    mailMigrations: () => request<any>("/ads-marketing-module/mail/migrations"),
+    mailStartMigration: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/migrations", { method: "POST", body: JSON.stringify(input) }),
+    mailMigrationStatus: (migrationId: string) => request<any>(`/ads-marketing-module/mail/migrations/${migrationId}`),
+    mailMigrationScan: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/mail/migrations/${migrationId}/scan`, { method: "POST" }),
+    mailMigrationPreview: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/mail/migrations/${migrationId}/preview`, { method: "POST" }),
+    mailMigrationImport: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/mail/migrations/${migrationId}/import`, { method: "POST" }),
+    mailDeleteMigration: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/mail/migrations/${migrationId}`, { method: "DELETE" }),
+    mailMigrationSummary: () => request<any>("/ads-marketing-module/mail/migrations/summary"),
+    mailMigrationLog: () => request<any>("/ads-marketing-module/mail/migrations/log"),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),
