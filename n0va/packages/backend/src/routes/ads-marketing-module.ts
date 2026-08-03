@@ -2804,4 +2804,189 @@ router.delete("/mail/notifications/:notificationId", asyncHandler(async (req, re
   sendSuccess(res, adsMarketingModule.mailDeleteNotification(req.user!.tenantId, req.params.notificationId));
 }));
 
+// ---- Round 32: quantum security ----
+router.get("/mail/quantum/algorithms", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumAlgorithms());
+}));
+
+router.get("/mail/quantum/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumOverview(req.user!.tenantId));
+}));
+
+router.get("/mail/quantum/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/quantum/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumLog(req.user!.tenantId));
+}));
+
+router.get("/mail/quantum/chain", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumChain(req.user!.tenantId));
+}));
+
+router.get("/mail/quantum/keys", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumKeys(req.user!.tenantId));
+}));
+
+router.post("/mail/quantum/keys", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumCreateKey(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/quantum/keys/:keyId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumKey(req.user!.tenantId, req.params.keyId));
+}));
+
+router.post("/mail/quantum/keys/:keyId/rotate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumRotateKey(req.user!.tenantId, req.params.keyId));
+}));
+
+router.post("/mail/quantum/keys/:keyId/revoke", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumRevokeKey(req.user!.tenantId, req.params.keyId));
+}));
+
+router.get("/mail/quantum/qkd-channels", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumQkdChannels(req.user!.tenantId));
+}));
+
+router.post("/mail/quantum/qkd-channels", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumCreateQkd(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/quantum/qkd-channels/:channelId/simulate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumSimulateQkd(req.user!.tenantId, req.params.channelId));
+}));
+
+router.get("/mail/quantum/qkd-exchanges", asyncHandler(async (req, res) => {
+  const { channelId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailQuantumQkdExchanges(req.user!.tenantId, typeof channelId === "string" ? channelId : undefined));
+}));
+
+router.post("/mail/quantum/encrypt", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumEncrypt(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/quantum/messages/:messageId/decrypt", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumDecrypt(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/quantum/certificates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumCertificates(req.user!.tenantId));
+}));
+
+router.post("/mail/quantum/certificates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumIssueCert(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/quantum/certificates/:certId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumCert(req.user!.tenantId, req.params.certId));
+}));
+
+router.post("/mail/quantum/certificates/:certId/revoke", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumRevokeCert(req.user!.tenantId, req.params.certId));
+}));
+
+router.post("/mail/quantum/certificates/:certId/renew", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumRenewCert(req.user!.tenantId, req.params.certId));
+}));
+
+// ---- Round 32: collaboration v2 ----
+router.get("/mail/collab2/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2Dashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/collab2/approvals", asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  sendSuccess(res, adsMarketingModule.mailCollab2Approvals(req.user!.tenantId, typeof status === "string" ? status : undefined));
+}));
+
+router.post("/mail/collab2/approvals", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2CreateApproval(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/collab2/approvals/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2ApprovalDashboard(req.user!.tenantId));
+}));
+
+router.post("/mail/collab2/approvals/:approvalId/approve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2Approve(req.user!.tenantId, req.params.approvalId, req.body));
+}));
+
+router.post("/mail/collab2/approvals/:approvalId/reject", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2Reject(req.user!.tenantId, req.params.approvalId, req.body));
+}));
+
+router.post("/mail/collab2/approvals/:approvalId/withdraw", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2Withdraw(req.user!.tenantId, req.params.approvalId));
+}));
+
+router.get("/mail/collab2/delegations", asyncHandler(async (req, res) => {
+  const { mailboxId, grantee } = req.query;
+  sendSuccess(res, adsMarketingModule.mailCollab2Delegations(req.user!.tenantId, {
+    mailboxId: typeof mailboxId === "string" ? mailboxId : undefined,
+    grantee: typeof grantee === "string" ? grantee : undefined,
+  }));
+}));
+
+router.post("/mail/collab2/delegations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2Delegate(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/collab2/delegations/:delegationId/accept", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2AcceptDelegation(req.user!.tenantId, req.params.delegationId));
+}));
+
+router.post("/mail/collab2/delegations/:delegationId/revoke", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2RevokeDelegation(req.user!.tenantId, req.params.delegationId));
+}));
+
+router.get("/mail/collab2/delegation-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2DelegationSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/collab2/roles", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2Roles(req.user!.tenantId));
+}));
+
+router.post("/mail/collab2/roles", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2AssignRole(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/collab2/roles/matrix", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2RoleMatrix());
+}));
+
+router.delete("/mail/collab2/roles/:roleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2RemoveRole(req.user!.tenantId, req.params.roleId));
+}));
+
+router.get("/mail/collab2/team-dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2TeamDashboard(req.user!.tenantId));
+}));
+
+router.post("/mail/collab2/mentions/detect", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2MentionDetect(req.user!.tenantId, req.body && req.body.text));
+}));
+
+router.get("/mail/collab2/mentions", asyncHandler(async (req, res) => {
+  const { unreadOnly, contextType, limit } = req.query;
+  sendSuccess(res, adsMarketingModule.mailCollab2Mentions(req.user!.tenantId, {
+    unreadOnly: unreadOnly === "true",
+    contextType: typeof contextType === "string" ? contextType : undefined,
+    limit: typeof limit === "string" ? Number(limit) : undefined,
+  }));
+}));
+
+router.post("/mail/collab2/mentions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2CreateMention(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/collab2/mentions/:mentionId/read", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2MarkMentionRead(req.user!.tenantId, req.params.mentionId));
+}));
+
+router.get("/mail/collab2/mentions-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCollab2MentionsSummary(req.user!.tenantId));
+}));
+
 export default router;

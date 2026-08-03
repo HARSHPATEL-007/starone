@@ -2918,6 +2918,92 @@ export const api = {
     mailUpdateNotificationSettings: (patch: Record<string, any>) =>
       request<any>("/ads-marketing-module/mail/notifications/settings", { method: "PUT", body: JSON.stringify(patch) }),
     mailNotificationCenter: () => request<any>("/ads-marketing-module/mail/notifications/center"),
+    // ---- Round 32: quantum security ----
+    mailQuantumAlgorithms: () => request<any>("/ads-marketing-module/mail/quantum/algorithms"),
+    mailQuantumOverview: () => request<any>("/ads-marketing-module/mail/quantum/overview"),
+    mailQuantumDashboard: () => request<any>("/ads-marketing-module/mail/quantum/dashboard"),
+    mailQuantumLog: () => request<any>("/ads-marketing-module/mail/quantum/log"),
+    mailQuantumChain: () => request<any>("/ads-marketing-module/mail/quantum/chain"),
+    mailQuantumKeys: () => request<any>("/ads-marketing-module/mail/quantum/keys"),
+    mailQuantumCreateKey: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/quantum/keys", { method: "POST", body: JSON.stringify(input) }),
+    mailQuantumKey: (keyId: string) => request<any>(`/ads-marketing-module/mail/quantum/keys/${keyId}`),
+    mailQuantumRotateKey: (keyId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/keys/${keyId}/rotate`, { method: "POST" }),
+    mailQuantumRevokeKey: (keyId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/keys/${keyId}/revoke`, { method: "POST" }),
+    mailQuantumQkdChannels: () => request<any>("/ads-marketing-module/mail/quantum/qkd-channels"),
+    mailQuantumCreateQkd: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/quantum/qkd-channels", { method: "POST", body: JSON.stringify(input) }),
+    mailQuantumSimulateQkd: (channelId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/qkd-channels/${channelId}/simulate`, { method: "POST" }),
+    mailQuantumQkdExchanges: (channelId?: string) => {
+      const qs = channelId ? `?channelId=${encodeURIComponent(channelId)}` : "";
+      return request<any>(`/ads-marketing-module/mail/quantum/qkd-exchanges${qs}`);
+    },
+    mailQuantumEncrypt: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/quantum/encrypt", { method: "POST", body: JSON.stringify(input) }),
+    mailQuantumDecrypt: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/messages/${messageId}/decrypt`, { method: "POST" }),
+    mailQuantumCertificates: () => request<any>("/ads-marketing-module/mail/quantum/certificates"),
+    mailQuantumIssueCert: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/quantum/certificates", { method: "POST", body: JSON.stringify(input) }),
+    mailQuantumCert: (certId: string) => request<any>(`/ads-marketing-module/mail/quantum/certificates/${certId}`),
+    mailQuantumRevokeCert: (certId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/certificates/${certId}/revoke`, { method: "POST" }),
+    mailQuantumRenewCert: (certId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/certificates/${certId}/renew`, { method: "POST" }),
+    // ---- Round 32: collaboration v2 ----
+    mailCollab2Dashboard: () => request<any>("/ads-marketing-module/mail/collab2/dashboard"),
+    mailCollab2Approvals: (status?: string) => {
+      const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+      return request<any>(`/ads-marketing-module/mail/collab2/approvals${qs}`);
+    },
+    mailCollab2CreateApproval: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/collab2/approvals", { method: "POST", body: JSON.stringify(input) }),
+    mailCollab2ApprovalDashboard: () => request<any>("/ads-marketing-module/mail/collab2/approvals/dashboard"),
+    mailCollab2Approve: (approvalId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/collab2/approvals/${approvalId}/approve`, { method: "POST", body: JSON.stringify(input) }),
+    mailCollab2Reject: (approvalId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/collab2/approvals/${approvalId}/reject`, { method: "POST", body: JSON.stringify(input) }),
+    mailCollab2Withdraw: (approvalId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab2/approvals/${approvalId}/withdraw`, { method: "POST" }),
+    mailCollab2Delegations: (opts?: Record<string, any>) => {
+      const params = new URLSearchParams();
+      if (opts?.mailboxId) params.set("mailboxId", opts.mailboxId);
+      if (opts?.grantee) params.set("grantee", opts.grantee);
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/collab2/delegations${qs ? `?${qs}` : ""}`);
+    },
+    mailCollab2Delegate: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/collab2/delegations", { method: "POST", body: JSON.stringify(input) }),
+    mailCollab2AcceptDelegation: (delegationId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab2/delegations/${delegationId}/accept`, { method: "POST" }),
+    mailCollab2RevokeDelegation: (delegationId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab2/delegations/${delegationId}/revoke`, { method: "POST" }),
+    mailCollab2DelegationSummary: () => request<any>("/ads-marketing-module/mail/collab2/delegation-summary"),
+    mailCollab2Roles: () => request<any>("/ads-marketing-module/mail/collab2/roles"),
+    mailCollab2AssignRole: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/collab2/roles", { method: "POST", body: JSON.stringify(input) }),
+    mailCollab2RemoveRole: (roleId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab2/roles/${roleId}`, { method: "DELETE" }),
+    mailCollab2RoleMatrix: () => request<any>("/ads-marketing-module/mail/collab2/roles/matrix"),
+    mailCollab2TeamDashboard: () => request<any>("/ads-marketing-module/mail/collab2/team-dashboard"),
+    mailCollab2MentionDetect: (text: string) =>
+      request<any>("/ads-marketing-module/mail/collab2/mentions/detect", { method: "POST", body: JSON.stringify({ text }) }),
+    mailCollab2Mentions: (opts?: Record<string, any>) => {
+      const params = new URLSearchParams();
+      if (opts?.unreadOnly) params.set("unreadOnly", "true");
+      if (opts?.contextType) params.set("contextType", opts.contextType);
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/collab2/mentions${qs ? `?${qs}` : ""}`);
+    },
+    mailCollab2CreateMention: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/collab2/mentions", { method: "POST", body: JSON.stringify(input) }),
+    mailCollab2MarkMentionRead: (mentionId: string) =>
+      request<any>(`/ads-marketing-module/mail/collab2/mentions/${mentionId}/read`, { method: "POST" }),
+    mailCollab2MentionsSummary: () => request<any>("/ads-marketing-module/mail/collab2/mentions-summary"),
   },
 
   agentSwarm: {

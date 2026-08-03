@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   MessagesSquare, RefreshCw, Plus, X, Send, Trash2, Users, Smile, Eye, Pencil, FilePen,
+  CheckCircle2, XCircle, ShieldCheck, UserCog, AtSign, DoorOpen, KeyRound,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -9,6 +10,9 @@ import { SkeletonCard } from "../components/Skeleton";
 const unwrap = (r: any) => (r && r.data !== undefined ? r.data : r);
 
 const emptyDraft = { subject: "", body: "", collaborators: "", dueAt: "" };
+const emptyApproval = { subject: "", approvers: "", requiredCount: "1", reason: "" };
+const emptyDelegate = { mailboxId: "", granteeEmail: "", permission: "read", reason: "" };
+const emptyRole = { member: "", role: "editor" };
 
 export default function MailCollaboration() {
   const { addToast } = useToast();
@@ -25,14 +29,36 @@ export default function MailCollaboration() {
   const [mailboxes, setMailboxes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [collab2, setCollab2] = useState<any>(null);
+  const [approvals, setApprovals] = useState<any[]>([]);
+  const [delegations, setDelegations] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [roleMatrix, setRoleMatrix] = useState<any[]>([]);
+  const [mentions, setMentions] = useState<any[]>([]);
+  const [mentionsSum, setMentionsSum] = useState<any>(null);
+  const [showApproval, setShowApproval] = useState(false);
+  const [approvalForm, setApprovalForm] = useState(emptyApproval);
+  const [showDelegate, setShowDelegate] = useState(false);
+  const [delegateForm, setDelegateForm] = useState(emptyDelegate);
+  const [showRole, setShowRole] = useState(false);
+  const [roleForm, setRoleForm] = useState(emptyRole);
+  const [mentionText, setMentionText] = useState("");
+  const [mentionSel, setMentionSel] = useState<any>(null);
 
   const loadAll = useCallback(async () => {
-    const [s, p, d, m, mb] = await Promise.all([
+    const [s, p, d, m, mb, c2, ap, dl, rl, rm, mn, ms] = await Promise.all([
       api.adsMarketingModule.mailCollaborationSummary().catch(() => null),
       api.adsMarketingModule.mailPresence().catch(() => null),
       api.adsMarketingModule.mailSharedDrafts({}).catch(() => null),
       api.adsMarketingModule.mailMessages({ folder: "inbox", limit: 10 }).catch(() => null),
       api.adsMarketingModule.mailMailboxes().catch(() => null),
+      api.adsMarketingModule.mailCollab2Dashboard().catch(() => null),
+      api.adsMarketingModule.mailCollab2Approvals().catch(() => null),
+      api.adsMarketingModule.mailCollab2Delegations({}).catch(() => null),
+      api.adsMarketingModule.mailCollab2Roles().catch(() => null),
+      api.adsMarketingModule.mailCollab2RoleMatrix().catch(() => null),
+      api.adsMarketingModule.mailCollab2Mentions({ limit: 10 }).catch(() => null),
+      api.adsMarketingModule.mailCollab2MentionsSummary().catch(() => null),
     ]);
     setSummary(unwrap(s));
     setPresence(unwrap(p));
@@ -42,6 +68,18 @@ export default function MailCollaboration() {
     setThreads(Array.isArray(msgs) ? msgs : msgs?.messages || msgs?.data || []);
     const mbs = unwrap(mb);
     setMailboxes(Array.isArray(mbs) ? mbs : mbs?.data || []);
+    setCollab2(unwrap(c2));
+    const apR = unwrap(ap);
+    setApprovals(Array.isArray(apR) ? apR : apR?.approvals || []);
+    const dlR = unwrap(dl);
+    setDelegations(Array.isArray(dlR) ? dlR : dlR?.delegations || []);
+    const rlR = unwrap(rl);
+    setRoles(Array.isArray(rlR) ? rlR : rlR?.roles || []);
+    const rmR = unwrap(rm);
+    setRoleMatrix(Array.isArray(rmR) ? rmR : rmR?.roles || []);
+    const mnR = unwrap(mn);
+    setMentions(Array.isArray(mnR) ? mnR : mnR?.mentions || []);
+    setMentionsSum(unwrap(ms));
     setLoading(false);
   }, []);
 
@@ -145,6 +183,129 @@ export default function MailCollaboration() {
       await loadAll();
     } catch (e: any) {
       addToast("error", "Delete failed", e?.message);
+    }
+  }
+
+  async function createApproval() {
+    const approvers = approvalForm.approvers.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    if (!approvalForm.subject.trim() || approvers.length === 0) {
+      addToast("warning", "Missing fields", "Subject and at least one approver are required.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailCollab2CreateApproval({
+        subject: approvalForm.subject.trim(),
+        approvers,
+        requiredCount: Number(approvalForm.requiredCount) || 1,
+        reason: approvalForm.reason || undefined,
+      }));
+      addToast("success", "Approval created", r?.summary || "");
+      setShowApproval(false);
+      setApprovalForm(emptyApproval);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Create failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function approvalAction(id: string, action: "approve" | "reject" | "withdraw") {
+    try {
+      let r: any;
+      if (action === "approve") r = unwrap(await api.adsMarketingModule.mailCollab2Approve(id, { email: "user_001@n0va.io" }));
+      else if (action === "reject") r = unwrap(await api.adsMarketingModule.mailCollab2Reject(id, { email: "user_001@n0va.io" }));
+      else r = unwrap(await api.adsMarketingModule.mailCollab2Withdraw(id));
+      addToast("success", "Approval updated", r?.summary || "");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Action failed", e?.message);
+    }
+  }
+
+  async function createDelegate() {
+    if (!delegateForm.mailboxId || !delegateForm.granteeEmail.trim()) {
+      addToast("warning", "Missing fields", "Mailbox and grantee email are required.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailCollab2Delegate({
+        mailboxId: delegateForm.mailboxId,
+        granteeEmail: delegateForm.granteeEmail.trim(),
+        permission: delegateForm.permission,
+        reason: delegateForm.reason || undefined,
+      }));
+      addToast("success", "Delegation requested", r?.summary || "");
+      setShowDelegate(false);
+      setDelegateForm(emptyDelegate);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Delegate failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function delegationAction(id: string, action: "accept" | "revoke") {
+    try {
+      const r = unwrap(await api.adsMarketingModule[action === "accept" ? "mailCollab2AcceptDelegation" : "mailCollab2RevokeDelegation"](id));
+      addToast("success", "Delegation updated", r?.summary || "");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Action failed", e?.message);
+    }
+  }
+
+  async function assignRole() {
+    if (!roleForm.member.trim()) {
+      addToast("warning", "Missing member", "Member email is required.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailCollab2AssignRole({ member: roleForm.member.trim(), role: roleForm.role }));
+      addToast("success", "Role assigned", r?.summary || "");
+      setShowRole(false);
+      setRoleForm(emptyRole);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Assign failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeRole(id: string) {
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailCollab2RemoveRole(id));
+      addToast("success", "Role removed", r?.summary || "");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Remove failed", e?.message);
+    }
+  }
+
+  async function sendMention() {
+    if (!mentionText.trim()) return;
+    try {
+      const ctx = mentionSel || { contextType: "comment", contextId: "thread_manual" };
+      const r = unwrap(await api.adsMarketingModule.mailCollab2CreateMention({ text: mentionText.trim(), contextType: ctx.contextType, contextId: ctx.contextId, author: "user_001" }));
+      addToast("success", "Mention sent", r?.summary || "");
+      setMentionText("");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Mention failed", e?.message);
+    }
+  }
+
+  async function markMentionRead(id: string) {
+    try {
+      await api.adsMarketingModule.mailCollab2MarkMentionRead(id);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Mark failed", e?.message);
     }
   }
 
@@ -289,6 +450,143 @@ export default function MailCollaboration() {
               {drafts.length === 0 && <p className="text-xs text-gray-600 col-span-full">No shared drafts — create one to collaborate on a message.</p>}
             </div>
           </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="card p-4">
+              <p className="text-2xl font-bold text-white">{collab2?.approvals?.pending || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Approvals pending</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-2xl font-bold text-white">{collab2?.delegation?.active || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Active delegations</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-2xl font-bold text-white">{collab2?.team?.members || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Team members</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-2xl font-bold text-white">{collab2?.mentions?.unread || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Unread mentions</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-n0va-400" /> Approval workflows</h3>
+                <button className="btn-secondary text-xs flex items-center gap-1" onClick={() => { setApprovalForm(emptyApproval); setShowApproval(true); }}>
+                  <Plus className="w-3 h-3" /> New
+                </button>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] flex-wrap">
+                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">{collab2?.approvals?.pending || 0} pending</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">{collab2?.approvals?.approved || 0} approved</span>
+                <span className="px-2 py-0.5 rounded bg-red-500/10 text-red-400">{collab2?.approvals?.rejected || 0} rejected</span>
+                <span className="text-gray-500 ml-auto">{collab2?.approvals?.approvalRate || 0}% approval rate</span>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {approvals.map((a: any) => (
+                  <div key={a.approvalId} className="border border-gray-800 rounded-lg p-3 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${a.status === "approved" ? "bg-emerald-500/15 text-emerald-400" : a.status === "rejected" ? "bg-red-500/15 text-red-400" : a.status === "withdrawn" ? "bg-gray-500/10 text-gray-400" : "bg-amber-500/15 text-amber-400"}`}>{a.status}</span>
+                      <span className="text-sm font-medium text-white truncate">{a.subject}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500">{a.approvers?.filter((x: any) => x.status === "approved").length}/{a.requiredCount} required — {a.approvers?.map((x: any) => x.email).join(", ")}</p>
+                    {a.reason && <p className="text-[11px] text-gray-600">“{a.reason}”</p>}
+                    {a.status === "pending" && (
+                      <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
+                        <button className="btn-secondary text-[11px] flex items-center gap-1" onClick={() => approvalAction(a.approvalId, "approve")}><CheckCircle2 className="w-3 h-3" /> Approve</button>
+                        <button className="btn-secondary text-[11px] flex items-center gap-1" onClick={() => approvalAction(a.approvalId, "reject")}><XCircle className="w-3 h-3" /> Reject</button>
+                        <button className="text-gray-600 hover:text-white text-[11px] ml-auto" onClick={() => approvalAction(a.approvalId, "withdraw")}>Withdraw</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {approvals.length === 0 && <p className="text-xs text-gray-600">No approval requests yet.</p>}
+              </div>
+            </div>
+
+            <div className="card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><DoorOpen className="w-4 h-4 text-n0va-400" /> Inbox delegation</h3>
+                <button className="btn-secondary text-xs flex items-center gap-1" onClick={() => { setDelegateForm({ ...emptyDelegate, mailboxId: mailboxes[0]?.mailboxId || "" }); setShowDelegate(true); }}>
+                  <Plus className="w-3 h-3" /> Delegate
+                </button>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {delegations.map((d: any) => (
+                  <div key={d.delegationId} className="border border-gray-800 rounded-lg p-3 space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${d.status === "accepted" || d.status === "active" ? "bg-emerald-500/15 text-emerald-400" : d.status === "revoked" ? "bg-gray-500/10 text-gray-400" : "bg-amber-500/15 text-amber-400"}`}>{d.status}</span>
+                      <span className="text-white truncate">{d.grantee}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-n0va-500/15 text-n0va-300 ml-auto shrink-0">{d.permission}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 truncate">{d.mailboxName}</p>
+                    {(d.status === "pending" || d.status === "accepted" || d.status === "active") && (
+                      <div className="flex gap-1.5 pt-0.5">
+                        {d.status === "pending" && (
+                          <button className="btn-secondary text-[11px]" onClick={() => delegationAction(d.delegationId, "accept")}>Accept</button>
+                        )}
+                        <button className="text-gray-600 hover:text-red-400 text-[11px] ml-auto" onClick={() => delegationAction(d.delegationId, "revoke")}>Revoke</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {delegations.length === 0 && <p className="text-xs text-gray-600">No delegations — grant inbox access to teammates.</p>}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><UserCog className="w-4 h-4 text-n0va-400" /> Team roles</h3>
+                <button className="btn-secondary text-xs flex items-center gap-1" onClick={() => { setRoleForm(emptyRole); setShowRole(true); }}>
+                  <Plus className="w-3 h-3" /> Assign
+                </button>
+              </div>
+              <div className="space-y-2">
+                {roles.map((r: any) => (
+                  <div key={r.roleId} className="flex items-center gap-2 text-sm border border-gray-800 rounded-lg px-3 py-2">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-n0va-500/15 text-n0va-300 uppercase">{r.role}</span>
+                    <span className="text-white truncate">{r.member}</span>
+                    <button className="text-gray-600 hover:text-red-400 ml-auto p-1" onClick={() => removeRole(r.roleId)}><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                ))}
+                {roles.length === 0 && <p className="text-xs text-gray-600">No roles assigned yet.</p>}
+              </div>
+              <div className="pt-1">
+                <p className="text-[11px] text-gray-500 mb-1.5">Permission matrix</p>
+                <div className="flex flex-wrap gap-1">
+                  {roleMatrix.map((m: any) => (
+                    <span key={m.role} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{m.role} · {m.permissions?.length} perms</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-4 lg:col-span-2 space-y-3">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2"><AtSign className="w-4 h-4 text-n0va-400" /> Mentions {mentionsSum?.unread > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-n0va-500/20 text-n0va-300">{mentionsSum?.unread} unread</span>}</h3>
+              <div className="flex gap-2">
+                <input className="input flex-1" placeholder="Mention someone — @email or @contact name…" value={mentionText} onChange={(e) => setMentionText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") sendMention(); }} />
+                <button className="btn-primary" onClick={sendMention}><Send className="w-4 h-4" /></button>
+              </div>
+              <div className="space-y-2 max-h-56 overflow-y-auto">
+                {mentions.map((x: any) => (
+                  <div key={x.mentionId} className={`flex items-center gap-2 text-sm border rounded-lg px-3 py-2 ${x.read ? "border-gray-800 opacity-60" : "border-n0va-500/40 bg-n0va-500/5"}`}>
+                    <span className="w-2 h-2 rounded-full shrink-0 bg-emerald-400" />
+                    <span className="text-white truncate">{x.targetName}</span>
+                    <span className="text-[10px] text-gray-500 uppercase">{x.contextType}</span>
+                    <span className="text-[10px] text-gray-600 truncate ml-auto max-w-[140px]">{x.text?.slice(0, 40)}</span>
+                    {!x.read && (
+                      <button className="text-[11px] text-n0va-300 shrink-0" onClick={() => markMentionRead(x.mentionId)}>Mark read</button>
+                    )}
+                  </div>
+                ))}
+                {mentions.length === 0 && <p className="text-xs text-gray-600">No mentions yet — ping a teammate from a comment.</p>}
+              </div>
+            </div>
+          </div>
         </>
       )}
 
@@ -319,6 +617,112 @@ export default function MailCollaboration() {
               <div className="flex justify-end gap-2 pt-1">
                 <button className="btn-secondary text-sm" onClick={() => setShowDraft(false)}>Cancel</button>
                 <button className="btn-primary text-sm" disabled={busy} onClick={saveDraft}>Create draft</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showApproval && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 sticky top-0 bg-gray-900">
+              <h2 className="font-semibold text-white flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-n0va-400" /> New approval request</h2>
+              <button className="text-gray-500 hover:text-white" onClick={() => setShowApproval(false)}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Subject</label>
+                <input className="input" placeholder="Approve Q3 newsletter send" value={approvalForm.subject} onChange={(e) => setApprovalForm({ ...approvalForm, subject: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Approvers <span className="text-gray-600">(emails, comma separated)</span></label>
+                <input className="input" placeholder="bob@partner.com, alice@partner.com" value={approvalForm.approvers} onChange={(e) => setApprovalForm({ ...approvalForm, approvers: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Required approvals</label>
+                  <input type="number" min={1} className="input" value={approvalForm.requiredCount} onChange={(e) => setApprovalForm({ ...approvalForm, requiredCount: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Reason <span className="text-gray-600">(optional)</span></label>
+                  <input className="input" placeholder="Campaign send gate" value={approvalForm.reason} onChange={(e) => setApprovalForm({ ...approvalForm, reason: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button className="btn-secondary text-sm" onClick={() => setShowApproval(false)}>Cancel</button>
+                <button className="btn-primary text-sm" disabled={busy} onClick={createApproval}>Create request</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDelegate && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 sticky top-0 bg-gray-900">
+              <h2 className="font-semibold text-white flex items-center gap-2"><KeyRound className="w-4 h-4 text-n0va-400" /> Delegate inbox access</h2>
+              <button className="text-gray-500 hover:text-white" onClick={() => setShowDelegate(false)}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Mailbox</label>
+                <select className="select" value={delegateForm.mailboxId} onChange={(e) => setDelegateForm({ ...delegateForm, mailboxId: e.target.value })}>
+                  <option value="">Pick a mailbox…</option>
+                  {mailboxes.map((m: any) => <option key={m.mailboxId || m._id} value={m.mailboxId || m._id}>{m.name || m.email}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Grantee email</label>
+                <input className="input" placeholder="assistant@partner.com" value={delegateForm.granteeEmail} onChange={(e) => setDelegateForm({ ...delegateForm, granteeEmail: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Permission</label>
+                  <select className="select" value={delegateForm.permission} onChange={(e) => setDelegateForm({ ...delegateForm, permission: e.target.value })}>
+                    <option value="read">read</option>
+                    <option value="respond">respond</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Reason <span className="text-gray-600">(optional)</span></label>
+                  <input className="input" placeholder="Coverage" value={delegateForm.reason} onChange={(e) => setDelegateForm({ ...delegateForm, reason: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button className="btn-secondary text-sm" onClick={() => setShowDelegate(false)}>Cancel</button>
+                <button className="btn-primary text-sm" disabled={busy} onClick={createDelegate}>Request delegation</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRole && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl w-full sm:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 sticky top-0 bg-gray-900">
+              <h2 className="font-semibold text-white flex items-center gap-2"><UserCog className="w-4 h-4 text-n0va-400" /> Assign team role</h2>
+              <button className="text-gray-500 hover:text-white" onClick={() => setShowRole(false)}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Member email</label>
+                <input className="input" placeholder="john@partner.com" value={roleForm.member} onChange={(e) => setRoleForm({ ...roleForm, member: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Role</label>
+                <select className="select" value={roleForm.role} onChange={(e) => setRoleForm({ ...roleForm, role: e.target.value })}>
+                  <option value="owner">owner</option>
+                  <option value="admin">admin</option>
+                  <option value="editor">editor</option>
+                  <option value="viewer">viewer</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button className="btn-secondary text-sm" onClick={() => setShowRole(false)}>Cancel</button>
+                <button className="btn-primary text-sm" disabled={busy} onClick={assignRole}>Assign role</button>
               </div>
             </div>
           </div>

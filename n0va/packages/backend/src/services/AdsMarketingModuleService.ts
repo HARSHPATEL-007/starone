@@ -83,8 +83,12 @@ import { mailWebhook } from "./MailWebhookService";
 import { mailAgentRegistry } from "./MailAgentRegistryService";
 import { mailIntegration } from "./MailIntegrationService";
 import { mailBilling } from "./MailBillingService";
+
 import { mailNotifications } from "./MailNotificationService";
 
+import { mailQuantum } from "./MailQuantumService";
+
+import { mailCollab2 } from "./MailCollabV2Service";
 const campaignSummaryService = new CampaignSummaryService();
 
 interface ModuleHealthCheck {
@@ -5043,6 +5047,180 @@ export class AdsMarketingModuleService {
 
   mailNotificationCenter(tenantId: string) {
     return mailNotifications.notificationCenter(tenantId);
+  }
+
+  // ---- Round 32: quantum security ----
+  mailQuantumAlgorithms() {
+    return mailQuantum.algorithmCatalog();
+  }
+
+  mailQuantumKeys(tenantId: string) {
+    return mailQuantum.listKeys(tenantId);
+  }
+
+  mailQuantumCreateKey(tenantId: string, input: any) {
+    return mailQuantum.createKeyPair(tenantId, input);
+  }
+
+  mailQuantumKey(tenantId: string, keyId: string) {
+    return mailQuantum.getKey(tenantId, keyId);
+  }
+
+  mailQuantumRotateKey(tenantId: string, keyId: string) {
+    return mailQuantum.rotateKey(tenantId, keyId);
+  }
+
+  mailQuantumRevokeKey(tenantId: string, keyId: string) {
+    return mailQuantum.revokeKey(tenantId, keyId);
+  }
+
+  mailQuantumQkdChannels(tenantId: string) {
+    return mailQuantum.qkdChannels(tenantId);
+  }
+
+  mailQuantumCreateQkd(tenantId: string, input: any) {
+    return mailQuantum.createQkdChannel(tenantId, input);
+  }
+
+  mailQuantumSimulateQkd(tenantId: string, channelId: string) {
+    return mailQuantum.simulateQkdExchange(tenantId, channelId);
+  }
+
+  mailQuantumQkdExchanges(tenantId: string, channelId?: string) {
+    return mailQuantum.qkdExchanges(tenantId, channelId);
+  }
+
+  mailQuantumEncrypt(tenantId: string, input: any) {
+    return mailQuantum.encryptMessage(tenantId, input);
+  }
+
+  mailQuantumDecrypt(tenantId: string, messageId: string) {
+    return mailQuantum.decryptMessage(tenantId, messageId);
+  }
+
+  mailQuantumCertificates(tenantId: string) {
+    return mailQuantum.listCertificates(tenantId);
+  }
+
+  mailQuantumIssueCert(tenantId: string, input: any) {
+    return mailQuantum.issueCertificate(tenantId, input);
+  }
+
+  mailQuantumCert(tenantId: string, certId: string) {
+    return mailQuantum.getCertificate(tenantId, certId);
+  }
+
+  mailQuantumRevokeCert(tenantId: string, certId: string) {
+    return mailQuantum.revokeCertificate(tenantId, certId);
+  }
+
+  mailQuantumRenewCert(tenantId: string, certId: string) {
+    return mailQuantum.renewCertificate(tenantId, certId);
+  }
+
+  mailQuantumChain(tenantId: string) {
+    return mailQuantum.certificateChain(tenantId);
+  }
+
+  mailQuantumOverview(tenantId: string) {
+    return mailQuantum.quantumOverview(tenantId);
+  }
+
+  mailQuantumDashboard(tenantId: string) {
+    return mailQuantum.quantumDashboard(tenantId);
+  }
+
+  mailQuantumLog(tenantId: string) {
+    return mailQuantum.quantumLog(tenantId);
+  }
+
+  // ---- Round 32: collaboration v2 ----
+  mailCollab2Approvals(tenantId: string, status?: string) {
+    return mailCollab2.listApprovals(tenantId, status);
+  }
+
+  mailCollab2CreateApproval(tenantId: string, input: any) {
+    return mailCollab2.createApproval(tenantId, input);
+  }
+
+  mailCollab2Approve(tenantId: string, approvalId: string, input: any) {
+    return mailCollab2.approveApproval(tenantId, approvalId, input);
+  }
+
+  mailCollab2Reject(tenantId: string, approvalId: string, input: any) {
+    return mailCollab2.rejectApproval(tenantId, approvalId, input);
+  }
+
+  mailCollab2Withdraw(tenantId: string, approvalId: string) {
+    return mailCollab2.withdrawApproval(tenantId, approvalId);
+  }
+
+  mailCollab2ApprovalDashboard(tenantId: string) {
+    return mailCollab2.approvalDashboard(tenantId);
+  }
+
+  mailCollab2Delegations(tenantId: string, opts: any) {
+    return mailCollab2.listDelegations(tenantId, opts);
+  }
+
+  mailCollab2Delegate(tenantId: string, input: any) {
+    return mailCollab2.delegateInbox(tenantId, input);
+  }
+
+  mailCollab2AcceptDelegation(tenantId: string, delegationId: string) {
+    return mailCollab2.acceptDelegation(tenantId, delegationId);
+  }
+
+  mailCollab2RevokeDelegation(tenantId: string, delegationId: string) {
+    return mailCollab2.revokeDelegation(tenantId, delegationId);
+  }
+
+  mailCollab2DelegationSummary(tenantId: string) {
+    return mailCollab2.delegationSummary(tenantId);
+  }
+
+  mailCollab2Roles(tenantId: string) {
+    return mailCollab2.listRoles(tenantId);
+  }
+
+  mailCollab2AssignRole(tenantId: string, input: any) {
+    return mailCollab2.assignRole(tenantId, input);
+  }
+
+  mailCollab2RemoveRole(tenantId: string, roleId: string) {
+    return mailCollab2.removeRole(tenantId, roleId);
+  }
+
+  mailCollab2RoleMatrix() {
+    return mailCollab2.roleMatrix();
+  }
+
+  mailCollab2TeamDashboard(tenantId: string) {
+    return mailCollab2.teamDashboard(tenantId);
+  }
+
+  mailCollab2MentionDetect(tenantId: string, text: string) {
+    return mailCollab2.mentionDetect(tenantId, text);
+  }
+
+  mailCollab2CreateMention(tenantId: string, input: any) {
+    return mailCollab2.createMention(tenantId, input);
+  }
+
+  mailCollab2Mentions(tenantId: string, opts: any) {
+    return mailCollab2.listMentions(tenantId, opts);
+  }
+
+  mailCollab2MarkMentionRead(tenantId: string, mentionId: string) {
+    return mailCollab2.markMentionRead(tenantId, mentionId);
+  }
+
+  mailCollab2MentionsSummary(tenantId: string) {
+    return mailCollab2.mentionsSummary(tenantId);
+  }
+
+  mailCollab2Dashboard(tenantId: string) {
+    return mailCollab2.collab2Dashboard(tenantId);
   }
 }
 
