@@ -14,6 +14,23 @@ function redactText(text: string): string {
   return out;
 }
 
+const CONCEPT_TOPICS: { topic: string; label: string; keywords: string[] }[] = [
+  { topic: "contract", label: "Contracts & agreements", keywords: ["contract", "agreement", "msa", "sla", "terms", "clause", "signature", "renewal", "counterparty"] },
+  { topic: "invoice", label: "Invoices & billing", keywords: ["invoice", "payment", "billing", "amount due", "receipt", "balance", "overdue", "purchase order"] },
+  { topic: "meeting", label: "Meetings & scheduling", keywords: ["meeting", "agenda", "schedule", "calendar", "invite", "availability", "reschedule", "sync"] },
+  { topic: "legal", label: "Legal & litigation", keywords: ["litigation", "attorney", "counsel", "discovery", "subpoena", "lawsuit", "court", "privilege", "deposition", "witness"] },
+  { topic: "finance", label: "Finance & budget", keywords: ["budget", "revenue", "forecast", "spend", "roi", "quarter", "expense", "p&l"] },
+  { topic: "hr", label: "HR & hiring", keywords: ["hiring", "interview", "candidate", "offer letter", "onboarding", "payroll", "benefits", "resume"] },
+  { topic: "personal", label: "Personal", keywords: ["weekend", "vacation", "dinner", "birthday", "holiday", "photos", "family"] },
+];
+
+const PRIVILEGE_TYPES: { type: string; label: string }[] = [
+  { type: "attorney_client", label: "Attorney-client communication" },
+  { type: "work_product", label: "Attorney work product" },
+  { type: "settlement", label: "Settlement negotiation" },
+  { type: "confidential", label: "Confidential business information" },
+];
+
 export class MailDiscoveryService {
   private matchScope(m: any, scope: any): boolean {
     const s = scope || {};
@@ -102,6 +119,15 @@ export class MailDiscoveryService {
     return { searchId, name: search.name, ...this.scopeSearch(tenantId, search.scope) };
   }
 
+  private stampChain(tenantId: string, content: string) {
+    const previous = DataStore.mem().find("mail_exports", (e: any) => e.tenantId === tenantId)
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .slice(-1)[0];
+    const contentHash = hashStr(String(content || "")).toString(36);
+    const previousHash = previous ? previous.chainHash : "GENESIS";
+    return { contentHash, previousHash, chainHash: hashStr(previousHash + contentHash).toString(36) };
+  }
+
   createExport(tenantId: string, input: any) {
     if (!input) throw new Error("Export input is required");
     const format = input.format || "csv";
@@ -130,6 +156,7 @@ export class MailDiscoveryService {
       content = `N0VA MAIL eDiscovery Export\nExported: ${new Date().toISOString()}\nFormat: PDF (metadata manifest)\nMessages: ${items.length}\nPII redacted: ${redactPii}\n\n` + items.map(it => `${it.batesNumber} | ${it.date} | ${it.from} | ${it.subject}`).join("\n");
     }
     const totalBytes = items.reduce((acc, it) => acc + (it.sizeBytes || 0), 0);
+    const chain = this.stampChain(tenantId, content);
     const exportRecord = DataStore.mem().insert("mail_exports", {
       tenantId,
       name: input.name || `Export ${new Date().toLocaleDateString()}`,
@@ -141,6 +168,8 @@ export class MailDiscoveryService {
       totalBytes,
       status: "ready",
       createdBy: input.createdBy || "user_001",
+      kind: "ediscovery",
+      ...chain,
       download: { filename: `${(input.name || "export").toLowerCase().replace(/[^a-z0-9_-]+/gi, "_")}.${format}`, content },
     });
     return { exportId: exportRecord._id, ...exportRecord, summary: `Export created — ${items.length} message(s), ${redactPii ? "PII redacted, " : ""}${format.toUpperCase()}` };
@@ -149,7 +178,7 @@ export class MailDiscoveryService {
   exports(tenantId: string) {
     const exportsList = DataStore.mem().find("mail_exports", (e: any) => e.tenantId === tenantId)
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .map((e: any) => ({ exportId: e._id, name: e.name, format: e.format, itemCount: e.itemCount, batesRange: e.batesRange, totalBytes: e.totalBytes, redactPii: e.redactPii, status: e.status, createdAt: e.createdAt }));
+      .map((e: any) => ({ exportId: e._id, name: e.name, format: e.format, itemCount: e.itemCount, batesRange: e.batesRange, totalBytes: e.totalBytes, redactPii: e.redactPii, status: e.status, createdAt: e.createdAt, kind: e.kind || "ediscovery", chainHash: e.chainHash }));
     return { exports: exportsList, count: exportsList.length, summary: `${exportsList.length} export(s)` };
   }
 
@@ -166,6 +195,123 @@ export class MailDiscoveryService {
     return { exportId, summary: `Export "${e.name}" deleted` };
   }
 
+  conceptSearch(tenantId: string, query: string, opts: any = {}) {
+    const q = String(query || "").trim();
+    const limit = opts.limit ? parseInt(String(opts.limit), 10) : 300;
+    const msgs = DataStore.mem().find("messages", (m: any) => m.tenantId === tenantId)
+      .filter((m: any) => !q || `${m.subject || ""} ${m.body || ""}`.toLowerCase().includes(q.toLowerCase()))
+      .sort((a: any, b: any) => new Date(b.receivedAt || b.sentAt || b.createdAt).getTime() - new Date(a.receivedAt || a.sentAt || a.createdAt).getTime())
+      .slice(0, limit);
+    const clusterMap = new Map<string, any>();
+    for (const t of CONCEPT_TOPICS) clusterMap.set(t.topic, { topic: t.topic, label: t.label, score: 0, messages: [] });
+    clusterMap.set("general", { topic: "general", label: "General / unclassified", score: 0, messages: [] });
+    for (const m of msgs) {
+      const subject = (m.subject || "").toLowerCase();
+      const body = (m.body || "").toLowerCase();
+      let best: any = null;
+      let bestScore = 0;
+      for (const t of CONCEPT_TOPICS) {
+        let s = 0;
+        for (const kw of t.keywords) {
+          if (subject.includes(kw)) s += 2;
+          if (body.includes(kw)) s += 1;
+        }
+        if (s > bestScore) { bestScore = s; best = t; }
+      }
+      const key = best && bestScore >= 2 ? best.topic : "general";
+      const c = clusterMap.get(key);
+      c.score += bestScore;
+      c.messages.push({ messageId: m._id, subject: m.subject, from: (m.from || {}).email, date: m.receivedAt || m.sentAt || m.createdAt, folder: m.folder, score: bestScore });
+    }
+    const clusters = [...clusterMap.values()]
+      .filter((c) => c.messages.length > 0)
+      .map((c) => ({ ...c, count: c.messages.length, messages: c.messages.slice(0, 20) }))
+      .sort((a, b) => b.count - a.count);
+    return {
+      query: q,
+      total: msgs.length,
+      clusters,
+      summary: `${msgs.length} message(s) clustered into ${clusters.length} concept group(s)${q ? ` for "${q}"` : ""}`,
+    };
+  }
+
+  markMessagePrivileged(tenantId: string, messageId: string, input: any) {
+    const msg = DataStore.mem().findOne("messages", (m: any) => m._id === messageId && m.tenantId === tenantId);
+    if (!msg) throw new Error(`Message "${messageId}" not found`);
+    if (!input) throw new Error("Privilege input is required");
+    const type = String(input.type || "confidential");
+    const typeDef = PRIVILEGE_TYPES.find((p) => p.type === type);
+    if (!typeDef) throw new Error(`Unknown privilege type "${type}"`);
+    if (!input.reason) throw new Error("A reason is required to assert privilege");
+    const existing = DataStore.mem().findOne("mail_privileges", (p: any) => p.messageId === messageId && p.tenantId === tenantId && !p.removed);
+    if (existing) throw new Error("Message is already privileged");
+    const rec = DataStore.mem().insert("mail_privileges", {
+      tenantId,
+      messageId,
+      type,
+      reason: input.reason,
+      subject: msg.subject,
+      from: (msg.from || {}).email,
+      assertedBy: input.assertedBy || "user_001",
+      removed: false,
+      createdAt: new Date().toISOString(),
+    });
+    return { privilegeId: rec._id, messageId, type, reason: rec.reason, summary: `Privilege asserted on "${msg.subject}" (${typeDef.label})` };
+  }
+
+  listPrivileges(tenantId: string) {
+    const privileges = DataStore.mem().find("mail_privileges", (p: any) => p.tenantId === tenantId && !p.removed)
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((p: any) => ({
+        privilegeId: p._id,
+        messageId: p.messageId,
+        type: p.type,
+        typeLabel: PRIVILEGE_TYPES.find((x) => x.type === p.type)?.label || p.type,
+        subject: p.subject,
+        from: p.from,
+        reason: p.reason,
+        assertedBy: p.assertedBy,
+        createdAt: p.createdAt,
+      }));
+    return { privileges, count: privileges.length, summary: `${privileges.length} privileged message(s)` };
+  }
+
+  removePrivilege(tenantId: string, messageId: string) {
+    const p = DataStore.mem().findOne("mail_privileges", (x: any) => x.messageId === messageId && x.tenantId === tenantId && !x.removed);
+    if (!p) throw new Error("No active privilege on that message");
+    DataStore.mem().update("mail_privileges", (x: any) => x._id === p._id, { removed: true, removedAt: new Date().toISOString() });
+    return { messageId, summary: `Privilege removed from "${p.subject}"` };
+  }
+
+  privilegeSummary(tenantId: string) {
+    const privileges = DataStore.mem().find("mail_privileges", (p: any) => p.tenantId === tenantId && !p.removed);
+    const byType = PRIVILEGE_TYPES.map((t) => ({ type: t.type, label: t.label, count: privileges.filter((p) => p.type === t.type).length }));
+    return { total: privileges.length, byType, summary: `${privileges.length} message(s) under privilege protection` };
+  }
+
+  exportAuditChain(tenantId: string) {
+    const exportsList = DataStore.mem().find("mail_exports", (e: any) => e.tenantId === tenantId)
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    let previousHash = "GENESIS";
+    let chainIntact = true;
+    let brokenAt: string | null = null;
+    const entries = exportsList.map((e: any) => {
+      const contentHash = hashStr(String(e.download?.content || "")).toString(36);
+      const expected = hashStr(previousHash + contentHash).toString(36);
+      const verified = e.chainHash === expected;
+      if (!verified && chainIntact) { chainIntact = false; brokenAt = e._id; }
+      previousHash = e.chainHash || expected;
+      return { exportId: e._id, name: e.name, format: e.format, itemCount: e.itemCount, kind: e.kind || "ediscovery", createdAt: e.createdAt, previousHash: e.previousHash, chainHash: e.chainHash, verified };
+    });
+    return {
+      entries: entries.slice().reverse(),
+      length: entries.length,
+      chainIntact,
+      brokenAt,
+      summary: chainIntact ? `Export chain intact — ${entries.length} export(s) hash-verified` : `Chain broken at "${brokenAt}" — tamper detected`,
+    };
+  }
+
   discoverySummary(tenantId: string) {
     const messages = DataStore.mem().find("messages", (m: any) => m.tenantId === tenantId);
     const byFolder = new Map<string, number>();
@@ -176,13 +322,17 @@ export class MailDiscoveryService {
     }
     const exportsList = this.exports(tenantId);
     const searches = this.listSavedSearches(tenantId);
+    const privileges = this.listPrivileges(tenantId);
+    const chain = this.exportAuditChain(tenantId);
     return {
       searchableMessages: messages.length,
       byFolder: [...byFolder.entries()].map(([folder, count]) => ({ folder, count })).sort((a, b) => b.count - a.count),
       totalSizeBytes: totalBytes,
       exports: exportsList.count,
       savedSearches: searches.count,
-      summary: `${messages.length} message(s) searchable · ${exportsList.count} export(s) · ${searches.count} saved search(es)`,
+      privileged: privileges.count,
+      chainIntact: chain.chainIntact,
+      summary: `${messages.length} message(s) searchable · ${exportsList.count} export(s) · ${searches.count} saved search(es) · ${privileges.count} privileged`,
       seed: hashStr(tenantId + "discovery_summary"),
     };
   }

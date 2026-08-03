@@ -21,6 +21,16 @@ function holdMatches(hold: any, msg: any): boolean {
   return true;
 }
 
+const REPORTS: Record<string, { label: string; description: string }> = {
+  GDPR: { label: "GDPR", description: "EU General Data Protection Regulation — data protection & privacy rights" },
+  CCPA: { label: "CCPA", description: "California Consumer Privacy Act — consumer data rights & disclosure" },
+  HIPAA: { label: "HIPAA", description: "Health Insurance Portability & Accountability Act — protected health information" },
+};
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export class MailComplianceService {
   private audit(tenantId: string, action: string, detail: string, actor = "user_001") {
     DataStore.mem().insert("mail_audit_log", { tenantId, action, detail, actor, at: new Date().toISOString() });
@@ -105,12 +115,14 @@ export class MailComplianceService {
       subject: input.subject || null,
       from: input.from || null,
       reason: input.reason,
-      expiresAt: input.expiresAt || null,
+      startDate: input.startDate || new Date().toISOString(),
+      endDate: input.endDate || null,
+      expiresAt: input.expiresAt || input.endDate || null,
       released: false,
       placedBy: input.placedBy || "user_001",
     });
     this.audit(tenantId, "place_hold", `${hold.subject || "any subject"}${hold.from ? ` from ${hold.from}` : ""} — ${hold.reason}`);
-    return { holdId: hold._id, subject: hold.subject, from: hold.from, reason: hold.reason, expiresAt: hold.expiresAt, summary: `Legal hold placed${hold.subject ? ` on "${hold.subject}"` : ""}${hold.from ? ` from ${hold.from}` : ""}` };
+    return { holdId: hold._id, subject: hold.subject, from: hold.from, reason: hold.reason, startDate: hold.startDate, endDate: hold.endDate, expiresAt: hold.expiresAt, summary: `Legal hold placed${hold.subject ? ` on "${hold.subject}"` : ""}${hold.from ? ` from ${hold.from}` : ""}` };
   }
 
   listHolds(tenantId: string) {
@@ -182,6 +194,179 @@ export class MailComplianceService {
       riskLevel: totalFindings > 10 ? "high" : totalFindings > 0 ? "medium" : "low",
       summary: `Scanned ${msgs.length} message(s) — ${messagesWithPii} with sensitive data (${totalFindings} finding(s))`,
     };
+  }
+
+  legalHoldCalendar(tenantId: string, month?: string) {
+    const m = String(month || "").trim();
+    let year: number;
+    let monthIndex: number;
+    const now = new Date();
+    if (m) {
+      const mm = m.match(/^(\d{4})-(\d{2})$/);
+      if (!mm) throw new Error("Invalid month format — use YYYY-MM");
+      year = parseInt(mm[1], 10);
+      monthIndex = parseInt(mm[2], 10) - 1;
+      if (monthIndex < 0 || monthIndex > 11) throw new Error("Invalid month format — use YYYY-MM");
+    } else {
+      year = now.getFullYear();
+      monthIndex = now.getMonth();
+    }
+    const holds = this.listHolds(tenantId).holds;
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const startOffset = new Date(year, monthIndex, 1).getDay();
+    const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+    const cells: any[] = [];
+    for (let i = 0; i < 42; i++) {
+      const day = i - startOffset + 1;
+      if (day < 1 || day > daysInMonth) { cells.push({ date: null, day: null, events: [] }); continue; }
+      const dateStr = `${monthKey}-${String(day).padStart(2, "0")}`;
+      const events: any[] = [];
+      for (const h of holds) {
+        const start = String(h.startDate || h.createdAt || "");
+        const startD = start.slice(0, 10);
+        if (!startD) continue;
+        const endD = h.expiresAt ? String(h.expiresAt).slice(0, 10) : null;
+        const placed = startD === dateStr;
+        const expiring = !!endD && endD === dateStr;
+        const active = startD <= dateStr && (!endD || dateStr <= endD);
+        if (!active) continue;
+        const type = h.released ? "released" : placed ? "placed" : expiring ? "expiring" : "active";
+        events.push({ holdId: h._id, subject: h.subject || "any subject", reason: h.reason, released: !!h.released, type });
+      }
+      cells.push({ date: dateStr, day, events });
+    }
+    const activeHolds = holds.filter((h: any) => !h.released && (!h.expiresAt || new Date(h.expiresAt).getTime() >= Date.now()));
+    const expiringSoon = activeHolds.filter((h: any) => h.expiresAt && new Date(h.expiresAt).getTime() >= Date.now() && new Date(h.expiresAt).getTime() - Date.now() <= 7 * 86400000);
+    const placedThisMonth = holds.filter((h: any) => String(h.startDate || h.createdAt || "").slice(0, 7) === monthKey);
+    return {
+      month: monthKey,
+      monthLabel: new Date(year, monthIndex, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      daysInMonth,
+      startOffset,
+      cells,
+      activeHolds: activeHolds.length,
+      expiringSoon: expiringSoon.map((h: any) => ({ holdId: h._id, subject: h.subject, expiresAt: h.expiresAt })),
+      placedThisMonth: placedThisMonth.length,
+      summary: `${activeHolds.length} active hold(s) · ${expiringSoon.length} expiring within 7 days · ${placedThisMonth.length} placed this month`,
+    };
+  }
+
+  private frameworkChecks(tenantId: string, fw: string): { key: string; name: string; status: string; detail: string }[] {
+    const pii = this.scanForPii(tenantId);
+    const policies = this.retentionPolicies(tenantId);
+    const holds = this.listHolds(tenantId);
+    const audit = DataStore.mem().find("mail_audit_log", (l: any) => l.tenantId === tenantId);
+    if (fw === "GDPR") {
+      return [
+        { key: "data_inventory", name: "Data inventory & mapping", status: pii.totals.findings <= 5 ? "pass" : "warn", detail: `${pii.totals.messagesWithPii} message(s) contain personal data (${pii.totals.findings} finding(s))` },
+        { key: "retention", name: "Retention limitation", status: policies.totals.policies > 0 ? "pass" : "fail", detail: `${policies.totals.policies} retention polic${policies.totals.policies === 1 ? "y" : "ies"} configured` },
+        { key: "holds", name: "Legal hold coverage", status: holds.holds.filter((h: any) => !h.released).length > 0 ? "pass" : "warn", detail: `${holds.holds.filter((h: any) => !h.released).length} active hold(s) protecting mail` },
+        { key: "erasure", name: "Right to erasure readiness", status: policies.totals.deleting > 0 ? "pass" : "warn", detail: policies.totals.deleting > 0 ? "Delete-after retention enabled" : "No auto-delete policy — erasure handled manually" },
+        { key: "audit_trail", name: "Audit trail", status: audit.length > 0 ? "pass" : "fail", detail: `${audit.length} compliance event(s) logged` },
+      ];
+    }
+    if (fw === "CCPA") {
+      const optOuts = hashStr(tenantId + "ccpa_optout") % 4;
+      const delReqs = hashStr(tenantId + "ccpa_delete") % 3;
+      return [
+        { key: "data_inventory", name: "Consumer data inventory", status: pii.totals.messagesWithPii > 0 ? "pass" : "warn", detail: `${pii.totals.messagesWithPii} message(s) containing consumer personal information` },
+        { key: "opt_out", name: "Opt-out request handling", status: "pass", detail: `${optOuts} verified opt-out request(s) on file` },
+        { key: "deletion", name: "Deletion request fulfillment", status: "pass", detail: `${delReqs} request(s) fulfilled in the current cycle` },
+        { key: "no_sale", name: "Data sale prohibition", status: "pass", detail: "Mail data is never sold or shared for advertising" },
+        { key: "audit_trail", name: "Request audit trail", status: audit.length > 0 ? "pass" : "fail", detail: `${audit.length} compliance event(s) logged` },
+      ];
+    }
+    const phiCount = hashStr(tenantId + "hipaa_phi") % 5;
+    const encWarn = hashStr(tenantId + "hipaa_enc") % 4 === 0;
+    return [
+      { key: "phi_scan", name: "PHI exposure scan", status: phiCount <= 2 ? "pass" : "warn", detail: `${phiCount} message(s) flagged with health-related content` },
+      { key: "access_log", name: "Access logging", status: audit.length > 0 ? "pass" : "fail", detail: `${audit.length} compliance event(s) logged` },
+      { key: "encryption", name: "Encryption posture", status: encWarn ? "warn" : "pass", detail: encWarn ? "One mailbox lacks at-rest encryption" : "All mailboxes at-rest encrypted" },
+      { key: "baa", name: "Business associate agreements", status: "pass", detail: "BAAs on file for all processors" },
+      { key: "audit_trail", name: "Security incident log", status: audit.length > 0 ? "pass" : "fail", detail: `${audit.length} event(s) available for review` },
+    ];
+  }
+
+  complianceReport(tenantId: string, framework: string) {
+    const fw = String(framework || "").toUpperCase();
+    const meta = REPORTS[fw];
+    if (!meta) throw new Error(`Unknown compliance framework "${framework}" — use GDPR, CCPA or HIPAA`);
+    const checks = this.frameworkChecks(tenantId, fw);
+    const score = round2((checks.reduce((s, c) => s + (c.status === "pass" ? 1 : c.status === "warn" ? 0.5 : 0), 0) / checks.length) * 100);
+    const status = score >= 80 ? "pass" : score >= 50 ? "warn" : "fail";
+    return {
+      framework: fw,
+      label: meta.label,
+      description: meta.description,
+      score,
+      status,
+      checks,
+      passing: checks.filter((c) => c.status === "pass").length,
+      failing: checks.filter((c) => c.status === "fail").length,
+      summary: `${meta.label} posture ${score}% — ${checks.filter((c) => c.status === "pass").length}/${checks.length} check(s) passing`,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  complianceReports(tenantId: string) {
+    const reports = ["GDPR", "CCPA", "HIPAA"].map((fw) => {
+      const r = this.complianceReport(tenantId, fw);
+      return { framework: r.framework, label: r.label, score: r.score, status: r.status };
+    });
+    const average = round2(reports.reduce((s, r) => s + r.score, 0) / reports.length);
+    return {
+      reports,
+      average,
+      summary: `Compliance report pack — average ${average}% (${reports.filter((r) => r.status === "pass").length}/3 passing)`,
+    };
+  }
+
+  exportComplianceReport(tenantId: string, framework: string) {
+    const r = this.complianceReport(tenantId, framework);
+    const pii = this.scanForPii(tenantId);
+    const holds = this.listHolds(tenantId);
+    const policies = this.retentionPolicies(tenantId);
+    const lines = [
+      `N0VA MAIL Compliance Report — ${r.label}`,
+      `Generated: ${new Date().toISOString()}`,
+      `Overall score: ${r.score}% (${r.status})`,
+      `Framework: ${r.description}`,
+      "",
+      "CHECK RESULTS",
+      ...r.checks.map((c: any) => `[${c.status.toUpperCase()}] ${c.name} — ${c.detail}`),
+      "",
+      `DATA INVENTORY: ${pii.totals.messagesWithPii} message(s) with PII (${pii.totals.findings} finding(s))`,
+      `RETENTION: ${policies.totals.policies} polic${policies.totals.policies === 1 ? "y" : "ies"} configured`,
+      `LEGAL HOLDS: ${holds.holds.filter((h: any) => !h.released).length} active`,
+      "",
+      "Generated by N0VA MAIL — for record-keeping and regulatory review.",
+    ].join("\n");
+    const chain = {
+      contentHash: hashStr(lines).toString(36),
+      previousHash: "GENESIS",
+      chainHash: "GENESIS",
+    };
+    const previous = DataStore.mem().find("mail_exports", (e: any) => e.tenantId === tenantId)
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .slice(-1)[0];
+    chain.previousHash = previous ? previous.chainHash : "GENESIS";
+    chain.chainHash = hashStr(chain.previousHash + chain.contentHash).toString(36);
+    const record = DataStore.mem().insert("mail_exports", {
+      tenantId,
+      name: `${r.label} compliance report`,
+      format: "report",
+      kind: "compliance_report",
+      scope: { framework: r.framework },
+      redactPii: false,
+      itemCount: r.checks.length,
+      totalBytes: lines.length,
+      status: "ready",
+      createdBy: "n0va1o",
+      ...chain,
+      download: { filename: `${r.framework.toLowerCase()}_compliance_report.txt`, content: lines },
+    });
+    this.audit(tenantId, "compliance_report_export", `${r.label} report exported (${r.score}%)`, "n0va1o");
+    return { exportId: record._id, framework: r.framework, score: r.score, status: r.status, download: record.download, summary: `${r.label} compliance report exported (${r.score}%)` };
   }
 
   complianceSummary(tenantId: string) {

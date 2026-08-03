@@ -1639,6 +1639,23 @@ router.post("/mail/compliance/pii/scan", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailScanPii(req.user!.tenantId));
 }));
 
+router.get("/mail/compliance/hold-calendar", asyncHandler(async (req, res) => {
+  const month = typeof req.query.month === "string" ? req.query.month : undefined;
+  sendSuccess(res, adsMarketingModule.mailComplianceHoldCalendar(req.user!.tenantId, month));
+}));
+
+router.get("/mail/compliance/reports", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComplianceReports(req.user!.tenantId));
+}));
+
+router.get("/mail/compliance/report/:framework", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComplianceReport(req.user!.tenantId, req.params.framework));
+}));
+
+router.post("/mail/compliance/report/:framework/export", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComplianceExportReport(req.user!.tenantId, req.params.framework));
+}));
+
 router.post("/mail/voice/parse", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailParseVoiceCommand(req.user!.tenantId, req.body?.command || ""));
 }));
@@ -2062,6 +2079,32 @@ router.get("/mail/discovery/exports/:exportId", asyncHandler(async (req, res) =>
 
 router.delete("/mail/discovery/exports/:exportId", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailDeleteExport(req.user!.tenantId, req.params.exportId));
+}));
+
+router.get("/mail/discovery/concept-search", asyncHandler(async (req, res) => {
+  const query = typeof req.query.query === "string" ? req.query.query : "";
+  const opts = { limit: typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : 300 };
+  sendSuccess(res, adsMarketingModule.mailDiscoveryConceptSearch(req.user!.tenantId, query, opts));
+}));
+
+router.post("/mail/discovery/privileges", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoveryMarkPrivileged(req.user!.tenantId, req.body?.messageId || "", req.body || {}));
+}));
+
+router.get("/mail/discovery/privileges", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoveryListPrivileges(req.user!.tenantId));
+}));
+
+router.delete("/mail/discovery/privileges/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoveryRemovePrivilege(req.user!.tenantId, req.params.messageId));
+}));
+
+router.get("/mail/discovery/privilege-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoveryPrivilegeSummary(req.user!.tenantId));
+}));
+
+router.get("/mail/discovery/export-chain", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDiscoveryExportAuditChain(req.user!.tenantId));
 }));
 
 router.post("/mail/domains", asyncHandler(async (req, res) => {

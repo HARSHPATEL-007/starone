@@ -2457,6 +2457,12 @@ export const api = {
     mailHoldStatus: () => request<any>("/ads-marketing-module/mail/compliance/hold-status"),
     mailAuditLog: (limit: number = 30) => request<any>(`/ads-marketing-module/mail/compliance/audit?limit=${limit}`),
     mailScanPii: () => request<any>("/ads-marketing-module/mail/compliance/pii/scan", { method: "POST" }),
+    mailComplianceHoldCalendar: (month?: string) =>
+      request<any>(`/ads-marketing-module/mail/compliance/hold-calendar${month ? `?month=${month}` : ""}`),
+    mailComplianceReports: () => request<any>("/ads-marketing-module/mail/compliance/reports"),
+    mailComplianceReport: (framework: string) => request<any>(`/ads-marketing-module/mail/compliance/report/${framework}`),
+    mailComplianceExportReport: (framework: string) =>
+      request<any>(`/ads-marketing-module/mail/compliance/report/${framework}/export`, { method: "POST" }),
     mailParseVoiceCommand: (command: string) =>
       request<any>("/ads-marketing-module/mail/voice/parse", { method: "POST", body: JSON.stringify({ command }) }),
     mailExecuteVoiceCommand: (command: string) =>
@@ -2628,6 +2634,15 @@ export const api = {
     mailDeleteExport: (exportId: string) =>
       request<any>(`/ads-marketing-module/mail/discovery/exports/${exportId}`, { method: "DELETE" }),
     mailDiscoverySummary: () => request<any>("/ads-marketing-module/mail/discovery/summary"),
+    mailDiscoveryConceptSearch: (query: string, opts: Record<string, any> = {}) =>
+      request<any>(`/ads-marketing-module/mail/discovery/concept-search?query=${encodeURIComponent(query)}&limit=${opts.limit || 300}`),
+    mailDiscoveryMarkPrivileged: (messageId: string, input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/discovery/privileges", { method: "POST", body: JSON.stringify({ ...input, messageId }) }),
+    mailDiscoveryPrivileges: () => request<any>("/ads-marketing-module/mail/discovery/privileges"),
+    mailDiscoveryRemovePrivilege: (messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/discovery/privileges/${messageId}`, { method: "DELETE" }),
+    mailDiscoveryPrivilegeSummary: () => request<any>("/ads-marketing-module/mail/discovery/privilege-summary"),
+    mailDiscoveryExportAuditChain: () => request<any>("/ads-marketing-module/mail/discovery/export-chain"),
     mailRegisterDomain: (input: Record<string, any>) =>
       request<any>("/ads-marketing-module/mail/domains", { method: "POST", body: JSON.stringify(input) }),
     mailDomains: () => request<any>("/ads-marketing-module/mail/domains"),

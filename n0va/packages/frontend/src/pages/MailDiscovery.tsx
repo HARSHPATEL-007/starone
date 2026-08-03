@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   Search, RefreshCw, Plus, X, Save, Trash2, Download, FileArchive, ShieldAlert, FolderSearch, History,
+  Network, Tag, ShieldCheck, CheckCircle2, XCircle,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -9,6 +10,13 @@ import { SkeletonCard } from "../components/Skeleton";
 const unwrap = (r: any) => (r && r.data !== undefined ? r.data : r);
 
 const emptyScope = { query: "", from: "", folder: "", label: "", dateFrom: "", dateTo: "", hasAttachments: false, attachmentType: "", unreadOnly: false };
+
+const PRIV_TYPES = [
+  { value: "attorney_client", label: "Attorney-client communication" },
+  { value: "work_product", label: "Attorney work product" },
+  { value: "settlement", label: "Settlement negotiation" },
+  { value: "confidential", label: "Confidential business information" },
+];
 
 export default function MailDiscovery() {
   const { addToast } = useToast();
@@ -22,20 +30,35 @@ export default function MailDiscovery() {
   const [exportForm, setExportForm] = useState({ name: "", format: "csv", redactPii: false });
   const [showSave, setShowSave] = useState(false);
   const [saveName, setSaveName] = useState("");
+  const [conceptQuery, setConceptQuery] = useState("");
+  const [concepts, setConcepts] = useState<any[]>([]);
+  const [conceptTotal, setConceptTotal] = useState<number | null>(null);
+  const [privileges, setPrivileges] = useState<any[]>([]);
+  const [privSummary, setPrivSummary] = useState<any>(null);
+  const [showPriv, setShowPriv] = useState(false);
+  const [privForm, setPrivForm] = useState({ messageId: "", type: "attorney_client", reason: "" });
+  const [chain, setChain] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const loadAll = useCallback(async () => {
-    const [s, se, ex] = await Promise.all([
+    const [s, se, ex, pl, ps, c] = await Promise.all([
       api.adsMarketingModule.mailDiscoverySummary().catch(() => null),
       api.adsMarketingModule.mailSavedSearches().catch(() => null),
       api.adsMarketingModule.mailExports().catch(() => null),
+      api.adsMarketingModule.mailDiscoveryPrivileges().catch(() => null),
+      api.adsMarketingModule.mailDiscoveryPrivilegeSummary().catch(() => null),
+      api.adsMarketingModule.mailDiscoveryExportAuditChain().catch(() => null),
     ]);
     setSummary(unwrap(s));
     const seR = unwrap(se);
     setSavedSearches(Array.isArray(seR) ? seR : seR?.searches || []);
     const exR = unwrap(ex);
     setExports(Array.isArray(exR) ? exR : exR?.exports || []);
+    const plR = unwrap(pl);
+    setPrivileges(Array.isArray(plR) ? plR : plR?.privileges || []);
+    setPrivSummary(unwrap(ps));
+    setChain(unwrap(c));
     setLoading(false);
   }, []);
 
@@ -138,6 +161,51 @@ export default function MailDiscovery() {
     await loadAll();
   }
 
+  async function runConceptSearch() {
+    if (!conceptQuery.trim()) return;
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailDiscoveryConceptSearch(conceptQuery.trim()));
+      setConcepts(Array.isArray(r) ? r : r?.clusters || []);
+      setConceptTotal(r?.total || 0);
+    } catch (e: any) {
+      addToast("error", "Concept search failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function markPrivileged() {
+    if (!privForm.messageId.trim() || !privForm.reason.trim()) {
+      addToast("warning", "Missing fields", "Message ID and reason are required.");
+      return;
+    }
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailDiscoveryMarkPrivileged(privForm.messageId.trim(), { type: privForm.type, reason: privForm.reason.trim() }));
+      addToast("success", "Privilege asserted", r?.summary || "");
+      setShowPriv(false);
+      setPrivForm({ messageId: "", type: "attorney_client", reason: "" });
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Assert failed", e?.message);
+    }
+  }
+
+  async function removePrivilege(messageId: string) {
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailDiscoveryRemovePrivilege(messageId));
+      addToast("info", "Privilege removed", r?.summary || "");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Remove failed", e?.message);
+    }
+  }
+
+  async function verifyChain() {
+    await loadAll();
+    addToast("success", "Chain verified", chain?.summary || "");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -206,6 +274,32 @@ export default function MailDiscovery() {
             </div>
           </div>
 
+          <div className="card p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Network className="w-4 h-4 text-n0va-400" /> Concept search</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input className="input flex-1 min-w-[220px]" placeholder="Cluster mail by concept (e.g. litigation, budget, hiring)" value={conceptQuery} onChange={(e) => setConceptQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") runConceptSearch(); }} />
+              <button className="btn-primary text-xs" disabled={busy} onClick={runConceptSearch}>Cluster</button>
+            </div>
+            {concepts.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {concepts.map((c: any) => (
+                  <div key={c.topic} className="border border-gray-800 rounded-lg p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-white truncate">{c.label}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-n0va-500/15 text-n0va-300 whitespace-nowrap">{c.count}</span>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {(c.messages || []).slice(0, 5).map((m: any) => (
+                        <div key={m.messageId} className="text-[11px] text-gray-400 truncate" title={m.subject}>{m.subject}</div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {concepts.length === 0 && conceptTotal !== null && <p className="text-xs text-gray-600">No concept groups found.</p>}
+          </div>
+
           {searched && (
             <div className="card p-4">
               <h3 className="text-sm font-semibold text-white mb-2">{results.length} result(s)</h3>
@@ -238,6 +332,47 @@ export default function MailDiscovery() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Tag className="w-4 h-4 text-n0va-400" /> Privilege log</h3>
+                <button className="btn-secondary text-xs flex items-center gap-1 whitespace-nowrap" onClick={() => setShowPriv(true)}><Plus className="w-3 h-3" /> Assert</button>
+              </div>
+              <p className="text-[10px] text-gray-600">{privSummary?.total || 0} message(s) under privilege protection · {privSummary?.byType?.length || 0} type(s)</p>
+              {privileges.map((p: any) => (
+                <div key={p.privilegeId} className="flex items-center gap-2 border border-gray-800 rounded-lg px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-white truncate">{p.subject}</div>
+                    <div className="text-[10px] text-gray-500 truncate">{p.typeLabel} · {p.reason}</div>
+                  </div>
+                  <span className="text-[10px] text-gray-600 whitespace-nowrap">{String(p.createdAt || "").slice(0, 10)}</span>
+                  <button className="text-gray-600 hover:text-red-400 p-1" title="Remove privilege" onClick={() => removePrivilege(p.messageId)}><Trash2 className="w-3 h-3" /></button>
+                </div>
+              ))}
+              {privileges.length === 0 && <p className="text-xs text-gray-600">No messages marked privileged.</p>}
+            </div>
+
+            <div className="card p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-n0va-400" /> Export audit chain</h3>
+                <button className="btn-secondary text-xs flex items-center gap-1 whitespace-nowrap" onClick={verifyChain}><RefreshCw className="w-3 h-3" /> Verify</button>
+              </div>
+              <div className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${chain?.chainIntact ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                {chain?.chainIntact ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+                {chain?.summary || "No exports yet — the chain starts with the first export."}
+              </div>
+              {(chain?.entries || []).length > 0 && (
+                <div className="space-y-1.5">
+                  {chain.entries.map((e: any) => (
+                    <div key={e.exportId} className="flex items-center gap-2 bg-gray-900/60 rounded-lg px-3 py-2 text-xs">
+                      <span className="text-gray-300 truncate flex-1">{e.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${e.verified ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>{e.verified ? "VERIFIED" : "TAMPERED"}</span>
+                      <span className="text-[9px] text-gray-600 font-mono hidden sm:inline">{String(e.chainHash || "").slice(0, 10)}…</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="card p-4 space-y-2">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2"><History className="w-4 h-4 text-n0va-400" /> Saved searches</h3>
               {savedSearches.map((s: any) => (
@@ -311,6 +446,36 @@ export default function MailDiscovery() {
               <div className="flex justify-end gap-2">
                 <button className="btn-secondary text-sm" onClick={() => setShowExport(false)}>Cancel</button>
                 <button className="btn-primary text-sm flex items-center gap-2" disabled={busy} onClick={createExport}><Download className="w-4 h-4" /> Create export</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPriv && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl w-full sm:max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h2 className="font-semibold text-white flex items-center gap-2"><Tag className="w-4 h-4 text-n0va-400" /> Assert privilege</h2>
+              <button className="text-gray-500 hover:text-white" onClick={() => setShowPriv(false)}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Message ID</label>
+                <input className="input" placeholder="msg_xxx or the RFC message-id" value={privForm.messageId} onChange={(e) => setPrivForm({ ...privForm, messageId: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Privilege type</label>
+                <select className="select" value={privForm.type} onChange={(e) => setPrivForm({ ...privForm, type: e.target.value })}>
+                  {PRIV_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Reason</label>
+                <textarea className="input" rows={2} placeholder="e.g. Legal counsel review — contains advice about Q3 contract dispute" value={privForm.reason} onChange={(e) => setPrivForm({ ...privForm, reason: e.target.value })} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button className="btn-secondary text-sm" onClick={() => setShowPriv(false)}>Cancel</button>
+                <button className="btn-primary text-sm" onClick={markPrivileged}>Assert privilege</button>
               </div>
             </div>
           </div>

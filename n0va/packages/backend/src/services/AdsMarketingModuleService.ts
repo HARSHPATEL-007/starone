@@ -3917,6 +3917,22 @@ export class AdsMarketingModuleService {
     return mailCompliance.complianceSummary(tenantId);
   }
 
+  mailComplianceHoldCalendar(tenantId: string, month: string | undefined) {
+    return mailCompliance.legalHoldCalendar(tenantId, month);
+  }
+
+  mailComplianceReports(tenantId: string) {
+    return mailCompliance.complianceReports(tenantId);
+  }
+
+  mailComplianceReport(tenantId: string, framework: string) {
+    return mailCompliance.complianceReport(tenantId, framework);
+  }
+
+  mailComplianceExportReport(tenantId: string, framework: string) {
+    return mailCompliance.exportComplianceReport(tenantId, framework);
+  }
+
   mailParseVoiceCommand(tenantId: string, command: string) {
     return mailVoice.parseMailCommand(tenantId, command);
   }
@@ -4339,6 +4355,30 @@ export class AdsMarketingModuleService {
 
   mailDiscoverySummary(tenantId: string) {
     return mailDiscovery.discoverySummary(tenantId);
+  }
+
+  mailDiscoveryConceptSearch(tenantId: string, query: string, opts: Record<string, any>) {
+    return mailDiscovery.conceptSearch(tenantId, query, opts);
+  }
+
+  mailDiscoveryMarkPrivileged(tenantId: string, messageId: string, input: Record<string, any>) {
+    return mailDiscovery.markMessagePrivileged(tenantId, messageId, input);
+  }
+
+  mailDiscoveryListPrivileges(tenantId: string) {
+    return mailDiscovery.listPrivileges(tenantId);
+  }
+
+  mailDiscoveryRemovePrivilege(tenantId: string, messageId: string) {
+    return mailDiscovery.removePrivilege(tenantId, messageId);
+  }
+
+  mailDiscoveryPrivilegeSummary(tenantId: string) {
+    return mailDiscovery.privilegeSummary(tenantId);
+  }
+
+  mailDiscoveryExportAuditChain(tenantId: string) {
+    return mailDiscovery.exportAuditChain(tenantId);
   }
 
   mailRegisterDomain(tenantId: string, input: any) {
