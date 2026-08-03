@@ -90,6 +90,7 @@ import {
   Mic,
   SendHorizonal,
   CalendarClock,
+  MailOpen,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -119,6 +120,7 @@ const navItems = [
   { to: "/mail/command-center", icon: LayoutDashboard, label: "Mail Command" },
   { to: "/mail/dispatch", icon: SendHorizonal, label: "Mail Dispatch" },
   { to: "/mail/calendar", icon: CalendarClock, label: "Mail Calendar" },
+  { to: "/mail/reader", icon: MailOpen, label: "Mail Reader" },
   { to: "/mail/ops", icon: Activity, label: "Mail Ops" },
   { to: "/mail/protection", icon: Shield, label: "Mail Protection" },
   { to: "/mail/webhooks", icon: Webhook, label: "Mail Webhooks" },
