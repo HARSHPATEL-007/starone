@@ -81,6 +81,7 @@ import { mailSearchOp } from "./MailSearchOperatorsService";
 import { mailAbuse } from "./MailAbuseService";
 import { mailWebhook } from "./MailWebhookService";
 import { mailAgentRegistry } from "./MailAgentRegistryService";
+import { mailIntegration } from "./MailIntegrationService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -4764,6 +4765,82 @@ export class AdsMarketingModuleService {
 
   mailAgentDashboard(tenantId: string) {
     return mailAgentRegistry.agentFrameworkDashboard(tenantId);
+  }
+
+  mailIntegrationCatalog(tenantId: string) {
+    return mailIntegration.connectorCatalog(tenantId);
+  }
+
+  mailIntegrationConnections(tenantId: string, connectorId?: string) {
+    return mailIntegration.listConnections(tenantId, connectorId);
+  }
+
+  mailIntegrationConnect(tenantId: string, input: any) {
+    return mailIntegration.connectConnector(tenantId, input);
+  }
+
+  mailIntegrationDisconnect(tenantId: string, connectionId: string) {
+    return mailIntegration.disconnectConnector(tenantId, connectionId);
+  }
+
+  mailIntegrationAuthorize(tenantId: string, connectionId: string) {
+    return mailIntegration.authorizeConnector(tenantId, connectionId);
+  }
+
+  mailIntegrationRefresh(tenantId: string, connectionId: string) {
+    return mailIntegration.refreshConnector(tenantId, connectionId);
+  }
+
+  mailIntegrationUpdate(tenantId: string, connectionId: string, input: any) {
+    return mailIntegration.updateConnection(tenantId, connectionId, input);
+  }
+
+  mailIntegrationSyncNow(tenantId: string, connectionId: string) {
+    return mailIntegration.syncNow(tenantId, connectionId);
+  }
+
+  mailIntegrationSyncHistory(tenantId: string, connectionId?: string, limit?: number) {
+    return mailIntegration.syncHistory(tenantId, connectionId, limit);
+  }
+
+  mailIntegrationSyncStatus(tenantId: string) {
+    return mailIntegration.syncStatus(tenantId);
+  }
+
+  mailIntegrationAction(tenantId: string, connectionId: string, action: string, params: any) {
+    return mailIntegration.runAction(tenantId, connectionId, action, params || {});
+  }
+
+  mailIntegrationLog(tenantId: string, connectorId?: string, limit?: number) {
+    return mailIntegration.integrationLog(tenantId, connectorId, limit);
+  }
+
+  mailIntegrationAlerts(tenantId: string) {
+    return mailIntegration.integrationAlerts(tenantId);
+  }
+
+  mailIntegrationOverview(tenantId: string) {
+    return mailIntegration.integrationOverview(tenantId);
+  }
+
+  mailIntegrationDashboard(tenantId: string) {
+    return mailIntegration.integrationDashboard(tenantId);
+  }
+
+  mailIntegrationBridges(tenantId: string) {
+    return mailIntegration.listBridges(tenantId);
+  }
+
+  mailIntegrationCreateBridge(tenantId: string, input: any) {
+    return mailIntegration.createBridge(tenantId, input);
+  }
+
+  mailIntegrationDeleteBridge(tenantId: string, bridgeId: string) {
+    return mailIntegration.deleteBridge(tenantId, bridgeId);
+  }
+
+  mailIntegrationTriggerBridge(tenantId: string, bridgeId: string) {
+    return mailIntegration.triggerBridge(tenantId, bridgeId);
   }
 }
 

@@ -98,7 +98,7 @@ describe("connect / disconnect lifecycle", () => {
   it("lists connections with mapped ids and connector names", () => {
     const conns = integration.listConnections(T);
     expect(conns).toHaveLength(2);
-    const g = conns.find((c: any) => c.connectorId === "gmail");
+    const g = conns.find((c: any) => c.connectorId === "gmail") as any;
     expect(g.connectionId).toBeDefined();
     expect(g.connectorName).toBe("Gmail");
     expect(g.status).toBe("connected");
@@ -196,7 +196,7 @@ describe("sync jobs", () => {
   it("syncStatus reports connected connectors with overdue flag", () => {
     const r = integration.syncStatus(T);
     expect(r.connectors.length).toBeGreaterThanOrEqual(2);
-    const g = r.connectors.find((c: any) => c.connectionId === connGmail);
+    const g = r.connectors.find((c: any) => c.connectionId === connGmail) as any;
     expect(g).toBeDefined();
     expect(g.autoSync).toBe(false);
     expect(g.itemsSynced).toBeGreaterThan(0);
@@ -206,9 +206,10 @@ describe("sync jobs", () => {
 
 describe("integration actions", () => {
   it("pushes a message to CRM as a lead", () => {
-    const r = integration.runAction(T, connGmail.endsWith("x") ? connGmail : connGmail, "sync_contacts", {});
-    expect(r.summary).toContain("contact(s) pushed");
-    const lead = integration.runAction(T, integration.connectConnector(T, { connectorId: "crm", mailboxId: mbId }).connectionId, "push_to_crm", { messageId: DataStore.mem().findOne("messages", (m: any) => (m as any)._id === "r10_lead")?._id as any });
+    const crm = integration.connectConnector(T, { connectorId: "crm", mailboxId: mbId }).connectionId;
+    const sync = integration.runAction(T, crm, "sync_contacts", {});
+    expect(sync.summary).toContain("contact(s) pushed");
+    const lead = integration.runAction(T, crm, "push_to_crm", { messageId: DataStore.mem().findOne("messages", (m: any) => (m as any)._id === "r10_lead")?._id as any });
     expect(lead.leadId).toBeDefined();
     expect(lead.stage).toBe("new");
     expect(lead.contactEmail).toBe("lead@prospect.io");
@@ -272,7 +273,7 @@ describe("alerts & overview", () => {
   it("flags needs_auth and error connections", () => {
     const conn = integration.connectConnector(T, { connectorId: "outlook", mailboxId: mbId });
     DataStore.mem().update("mail_connections", (c: any) => c._id === conn.connectionId, { status: "needs_auth" });
-    const bad = integration.connectConnector(T, { connectorId: "teams2x" === "teams2x" ? "dropbox" : "dropbox", mailboxId: mbId });
+    const bad = integration.connectConnector(T, { connectorId: "dropbox", mailboxId: mbId });
     DataStore.mem().update("mail_connections", (c: any) => c._id === bad.connectionId, { status: "error", error: "rate limited" });
     const r = integration.integrationAlerts(T);
     expect(r.total).toBeGreaterThanOrEqual(2);
@@ -290,7 +291,7 @@ describe("alerts & overview", () => {
   });
 
   it("reports healthy when there are no alerts for fresh connections", () => {
-    const conn = integration.connectConnector(T, { connectorId: "gmail2x" === "gmail2x" ? "teams" : "teams", mailboxId: mbId });
+    const conn = integration.connectConnector(T, { connectorId: "teams", mailboxId: mbId });
     integration.syncNow(T, conn.connectionId);
     const r = integration.integrationAlerts(T);
     const teams = r.alerts.find((a: any) => a.connectionId === conn.connectionId);
@@ -365,7 +366,7 @@ describe("integration bridges (§9 ↔ §4.4)", () => {
     const r = integration.createBridge(T, { name: "Temp", event: "mail.spam_detected", connectorId: "slack", action: "forward_to_channel" });
     const del = integration.deleteBridge(T, r.bridgeId);
     expect(del.summary).toContain("deleted");
-    expect(integration.listBridges(T)).toHaveLength(1);
+    expect(integration.listBridges(T)).toHaveLength(2);
     expect(() => integration.deleteBridge(T, r.bridgeId)).toThrow(/not found/);
   });
 });

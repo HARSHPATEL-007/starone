@@ -2514,4 +2514,83 @@ router.post("/mail/agents/:agentId/actions", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailAgentAction(req.user!.tenantId, req.params.agentId, req.body));
 }));
 
+router.get("/mail/integrations/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationCatalog(req.user!.tenantId));
+}));
+
+router.get("/mail/integrations/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationSyncStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/integrations/syncs", asyncHandler(async (req, res) => {
+  const { connectionId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailIntegrationSyncHistory(req.user!.tenantId, typeof connectionId === "string" ? connectionId : undefined));
+}));
+
+router.get("/mail/integrations/log", asyncHandler(async (req, res) => {
+  const { connectorId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailIntegrationLog(req.user!.tenantId, typeof connectorId === "string" ? connectorId : undefined));
+}));
+
+router.get("/mail/integrations/alerts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationAlerts(req.user!.tenantId));
+}));
+
+router.get("/mail/integrations/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationOverview(req.user!.tenantId));
+}));
+
+router.get("/mail/integrations/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/integrations/bridges", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationBridges(req.user!.tenantId));
+}));
+
+router.post("/mail/integrations/bridges", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationCreateBridge(req.user!.tenantId, req.body));
+}));
+
+router.delete("/mail/integrations/bridges/:bridgeId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationDeleteBridge(req.user!.tenantId, req.params.bridgeId));
+}));
+
+router.post("/mail/integrations/bridges/:bridgeId/trigger", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationTriggerBridge(req.user!.tenantId, req.params.bridgeId));
+}));
+
+router.get("/mail/integrations", asyncHandler(async (req, res) => {
+  const { connectorId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailIntegrationConnections(req.user!.tenantId, typeof connectorId === "string" ? connectorId : undefined));
+}));
+
+router.post("/mail/integrations/connect", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationConnect(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/integrations/:connectionId/disconnect", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationDisconnect(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.post("/mail/integrations/:connectionId/authorize", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationAuthorize(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.post("/mail/integrations/:connectionId/refresh", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationRefresh(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.put("/mail/integrations/:connectionId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationUpdate(req.user!.tenantId, req.params.connectionId, req.body));
+}));
+
+router.post("/mail/integrations/:connectionId/sync", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationSyncNow(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.post("/mail/integrations/:connectionId/actions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailIntegrationAction(req.user!.tenantId, req.params.connectionId, req.body.action || "", req.body.params));
+}));
+
 export default router;

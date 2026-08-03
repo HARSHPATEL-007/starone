@@ -2803,6 +2803,37 @@ export const api = {
       request<any>("/ads-marketing-module/mail/agents/" + agentId + "/actions", { method: "POST", body: JSON.stringify({ tool, params, sessionId }) }),
     mailAgentResolveHitl: (hitlId: string, decision: string) =>
       request<any>(`/ads-marketing-module/mail/agents/hitl/${hitlId}/resolve`, { method: "POST", body: JSON.stringify({ decision }) }),
+    mailIntegrationCatalog: () => request<any>("/ads-marketing-module/mail/integrations/catalog"),
+    mailIntegrationConnections: (connectorId?: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations${connectorId ? `?connectorId=${encodeURIComponent(connectorId)}` : ""}`),
+    mailIntegrationConnect: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/integrations/connect", { method: "POST", body: JSON.stringify(input) }),
+    mailIntegrationDisconnect: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/disconnect`, { method: "POST" }),
+    mailIntegrationAuthorize: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/authorize`, { method: "POST" }),
+    mailIntegrationRefresh: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/refresh`, { method: "POST" }),
+    mailIntegrationUpdate: (connectionId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}`, { method: "PUT", body: JSON.stringify(input) }),
+    mailIntegrationSyncNow: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/sync`, { method: "POST" }),
+    mailIntegrationSyncHistory: (connectionId?: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/syncs${connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : ""}`),
+    mailIntegrationSyncStatus: () => request<any>("/ads-marketing-module/mail/integrations/status"),
+    mailIntegrationAction: (connectionId: string, action: string, params?: Record<string, unknown>) =>
+      request<any>(`/ads-marketing-module/mail/integrations/${connectionId}/actions`, { method: "POST", body: JSON.stringify({ action, params }) }),
+    mailIntegrationLog: (connectorId?: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/log${connectorId ? `?connectorId=${encodeURIComponent(connectorId)}` : ""}`),
+    mailIntegrationAlerts: () => request<any>("/ads-marketing-module/mail/integrations/alerts"),
+    mailIntegrationOverview: () => request<any>("/ads-marketing-module/mail/integrations/overview"),
+    mailIntegrationBridges: () => request<any>("/ads-marketing-module/mail/integrations/bridges"),
+    mailIntegrationCreateBridge: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/integrations/bridges", { method: "POST", body: JSON.stringify(input) }),
+    mailIntegrationDeleteBridge: (bridgeId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/bridges/${bridgeId}`, { method: "DELETE" }),
+    mailIntegrationTriggerBridge: (bridgeId: string) =>
+      request<any>(`/ads-marketing-module/mail/integrations/bridges/${bridgeId}/trigger`, { method: "POST" }),
   },
 
   agentSwarm: {

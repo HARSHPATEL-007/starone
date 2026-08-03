@@ -1,4 +1,4 @@
-import { DataStore } from "./DataStore";
+﻿import { DataStore } from "./DataStore";
 
 function hashStr(s: string): number {
   let h = 0;
@@ -116,7 +116,19 @@ export class MailIntegrationService {
     if (!mailboxId) throw new Error("mailboxId is required to connect");
     if (!this.mailboxExists(tenantId, mailboxId)) throw new Error(`Mailbox "${mailboxId}" not found`);
     const existing = DataStore.mem().findOne("mail_connections", (x: any) => x.tenantId === tenantId && x.connectorId === connectorId && x.mailboxId === mailboxId);
-    if (existing) return { connectionId: existing._id, ...this.toPublic(existing), summary: `Already connected — ${c.name} is linked to this mailbox` };
+    if (existing && existing.status === "connected") return { ...this.toPublic(existing), summary: `Already connected — ${c.name} is linked to this mailbox` };
+    if (existing) {
+      const updated = DataStore.mem().update("mail_connections", (x: any) => x._id === existing._id, {
+        status: "connected",
+        error: null,
+        connectedAt: new Date().toISOString(),
+        lastSyncAt: null,
+        lastSyncStatus: null,
+        tokenExpiresAt: new Date(Date.now() + 45 * 24 * 3600 * 1000).toISOString(),
+      });
+      logEntry(tenantId, "connection_reconnected", `Reconnected ${c.name} to mailbox ${mailboxId}`, { connectionId: existing._id, connectorId });
+      return { ...this.toPublic(updated), summary: `${c.name} reconnected — ${c.scopes.length} scopes authorized` };
+    }
     const accountEmail = `acct_${hashStr(connectorId + "|" + mailboxId).toString(16).slice(0, 8)}@${connectorId}.io`;
     const connection = DataStore.mem().insert("mail_connections", {
       tenantId,
@@ -136,7 +148,7 @@ export class MailIntegrationService {
       tokenExpiresAt: new Date(Date.now() + 45 * 24 * 3600 * 1000).toISOString(),
     });
     logEntry(tenantId, "connection_connected", `Connected ${c.name} to mailbox ${mailboxId}`, { connectionId: connection._id, connectorId });
-    return { connectionId: connection._id, ...this.toPublic(connection), summary: `${c.name} connected — ${c.scopes.length} scopes authorized` };
+    return { ...this.toPublic(connection), summary: `${c.name} connected — ${c.scopes.length} scopes authorized` };
   }
 
   authorizeConnector(tenantId: string, connectionId: string) {
@@ -178,7 +190,7 @@ export class MailIntegrationService {
       ...((patch && patch.settings !== undefined) ? { settings } : {}),
       ...(patch && patch.status !== undefined ? { status: patch.status } : {}),
     });
-    return { connectionId, ...this.toPublic(updated), summary: `Connection settings updated` };
+    return { ...this.toPublic(updated), summary: `Connection settings updated` };
   }
 
   disconnectConnector(tenantId: string, connectionId: string) {
@@ -339,7 +351,7 @@ export class MailIntegrationService {
     const updated = DataStore.mem().update("mail_connections", (x: any) => x._id === connectionId, {
       actionsRun: (conn.actionsRun || 0) + 1,
     });
-    logEntry(tenantId, `action_${action}`, `${c.name} · ${ACTION_LABELS[action] || action} — ${result.summary}`, { connectionId, action });
+    logEntry(tenantId, `action_${action}`, `${c.name} Â· ${ACTION_LABELS[action] || action} — ${result.summary}`, { connectionId, action });
     return { connectionId, connectorId: c.id, action, ...result, actionsRun: updated.actionsRun, summary: `${c.name}: ${result.summary}` };
   }
 
@@ -432,8 +444,8 @@ export class MailIntegrationService {
       lastTriggerAt: null,
       createdAt: new Date().toISOString(),
     });
-    logEntry(tenantId, "bridge_created", `Bridge "${name}": ${event} → ${c.name} ${action}`, { bridgeId: bridge._id });
-    return { bridgeId: bridge._id, name, event, connectorId: c.id, action, enabled: bridge.enabled, summary: `Bridge "${name}" created — ${event} → ${c.name} ${ACTION_LABELS[action] || action}` };
+    logEntry(tenantId, "bridge_created", `Bridge "${name}": ${event} â†’ ${c.name} ${action}`, { bridgeId: bridge._id });
+    return { bridgeId: bridge._id, name, event, connectorId: c.id, action, enabled: bridge.enabled, summary: `Bridge "${name}" created — ${event} â†’ ${c.name} ${ACTION_LABELS[action] || action}` };
   }
 
   deleteBridge(tenantId: string, bridgeId: string) {
@@ -455,8 +467,8 @@ export class MailIntegrationService {
       triggerCount: (bridge.triggerCount || 0) + 1,
       lastTriggerAt: new Date().toISOString(),
     });
-    logEntry(tenantId, "bridge_fired", `Bridge "${bridge.name}" fired → ${r.summary}`, { bridgeId });
-    return { bridgeId, event: bridge.event, connectorId: bridge.connectorId, action: bridge.action, triggerCount: updated.triggerCount, result: r, summary: `Bridge "${bridge.name}" fired → ${r.summary}` };
+    logEntry(tenantId, "bridge_fired", `Bridge "${bridge.name}" fired â†’ ${r.summary}`, { bridgeId });
+    return { bridgeId, event: bridge.event, connectorId: bridge.connectorId, action: bridge.action, triggerCount: updated.triggerCount, result: r, summary: `Bridge "${bridge.name}" fired â†’ ${r.summary}` };
   }
 }
 
