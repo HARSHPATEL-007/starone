@@ -2408,4 +2408,110 @@ router.get("/mail/abuse/log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailAbuseLog(req.user!.tenantId));
 }));
 
+router.get("/mail/webhooks/events", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookEvents());
+}));
+
+router.get("/mail/webhooks/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookOverview(req.user!.tenantId));
+}));
+
+router.get("/mail/webhooks/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookStats(req.user!.tenantId));
+}));
+
+router.get("/mail/webhooks/deliveries", asyncHandler(async (req, res) => {
+  const { webhookId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailWebhookDeliveries(req.user!.tenantId, typeof webhookId === "string" ? webhookId : undefined));
+}));
+
+router.post("/mail/webhooks/trigger", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookTrigger(req.user!.tenantId, req.body.event || "", req.body.payload || {}));
+}));
+
+router.get("/mail/webhooks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookList(req.user!.tenantId));
+}));
+
+router.post("/mail/webhooks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookCreate(req.user!.tenantId, req.body));
+}));
+
+router.put("/mail/webhooks/:webhookId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookUpdate(req.user!.tenantId, req.params.webhookId, req.body));
+}));
+
+router.delete("/mail/webhooks/:webhookId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookDelete(req.user!.tenantId, req.params.webhookId));
+}));
+
+router.post("/mail/webhooks/:webhookId/test", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWebhookTest(req.user!.tenantId, req.params.webhookId));
+}));
+
+router.get("/mail/agents/personas", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentPersonas());
+}));
+
+router.get("/mail/agents/tools", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentToolCatalog());
+}));
+
+router.post("/mail/agents/discover", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentToolDiscover(req.user!.tenantId, req.body.query || ""));
+}));
+
+router.get("/mail/agents/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/agents/sessions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentSessions(req.user!.tenantId));
+}));
+
+router.get("/mail/agents/hitl", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentHitlQueue(req.user!.tenantId));
+}));
+
+router.get("/mail/agents/audit", asyncHandler(async (req, res) => {
+  const { agentId } = req.query;
+  sendSuccess(res, adsMarketingModule.mailAgentAuditLog(req.user!.tenantId, typeof agentId === "string" ? agentId : undefined));
+}));
+
+router.get("/mail/agents", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentList(req.user!.tenantId));
+}));
+
+router.post("/mail/agents", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentRegister(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/agents/:agentId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentGet(req.user!.tenantId, req.params.agentId));
+}));
+
+router.put("/mail/agents/:agentId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentUpdate(req.user!.tenantId, req.params.agentId, req.body));
+}));
+
+router.post("/mail/agents/:agentId/deactivate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentDeactivate(req.user!.tenantId, req.params.agentId));
+}));
+
+router.post("/mail/agents/:agentId/sessions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentCreateSession(req.user!.tenantId, req.params.agentId, req.body));
+}));
+
+router.post("/mail/agents/sessions/:sessionId/end", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentEndSession(req.user!.tenantId, req.params.sessionId));
+}));
+
+router.post("/mail/agents/hitl/:hitlId/resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentResolveHitl(req.user!.tenantId, req.params.hitlId, req.body.decision || ""));
+}));
+
+router.post("/mail/agents/:agentId/actions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAgentAction(req.user!.tenantId, req.params.agentId, req.body));
+}));
+
 export default router;

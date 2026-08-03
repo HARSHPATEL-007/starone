@@ -2769,6 +2769,40 @@ export const api = {
     mailAbuseThreatResponse: (action: string, target?: string) =>
       request<any>("/ads-marketing-module/mail/abuse/threat-response", { method: "POST", body: JSON.stringify({ action, target }) }),
     mailAbuseLog: () => request<any>("/ads-marketing-module/mail/abuse/log"),
+    mailWebhookEvents: () => request<any>("/ads-marketing-module/mail/webhooks/events"),
+    mailWebhookOverview: () => request<any>("/ads-marketing-module/mail/webhooks/overview"),
+    mailWebhookStats: () => request<any>("/ads-marketing-module/mail/webhooks/stats"),
+    mailWebhookDeliveries: (webhookId?: string) =>
+      request<any>(`/ads-marketing-module/mail/webhooks/deliveries${webhookId ? `?webhookId=${encodeURIComponent(webhookId)}` : ""}`),
+    mailWebhookTrigger: (event: string, payload?: Record<string, unknown>) =>
+      request<any>("/ads-marketing-module/mail/webhooks/trigger", { method: "POST", body: JSON.stringify({ event, payload }) }),
+    mailWebhookList: () => request<any>("/ads-marketing-module/mail/webhooks"),
+    mailWebhookCreate: (input: Record<string, any>) => request<any>("/ads-marketing-module/mail/webhooks", { method: "POST", body: JSON.stringify(input) }),
+    mailWebhookUpdate: (webhookId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/webhooks/${webhookId}`, { method: "PUT", body: JSON.stringify(input) }),
+    mailWebhookDelete: (webhookId: string) => request<any>(`/ads-marketing-module/mail/webhooks/${webhookId}`, { method: "DELETE" }),
+    mailWebhookTest: (webhookId: string) => request<any>(`/ads-marketing-module/mail/webhooks/${webhookId}/test`, { method: "POST" }),
+    mailAgentPersonas: () => request<any>("/ads-marketing-module/mail/agents/personas"),
+    mailAgentTools: () => request<any>("/ads-marketing-module/mail/agents/tools"),
+    mailAgentDiscover: (query: string) => request<any>("/ads-marketing-module/mail/agents/discover", { method: "POST", body: JSON.stringify({ query }) }),
+    mailAgentDashboard: () => request<any>("/ads-marketing-module/mail/agents/dashboard"),
+    mailAgentSessions: () => request<any>("/ads-marketing-module/mail/agents/sessions"),
+    mailAgentHitlQueue: () => request<any>("/ads-marketing-module/mail/agents/hitl"),
+    mailAgentAuditLog: (agentId?: string) =>
+      request<any>(`/ads-marketing-module/mail/agents/audit${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ""}`),
+    mailAgentList: () => request<any>("/ads-marketing-module/mail/agents"),
+    mailAgentRegister: (input: Record<string, any>) => request<any>("/ads-marketing-module/mail/agents", { method: "POST", body: JSON.stringify(input) }),
+    mailAgentGet: (agentId: string) => request<any>(`/ads-marketing-module/mail/agents/${agentId}`),
+    mailAgentUpdate: (agentId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/agents/${agentId}`, { method: "PUT", body: JSON.stringify(input) }),
+    mailAgentDeactivate: (agentId: string) => request<any>(`/ads-marketing-module/mail/agents/${agentId}/deactivate`, { method: "POST" }),
+    mailAgentCreateSession: (agentId: string, context?: string) =>
+      request<any>("/ads-marketing-module/mail/agents/" + agentId + "/sessions", { method: "POST", body: JSON.stringify({ context }) }),
+    mailAgentEndSession: (sessionId: string) => request<any>(`/ads-marketing-module/mail/agents/sessions/${sessionId}/end`, { method: "POST" }),
+    mailAgentAction: (agentId: string, tool: string, params?: Record<string, unknown>, sessionId?: string) =>
+      request<any>("/ads-marketing-module/mail/agents/" + agentId + "/actions", { method: "POST", body: JSON.stringify({ tool, params, sessionId }) }),
+    mailAgentResolveHitl: (hitlId: string, decision: string) =>
+      request<any>(`/ads-marketing-module/mail/agents/hitl/${hitlId}/resolve`, { method: "POST", body: JSON.stringify({ decision }) }),
   },
 
   agentSwarm: {

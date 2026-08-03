@@ -116,6 +116,8 @@ const navItems = [
   { to: "/mail/command-center", icon: LayoutDashboard, label: "Mail Command" },
   { to: "/mail/ops", icon: Activity, label: "Mail Ops" },
   { to: "/mail/protection", icon: Shield, label: "Mail Protection" },
+  { to: "/mail/webhooks", icon: Webhook, label: "Mail Webhooks" },
+  { to: "/mail/agents", icon: Bot, label: "Mail Agents" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

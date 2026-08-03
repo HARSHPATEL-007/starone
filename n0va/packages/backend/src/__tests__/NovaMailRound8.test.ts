@@ -221,10 +221,12 @@ describe("search operators — filtering", () => {
 });
 
 describe("search operators — reference & history", () => {
-  it("lists the 15 operators", () => {
+  it("lists the 20 operators (enhanced §3.4.2)", () => {
     const ref = search.operatorReference();
-    expect(ref.operators.length).toBe(15);
+    expect(ref.operators.length).toBe(20);
     expect(ref.operators.map((o: any) => o.op)).toContain("near");
+    expect(ref.operators.map((o: any) => o.example)).toContain("has:voice");
+    expect(ref.operators.map((o: any) => o.example)).toContain("collaborated:with:jane@team.io");
   });
 
   it("runs search examples", () => {
@@ -243,7 +245,7 @@ describe("search operators — reference & history", () => {
 
   it("reports operator stats coverage", () => {
     const s = search.operatorStats(T);
-    expect(s.stats.length).toBe(15);
+    expect(s.stats.length).toBe(20);
     expect(s.totalMessages).toBeGreaterThan(0);
   });
 });

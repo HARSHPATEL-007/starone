@@ -79,6 +79,8 @@ import { mailOps } from "./MailOpsService";
 import { mailStorage } from "./MailStorageService";
 import { mailSearchOp } from "./MailSearchOperatorsService";
 import { mailAbuse } from "./MailAbuseService";
+import { mailWebhook } from "./MailWebhookService";
+import { mailAgentRegistry } from "./MailAgentRegistryService";
 
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -4658,6 +4660,110 @@ export class AdsMarketingModuleService {
 
   mailAbuseDashboard(tenantId: string) {
     return mailAbuse.abuseDashboard(tenantId);
+  }
+
+  mailWebhookEvents() {
+    return mailWebhook.webhookEvents();
+  }
+
+  mailWebhookList(tenantId: string) {
+    return mailWebhook.listWebhooks(tenantId);
+  }
+
+  mailWebhookCreate(tenantId: string, input: any) {
+    return mailWebhook.createWebhook(tenantId, input);
+  }
+
+  mailWebhookUpdate(tenantId: string, webhookId: string, input: any) {
+    return mailWebhook.updateWebhook(tenantId, webhookId, input);
+  }
+
+  mailWebhookDelete(tenantId: string, webhookId: string) {
+    return mailWebhook.deleteWebhook(tenantId, webhookId);
+  }
+
+  mailWebhookTest(tenantId: string, webhookId: string) {
+    return mailWebhook.testWebhook(tenantId, webhookId);
+  }
+
+  mailWebhookTrigger(tenantId: string, event: string, payload: any) {
+    return mailWebhook.triggerEvent(tenantId, event, payload);
+  }
+
+  mailWebhookDeliveries(tenantId: string, webhookId?: string) {
+    return mailWebhook.webhookDeliveries(tenantId, webhookId);
+  }
+
+  mailWebhookStats(tenantId: string) {
+    return mailWebhook.webhookStats(tenantId);
+  }
+
+  mailWebhookOverview(tenantId: string) {
+    return mailWebhook.webhookOverview(tenantId);
+  }
+
+  mailAgentPersonas() {
+    return mailAgentRegistry.agentPersonas();
+  }
+
+  mailAgentToolCatalog() {
+    return mailAgentRegistry.toolCatalog();
+  }
+
+  mailAgentToolDiscover(tenantId: string, query: string) {
+    return mailAgentRegistry.toolDiscover(tenantId, query);
+  }
+
+  mailAgentRegister(tenantId: string, input: any) {
+    return mailAgentRegistry.registerAgent(tenantId, input);
+  }
+
+  mailAgentList(tenantId: string) {
+    return mailAgentRegistry.listAgents(tenantId);
+  }
+
+  mailAgentGet(tenantId: string, agentId: string) {
+    return mailAgentRegistry.getAgent(tenantId, agentId);
+  }
+
+  mailAgentUpdate(tenantId: string, agentId: string, input: any) {
+    return mailAgentRegistry.updateAgent(tenantId, agentId, input);
+  }
+
+  mailAgentDeactivate(tenantId: string, agentId: string) {
+    return mailAgentRegistry.deactivateAgent(tenantId, agentId);
+  }
+
+  mailAgentCreateSession(tenantId: string, agentId: string, input: any) {
+    return mailAgentRegistry.createSession(tenantId, agentId, input);
+  }
+
+  mailAgentEndSession(tenantId: string, sessionId: string) {
+    return mailAgentRegistry.endSession(tenantId, sessionId);
+  }
+
+  mailAgentSessions(tenantId: string) {
+    return mailAgentRegistry.agentSessions(tenantId);
+  }
+
+  mailAgentAction(tenantId: string, agentId: string, input: any) {
+    return mailAgentRegistry.agentAction(tenantId, agentId, input);
+  }
+
+  mailAgentHitlQueue(tenantId: string) {
+    return mailAgentRegistry.hitlQueue(tenantId);
+  }
+
+  mailAgentResolveHitl(tenantId: string, hitlId: string, decision: string) {
+    return mailAgentRegistry.resolveHitl(tenantId, hitlId, decision);
+  }
+
+  mailAgentAuditLog(tenantId: string, agentId?: string) {
+    return mailAgentRegistry.agentAuditLog(tenantId, agentId);
+  }
+
+  mailAgentDashboard(tenantId: string) {
+    return mailAgentRegistry.agentFrameworkDashboard(tenantId);
   }
 }
 

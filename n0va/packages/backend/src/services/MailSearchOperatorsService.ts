@@ -11,6 +11,11 @@ const OPERATORS = [
   { op: "to", label: "Recipient", example: "to:team-alpha", desc: "Recipient email or name" },
   { op: "subject", label: "Subject", example: "subject:\"budget review\"", desc: "Subject line (quote phrases)" },
   { op: "has", label: "Attachments", example: "has:attachment", desc: "Messages with attachments" },
+  { op: "has", label: "Voice note", example: "has:voice", desc: "Messages with voice notes" },
+  { op: "has", label: "Poll", example: "has:poll", desc: "Messages with embedded polls" },
+  { op: "collaborated", label: "Collaborated", example: "collaborated:with:jane@team.io", desc: "Messages with comments/reactions — optionally with:EMAIL" },
+  { op: "ai", label: "AI suggested", example: "ai:suggested", desc: "Messages with AI suggestions (summary / smart reply)" },
+  { op: "visual", label: "Visual content", example: "visual:contains:chart", desc: "Visual content — photo, chart, whiteboard, video (AI-tagged)" },
   { op: "type", label: "Attachment type", example: "type:pdf", desc: "Attachment file type (modifier for has:attachment)" },
   { op: "in", label: "Folder", example: "in:sent", desc: "Folder location" },
   { op: "label", label: "Label", example: "label:important", desc: "Label filter" },
@@ -98,6 +103,11 @@ export class MailSearchOperatorsService {
           i++;
           continue;
         }
+        if (op === "has" && !["attachment", "voice", "poll"].includes(value.toLowerCase())) {
+          invalid.push({ op, raw: tok, reason: `unknown has: value "${value}" (use attachment, voice, poll)` });
+          i++;
+          continue;
+        }
         if (op === "size" && !parseSize(value)) {
           invalid.push({ op, raw: tok, reason: `bad size "${value}" (use e.g. size:>10MB)` });
           i++;
@@ -141,7 +151,6 @@ export class MailSearchOperatorsService {
       if (op === "from") f.from = value;
       if (op === "to") f.to = value;
       if (op === "subject") f.subject = value;
-      if (op === "has") f.hasAttachment = true;
       if (op === "type") { f.hasAttachment = true; f.attachmentType = value.toLowerCase(); }
       if (op === "in") f.inFolder = value.toLowerCase();
       if (op === "label") f.label = value;
@@ -162,6 +171,19 @@ export class MailSearchOperatorsService {
         if (flag === "starred") f.starred = true;
         if (flag === "important") f.important = true;
       }
+      if (op === "has") {
+        const hv = value.toLowerCase();
+        if (hv === "attachment") f.hasAttachment = true;
+        if (hv === "voice") f.hasVoice = true;
+        if (hv === "poll") f.hasPoll = true;
+      }
+      if (op === "collaborated") {
+        f.collaborated = true;
+        const v = value.toLowerCase().startsWith("with:") ? value.slice(5) : "";
+        if (v) f.collabWith = v;
+      }
+      if (op === "ai") f.aiSuggested = true;
+      if (op === "visual") f.visual = value.toLowerCase().startsWith("contains:") ? value.slice(9) : value;
       if (op === "sentiment") f.sentiment = value.toLowerCase();
       if (op === "priority") f.priority = value.toLowerCase();
       if (op === "topic") f.topic = value.toLowerCase();
@@ -176,7 +198,10 @@ export class MailSearchOperatorsService {
       from: `From "${value}"`,
       to: `To "${value}"`,
       subject: `Subject contains "${value}"`,
-      has: "With attachments",
+      has: `With ${value}`,
+      collaborated: value ? `Collaborated by "${value}"` : "With collaboration activity",
+      ai: "With AI suggestions",
+      visual: `Visual content "${value}"`,
       type: `Attachment type "${value}"`,
       in: `In folder "${value}"`,
       label: `Label "${value}"`,
@@ -228,6 +253,38 @@ export class MailSearchOperatorsService {
       msgs = msgs.filter((m: any) => `${m.subject || ""} ${m.body || ""}`.toLowerCase().includes(phrase) || scoreMessage(m, phrase) > 0);
     }
     if (f.threadId) msgs = msgs.filter((m: any) => m.threadId === f.threadId);
+    if (f.hasVoice) {
+      const vn = new Set(DataStore.mem().find("mail_voice_notes", (n: any) => n.tenantId === tenantId).map((n: any) => n.messageId));
+      msgs = msgs.filter((m: any) => vn.has(m._id) || (m.attachments || []).some((a: any) => ["voice", "audio"].includes(String(a.type || "").toLowerCase())));
+    }
+    if (f.hasPoll) {
+      const pl = new Set(DataStore.mem().find("mail_polls", (p: any) => p.tenantId === tenantId).map((p: any) => p.messageId));
+      msgs = msgs.filter((m: any) => pl.has(m._id));
+    }
+    if (f.collaborated) {
+      const comments = DataStore.mem().find("mail_comments", (c: any) => c.tenantId === tenantId);
+      const reactions = DataStore.mem().find("mail_reactions", (r: any) => r.tenantId === tenantId);
+      const collab = new Set(comments.map((c: any) => c.messageId).concat(reactions.map((r: any) => r.messageId)));
+      msgs = msgs.filter((m: any) => {
+        if (!collab.has(m._id)) return false;
+        if (f.collabWith) {
+          const w = String(f.collabWith).toLowerCase();
+          return comments.some((c: any) => c.messageId === m._id && `${c.author || ""}`.toLowerCase().includes(w))
+            || reactions.some((r: any) => r.messageId === m._id && `${r.user || ""}`.toLowerCase().includes(w));
+        }
+        return true;
+      });
+    }
+    if (f.aiSuggested) msgs = msgs.filter((m: any) => !!(m.ai && (m.ai.summary || m.ai.suggestedReply)) || ((m.aiSuggestions || []).length > 0));
+    if (f.visual) {
+      const v = String(f.visual).toLowerCase();
+      msgs = msgs.filter((m: any) => {
+        const visualAtts = (m.attachments || []).filter((a: any) => ["image", "video", "visual"].includes(String(a.type || "").toLowerCase()));
+        if (!visualAtts.length) return false;
+        const tags = `${(m.ai && (m.ai.visualTags || m.ai.tags)) || ""}`.toLowerCase();
+        return visualAtts.some((a: any) => `${a.name || a.filename || ""}`.toLowerCase().includes(v)) || tags.includes(v);
+      });
+    }
     const q = parsed.freeText.toLowerCase();
     const scored = msgs
       .map((m: any) => ({ message: m, score: scoreMessage(m, q) }))
@@ -303,7 +360,22 @@ export class MailSearchOperatorsService {
       if (o.op === "from") applicable = new Set(msgs.map((m: any) => (m.from || {}).email)).size;
       else if (o.op === "to") applicable = msgs.filter((m: any) => (m.to || []).length).length;
       else if (o.op === "subject") applicable = msgs.filter((m: any) => m.subject).length;
-      else if (o.op === "has") applicable = msgs.filter((m: any) => (m.attachments || []).length > 0).length;
+      else if (o.op === "has" && o.example === "has:attachment") applicable = msgs.filter((m: any) => (m.attachments || []).length > 0).length;
+      else if (o.op === "has" && o.example === "has:voice") {
+        const vn = new Set(DataStore.mem().find("mail_voice_notes", (n: any) => n.tenantId === tenantId).map((n: any) => n.messageId));
+        applicable = msgs.filter((m: any) => vn.has(m._id) || (m.attachments || []).some((a: any) => ["voice", "audio"].includes(String(a.type || "").toLowerCase()))).length;
+      }
+      else if (o.op === "has" && o.example === "has:poll") {
+        const pl = new Set(DataStore.mem().find("mail_polls", (p: any) => p.tenantId === tenantId).map((p: any) => p.messageId));
+        applicable = msgs.filter((m: any) => pl.has(m._id)).length;
+      }
+      else if (o.op === "collaborated") {
+        const comments = new Set(DataStore.mem().find("mail_comments", (c: any) => c.tenantId === tenantId).map((c: any) => c.messageId));
+        const reactions = new Set(DataStore.mem().find("mail_reactions", (r: any) => r.tenantId === tenantId).map((r: any) => r.messageId));
+        applicable = msgs.filter((m: any) => comments.has(m._id) || reactions.has(m._id)).length;
+      }
+      else if (o.op === "ai") applicable = msgs.filter((m: any) => !!(m.ai && (m.ai.summary || m.ai.suggestedReply)) || ((m.aiSuggestions || []).length > 0)).length;
+      else if (o.op === "visual") applicable = msgs.filter((m: any) => (m.attachments || []).some((a: any) => ["image", "video", "visual"].includes(String(a.type || "").toLowerCase()))).length;
       else if (o.op === "type") applicable = new Set(msgs.flatMap((m: any) => (m.attachments || []).map((a: any) => a.type))).size;
       else if (o.op === "in") applicable = new Set(msgs.map((m: any) => m.folder)).size;
       else if (o.op === "label") applicable = new Set(msgs.flatMap((m: any) => m.labels || [])).size;
@@ -315,7 +387,7 @@ export class MailSearchOperatorsService {
       else if (o.op === "topic") applicable = msgs.filter((m: any) => m.ai && m.ai.category).length;
       else if (o.op === "near") applicable = msgs.length;
       else if (o.op === "related") applicable = new Set(msgs.map((m: any) => m.threadId)).size;
-      return { op: o.op, label: o.label, messages: applicable, sharePct: msgs.length ? parseFloat(((applicable / msgs.length) * 100).toFixed(1)) : 0 };
+      return { op: o.op, label: o.label, example: o.example, messages: applicable, sharePct: msgs.length ? parseFloat(((applicable / msgs.length) * 100).toFixed(1)) : 0 };
     });
     return { stats, totalMessages: msgs.length, summary: `Operator coverage across ${msgs.length} message(s)`, seed: hashStr(tenantId + "opstats") };
   }
