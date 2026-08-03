@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare, BrainCircuit, FolderSearch, Globe, Mic, Webhook, Plug } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare, BrainCircuit, FolderSearch, Globe, Mic, Webhook, Plug, SendHorizonal } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -37,6 +37,7 @@ const PAGE_ITEMS: SearchResult[] = [
 { type: "page", label: "Domains", route: "/mail/domains", icon: Globe },
 { type: "page", label: "Voice & Media", route: "/mail/voice", icon: Mic },
 { type: "page", label: "Mail Command", route: "/mail/command-center", icon: LayoutDashboard },
+{ type: "page", label: "Mail Dispatch", route: "/mail/dispatch", icon: SendHorizonal },
 { type: "page", label: "Mail Ops", route: "/mail/ops", icon: Activity },
   { type: "page", label: "Mail Protection", route: "/mail/protection", icon: Shield },
   { type: "page", label: "Mail Webhooks", route: "/mail/webhooks", icon: Webhook },

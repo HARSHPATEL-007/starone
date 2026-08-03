@@ -25,6 +25,7 @@ const MailDiscovery = lazy(() => import("./pages/MailDiscovery"));
 const MailDomains = lazy(() => import("./pages/MailDomains"));
 const MailVoice = lazy(() => import("./pages/MailVoice"));
 const MailCommandCenter = lazy(() => import("./pages/MailCommandCenter"));
+const MailDispatch = lazy(() => import("./pages/MailDispatch"));
 const MailOps = lazy(() => import("./pages/MailOps"));
 const MailProtection = lazy(() => import("./pages/MailProtection"));
 const MailWebhooks = lazy(() => import("./pages/MailWebhooks"));
@@ -212,6 +213,7 @@ export default function App() {
                 <Route path="/mail/domains" element={<MailDomains />} />
                 <Route path="/mail/voice" element={<MailVoice />} />
                 <Route path="/mail/command-center" element={<MailCommandCenter />} />
+                <Route path="/mail/dispatch" element={<MailDispatch />} />
                 <Route path="/mail/ops" element={<MailOps />} />
           <Route path="/mail/protection" element={<MailProtection />} />
                 <Route path="/mail/webhooks" element={<MailWebhooks />} />

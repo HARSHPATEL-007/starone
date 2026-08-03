@@ -88,6 +88,7 @@ import {
   BrainCircuit,
   FolderSearch,
   Mic,
+  SendHorizonal,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -115,6 +116,7 @@ const navItems = [
   { to: "/mail/domains", icon: Globe, label: "Domains" },
   { to: "/mail/voice", icon: Mic, label: "Voice & Media" },
   { to: "/mail/command-center", icon: LayoutDashboard, label: "Mail Command" },
+  { to: "/mail/dispatch", icon: SendHorizonal, label: "Mail Dispatch" },
   { to: "/mail/ops", icon: Activity, label: "Mail Ops" },
   { to: "/mail/protection", icon: Shield, label: "Mail Protection" },
   { to: "/mail/webhooks", icon: Webhook, label: "Mail Webhooks" },
