@@ -2852,6 +2852,33 @@ export const api = {
     mailBillingRemovePaymentMethod: (methodId: string) =>
       request<any>(`/ads-marketing-module/mail/billing/payment-methods/${methodId}`, { method: "DELETE" }),
     mailBillingLog: () => request<any>("/ads-marketing-module/mail/billing/log"),
+    mailBillingAddons: () => request<any>("/ads-marketing-module/mail/billing/addons"),
+    mailBillingActiveAddons: () => request<any>("/ads-marketing-module/mail/billing/addons/active"),
+    mailBillingAddAddon: (addonId: string) =>
+      request<any>(`/ads-marketing-module/mail/billing/addons/${addonId}`, { method: "POST" }),
+    mailBillingRemoveAddon: (addonId: string) =>
+      request<any>(`/ads-marketing-module/mail/billing/addons/${addonId}`, { method: "DELETE" }),
+    mailBillingOverageStatus: () => request<any>("/ads-marketing-module/mail/billing/overage"),
+    mailBillingSetOveragePolicy: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/billing/overage", { method: "PUT", body: JSON.stringify(input) }),
+    mailBillingOverageInvoice: () =>
+      request<any>("/ads-marketing-module/mail/billing/overage/invoice", { method: "POST" }),
+    mailBillingContracts: () => request<any>("/ads-marketing-module/mail/billing/contracts"),
+    mailBillingCreateContract: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/billing/contracts", { method: "POST", body: JSON.stringify(input) }),
+    mailBillingContractStatus: () => request<any>("/ads-marketing-module/mail/billing/contracts/status"),
+    mailBillingCancelContract: () =>
+      request<any>("/ads-marketing-module/mail/billing/contracts/cancel", { method: "POST" }),
+    mailBillingUsageAlerts: () => request<any>("/ads-marketing-module/mail/billing/alerts"),
+    mailBillingSetAlertThresholds: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/billing/alerts", { method: "PUT", body: JSON.stringify(input) }),
+    mailBillingDowngrade: (plan: string) =>
+      request<any>("/ads-marketing-module/mail/billing/downgrade", { method: "POST", body: JSON.stringify({ plan }) }),
+    mailBillingSetAutoRenew: (enabled: boolean) =>
+      request<any>("/ads-marketing-module/mail/billing/auto-renew", { method: "POST", body: JSON.stringify({ enabled }) }),
+    mailBillingCancelSubscription: () =>
+      request<any>("/ads-marketing-module/mail/billing/cancel", { method: "POST" }),
+    mailBillingCredits: () => request<any>("/ads-marketing-module/mail/billing/credits"),
     mailNotifications: (opts?: Record<string, any>) => {
       const params = new URLSearchParams();
       if (opts?.unreadOnly) params.set("unreadOnly", "true");

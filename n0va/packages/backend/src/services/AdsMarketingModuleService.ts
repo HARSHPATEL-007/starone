@@ -4897,6 +4897,74 @@ export class AdsMarketingModuleService {
     return mailBilling.billingLog(tenantId);
   }
 
+  mailBillingAddons(tenantId: string) {
+    return mailBilling.addonCatalog();
+  }
+
+  mailBillingListAddons(tenantId: string) {
+    return mailBilling.listAddons(tenantId);
+  }
+
+  mailBillingAddAddon(tenantId: string, addonId: string) {
+    return mailBilling.addAddon(tenantId, addonId);
+  }
+
+  mailBillingRemoveAddon(tenantId: string, addonId: string) {
+    return mailBilling.removeAddon(tenantId, addonId);
+  }
+
+  mailBillingOveragePolicy(tenantId: string, input: any = null) {
+    return mailBilling.overagePolicy(tenantId, input === null || input === undefined ? null : input);
+  }
+
+  mailBillingOverageStatus(tenantId: string) {
+    return mailBilling.overageStatus(tenantId);
+  }
+
+  mailBillingOverageInvoice(tenantId: string) {
+    return mailBilling.overageInvoice(tenantId);
+  }
+
+  mailBillingContracts(tenantId: string) {
+    return mailBilling.contracts(tenantId);
+  }
+
+  mailBillingCreateContract(tenantId: string, input: any) {
+    return mailBilling.createContract(tenantId, input);
+  }
+
+  mailBillingContractStatus(tenantId: string) {
+    return mailBilling.contractStatus(tenantId);
+  }
+
+  mailBillingCancelContract(tenantId: string) {
+    return mailBilling.cancelContract(tenantId);
+  }
+
+  mailBillingUsageAlerts(tenantId: string) {
+    return mailBilling.usageAlerts(tenantId);
+  }
+
+  mailBillingSetAlertThresholds(tenantId: string, input: any) {
+    return mailBilling.setAlertThresholds(tenantId, input);
+  }
+
+  mailBillingDowngrade(tenantId: string, plan: string) {
+    return mailBilling.downgradePlan(tenantId, plan);
+  }
+
+  mailBillingSetAutoRenew(tenantId: string, enabled: boolean) {
+    return mailBilling.setAutoRenew(tenantId, enabled);
+  }
+
+  mailBillingCancelSubscription(tenantId: string) {
+    return mailBilling.cancelSubscription(tenantId);
+  }
+
+  mailBillingCredits(tenantId: string) {
+    return mailBilling.creditBalance(tenantId);
+  }
+
   mailNotifications(tenantId: string, opts: any) {
     return mailNotifications.listNotifications(tenantId, opts);
   }

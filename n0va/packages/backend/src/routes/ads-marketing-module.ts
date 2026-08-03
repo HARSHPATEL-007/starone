@@ -2613,6 +2613,74 @@ router.post("/mail/billing/upgrade", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailBillingUpgrade(req.user!.tenantId, req.body.plan || ""));
 }));
 
+router.post("/mail/billing/downgrade", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingDowngrade(req.user!.tenantId, req.body.plan || ""));
+}));
+
+router.post("/mail/billing/auto-renew", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingSetAutoRenew(req.user!.tenantId, !!req.body.enabled));
+}));
+
+router.post("/mail/billing/cancel", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCancelSubscription(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/addons", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingAddons(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/addons/active", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingListAddons(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/addons/:addonId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingAddAddon(req.user!.tenantId, req.params.addonId));
+}));
+
+router.delete("/mail/billing/addons/:addonId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingRemoveAddon(req.user!.tenantId, req.params.addonId));
+}));
+
+router.get("/mail/billing/overage", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingOverageStatus(req.user!.tenantId));
+}));
+
+router.put("/mail/billing/overage", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingOveragePolicy(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/billing/overage/invoice", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingOverageInvoice(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/contracts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingContracts(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/contracts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCreateContract(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/billing/contracts/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingContractStatus(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/contracts/cancel", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCancelContract(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/alerts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingUsageAlerts(req.user!.tenantId));
+}));
+
+router.put("/mail/billing/alerts", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingSetAlertThresholds(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/billing/credits", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCredits(req.user!.tenantId));
+}));
+
 router.get("/mail/billing/invoices", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailBillingInvoices(req.user!.tenantId));
 }));
