@@ -128,14 +128,14 @@ export class MailWhiteLabelService {
   selectDeployment(tenantId: string, modelId: string) {
     const model = DEPLOYMENT_MODELS.find((m) => m.id === modelId);
     if (!model) throw new Error(`Unknown deployment model "${modelId}"`);
-    const b = this.getBranding(tenantId);
+    const b = this.brandingRecord(tenantId);
     DataStore.mem().update("mail_branding", (x: any) => x._id === b._id, { deploymentModel: model.id, updatedAt: new Date().toISOString() });
     this.log(tenantId, "deployment_selected", `${model.name} deployment selected`); 
     return { deploymentModel: model.id, ...model, summary: `${model.name} deployment selected - ${model.pricing}` };
   }
 
   deploymentStatus(tenantId: string) {
-    const b = this.getBranding(tenantId);
+    const b = this.brandingRecord(tenantId);
     const model = DEPLOYMENT_MODELS.find((m: any) => m.id === b.deploymentModel) || DEPLOYMENT_MODELS[0];
     return {
       deploymentModel: model.id,
@@ -149,7 +149,7 @@ export class MailWhiteLabelService {
   }
 
   customSla(tenantId: string) {
-    const b = this.getBranding(tenantId);
+    const b = this.brandingRecord(tenantId);
     return { slaPct: b.slaPct || 99.9, slaString: `${b.slaPct || 99.9}%`, summary: `Custom SLA at ${b.slaPct || 99.9}%` };
   }
 
@@ -158,7 +158,7 @@ export class MailWhiteLabelService {
     if (planLevel < 3) throw new Error("Custom SLA requires Business plan or higher");
     const value = parseFloat(String(slaPct));
     if (isNaN(value) || value < 99 || value > 99.99999) throw new Error("SLA must be between 99 and 99.99999");
-    const b = this.getBranding(tenantId);
+    const b = this.brandingRecord(tenantId);
     DataStore.mem().update("mail_branding", (x: any) => x._id === b._id, { slaPct: value, slaPenalty: penalty !== undefined ? Number(penalty) : 0.05, updatedAt: new Date().toISOString() });
     this.log(tenantId, "sla_set", `Custom SLA set to ${value}%`);
     return { slaPct: value, slaString: `${value}%`, penalty: penalty !== undefined ? Number(penalty) : 0.05, summary: `Custom SLA set to ${value}%` };
@@ -172,7 +172,7 @@ export class MailWhiteLabelService {
   bindOutboundDomain(tenantId: string, domainId: string) {
     const domain = DataStore.mem().findOne("mail_domains", (d: any) => d._id === domainId && d.tenantId === tenantId && d.status === "verified");
     if (!domain) throw new Error(`Verified domain "${domainId}" not found`);
-    const b = this.getBranding(tenantId);
+    const b = this.brandingRecord(tenantId);
     DataStore.mem().update("mail_branding", (x: any) => x._id === b._id, { customMailDomain: domain.domain || domain.name, updatedAt: new Date().toISOString() });
     this.log(tenantId, "domain_bound", `Outbound domain bound: ${domain.domain || domain.name}`);
     return { domainId, domain: domain.domain || domain.name, summary: `Outbound mail now branded from ${domain.domain || domain.name}` };
@@ -188,7 +188,7 @@ export class MailWhiteLabelService {
   private availableFeatures(tenantId: string): string[] {
     const level = this.planLevel(tenantId);
     const tiers = ["", "standard", "pro", "business", "custom"];
-    const available = [];
+    const available: string[] = [];
     for (const f of BRAND_FEATURES) if (tiers.indexOf(f.tiers[0]) <= level) available.push(f.id);
     return available;
   }

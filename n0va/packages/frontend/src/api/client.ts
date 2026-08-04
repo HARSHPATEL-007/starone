@@ -3165,6 +3165,97 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}`),
     mailComposerDelete: (draftId: string) =>
       request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}`, { method: "DELETE" }),
+    mailResidencyRegions: () => request<any>("/ads-marketing-module/mail/residency/regions"),
+    mailResidencyPolicies: () => request<any>("/ads-marketing-module/mail/residency/policies"),
+    mailResidencySetPolicy: (dataClass: string, regionId: string, strict?: boolean) =>
+      request<any>("/ads-marketing-module/mail/residency/policies", { method: "POST", body: JSON.stringify({ dataClass, regionId, ...(strict !== undefined ? { strict } : {}) }) }),
+    mailResidencyStatus: () => request<any>("/ads-marketing-module/mail/residency/status"),
+    mailResidencyFlow: () => request<any>("/ads-marketing-module/mail/residency/flow"),
+    mailResidencyLocks: () => request<any>("/ads-marketing-module/mail/residency/locks"),
+    mailResidencyLock: (regionId: string, note?: string) =>
+      request<any>("/ads-marketing-module/mail/residency/locks", { method: "POST", body: JSON.stringify({ regionId, ...(note !== undefined ? { note } : {}) }) }),
+    mailResidencyReleaseLock: (lockId: string) =>
+      request<any>(`/ads-marketing-module/mail/residency/locks/${lockId}/release`, { method: "POST" }),
+    mailResidencyBreach: (regionId: string, detail?: string) =>
+      request<any>("/ads-marketing-module/mail/residency/breach", { method: "POST", body: JSON.stringify({ regionId, ...(detail !== undefined ? { detail } : {}) }) }),
+    mailResidencyCertificate: (regionId?: string) =>
+      request<any>(`/ads-marketing-module/mail/residency/certificate${regionId ? `?regionId=${encodeURIComponent(regionId)}` : ""}`),
+    mailResidencyReport: (regionId?: string) =>
+      request<any>(`/ads-marketing-module/mail/residency/report${regionId ? `?regionId=${encodeURIComponent(regionId)}` : ""}`),
+    mailResidencyLog: () => request<any>("/ads-marketing-module/mail/residency/log"),
+    mailResidencyDashboard: () => request<any>("/ads-marketing-module/mail/residency/dashboard"),
+    mailWhiteLabelPresets: () => request<any>("/ads-marketing-module/mail/white-label/presets"),
+    mailWhiteLabelBranding: () => request<any>("/ads-marketing-module/mail/white-label/branding"),
+    mailWhiteLabelUpdate: (patch: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/white-label/branding", { method: "PUT", body: JSON.stringify(patch || {}) }),
+    mailWhiteLabelModels: () => request<any>("/ads-marketing-module/mail/white-label/models"),
+    mailWhiteLabelDeployment: () => request<any>("/ads-marketing-module/mail/white-label/deployment"),
+    mailWhiteLabelSelectDeployment: (modelId: string) =>
+      request<any>("/ads-marketing-module/mail/white-label/deployment", { method: "POST", body: JSON.stringify({ modelId }) }),
+    mailWhiteLabelSla: () => request<any>("/ads-marketing-module/mail/white-label/sla"),
+    mailWhiteLabelSetSla: (slaPct: number, penalty?: number) =>
+      request<any>("/ads-marketing-module/mail/white-label/sla", { method: "PUT", body: JSON.stringify({ slaPct, ...(penalty !== undefined ? { penalty } : {}) }) }),
+    mailWhiteLabelCandidateDomains: () => request<any>("/ads-marketing-module/mail/white-label/candidate-domains"),
+    mailWhiteLabelBindDomain: (domainId: string) =>
+      request<any>("/ads-marketing-module/mail/white-label/bind-domain", { method: "POST", body: JSON.stringify({ domainId }) }),
+    mailWhiteLabelStatus: () => request<any>("/ads-marketing-module/mail/white-label/status"),
+    mailWhiteLabelLog: () => request<any>("/ads-marketing-module/mail/white-label/log"),
+    mailWhiteLabelDashboard: () => request<any>("/ads-marketing-module/mail/white-label/dashboard"),
+    mailMarketplaceCategories: () => request<any>("/ads-marketing-module/mail/marketplace/categories"),
+    mailMarketplaceCatalog: (category?: string) =>
+      request<any>(`/ads-marketing-module/mail/marketplace/catalog${category ? `?category=${encodeURIComponent(category)}` : ""}`),
+    mailMarketplaceSubmit: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/marketplace/listings", { method: "POST", body: JSON.stringify(input || {}) }),
+    mailMarketplacePending: () => request<any>("/ads-marketing-module/mail/marketplace/pending"),
+    mailMarketplaceApprove: (listingId: string) =>
+      request<any>(`/ads-marketing-module/mail/marketplace/listings/${listingId}/approve`, { method: "POST" }),
+    mailMarketplaceReject: (listingId: string, reason?: string) =>
+      request<any>(`/ads-marketing-module/mail/marketplace/listings/${listingId}/reject`, { method: "POST", body: JSON.stringify({ ...(reason !== undefined ? { reason } : {}) }) }),
+    mailMarketplaceInstall: (listingId: string) =>
+      request<any>(`/ads-marketing-module/mail/marketplace/listings/${listingId}/install`, { method: "POST" }),
+    mailMarketplaceUninstall: (listingId: string) =>
+      request<any>(`/ads-marketing-module/mail/marketplace/listings/${listingId}/uninstall`, { method: "POST" }),
+    mailMarketplaceInstalled: () => request<any>("/ads-marketing-module/mail/marketplace/installed"),
+    mailMarketplaceRate: (listingId: string, rating: number, review?: string) =>
+      request<any>(`/ads-marketing-module/mail/marketplace/listings/${listingId}/rate`, { method: "POST", body: JSON.stringify({ rating, ...(review !== undefined ? { review } : {}) }) }),
+    mailMarketplacePrograms: () => request<any>("/ads-marketing-module/mail/marketplace/programs"),
+    mailMarketplaceJoinProgram: (programId: string) =>
+      request<any>("/ads-marketing-module/mail/marketplace/programs", { method: "POST", body: JSON.stringify({ programId }) }),
+    mailMarketplaceRevenue: () => request<any>("/ads-marketing-module/mail/marketplace/revenue"),
+    mailMarketplaceDashboard: () => request<any>("/ads-marketing-module/mail/marketplace/dashboard"),
+    mailMarketplaceLog: () => request<any>("/ads-marketing-module/mail/marketplace/log"),
+    mailDevSdks: () => request<any>("/ads-marketing-module/mail/dev/sdks"),
+    mailDevMetrics: () => request<any>("/ads-marketing-module/mail/dev/metrics"),
+    mailDevSandboxKeys: () => request<any>("/ads-marketing-module/mail/dev/sandbox-keys"),
+    mailDevCreateSandboxKey: (label: string) =>
+      request<any>("/ads-marketing-module/mail/dev/sandbox-keys", { method: "POST", body: JSON.stringify({ label }) }),
+    mailDevPromoteSandboxKey: (keyId: string) =>
+      request<any>(`/ads-marketing-module/mail/dev/sandbox-keys/${keyId}/promote`, { method: "POST" }),
+    mailDevRevokeSandboxKey: (keyId: string) =>
+      request<any>(`/ads-marketing-module/mail/dev/sandbox-keys/${keyId}/revoke`, { method: "POST" }),
+    mailDevVerifySandboxKey: (keyId: string) =>
+      request<any>(`/ads-marketing-module/mail/dev/sandbox-keys/${keyId}/verify`),
+    mailDevApiUsage: () => request<any>("/ads-marketing-module/mail/dev/api-usage"),
+    mailDevLatency: () => request<any>("/ads-marketing-module/mail/dev/latency"),
+    mailDevRateLimit: () => request<any>("/ads-marketing-module/mail/dev/rate-limit"),
+    mailDevWebhooks: () => request<any>("/ads-marketing-module/mail/dev/webhooks"),
+    mailDevTestWebhook: (url: string) =>
+      request<any>("/ads-marketing-module/mail/dev/webhooks/test", { method: "POST", body: JSON.stringify({ url }) }),
+    mailDevSpec: () => request<any>("/ads-marketing-module/mail/dev/spec"),
+    mailDevExplorer: () => request<any>("/ads-marketing-module/mail/dev/explorer"),
+    mailDevLog: () => request<any>("/ads-marketing-module/mail/dev/log"),
+    mailDevDashboard: () => request<any>("/ads-marketing-module/mail/dev/dashboard"),
+    mailQuantumEncryptVoice: (voiceNoteId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/voice/${voiceNoteId}/encrypt`, { method: "POST" }),
+    mailQuantumDecryptVoice: (encryptedId: string) =>
+      request<any>(`/ads-marketing-module/mail/quantum/voice/${encryptedId}/decrypt`, { method: "POST" }),
+    mailQuantumVoiceStatus: () => request<any>("/ads-marketing-module/mail/quantum/voice/status"),
+    mailPredictGraph: () => request<any>("/ads-marketing-module/mail/predict/graph"),
+    mailPredictNextContacts: (limit?: number) =>
+      request<any>(`/ads-marketing-module/mail/predict/next-contacts${limit ? `?limit=${limit}` : ""}`),
+    mailPredictBestTime: (contact: string) =>
+      request<any>(`/ads-marketing-module/mail/predict/best-time?contact=${encodeURIComponent(contact)}`),
+    mailPredictGraphDashboard: () => request<any>("/ads-marketing-module/mail/predict/graph-dashboard"),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

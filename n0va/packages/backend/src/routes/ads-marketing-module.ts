@@ -3723,4 +3723,269 @@ router.delete("/mail/composer/drafts/:draftId", asyncHandler(async (req, res) =>
   sendSuccess(res, adsMarketingModule.mailComposerDelete(req.user!.tenantId, req.params.draftId));
 }));
 
+router.get("/mail/residency/regions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyRegions());
+}));
+
+router.get("/mail/residency/policies", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyPolicies(req.user!.tenantId));
+}));
+
+router.post("/mail/residency/policies", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencySetPolicy(req.user!.tenantId, req.body.dataClass, req.body.regionId, typeof req.body.strict === "boolean" ? req.body.strict : false));
+}));
+
+router.get("/mail/residency/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/residency/flow", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyFlow(req.user!.tenantId));
+}));
+
+router.get("/mail/residency/locks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyLocks(req.user!.tenantId));
+}));
+
+router.post("/mail/residency/locks", asyncHandler(async (req, res) => {
+  const note = typeof req.body.note === "string" ? req.body.note : undefined;
+  sendSuccess(res, adsMarketingModule.mailResidencyLock(req.user!.tenantId, req.body.regionId, note));
+}));
+
+router.post("/mail/residency/locks/:lockId/release", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyReleaseLock(req.user!.tenantId, req.params.lockId));
+}));
+
+router.post("/mail/residency/breach", asyncHandler(async (req, res) => {
+  const detail = typeof req.body.detail === "string" ? req.body.detail : undefined;
+  sendSuccess(res, adsMarketingModule.mailResidencyBreach(req.user!.tenantId, req.body.regionId, detail));
+}));
+
+router.get("/mail/residency/certificate", asyncHandler(async (req, res) => {
+  const regionId = typeof req.query.regionId === "string" ? req.query.regionId : undefined;
+  sendSuccess(res, adsMarketingModule.mailResidencyCertificate(req.user!.tenantId, regionId));
+}));
+
+router.get("/mail/residency/report", asyncHandler(async (req, res) => {
+  const regionId = typeof req.query.regionId === "string" ? req.query.regionId : undefined;
+  sendSuccess(res, adsMarketingModule.mailResidencyReport(req.user!.tenantId, regionId));
+}));
+
+router.get("/mail/residency/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyLog(req.user!.tenantId));
+}));
+
+router.get("/mail/residency/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResidencyDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/white-label/presets", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelPresets());
+}));
+
+router.get("/mail/white-label/branding", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelBranding(req.user!.tenantId));
+}));
+
+router.put("/mail/white-label/branding", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelUpdate(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/white-label/models", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelModels());
+}));
+
+router.get("/mail/white-label/deployment", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelDeployment(req.user!.tenantId));
+}));
+
+router.post("/mail/white-label/deployment", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelSelectDeployment(req.user!.tenantId, req.body.modelId));
+}));
+
+router.get("/mail/white-label/sla", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelSla(req.user!.tenantId));
+}));
+
+router.put("/mail/white-label/sla", asyncHandler(async (req, res) => {
+  const penalty = typeof req.body.penalty === "number" ? req.body.penalty : undefined;
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelSetSla(req.user!.tenantId, req.body.slaPct, penalty));
+}));
+
+router.get("/mail/white-label/candidate-domains", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelCandidateDomains(req.user!.tenantId));
+}));
+
+router.post("/mail/white-label/bind-domain", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelBindDomain(req.user!.tenantId, req.body.domainId));
+}));
+
+router.get("/mail/white-label/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/white-label/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelLog(req.user!.tenantId));
+}));
+
+router.get("/mail/white-label/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailWhiteLabelDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/marketplace/categories", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceCategories());
+}));
+
+router.get("/mail/marketplace/catalog", asyncHandler(async (req, res) => {
+  const category = typeof req.query.category === "string" ? req.query.category : undefined;
+  sendSuccess(res, adsMarketingModule.mailMarketplaceCatalog(req.user!.tenantId, category));
+}));
+
+router.post("/mail/marketplace/listings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceSubmit(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/marketplace/pending", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplacePending(req.user!.tenantId));
+}));
+
+router.post("/mail/marketplace/listings/:listingId/approve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceApprove(req.user!.tenantId, req.params.listingId));
+}));
+
+router.post("/mail/marketplace/listings/:listingId/reject", asyncHandler(async (req, res) => {
+  const reason = typeof req.body.reason === "string" ? req.body.reason : undefined;
+  sendSuccess(res, adsMarketingModule.mailMarketplaceReject(req.user!.tenantId, req.params.listingId, reason));
+}));
+
+router.post("/mail/marketplace/listings/:listingId/install", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceInstall(req.user!.tenantId, req.params.listingId));
+}));
+
+router.post("/mail/marketplace/listings/:listingId/uninstall", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceUninstall(req.user!.tenantId, req.params.listingId));
+}));
+
+router.get("/mail/marketplace/installed", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceInstalled(req.user!.tenantId));
+}));
+
+router.post("/mail/marketplace/listings/:listingId/rate", asyncHandler(async (req, res) => {
+  const review = typeof req.body.review === "string" ? req.body.review : undefined;
+  sendSuccess(res, adsMarketingModule.mailMarketplaceRate(req.user!.tenantId, req.params.listingId, req.body.rating, review));
+}));
+
+router.get("/mail/marketplace/programs", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplacePrograms());
+}));
+
+router.post("/mail/marketplace/programs", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceJoinProgram(req.user!.tenantId, req.body.programId));
+}));
+
+router.get("/mail/marketplace/revenue", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceRevenue(req.user!.tenantId));
+}));
+
+router.get("/mail/marketplace/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/marketplace/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailMarketplaceLog(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/sdks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevSdks());
+}));
+
+router.get("/mail/dev/metrics", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevMetrics(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/sandbox-keys", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevSandboxKeys(req.user!.tenantId));
+}));
+
+router.post("/mail/dev/sandbox-keys", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevCreateSandboxKey(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/dev/sandbox-keys/:keyId/promote", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevPromoteSandboxKey(req.user!.tenantId, req.params.keyId));
+}));
+
+router.post("/mail/dev/sandbox-keys/:keyId/revoke", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevRevokeSandboxKey(req.user!.tenantId, req.params.keyId));
+}));
+
+router.get("/mail/dev/sandbox-keys/:keyId/verify", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevVerifySandboxKey(req.user!.tenantId, req.params.keyId));
+}));
+
+router.get("/mail/dev/api-usage", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevApiUsage(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/latency", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevLatency(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/rate-limit", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevRateLimit(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/webhooks", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevWebhooks(req.user!.tenantId));
+}));
+
+router.post("/mail/dev/webhooks/test", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevTestWebhook(req.user!.tenantId, String(req.body.url || "")));
+}));
+
+router.get("/mail/dev/spec", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevSpec(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/explorer", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevExplorer(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevLog(req.user!.tenantId));
+}));
+
+router.get("/mail/dev/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDevDashboard(req.user!.tenantId));
+}));
+
+router.post("/mail/quantum/voice/:voiceNoteId/encrypt", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumEncryptVoice(req.user!.tenantId, req.params.voiceNoteId));
+}));
+
+router.post("/mail/quantum/voice/:encryptedId/decrypt", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumDecryptVoice(req.user!.tenantId, req.params.encryptedId));
+}));
+
+router.get("/mail/quantum/voice/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailQuantumVoiceStatus(req.user!.tenantId));
+}));
+
+router.get("/mail/predict/graph", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPredictGraph(req.user!.tenantId));
+}));
+
+router.get("/mail/predict/next-contacts", asyncHandler(async (req, res) => {
+  const limit = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined;
+  sendSuccess(res, adsMarketingModule.mailPredictNextContacts(req.user!.tenantId, limit));
+}));
+
+router.get("/mail/predict/best-time", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPredictBestTime(req.user!.tenantId, String(req.query.contact || "")));
+}));
+
+router.get("/mail/predict/graph-dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPredictGraphDashboard(req.user!.tenantId));
+}));
+
 export default router;

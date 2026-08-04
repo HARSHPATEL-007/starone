@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  RefreshCw, Plus, X, KeyRound, RadioTower, ShieldCheck, FileKey, RefreshCcw, Trash2, Lock, ScrollText,
+  RefreshCw, Plus, X, KeyRound, RadioTower, ShieldCheck, FileKey, RefreshCcw, Trash2, Lock, ScrollText, Mic, Unlock,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -26,13 +26,19 @@ export default function MailQuantum() {
   const [channelForm, setChannelForm] = useState(emptyChannel);
   const [showCert, setShowCert] = useState(false);
   const [certForm, setCertForm] = useState(emptyCert);
+  const [voiceStatus, setVoiceStatus] = useState<any>(null);
+  const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
+  const [encryptTarget, setEncryptTarget] = useState("");
+  const [decryptResult, setDecryptResult] = useState<any>(null);
 
   const loadAll = useCallback(async () => {
-    const [d, a, c, e] = await Promise.all([
+    const [d, a, c, e, vs, vn] = await Promise.all([
       api.adsMarketingModule.mailQuantumDashboard().catch(() => null),
       api.adsMarketingModule.mailQuantumAlgorithms().catch(() => null),
       api.adsMarketingModule.mailQuantumChain().catch(() => null),
       api.adsMarketingModule.mailQuantumQkdExchanges().catch(() => null),
+      api.adsMarketingModule.mailQuantumVoiceStatus().catch(() => null),
+      api.adsMarketingModule.mailVoiceNotes({}).catch(() => null),
     ]);
     setDash(unwrap(d));
     const aR = unwrap(a);
@@ -40,6 +46,9 @@ export default function MailQuantum() {
     setChain(unwrap(c));
     const eR = unwrap(e);
     setExchanges(Array.isArray(eR) ? eR : eR?.exchanges || []);
+    setVoiceStatus(unwrap(vs));
+    const vR = unwrap(vn);
+    setVoiceNotes(Array.isArray(vR) ? vR : vR?.notes || []);
     setLoading(false);
   }, []);
 
@@ -134,6 +143,28 @@ export default function MailQuantum() {
       await loadAll();
     } catch (e: any) {
       addToast("error", "Action failed", e?.message);
+    }
+  }
+
+  async function encryptVoice() {
+    if (!encryptTarget) return;
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailQuantumEncryptVoice(encryptTarget));
+      addToast("success", r?.alreadyEncrypted ? "Already encrypted" : "Voice note encrypted", r?.summary || "");
+      setDecryptResult(null);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Encrypt failed", e?.message);
+    }
+  }
+
+  async function decryptVoice(noteId: string) {
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailQuantumDecryptVoice(noteId));
+      setDecryptResult(r);
+      addToast("success", "Decrypted", r?.summary || "");
+    } catch (e: any) {
+      addToast("error", "Decrypt failed", e?.message);
     }
   }
 
@@ -330,6 +361,47 @@ export default function MailQuantum() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="card p-4 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Mic className="w-4 h-4 text-n0va-400" /> Quantum-secured voice notes</h3>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${voiceStatus?.status === "hardened" ? "bg-emerald-500/15 text-emerald-400" : voiceStatus?.status === "transitioning" ? "bg-amber-500/15 text-amber-400" : "bg-red-500/15 text-red-400"}`}>{voiceStatus?.status || "at_risk"}</span>
+                <span className="text-[10px] text-gray-500">{voiceStatus?.encryptedNotes || 0}/{voiceStatus?.totalNotes || 0} encrypted · {voiceStatus?.coveragePct ?? 100}%</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {voiceNotes.map((n: any) => (
+                  <div key={n._id} className="border border-gray-800 rounded-lg p-3 flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{n.title || n._id}</p>
+                      <p className="text-[10px] text-gray-500">{n.durationSec}s · {new Date(n.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <button className="btn-secondary text-[11px] flex items-center gap-1 shrink-0" onClick={() => decryptVoice(n._id)} title="Decrypt">
+                      <Unlock className="w-3 h-3" /> Decrypt
+                    </button>
+                  </div>
+                );
+              })}
+              {!voiceNotes.length && <p className="text-xs text-gray-600 col-span-full">No voice notes - create one in Mail Voice first.</p>}
+            </div>
+            <div className="flex gap-2 border-t border-gray-800 pt-3">
+              <select className="select flex-1 text-xs" value={encryptTarget} onChange={(e) => setEncryptTarget(e.target.value)}>
+                <option value="">Select a voice note to encrypt…</option>
+                {voiceNotes.map((n: any) => <option key={n._id} value={n._id}>{n.title || n._id}</option>)}
+              </select>
+              <button className="btn-primary text-xs flex items-center gap-1" disabled={!encryptTarget} onClick={encryptVoice}>
+                <Lock className="w-3 h-3" /> Encrypt
+              </button>
+            </div>
+            {decryptResult && (
+              <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-lg p-3 text-xs text-emerald-300 space-y-1">
+                <p className="font-semibold">{decryptResult.title} · {decryptResult.algorithmName}</p>
+                <p className="text-emerald-400/80">{decryptResult.summary}</p>
+                <p className="text-[10px] text-gray-500">{decryptResult.plaintextBytes} B recovered from {decryptResult.ciphertextBytes} B · {decryptResult.qkdProtected ? `QKD via ${decryptResult.channelName}` : "no QKD channel"}</p>
+              </div>
+            )}
           </div>
         </>
       )}

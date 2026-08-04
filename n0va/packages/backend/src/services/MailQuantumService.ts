@@ -360,6 +360,26 @@ export class MailQuantumService {
   }
 
   encryptVoiceNote(tenantId: string, voiceNoteId: string) {
+    const existing = DataStore.mem().findOne("mail_quantum_voice", (v: any) => v.tenantId === tenantId && v.voiceNoteId === voiceNoteId);
+    if (existing) {
+      return {
+        encryptedId: existing._id,
+        voiceNoteId,
+        cipherId: existing.cipherId,
+        algorithm: existing.algorithm,
+        algorithmName: existing.algorithmName,
+        keyId: existing.keyId,
+        fingerprint: existing.fingerprint,
+        plaintextBytes: existing.plaintextBytes,
+        ciphertextBytes: existing.ciphertextBytes,
+        overheadPct: existing.overheadPct,
+        channelName: existing.channelName,
+        qkdSessionId: existing.qkdSessionId,
+        qkdProtected: existing.qkdProtected,
+        alreadyEncrypted: true,
+        summary: `Voice note "${existing.title}" is already quantum-encrypted (${existing.ciphertextBytes} B)`,
+      };
+    }
     const vn = DataStore.mem().findOne("mail_voice_notes", (v: any) => v._id === voiceNoteId && v.tenantId === tenantId);
     if (!vn) throw new Error(`Voice note "${voiceNoteId}" not found`);
     let key = DataStore.mem().find("mail_quantum_keys", (k: any) => k.tenantId === tenantId && k.status === "active" && k.purpose === "voice")

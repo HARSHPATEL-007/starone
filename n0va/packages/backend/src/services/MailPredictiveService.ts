@@ -247,22 +247,21 @@ export class MailPredictiveService {
     const adjacency = new Map<string, Set<string>>();
     const interactions = new Map<string, number>();
     const recency = new Map<string, number>();
-    const add = (a: string, b: string, ts: number) => {
-      if (!a || !b || a === b) return;
-      if (!adjacency.has(a)) adjacency.set(a, new Set());
-      adjacency.get(a)!.add(b);
-      interactions.set(a, (interactions.get(a) || 0) + 1);
-      recency.set(a, Math.max(recency.get(a) || 0, ts));
+    const touch = (id: string, other: string, ts: number) => {
+      if (!id || !other || id === other) return;
+      if (!adjacency.has(id)) adjacency.set(id, new Set());
+      adjacency.get(id)!.add(other);
+      interactions.set(id, (interactions.get(id) || 0) + 1);
+      recency.set(id, Math.max(recency.get(id) || 0, ts));
     };
     for (const m of messages) {
       const ts = new Date(m.receivedAt || m.sentAt || m.createdAt || Date.now()).getTime();
-      if (m.from && m.from.email) add(m.from.email, this.counterpartEmail(m), ts);
-      if (m.to) {
-        const tos = Array.isArray(m.to) ? m.to : [String(m.to)];
-        for (const t of tos) {
-          const email = (t && t.email) || String(t);
-          add(email, m.from ? m.from.email : "", ts);
-        }
+      const fromEmail = m.from && m.from.email ? String(m.from.email) : "";
+      const tos = Array.isArray(m.to) ? m.to : (m.to ? [String(m.to)] : []);
+      for (const t of tos) {
+        const toEmail = (t && t.email) ? String(t.email) : String(t);
+        if (fromEmail) touch(fromEmail, toEmail, ts);
+        if (toEmail) touch(toEmail, fromEmail, ts);
       }
     }
     const nodes = [...adjacency.keys()].map((id) => {
@@ -292,12 +291,6 @@ export class MailPredictiveService {
       summary: `Communication graph — ${nodes.length} contact(s), ${edges.length} interaction(s), top influence ${topInfluence[0] ? topInfluence[0].email : "n/a"}`,
       seed: hashStr(tenantId + "|graph"),
     };
-  }
-
-  private counterpartEmail(m: any): string {
-    if (m.from && m.from.email) return m.from.email;
-    const to = (Array.isArray(m.to) ? m.to[0] : m.to);
-    return (to && to.email) ? to.email : "";
   }
 
   predictNextContacts(tenantId: string, limit = 5) {

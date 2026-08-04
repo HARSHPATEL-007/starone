@@ -101,6 +101,10 @@ import { mailPerformance } from "./MailPerformanceService";
 import { mailChaos } from "./MailChaosService";
 import { mailFocus } from "./MailFocusService";
 import { mailComposer } from "./MailComposerService";
+import { mailResidency } from "./MailResidencyService";
+import { mailWhiteLabel } from "./MailWhiteLabelService";
+import { mailMarketplace } from "./MailMarketplaceService";
+import { mailDev } from "./MailDevService";
 
 import { mailQuantum } from "./MailQuantumService";
 
@@ -5937,6 +5941,262 @@ export class AdsMarketingModuleService {
 
   mailComposerLog(tenantId: string) {
     return mailComposer.composerLog(tenantId);
+  }
+
+  mailResidencyRegions() {
+    return mailResidency.regionCatalog();
+  }
+
+  mailResidencyPolicies(tenantId: string) {
+    return mailResidency.residencyPolicies(tenantId);
+  }
+
+  mailResidencySetPolicy(tenantId: string, dataClass: string, regionId: string, strict?: boolean) {
+    return mailResidency.setResidencyPolicy(tenantId, dataClass, regionId, strict);
+  }
+
+  mailResidencyStatus(tenantId: string) {
+    return mailResidency.residencyStatus(tenantId);
+  }
+
+  mailResidencyFlow(tenantId: string) {
+    return mailResidency.dataFlowMonitor(tenantId);
+  }
+
+  mailResidencyLock(tenantId: string, regionId: string, note?: string) {
+    return mailResidency.placeSovereignLock(tenantId, regionId, note);
+  }
+
+  mailResidencyLocks(tenantId: string) {
+    return mailResidency.sovereignLocks(tenantId);
+  }
+
+  mailResidencyReleaseLock(tenantId: string, lockId: string) {
+    return mailResidency.releaseSovereignLock(tenantId, lockId);
+  }
+
+  mailResidencyBreach(tenantId: string, regionId: string, detail?: string) {
+    return mailResidency.notifyBreach(tenantId, regionId, detail);
+  }
+
+  mailResidencyCertificate(tenantId: string, regionId?: string) {
+    return mailResidency.residencyCertificate(tenantId, regionId);
+  }
+
+  mailResidencyReport(tenantId: string, regionId?: string) {
+    return mailResidency.jurisdictionReport(tenantId, regionId);
+  }
+
+  mailResidencyLog(tenantId: string, limit?: number) {
+    return mailResidency.residencyLog(tenantId, limit);
+  }
+
+  mailResidencyDashboard(tenantId: string) {
+    return mailResidency.residencyDashboard(tenantId);
+  }
+
+  mailWhiteLabelPresets() {
+    return mailWhiteLabel.brandPresets();
+  }
+
+  mailWhiteLabelBranding(tenantId: string) {
+    return mailWhiteLabel.getBranding(tenantId);
+  }
+
+  mailWhiteLabelUpdate(tenantId: string, patch: any) {
+    return mailWhiteLabel.updateBranding(tenantId, patch || {});
+  }
+
+  mailWhiteLabelModels() {
+    return mailWhiteLabel.deploymentModels();
+  }
+
+  mailWhiteLabelSelectDeployment(tenantId: string, modelId: string) {
+    return mailWhiteLabel.selectDeployment(tenantId, modelId);
+  }
+
+  mailWhiteLabelDeployment(tenantId: string) {
+    return mailWhiteLabel.deploymentStatus(tenantId);
+  }
+
+  mailWhiteLabelSla(tenantId: string) {
+    return mailWhiteLabel.customSla(tenantId);
+  }
+
+  mailWhiteLabelSetSla(tenantId: string, slaPct: number, penalty?: number) {
+    return mailWhiteLabel.setCustomSla(tenantId, slaPct, penalty);
+  }
+
+  mailWhiteLabelCandidateDomains(tenantId: string) {
+    return mailWhiteLabel.candidateDomains(tenantId);
+  }
+
+  mailWhiteLabelBindDomain(tenantId: string, domainId: string) {
+    return mailWhiteLabel.bindOutboundDomain(tenantId, domainId);
+  }
+
+  mailWhiteLabelStatus(tenantId: string) {
+    return mailWhiteLabel.whiteLabelStatus(tenantId);
+  }
+
+  mailWhiteLabelLog(tenantId: string, limit?: number) {
+    return mailWhiteLabel.whiteLabelLog(tenantId, limit);
+  }
+
+  mailWhiteLabelDashboard(tenantId: string) {
+    return mailWhiteLabel.whiteLabelDashboard(tenantId);
+  }
+
+  mailMarketplaceCategories() {
+    return mailMarketplace.categories();
+  }
+
+  mailMarketplaceCatalog(tenantId: string, category?: string) {
+    return mailMarketplace.marketplaceCatalog(tenantId, category);
+  }
+
+  mailMarketplaceSubmit(tenantId: string, input: any) {
+    return mailMarketplace.submitListing(tenantId, input || {});
+  }
+
+  mailMarketplacePending(tenantId: string) {
+    return mailMarketplace.pendingListings(tenantId);
+  }
+
+  mailMarketplaceApprove(tenantId: string, listingId: string) {
+    return mailMarketplace.approveListing(tenantId, listingId);
+  }
+
+  mailMarketplaceReject(tenantId: string, listingId: string, reason?: string) {
+    return mailMarketplace.rejectListing(tenantId, listingId, reason);
+  }
+
+  mailMarketplaceInstall(tenantId: string, listingId: string) {
+    return mailMarketplace.installListing(tenantId, listingId);
+  }
+
+  mailMarketplaceUninstall(tenantId: string, listingId: string) {
+    return mailMarketplace.uninstallListing(tenantId, listingId);
+  }
+
+  mailMarketplaceInstalled(tenantId: string) {
+    return mailMarketplace.installedListings(tenantId);
+  }
+
+  mailMarketplaceRate(tenantId: string, listingId: string, rating: number, review?: string) {
+    return mailMarketplace.rateListing(tenantId, listingId, rating, review);
+  }
+
+  mailMarketplacePrograms() {
+    return mailMarketplace.developerPrograms();
+  }
+
+  mailMarketplaceJoinProgram(tenantId: string, programId: string) {
+    return mailMarketplace.joinProgram(tenantId, programId);
+  }
+
+  mailMarketplaceRevenue(tenantId: string) {
+    return mailMarketplace.revenueOverview(tenantId);
+  }
+
+  mailMarketplaceDashboard(tenantId: string) {
+    return mailMarketplace.marketplaceDashboard(tenantId);
+  }
+
+  mailMarketplaceLog(tenantId: string, limit?: number) {
+    return mailMarketplace.marketplaceLog(tenantId, limit);
+  }
+
+  mailDevSdks() {
+    return mailDev.sdkStack();
+  }
+
+  mailDevMetrics(tenantId: string) {
+    return mailDev.devMetrics(tenantId);
+  }
+
+  mailDevSandboxKeys(tenantId: string) {
+    return mailDev.sandboxKeys(tenantId);
+  }
+
+  mailDevCreateSandboxKey(tenantId: string, input: any) {
+    return mailDev.createSandboxKey(tenantId, input || {});
+  }
+
+  mailDevPromoteSandboxKey(tenantId: string, keyId: string) {
+    return mailDev.promoteSandboxKey(tenantId, keyId);
+  }
+
+  mailDevRevokeSandboxKey(tenantId: string, keyId: string) {
+    return mailDev.revokeSandboxKey(tenantId, keyId);
+  }
+
+  mailDevVerifySandboxKey(tenantId: string, keyId: string) {
+    return mailDev.verifySandboxKey(tenantId, keyId);
+  }
+
+  mailDevApiUsage(tenantId: string) {
+    return mailDev.apiUsage(tenantId);
+  }
+
+  mailDevLatency(tenantId: string) {
+    return mailDev.endpointLatency(tenantId);
+  }
+
+  mailDevRateLimit(tenantId: string) {
+    return mailDev.rateLimitConsumption(tenantId);
+  }
+
+  mailDevWebhooks(tenantId: string, limit?: number) {
+    return mailDev.webhookInspector(tenantId, limit);
+  }
+
+  mailDevTestWebhook(tenantId: string, url: string) {
+    return mailDev.testWebhook(tenantId, url);
+  }
+
+  mailDevSpec(tenantId: string) {
+    return mailDev.openApiSpec(tenantId);
+  }
+
+  mailDevExplorer(tenantId: string) {
+    return mailDev.apiExplorer(tenantId);
+  }
+
+  mailDevLog(tenantId: string, limit?: number) {
+    return mailDev.devLog(tenantId, limit);
+  }
+
+  mailDevDashboard(tenantId: string) {
+    return mailDev.devDashboard(tenantId);
+  }
+
+  mailQuantumEncryptVoice(tenantId: string, voiceNoteId: string) {
+    return mailQuantum.encryptVoiceNote(tenantId, voiceNoteId);
+  }
+
+  mailQuantumDecryptVoice(tenantId: string, encryptedId: string) {
+    return mailQuantum.decryptVoiceNote(tenantId, encryptedId);
+  }
+
+  mailQuantumVoiceStatus(tenantId: string) {
+    return mailQuantum.quantumVoiceStatus(tenantId);
+  }
+
+  mailPredictGraph(tenantId: string) {
+    return mailPredict.communicationGraph(tenantId);
+  }
+
+  mailPredictNextContacts(tenantId: string, limit?: number) {
+    return mailPredict.predictNextContacts(tenantId, limit);
+  }
+
+  mailPredictBestTime(tenantId: string, contactOrEmail: string) {
+    return mailPredict.bestTimeToReach(tenantId, contactOrEmail);
+  }
+
+  mailPredictGraphDashboard(tenantId: string) {
+    return mailPredict.communicationGraphDashboard(tenantId);
   }
 }
 
