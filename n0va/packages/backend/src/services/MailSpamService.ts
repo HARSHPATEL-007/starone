@@ -1,4 +1,5 @@
 import { DataStore } from "./DataStore";
+import { mailRealtime } from "./MailRealtimeService";
 
 function hashStr(s: string): number {
   let h = 0;
@@ -61,6 +62,9 @@ export class MailSpamService {
     const msg = DataStore.mem().findOne("messages", (m: any) => m._id === messageId && m.tenantId === tenantId);
     if (!msg) throw new Error(`Message "${messageId}" not found`);
     const scan = this.scoreMessage(tenantId, msg);
+    if (scan.isSpam) {
+      mailRealtime.emit("mail.spam_detected", tenantId, { messageId, threadId: msg.threadId, subject: msg.subject, score: scan.score, verdict: scan.verdict });
+    }
     return { messageId, subject: msg.subject, ...scan, summary: `"${msg.subject}" scored ${scan.score}/100 — ${scan.verdict}` };
   }
 
@@ -78,6 +82,7 @@ export class MailSpamService {
         const newFlags = [...flags, "spam"];
         DataStore.mem().update("messages", (m: any) => m._id === msg._id, { folder: "spam", flags: newFlags });
         this.log(tenantId, { action: "auto_quarantine", messageId: msg._id, subject: msg.subject, score: scan.score, detail: `"${msg.subject}" quarantined (score ${scan.score})` });
+        mailRealtime.emit("mail.spam_detected", tenantId, { messageId: msg._id, threadId: msg.threadId, subject: msg.subject, score: scan.score, verdict: "spam" });
         flagged.push({ messageId: msg._id, subject: msg.subject, score: scan.score });
         moved++;
       }

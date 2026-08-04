@@ -2,6 +2,7 @@ import { DataStore } from "./DataStore";
 import { estimateMessageBytes } from "./MailboxService";
 import { mailAI } from "./MailAIService";
 import { mailRules } from "./MailRulesService";
+import { mailRealtime } from "./MailRealtimeService";
 
 function hashStr(s: string): number {
   let h = 0;
@@ -69,6 +70,15 @@ export class MailMessageService {
       flags: [],
     });
     this.touchUsage(tenantId, mailboxId);
+    mailRealtime.emit("mail.sent", tenantId, {
+      messageId: msg._id,
+      threadId,
+      from: { name: mb.displayName, email: mb.email },
+      to,
+      subject: msg.subject,
+      preview: msg.preview,
+      mailboxId,
+    });
     return { message: msg, summary: `Sent to ${to.length} recipient${to.length > 1 ? "s" : ""} — "${input.subject}"` };
   }
 
@@ -111,6 +121,7 @@ export class MailMessageService {
       folder: "sent", labels: ["Sent"], read: true, sentAt: now, receivedAt: now,
     });
     this.touchUsage(tenantId, msg.mailboxId);
+    mailRealtime.emit("mail.sent", tenantId, { messageId, threadId: msg.threadId, subject: msg.subject, preview: msg.preview, mailboxId: msg.mailboxId });
     return { message: updated, summary: `Draft sent — "${msg.subject}"` };
   }
 
@@ -150,6 +161,17 @@ export class MailMessageService {
     mailRules.evaluateAllRules(tenantId, msg._id);
     mailRules.runAllScriptRules(tenantId, msg._id);
     const final = DataStore.mem().findOne("messages", (m: any) => m._id === msg._id);
+    mailRealtime.emit("mail.received", tenantId, {
+      messageId: msg._id,
+      threadId,
+      from,
+      subject: msg.subject,
+      preview: msg.preview,
+      hasAttachments: (msg.attachments || []).length > 0,
+      aiPriority: final && final.ai ? final.ai.priority : undefined,
+      folder: final ? final.folder : "inbox",
+      mailboxId,
+    });
     return { message: final, summary: `Received "${input.subject}" from ${from.name || from.email}` };
   }
 
@@ -184,6 +206,7 @@ export class MailMessageService {
   markRead(tenantId: string, messageId: string, read = true) {
     const msg = this.getMessage(tenantId, messageId);
     const updated = DataStore.mem().update("messages", (m: any) => m._id === messageId && m.tenantId === tenantId, { read: !!read });
+    mailRealtime.emit("mail.read", tenantId, { messageId, threadId: msg.threadId, read: !!read, timestamp: new Date().toISOString() });
     return { messageId, read: !!read, summary: `Marked ${!!read ? "read" : "unread"} — "${msg.subject}"` };
   }
 
@@ -198,6 +221,7 @@ export class MailMessageService {
     const valid = SYSTEM_FOLDERS.includes(folder) || !!DataStore.mem().findOne("mail_folders", (f: any) => f.tenantId === tenantId && f.name === folder);
     if (!valid) throw new Error(`Unknown folder "${folder}"`);
     const updated = DataStore.mem().update("messages", (m: any) => m._id === messageId && m.tenantId === tenantId, { folder });
+    mailRealtime.emit("mail.folder_change", tenantId, { folder: updated.folder, messageIds: [messageId], threadId: msg.threadId, action: "moved" });
     return { messageId, folder: updated.folder, summary: `Moved to ${folder}` };
   }
 
@@ -227,6 +251,7 @@ export class MailMessageService {
     if (!label) throw new Error("Label is required");
     const labels = (msg.labels || []).includes(label) ? msg.labels : [...(msg.labels || []), label];
     const updated = DataStore.mem().update("messages", (m: any) => m._id === messageId && m.tenantId === tenantId, { labels });
+    mailRealtime.emit("mail.label_change", tenantId, { label, messageIds: [messageId], threadId: msg.threadId, action: "applied" });
     return { messageId, labels: updated.labels, summary: `Label "${label}" applied` };
   }
 
@@ -234,6 +259,7 @@ export class MailMessageService {
     const msg = this.getMessage(tenantId, messageId);
     const labels = (msg.labels || []).filter(l => l !== label);
     const updated = DataStore.mem().update("messages", (m: any) => m._id === messageId && m.tenantId === tenantId, { labels });
+    mailRealtime.emit("mail.label_change", tenantId, { label, messageIds: [messageId], threadId: msg.threadId, action: "removed" });
     return { messageId, labels: updated.labels, summary: `Label "${label}" removed` };
   }
 

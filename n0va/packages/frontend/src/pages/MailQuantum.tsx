@@ -28,6 +28,7 @@ export default function MailQuantum() {
   const [certForm, setCertForm] = useState(emptyCert);
   const [voiceStatus, setVoiceStatus] = useState<any>(null);
   const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
+  const [encryptedMap, setEncryptedMap] = useState<Record<string, any>>({});
   const [encryptTarget, setEncryptTarget] = useState("");
   const [decryptResult, setDecryptResult] = useState<any>(null);
 
@@ -49,6 +50,9 @@ export default function MailQuantum() {
     setVoiceStatus(unwrap(vs));
     const vR = unwrap(vn);
     setVoiceNotes(Array.isArray(vR) ? vR : vR?.notes || []);
+    const vsR = unwrap(vs);
+    const recs = vsR?.records || [];
+    setEncryptedMap(Object.fromEntries(recs.map((r: any) => [r.voiceNoteId, r])));
     setLoading(false);
   }, []);
 
@@ -159,8 +163,13 @@ export default function MailQuantum() {
   }
 
   async function decryptVoice(noteId: string) {
+    const rec = encryptedMap[noteId];
+    if (!rec) {
+      addToast("error", "Not encrypted", "Encrypt this voice note first");
+      return;
+    }
     try {
-      const r = unwrap(await api.adsMarketingModule.mailQuantumDecryptVoice(noteId));
+      const r = unwrap(await api.adsMarketingModule.mailQuantumDecryptVoice(rec.encryptedId));
       setDecryptResult(r);
       addToast("success", "Decrypted", r?.summary || "");
     } catch (e: any) {
@@ -372,13 +381,18 @@ export default function MailQuantum() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {voiceNotes.map((n: any) => (
+              {voiceNotes.map((n: any) => {
+                const enc = encryptedMap[n._id];
+                return (
                   <div key={n._id} className="border border-gray-800 rounded-lg p-3 flex items-center gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{n.title || n._id}</p>
-                      <p className="text-[10px] text-gray-500">{n.durationSec}s · {new Date(n.createdAt).toLocaleDateString()}</p>
+                      <p className="text-sm text-white truncate flex items-center gap-1.5">
+                        {n.title || n._id}
+                        {enc && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 uppercase font-bold shrink-0">encrypted</span>}
+                      </p>
+                      <p className="text-[10px] text-gray-500">{n.durationSec}s · {new Date(n.createdAt).toLocaleDateString()}{enc ? ` · ${enc.algorithmName}${enc.qkdProtected ? ` · ${enc.channelName}` : ""}` : ""}</p>
                     </div>
-                    <button className="btn-secondary text-[11px] flex items-center gap-1 shrink-0" onClick={() => decryptVoice(n._id)} title="Decrypt">
+                    <button className="btn-secondary text-[11px] flex items-center gap-1 shrink-0" disabled={!enc} onClick={() => decryptVoice(n._id)} title={enc ? "Decrypt" : "Not encrypted"}>
                       <Unlock className="w-3 h-3" /> Decrypt
                     </button>
                   </div>
@@ -389,7 +403,7 @@ export default function MailQuantum() {
             <div className="flex gap-2 border-t border-gray-800 pt-3">
               <select className="select flex-1 text-xs" value={encryptTarget} onChange={(e) => setEncryptTarget(e.target.value)}>
                 <option value="">Select a voice note to encrypt…</option>
-                {voiceNotes.map((n: any) => <option key={n._id} value={n._id}>{n.title || n._id}</option>)}
+                {voiceNotes.filter((n: any) => !encryptedMap[n._id]).map((n: any) => <option key={n._id} value={n._id}>{n.title || n._id}</option>)}
               </select>
               <button className="btn-primary text-xs flex items-center gap-1" disabled={!encryptTarget} onClick={encryptVoice}>
                 <Lock className="w-3 h-3" /> Encrypt

@@ -1,4 +1,5 @@
 import { DataStore } from "./DataStore";
+import { mailRealtime } from "./MailRealtimeService";
 
 function hashStr(s: string): number {
   let h = 0;
@@ -56,6 +57,16 @@ export class MailAIService {
       enrichedAt: new Date().toISOString(),
     };
     DataStore.mem().update("messages", (m: any) => m._id === msg._id && m.tenantId === tenantId, { ai });
+    mailRealtime.emit("mail.ai_suggestion", tenantId, {
+      messageId: msg._id,
+      threadId: msg.threadId,
+      priority,
+      sentiment,
+      category,
+      summary,
+      actionItems: actionItems.length,
+      subject: msg.subject,
+    });
     return { messageId: msg._id, ...ai };
   }
 

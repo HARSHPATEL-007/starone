@@ -1529,6 +1529,43 @@ router.post("/mail/contacts", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailCreateContact(req.user!.tenantId, req.body || {}));
 }));
 
+// Round 40: contacts bulk tools (GET routes MUST precede /mail/contacts/:contactId)
+router.get("/mail/contacts/bulk-dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactBulkDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/contacts/bulk-log", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
+  sendSuccess(res, adsMarketingModule.mailContactBulkLog(req.user!.tenantId, limit));
+}));
+
+router.get("/mail/contacts/export", asyncHandler(async (req, res) => {
+  const opts: Record<string, any> = {};
+  if (req.query.format !== undefined) opts.format = req.query.format;
+  if (req.query.group !== undefined) opts.group = req.query.group;
+  sendSuccess(res, adsMarketingModule.mailContactExport(req.user!.tenantId, opts));
+}));
+
+router.post("/mail/contacts/import", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactImport(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/contacts/merge", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactMerge(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/contacts/dedupe", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactDedupe(req.user!.tenantId));
+}));
+
+router.post("/mail/contacts/bulk-tag", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactBulkTag(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/contacts/bulk-delete", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailContactBulkDelete(req.user!.tenantId, req.body || {}));
+}));
+
 router.get("/mail/contacts/:contactId", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailContact(req.user!.tenantId, req.params.contactId));
 }));
@@ -3986,6 +4023,104 @@ router.get("/mail/predict/best-time", asyncHandler(async (req, res) => {
 
 router.get("/mail/predict/graph-dashboard", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailPredictGraphDashboard(req.user!.tenantId));
+}));
+
+// Round 40: aliases & forwarding
+router.get("/mail/aliases", asyncHandler(async (req, res) => {
+  const opts: Record<string, any> = {};
+  for (const key of ["status", "mailboxId"]) {
+    if (req.query[key] !== undefined) opts[key] = req.query[key];
+  }
+  sendSuccess(res, adsMarketingModule.mailAliases(req.user!.tenantId, opts));
+}));
+
+router.post("/mail/aliases", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateAlias(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/mail/aliases/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAliasDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/aliases/log", asyncHandler(async (req, res) => {
+  const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
+  sendSuccess(res, adsMarketingModule.mailAliasLog(req.user!.tenantId, limit));
+}));
+
+router.post("/mail/aliases/resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailResolveAlias(req.user!.tenantId, String((req.body || {}).address || "")));
+}));
+
+router.get("/mail/aliases/forwarding", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailListForwarding(req.user!.tenantId));
+}));
+
+router.post("/mail/aliases/forwarding/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailEnableForwarding(req.user!.tenantId, req.params.mailboxId, req.body || {}));
+}));
+
+router.get("/mail/aliases/forwarding/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailForwarding(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.delete("/mail/aliases/forwarding/:mailboxId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDisableForwarding(req.user!.tenantId, req.params.mailboxId));
+}));
+
+router.get("/mail/aliases/:aliasId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAlias(req.user!.tenantId, req.params.aliasId));
+}));
+
+router.post("/mail/aliases/:aliasId/toggle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailToggleAlias(req.user!.tenantId, req.params.aliasId));
+}));
+
+router.delete("/mail/aliases/:aliasId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteAlias(req.user!.tenantId, req.params.aliasId));
+}));
+
+router.get("/mail/labels", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLabels(req.user!.tenantId));
+}));
+
+router.post("/mail/labels", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailCreateLabel(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/labels/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLabelDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/labels/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLabelLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
+}));
+
+router.put("/mail/labels/:labelId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailUpdateLabel(req.user!.tenantId, req.params.labelId, req.body));
+}));
+
+router.post("/mail/labels/:labelId/apply", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLabelApply(req.user!.tenantId, req.params.labelId, typeof req.body.messageId === "string" ? req.body.messageId : ""));
+}));
+
+router.post("/mail/labels/:labelId/remove", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLabelRemove(req.user!.tenantId, req.params.labelId, typeof req.body.messageId === "string" ? req.body.messageId : ""));
+}));
+
+router.get("/mail/labels/:labelId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailLabel(req.user!.tenantId, req.params.labelId));
+}));
+
+router.delete("/mail/labels/:labelId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailDeleteLabel(req.user!.tenantId, req.params.labelId));
+}));
+
+router.get("/mail/realtime/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRealtimeOverview(req.user!.tenantId));
+}));
+
+router.get("/mail/realtime/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRealtimeLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
 }));
 
 export default router;

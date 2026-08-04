@@ -108,6 +108,11 @@ import { mailDev } from "./MailDevService";
 
 import { mailQuantum } from "./MailQuantumService";
 
+import { mailAlias } from "./MailAliasService";
+import { mailContactBulk } from "./MailContactBulkService";
+import { mailLabel } from "./MailLabelService";
+import { mailRealtime } from "./MailRealtimeService";
+
 import { mailCollab2 } from "./MailCollabV2Service";
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -6197,6 +6202,130 @@ export class AdsMarketingModuleService {
 
   mailPredictGraphDashboard(tenantId: string) {
     return mailPredict.communicationGraphDashboard(tenantId);
+  }
+
+  mailAliases(tenantId: string, opts: any = {}) {
+    return mailAlias.listAliases(tenantId, opts);
+  }
+
+  mailCreateAlias(tenantId: string, input: any) {
+    return mailAlias.createAlias(tenantId, input);
+  }
+
+  mailAlias(tenantId: string, aliasId: string) {
+    return mailAlias.getAlias(tenantId, aliasId);
+  }
+
+  mailToggleAlias(tenantId: string, aliasId: string) {
+    return mailAlias.toggleAlias(tenantId, aliasId);
+  }
+
+  mailDeleteAlias(tenantId: string, aliasId: string) {
+    return mailAlias.deleteAlias(tenantId, aliasId);
+  }
+
+  mailResolveAlias(tenantId: string, address: string) {
+    return mailAlias.resolveRecipient(tenantId, address);
+  }
+
+  mailEnableForwarding(tenantId: string, mailboxId: string, input: any) {
+    return mailAlias.enableForwarding(tenantId, mailboxId, input);
+  }
+
+  mailForwarding(tenantId: string, mailboxId: string) {
+    return mailAlias.getForwarding(tenantId, mailboxId);
+  }
+
+  mailDisableForwarding(tenantId: string, mailboxId: string) {
+    return mailAlias.disableForwarding(tenantId, mailboxId);
+  }
+
+  mailListForwarding(tenantId: string) {
+    return mailAlias.listForwarding(tenantId);
+  }
+
+  mailAliasDashboard(tenantId: string) {
+    return mailAlias.aliasDashboard(tenantId);
+  }
+
+  mailAliasLog(tenantId: string, limit?: number) {
+    return mailAlias.aliasLog(tenantId, limit);
+  }
+
+  mailContactImport(tenantId: string, input: any) {
+    return mailContactBulk.importContacts(tenantId, input);
+  }
+
+  mailContactExport(tenantId: string, opts: any = {}) {
+    return mailContactBulk.exportContacts(tenantId, opts);
+  }
+
+  mailContactMerge(tenantId: string, input: any) {
+    return mailContactBulk.mergeContacts(tenantId, input);
+  }
+
+  mailContactDedupe(tenantId: string) {
+    return mailContactBulk.dedupeContacts(tenantId);
+  }
+
+  mailContactBulkTag(tenantId: string, input: any) {
+    return mailContactBulk.bulkTagContacts(tenantId, input);
+  }
+
+  mailContactBulkDelete(tenantId: string, input: any) {
+    return mailContactBulk.bulkDeleteContacts(tenantId, input);
+  }
+
+  mailContactBulkDashboard(tenantId: string) {
+    return mailContactBulk.bulkDashboard(tenantId);
+  }
+
+  mailContactBulkLog(tenantId: string, limit?: number) {
+    return mailContactBulk.bulkLog(tenantId, limit);
+  }
+
+  mailLabels(tenantId: string) {
+    return mailLabel.listLabels(tenantId);
+  }
+
+  mailLabel(tenantId: string, labelId: string) {
+    return mailLabel.getLabel(tenantId, labelId);
+  }
+
+  mailCreateLabel(tenantId: string, input: any) {
+    return mailLabel.createLabel(tenantId, input);
+  }
+
+  mailUpdateLabel(tenantId: string, labelId: string, input: any) {
+    return mailLabel.updateLabel(tenantId, labelId, input);
+  }
+
+  mailDeleteLabel(tenantId: string, labelId: string) {
+    return mailLabel.deleteLabel(tenantId, labelId);
+  }
+
+  mailLabelApply(tenantId: string, labelId: string, messageId: string) {
+    return mailLabel.applyLabel(tenantId, labelId, messageId);
+  }
+
+  mailLabelRemove(tenantId: string, labelId: string, messageId: string) {
+    return mailLabel.removeLabel(tenantId, labelId, messageId);
+  }
+
+  mailLabelDashboard(tenantId: string) {
+    return mailLabel.labelDashboard(tenantId);
+  }
+
+  mailLabelLog(tenantId: string, limit?: number) {
+    return mailLabel.labelLog(tenantId, limit);
+  }
+
+  mailRealtimeOverview(tenantId: string) {
+    return mailRealtime.realtimeOverview(tenantId);
+  }
+
+  mailRealtimeLog(tenantId: string, limit?: number) {
+    return mailRealtime.realtimeLog(tenantId, limit);
   }
 }
 

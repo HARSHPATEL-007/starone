@@ -69,6 +69,7 @@ import {
   Code2,
   Mail,
   AtSign,
+  Tag,
   Play,
   AlertTriangle,
   Database,
@@ -102,6 +103,8 @@ import {
   Fingerprint,
   Scale,
   PenLine,
+  MapPin,
+  Store,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -154,6 +157,12 @@ const navItems = [
     { to: "/mail/chaos", icon: Beaker, label: "Chaos Engineering" },
     { to: "/mail/focus", icon: Target, label: "Focus Time" },
     { to: "/mail/composer", icon: PenLine, label: "Mail Composer" },
+    { to: "/mail/aliases", icon: AtSign, label: "Mail Aliases" },
+    { to: "/mail/labels", icon: Tag, label: "Mail Labels" },
+    { to: "/mail/residency", icon: MapPin, label: "Data Residency" },
+    { to: "/mail/branding", icon: Palette, label: "White Label" },
+    { to: "/mail/marketplace", icon: Store, label: "Marketplace" },
+    { to: "/mail/dev", icon: Code2, label: "Dev Center" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

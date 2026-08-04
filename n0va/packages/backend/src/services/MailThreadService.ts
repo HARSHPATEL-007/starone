@@ -1,4 +1,5 @@
 import { DataStore } from "./DataStore";
+import { mailRealtime } from "./MailRealtimeService";
 
 export const THREAD_STATES = ["open", "pending", "done"] as const;
 export const THREAD_PRIORITIES = ["high", "normal", "low"] as const;
@@ -147,6 +148,7 @@ export class MailThreadService {
       }
     }
     this.log(tenantId, "thread_state", `Thread "${t.subject}" → ${STATE_LABELS[state]}`, { threadId, state });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId, change: "state", state, subject: t.subject });
     return { threadId, state, summary: `Thread marked ${STATE_LABELS[state]}` };
   }
 
@@ -154,6 +156,7 @@ export class MailThreadService {
     const t = this.aggregate(tenantId, threadId);
     this.upsertMeta(tenantId, threadId, { pinned: true });
     this.log(tenantId, "thread_pin", `Thread "${t.subject}" pinned`, { threadId });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId, change: "pin", pinned: true, subject: t.subject });
     return { threadId, pinned: true, summary: `Thread pinned — "${t.subject}"` };
   }
 
@@ -161,6 +164,7 @@ export class MailThreadService {
     const t = this.aggregate(tenantId, threadId);
     this.upsertMeta(tenantId, threadId, { pinned: false });
     this.log(tenantId, "thread_pin", `Thread "${t.subject}" unpinned`, { threadId });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId, change: "pin", pinned: false, subject: t.subject });
     return { threadId, pinned: false, summary: `Thread unpinned — "${t.subject}"` };
   }
 
@@ -170,6 +174,7 @@ export class MailThreadService {
     const tags = [...new Set([...(this.meta(tenantId, threadId)?.tags || []), tag])];
     this.upsertMeta(tenantId, threadId, { tags });
     this.log(tenantId, "thread_tag", `Thread "${t.subject}" tagged "${tag}"`, { threadId, tag });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId, change: "tag", tag, added: true, subject: t.subject });
     return { threadId, tags, summary: `Tag "${tag}" applied` };
   }
 
@@ -179,6 +184,7 @@ export class MailThreadService {
     const tags = (this.meta(tenantId, threadId)?.tags || []).filter((x: string) => x !== tag);
     this.upsertMeta(tenantId, threadId, { tags });
     this.log(tenantId, "thread_tag", `Thread "${t.subject}" untagged "${tag}"`, { threadId, tag });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId, change: "tag", tag, added: false, subject: t.subject });
     return { threadId, tags, summary: `Tag "${tag}" removed` };
   }
 
@@ -187,6 +193,7 @@ export class MailThreadService {
     const t = this.aggregate(tenantId, threadId);
     this.upsertMeta(tenantId, threadId, { priority });
     this.log(tenantId, "thread_priority", `Thread "${t.subject}" priority → ${priority}`, { threadId, priority });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId, change: "priority", priority, subject: t.subject });
     return { threadId, priority, summary: `Priority set to ${priority}` };
   }
 
@@ -200,6 +207,7 @@ export class MailThreadService {
     }
     const merged = this.aggregate(tenantId, targetThreadId);
     this.log(tenantId, "thread_merge", `Threads merged — "${source.subject}" into "${target.subject}" (${moving.length} message(s))`, { targetThreadId, sourceThreadId, moved: moving.length });
+    mailRealtime.emit("mail.thread_update", tenantId, { threadId: targetThreadId, change: "merge", sourceThreadId, moved: moving.length, subject: target.subject });
     return {
       targetThreadId,
       sourceThreadId,

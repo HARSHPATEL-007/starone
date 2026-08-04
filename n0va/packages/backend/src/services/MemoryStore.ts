@@ -31,7 +31,7 @@ export class MemoryStore {
 
   insert(collection: string, doc: Record<string, any>): any {
     const col = this.collection(collection);
-    const record = { _id: this.genId(), ...doc, createdAt: this.timestamp(), updatedAt: this.timestamp() };
+    const record = { _id: this.genId(), ...doc, createdAt: doc.createdAt ?? this.timestamp(), updatedAt: this.timestamp() };
     col.push(record);
     return record;
   }

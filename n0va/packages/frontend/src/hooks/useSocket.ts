@@ -103,3 +103,34 @@ export function useTenantActivity(tenantId: string) {
 
   return liveActivities;
 }
+
+export const MAIL_REALTIME_EVENTS = [
+  "mail.received", "mail.sent", "mail.read", "mail.thread_update",
+  "mail.label_change", "mail.folder_change", "mail.spam_detected", "mail.ai_suggestion",
+] as const;
+
+export type MailRealtimeEvent = (typeof MAIL_REALTIME_EVENTS)[number];
+
+export function useMailRealtime(tenantId: string) {
+  const { connected, subscribeTenant, unsubscribeTenant, on } = useSocket();
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!connected) return;
+    subscribeTenant(tenantId);
+    const cleanups = MAIL_REALTIME_EVENTS.map((event) =>
+      on(event, (payload: any) => {
+        const entry = { event, payload, at: new Date().toISOString() };
+        setEvents((prev) => [entry, ...prev].slice(0, 50));
+        window.dispatchEvent(new CustomEvent("n0va:mail-event", { detail: entry }));
+        window.dispatchEvent(new CustomEvent("n0va:refresh-data"));
+      })
+    );
+    return () => {
+      unsubscribeTenant(tenantId);
+      cleanups.forEach((cleanup) => cleanup());
+    };
+  }, [tenantId, connected, subscribeTenant, unsubscribeTenant, on]);
+
+  return { connected, events };
+}

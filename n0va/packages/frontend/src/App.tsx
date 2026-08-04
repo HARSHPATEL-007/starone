@@ -50,6 +50,12 @@ const MailPerformance = lazy(() => import("./pages/MailPerformance"));
 const MailChaos = lazy(() => import("./pages/MailChaos"));
 const MailFocus = lazy(() => import("./pages/MailFocus"));
 const MailComposer = lazy(() => import("./pages/MailComposer"));
+const MailAliases = lazy(() => import("./pages/MailAliases"));
+const MailLabels = lazy(() => import("./pages/MailLabels"));
+const MailResidency = lazy(() => import("./pages/MailResidency"));
+const MailBranding = lazy(() => import("./pages/MailBranding"));
+const MailMarketplace = lazy(() => import("./pages/MailMarketplace"));
+const MailDevCenter = lazy(() => import("./pages/MailDevCenter"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -255,6 +261,12 @@ export default function App() {
                 <Route path="/mail/chaos" element={<MailChaos />} />
                 <Route path="/mail/focus" element={<MailFocus />} />
                 <Route path="/mail/composer" element={<MailComposer />} />
+                <Route path="/mail/aliases" element={<MailAliases />} />
+                <Route path="/mail/labels" element={<MailLabels />} />
+                <Route path="/mail/residency" element={<MailResidency />} />
+                <Route path="/mail/branding" element={<MailBranding />} />
+                <Route path="/mail/marketplace" element={<MailMarketplace />} />
+                <Route path="/mail/dev" element={<MailDevCenter />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

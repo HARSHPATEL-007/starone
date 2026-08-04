@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   Users, RefreshCw, Search, UserPlus, Trash2, Mail, Tag, Building2, X, MessageSquare, Clock,
+  Upload, Download, Merge, Sparkles, ListChecks,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -31,11 +32,21 @@ export default function MailContacts() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  const [bulkDash, setBulkDash] = useState<any>(null);
+  const [importText, setImportText] = useState("");
+  const [importMode, setImportMode] = useState("skip");
+  const [importGroup, setImportGroup] = useState("");
+  const [mergeForm, setMergeForm] = useState({ keep: "", merge: "" });
+  const [bulkTagForm, setBulkTagForm] = useState({ ids: "", tag: "", remove: false });
+  const [bulkDelIds, setBulkDelIds] = useState("");
+
   const loadAll = useCallback(async () => {
     const d = unwrap(await api.adsMarketingModule.mailContactsDashboard().catch(() => null));
     setDash(d);
     const list = unwrap(await api.adsMarketingModule.mailContacts({ limit: 100 }).catch(() => null));
     setContacts(Array.isArray(list) ? list : list?.data || []);
+    const bd = unwrap(await api.adsMarketingModule.mailContactBulkDashboard().catch(() => null));
+    setBulkDash(bd);
     setLoading(false);
   }, []);
 
@@ -89,6 +100,139 @@ export default function MailContacts() {
       const r = unwrap(await api.adsMarketingModule.mailDeleteContact(c.contactId));
       addToast("success", "Contact deleted", r?.summary || "");
       if (profile?.contactId === c.contactId) setProfile(null);
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Delete failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function parseImportRows(text: string): { name: string; email: string; company: string }[] {
+    return text.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+      const parts = line.split(",").map((p) => p.trim());
+      const email = parts.find((p) => p.includes("@")) || "";
+      const name = parts.find((p) => !p.includes("@") && parts.indexOf(p) === 0) || email;
+      const company = parts.length > 2 ? parts[2] : "";
+      return { name: name === email ? "" : name, email, company };
+    });
+  }
+
+  async function runImport() {
+    const rows = parseImportRows(importText);
+    if (!rows.length) {
+      addToast("warning", "Nothing to import", "Paste one contact per line (name, email, company).");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailContactImport({
+        rows,
+        mode: importMode,
+        group: importGroup.trim() || undefined,
+      }));
+      addToast("success", "Import done", r?.summary || "");
+      setImportText("");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Import failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function downloadExport(r: any) {
+    const blob = new Blob([r.content], { type: r.contentType || "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = r.filename || "contacts";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportContacts(format: string) {
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailContactExport({ format }));
+      downloadExport(r);
+      addToast("success", "Export ready", r?.summary || "");
+    } catch (e: any) {
+      addToast("error", "Export failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runDedupe() {
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailContactDedupe());
+      addToast("success", "Dedupe done", r?.summary || "");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Dedupe failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runMerge() {
+    if (!mergeForm.keep || !mergeForm.merge) {
+      addToast("warning", "Missing pick", "Choose both the keeper and the contact to merge.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailContactMerge({
+        keepContactId: mergeForm.keep,
+        mergeContactId: mergeForm.merge,
+      }));
+      addToast("success", "Merged", r?.summary || "");
+      setMergeForm({ keep: "", merge: "" });
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Merge failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runBulkTag() {
+    const ids = bulkTagForm.ids.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!ids.length || !bulkTagForm.tag.trim()) {
+      addToast("warning", "Missing input", "Provide contact ids and a tag.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailContactBulkTag({
+        contactIds: ids,
+        tag: bulkTagForm.tag.trim(),
+        remove: bulkTagForm.remove,
+      }));
+      addToast("success", bulkTagForm.remove ? "Tag removed" : "Tag applied", r?.summary || "");
+      await loadAll();
+    } catch (e: any) {
+      addToast("error", "Tag update failed", e?.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runBulkDelete() {
+    const ids = bulkDelIds.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!ids.length) {
+      addToast("warning", "Missing input", "Provide contact ids to delete.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailContactBulkDelete({ contactIds: ids }));
+      addToast("success", "Bulk delete", r?.summary || "");
+      setBulkDelIds("");
       await loadAll();
     } catch (e: any) {
       addToast("error", "Delete failed", e?.message);
@@ -256,6 +400,78 @@ export default function MailContacts() {
                   </ul>
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="card p-4 space-y-4">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2"><ListChecks className="w-4 h-4 text-n0va-400" /> Bulk tools</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700/60 text-gray-300">
+                {bulkDash?.total || 0} contacts · {bulkDash?.duplicates || 0} duplicates · {bulkDash?.groups?.length || 0} groups
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-gray-400 flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" /> Import contacts</p>
+                <textarea
+                  className="input !h-24 font-mono text-xs"
+                  placeholder={"name, email, company\njordan@company.com"}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                />
+                <div className="flex gap-2 flex-wrap items-center">
+                  <select className="input !w-auto text-xs" value={importMode} onChange={(e) => setImportMode(e.target.value)}>
+                    <option value="skip">Skip duplicates</option>
+                    <option value="overwrite">Overwrite duplicates</option>
+                  </select>
+                  <input className="input !w-28 text-xs" placeholder="Group" value={importGroup} onChange={(e) => setImportGroup(e.target.value)} />
+                  <button className="btn-primary text-xs" disabled={busy} onClick={runImport}>Import</button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="btn-secondary text-xs flex items-center gap-1.5" disabled={busy} onClick={() => exportContacts("csv")}>
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
+                  <button className="btn-secondary text-xs flex items-center gap-1.5" disabled={busy} onClick={() => exportContacts("json")}>
+                    <Download className="w-3.5 h-3.5" /> Export JSON
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-gray-400 flex items-center gap-1.5"><Merge className="w-3.5 h-3.5" /> Merge & dedupe</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <select className="input text-xs" value={mergeForm.keep} onChange={(e) => setMergeForm({ ...mergeForm, keep: e.target.value })}>
+                    <option value="">Keep…</option>
+                    {contacts.map((c: any) => <option key={c.contactId} value={c.contactId}>{c.name}</option>)}
+                  </select>
+                  <select className="input text-xs" value={mergeForm.merge} onChange={(e) => setMergeForm({ ...mergeForm, merge: e.target.value })}>
+                    <option value="">Merge into…</option>
+                    {contacts.map((c: any) => <option key={c.contactId} value={c.contactId}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="btn-secondary text-xs" disabled={busy} onClick={runMerge}>Merge contacts</button>
+                  <button className="btn-secondary text-xs flex items-center gap-1.5" disabled={busy} onClick={runDedupe}>
+                    <Sparkles className="w-3.5 h-3.5" /> Dedupe ({bulkDash?.duplicates || 0})
+                  </button>
+                </div>
+
+                <p className="text-xs font-medium text-gray-400 flex items-center gap-1.5 pt-1"><Tag className="w-3.5 h-3.5" /> Bulk tag / delete</p>
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input className="input flex-1 min-w-[120px] text-xs" placeholder="contact ids, comma separated" value={bulkTagForm.ids} onChange={(e) => setBulkTagForm({ ...bulkTagForm, ids: e.target.value })} />
+                  <input className="input !w-24 text-xs" placeholder="Tag" value={bulkTagForm.tag} onChange={(e) => setBulkTagForm({ ...bulkTagForm, tag: e.target.value })} />
+                  <label className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <input type="checkbox" checked={bulkTagForm.remove} onChange={(e) => setBulkTagForm({ ...bulkTagForm, remove: e.target.checked })} />
+                    Remove
+                  </label>
+                  <button className="btn-primary text-xs" disabled={busy} onClick={runBulkTag}>{bulkTagForm.remove ? "Remove tag" : "Apply tag"}</button>
+                </div>
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input className="input flex-1 min-w-[120px] text-xs" placeholder="contact ids to delete" value={bulkDelIds} onChange={(e) => setBulkDelIds(e.target.value)} />
+                  <button className="btn-danger text-xs" disabled={busy} onClick={runBulkDelete}>Delete</button>
+                </div>
+              </div>
             </div>
           </div>
         </>

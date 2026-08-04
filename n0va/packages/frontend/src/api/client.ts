@@ -3256,6 +3256,68 @@ export const api = {
     mailPredictBestTime: (contact: string) =>
       request<any>(`/ads-marketing-module/mail/predict/best-time?contact=${encodeURIComponent(contact)}`),
     mailPredictGraphDashboard: () => request<any>("/ads-marketing-module/mail/predict/graph-dashboard"),
+    mailAliases: (opts?: Record<string, any>) => {
+      const params = new URLSearchParams();
+      if (opts?.status) params.set("status", opts.status);
+      if (opts?.mailboxId) params.set("mailboxId", opts.mailboxId);
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/aliases${qs ? `?${qs}` : ""}`);
+    },
+    mailCreateAlias: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/aliases", { method: "POST", body: JSON.stringify(input) }),
+    mailAlias: (aliasId: string) => request<any>(`/ads-marketing-module/mail/aliases/${aliasId}`),
+    mailToggleAlias: (aliasId: string) =>
+      request<any>(`/ads-marketing-module/mail/aliases/${aliasId}/toggle`, { method: "POST" }),
+    mailDeleteAlias: (aliasId: string) => request<any>(`/ads-marketing-module/mail/aliases/${aliasId}`, { method: "DELETE" }),
+    mailResolveAlias: (address: string) =>
+      request<any>("/ads-marketing-module/mail/aliases/resolve", { method: "POST", body: JSON.stringify({ address }) }),
+    mailEnableForwarding: (mailboxId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/aliases/forwarding/${mailboxId}`, { method: "POST", body: JSON.stringify(input) }),
+    mailForwarding: (mailboxId: string) => request<any>(`/ads-marketing-module/mail/aliases/forwarding/${mailboxId}`),
+    mailDisableForwarding: (mailboxId: string) =>
+      request<any>(`/ads-marketing-module/mail/aliases/forwarding/${mailboxId}`, { method: "DELETE" }),
+    mailListForwarding: () => request<any>("/ads-marketing-module/mail/aliases/forwarding"),
+    mailAliasDashboard: () => request<any>("/ads-marketing-module/mail/aliases/dashboard"),
+    mailAliasLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/mail/aliases/log${limit ? `?limit=${limit}` : ""}`),
+    mailContactBulkDashboard: () => request<any>("/ads-marketing-module/mail/contacts/bulk-dashboard"),
+    mailContactBulkLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/mail/contacts/bulk-log${limit ? `?limit=${limit}` : ""}`),
+    mailContactExport: (opts?: Record<string, any>) => {
+      const params = new URLSearchParams();
+      if (opts?.format) params.set("format", opts.format);
+      if (opts?.group) params.set("group", opts.group);
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/contacts/export${qs ? `?${qs}` : ""}`);
+    },
+    mailContactImport: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/contacts/import", { method: "POST", body: JSON.stringify(input) }),
+    mailContactMerge: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/contacts/merge", { method: "POST", body: JSON.stringify(input) }),
+    mailContactDedupe: () =>
+      request<any>("/ads-marketing-module/mail/contacts/dedupe", { method: "POST" }),
+    mailContactBulkTag: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/contacts/bulk-tag", { method: "POST", body: JSON.stringify(input) }),
+    mailContactBulkDelete: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/contacts/bulk-delete", { method: "POST", body: JSON.stringify(input) }),
+    mailLabels: () => request<any>("/ads-marketing-module/mail/labels"),
+    mailCreateLabel: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/labels", { method: "POST", body: JSON.stringify(input) }),
+    mailLabel: (labelId: string) => request<any>(`/ads-marketing-module/mail/labels/${labelId}`),
+    mailUpdateLabel: (labelId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/labels/${labelId}`, { method: "PUT", body: JSON.stringify(input) }),
+    mailDeleteLabel: (labelId: string) =>
+      request<any>(`/ads-marketing-module/mail/labels/${labelId}`, { method: "DELETE" }),
+    mailLabelApply: (labelId: string, messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/labels/${labelId}/apply`, { method: "POST", body: JSON.stringify({ messageId }) }),
+    mailLabelRemove: (labelId: string, messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/labels/${labelId}/remove`, { method: "POST", body: JSON.stringify({ messageId }) }),
+    mailLabelDashboard: () => request<any>("/ads-marketing-module/mail/labels/dashboard"),
+    mailLabelLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/mail/labels/log${limit ? `?limit=${limit}` : ""}`),
+    mailRealtimeOverview: () => request<any>("/ads-marketing-module/mail/realtime/overview"),
+    mailRealtimeLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/mail/realtime/log${limit ? `?limit=${limit}` : ""}`),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

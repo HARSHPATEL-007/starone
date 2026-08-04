@@ -462,6 +462,14 @@ export class MailQuantumService {
       coveragePct,
       qkdProtected: covered.filter((c: any) => c.qkdProtected).length,
       status,
+      records: covered.map((c) => ({
+        encryptedId: c._id,
+        voiceNoteId: c.voiceNoteId,
+        title: c.title,
+        algorithmName: c.algorithmName,
+        channelName: c.channelName,
+        qkdProtected: c.qkdProtected,
+      })),
       summary: `${covered.length}/${total} voice note(s) quantum-encrypted (${coveragePct}%) — ${status}`,
     };
   }
