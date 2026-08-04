@@ -94,6 +94,11 @@ import {
   MailOpen,
   Import,
   GitMerge,
+  Workflow,
+  Gauge,
+  ListOrdered,
+  Ticket,
+  KeyRound,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -134,6 +139,11 @@ const navItems = [
     { to: "/mail/quantum", icon: Lock, label: "Mail Quantum" },
     { to: "/mail/import", icon: Import, label: "Mail Import" },
     { to: "/mail/threads", icon: GitMerge, label: "Mail Threads" },
+    { to: "/mail/automations", icon: Workflow, label: "Mail Automations" },
+    { to: "/mail/deliverability", icon: Gauge, label: "Deliverability" },
+    { to: "/mail/sequences", icon: ListOrdered, label: "Mail Sequences" },
+    { to: "/mail/tickets", icon: Ticket, label: "Mail Tickets" },
+    { to: "/mail/admin", icon: KeyRound, label: "Mail Admin" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

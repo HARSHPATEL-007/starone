@@ -2911,6 +2911,133 @@ export const api = {
     mailBillingTaxRate: () => request<any>("/ads-marketing-module/mail/billing/tax-rate"),
     mailBillingSetTaxRate: (pct: number) =>
       request<any>("/ads-marketing-module/mail/billing/tax-rate", { method: "PUT", body: JSON.stringify({ pct }) }),
+    mailAutomationTriggers: () => request<any>("/ads-marketing-module/mail/automations/triggers"),
+    mailAutomationActions: () => request<any>("/ads-marketing-module/mail/automations/actions"),
+    mailAutomations: () => request<any>("/ads-marketing-module/mail/automations"),
+    mailCreateAutomation: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/automations", { method: "POST", body: JSON.stringify(input) }),
+    mailAutomation: (automationId: string) => request<any>(`/ads-marketing-module/mail/automations/${automationId}`),
+    mailUpdateAutomation: (automationId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/automations/${automationId}`, { method: "PUT", body: JSON.stringify(patch) }),
+    mailToggleAutomation: (automationId: string) =>
+      request<any>(`/ads-marketing-module/mail/automations/${automationId}/toggle`, { method: "POST" }),
+    mailDeleteAutomation: (automationId: string) =>
+      request<any>(`/ads-marketing-module/mail/automations/${automationId}`, { method: "DELETE" }),
+    mailRunAutomation: (automationId: string, messageId: string) =>
+      request<any>(`/ads-marketing-module/mail/automations/${automationId}/run`, { method: "POST", body: JSON.stringify({ messageId }) }),
+    mailTestAutomation: (automationId: string, sample: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/automations/${automationId}/test`, { method: "POST", body: JSON.stringify(sample) }),
+    mailAutomationDueRuns: () => request<any>("/ads-marketing-module/mail/automations/due", { method: "POST" }),
+    mailAutomationDashboard: () => request<any>("/ads-marketing-module/mail/automations/dashboard"),
+    mailAutomationLog: () => request<any>("/ads-marketing-module/mail/automations/log"),
+    mailDeliverabilityDashboard: () => request<any>("/ads-marketing-module/mail/deliverability/dashboard"),
+    mailBounceStats: () => request<any>("/ads-marketing-module/mail/deliverability/bounce-stats"),
+    mailBounces: (type?: string) => {
+      const q = type ? `?type=${type}` : "";
+      return request<any>(`/ads-marketing-module/mail/deliverability/bounces${q}`);
+    },
+    mailRecordBounce: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/deliverability/bounces", { method: "POST", body: JSON.stringify(input) }),
+    mailRecordComplaint: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/deliverability/complaints", { method: "POST", body: JSON.stringify(input) }),
+    mailSuppressionList: (reason?: string) => {
+      const q = reason ? `?reason=${reason}` : "";
+      return request<any>(`/ads-marketing-module/mail/deliverability/suppression${q}`);
+    },
+    mailSuppressEmail: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/deliverability/suppression", { method: "POST", body: JSON.stringify(input) }),
+    mailUnsuppressEmail: (email: string) =>
+      request<any>(`/ads-marketing-module/mail/deliverability/suppression/${encodeURIComponent(email)}`, { method: "DELETE" }),
+    mailSuppressionStatus: (email: string) =>
+      request<any>(`/ads-marketing-module/mail/deliverability/suppression/status?email=${encodeURIComponent(email)}`),
+    mailSendingReputation: () => request<any>("/ads-marketing-module/mail/deliverability/reputation"),
+    mailListHygiene: () => request<any>("/ads-marketing-module/mail/deliverability/hygiene"),
+    mailSequences: () => request<any>("/ads-marketing-module/mail/sequences"),
+    mailCreateSequence: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/sequences", { method: "POST", body: JSON.stringify(input) }),
+    mailSequence: (sequenceId: string) => request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}`),
+    mailUpdateSequence: (sequenceId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}`, { method: "PUT", body: JSON.stringify(patch) }),
+    mailToggleSequence: (sequenceId: string) =>
+      request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}/toggle`, { method: "POST" }),
+    mailDeleteSequence: (sequenceId: string) =>
+      request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}`, { method: "DELETE" }),
+    mailEnrollContact: (sequenceId: string, email: string) =>
+      request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}/enroll`, { method: "POST", body: JSON.stringify({ email }) }),
+    mailEnrollMany: (sequenceId: string, emails: string[]) =>
+      request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}/enroll-many`, { method: "POST", body: JSON.stringify({ emails }) }),
+    mailPauseEnrollment: (enrollmentId: string) =>
+      request<any>(`/ads-marketing-module/mail/enrollments/${enrollmentId}/pause`, { method: "POST" }),
+    mailResumeEnrollment: (enrollmentId: string) =>
+      request<any>(`/ads-marketing-module/mail/enrollments/${enrollmentId}/resume`, { method: "POST" }),
+    mailUnenrollContact: (enrollmentId: string, reason?: string) =>
+      request<any>(`/ads-marketing-module/mail/enrollments/${enrollmentId}/unenroll`, { method: "POST", body: JSON.stringify({ reason }) }),
+    mailAdvanceSequence: (sequenceId?: string) =>
+      request<any>("/ads-marketing-module/mail/sequences/advance", { method: "POST", body: JSON.stringify({ sequenceId }) }),
+    mailSequenceProgress: (sequenceId: string) => request<any>(`/ads-marketing-module/mail/sequences/${sequenceId}/progress`),
+    mailSequencesDashboard: () => request<any>("/ads-marketing-module/mail/sequences/dashboard"),
+    mailUnsubscribeLink: (email: string, category?: string) =>
+      request<any>("/ads-marketing-module/mail/unsubscribe/link", { method: "POST", body: JSON.stringify({ email, category }) }),
+    mailUnsubscribe: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/unsubscribe", { method: "POST", body: JSON.stringify(input) }),
+    mailPreferences: (email: string) => request<any>(`/ads-marketing-module/mail/preferences/${encodeURIComponent(email)}`),
+    mailUpdatePreferences: (email: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/preferences/${encodeURIComponent(email)}`, { method: "PUT", body: JSON.stringify(patch) }),
+    mailUnsubscribeStatus: (email: string) =>
+      request<any>(`/ads-marketing-module/mail/unsubscribe/status?email=${encodeURIComponent(email)}`),
+    mailUnsubscribeLog: () => request<any>("/ads-marketing-module/mail/unsubscribe/log"),
+    mailUnsubscribeDashboard: () => request<any>("/ads-marketing-module/mail/unsubscribe/dashboard"),
+    mailTickets: (filters: Record<string, any> = {}) => {
+      const qs = Object.entries(filters).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
+      return request<any>(`/ads-marketing-module/mail/tickets${qs ? `?${qs}` : ""}`);
+    },
+    mailCreateTicket: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/tickets", { method: "POST", body: JSON.stringify(input) }),
+    mailTicket: (ticketId: string) => request<any>(`/ads-marketing-module/mail/tickets/${ticketId}`),
+    mailUpdateTicket: (ticketId: string, patch: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}`, { method: "PUT", body: JSON.stringify(patch) }),
+    mailAssignTicket: (ticketId: string, assignee: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/assign`, { method: "POST", body: JSON.stringify({ assignee }) }),
+    mailTicketPriority: (ticketId: string, priority: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/priority`, { method: "POST", body: JSON.stringify({ priority }) }),
+    mailTicketTag: (ticketId: string, tag: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/tags`, { method: "POST", body: JSON.stringify({ tag }) }),
+    mailTicketUntag: (ticketId: string, tag: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/tags/${encodeURIComponent(tag)}`, { method: "DELETE" }),
+    mailTicketNote: (ticketId: string, note: string, author?: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/notes`, { method: "POST", body: JSON.stringify({ note, author }) }),
+    mailResolveTicket: (ticketId: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/resolve`, { method: "POST" }),
+    mailReopenTicket: (ticketId: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/reopen`, { method: "POST" }),
+    mailEscalateTicket: (ticketId: string) =>
+      request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/escalate`, { method: "POST" }),
+    mailTicketSla: () => request<any>("/ads-marketing-module/mail/tickets/sla"),
+    mailTicketDashboard: () => request<any>("/ads-marketing-module/mail/tickets/dashboard"),
+    mailTicketLog: () => request<any>("/ads-marketing-module/mail/tickets/log"),
+    mailTicketEvents: (ticketId: string) => request<any>(`/ads-marketing-module/mail/tickets/${ticketId}/events`),
+    mailBackups: () => request<any>("/ads-marketing-module/mail/backups"),
+    mailCreateBackup: (label?: string) =>
+      request<any>("/ads-marketing-module/mail/backups", { method: "POST", body: JSON.stringify({ label }) }),
+    mailBackup: (backupId: string) => request<any>(`/ads-marketing-module/mail/backups/${backupId}`),
+    mailDeleteBackup: (backupId: string) =>
+      request<any>(`/ads-marketing-module/mail/backups/${backupId}`, { method: "DELETE" }),
+    mailRestoreBackup: (backupId: string) =>
+      request<any>(`/ads-marketing-module/mail/backups/${backupId}/restore`, { method: "POST" }),
+    mailBackupSchedule: () => request<any>("/ads-marketing-module/mail/backups/schedule"),
+    mailSetBackupSchedule: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/backups/schedule", { method: "PUT", body: JSON.stringify(input) }),
+    mailBackupsDashboard: () => request<any>("/ads-marketing-module/mail/backups/dashboard"),
+    mailApiKeys: () => request<any>("/ads-marketing-module/mail/api-keys"),
+    mailCreateApiKey: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/api-keys", { method: "POST", body: JSON.stringify(input) }),
+    mailApiKey: (apiKeyId: string) => request<any>(`/ads-marketing-module/mail/api-keys/${apiKeyId}`),
+    mailRevokeApiKey: (apiKeyId: string) =>
+      request<any>(`/ads-marketing-module/mail/api-keys/${apiKeyId}/revoke`, { method: "POST" }),
+    mailVerifyApiKey: (key: string) =>
+      request<any>(`/ads-marketing-module/mail/api-keys/verify?key=${encodeURIComponent(key)}`),
+    mailApiKeyUsage: (apiKeyId: string) => request<any>(`/ads-marketing-module/mail/api-keys/${apiKeyId}/usage`),
+    mailApiKeyDashboard: () => request<any>("/ads-marketing-module/mail/api-keys/dashboard"),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

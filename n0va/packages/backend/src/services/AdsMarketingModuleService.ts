@@ -85,6 +85,13 @@ import { mailIntegration } from "./MailIntegrationService";
 import { mailMigration } from "./MailMigrationService";
 import { mailThread } from "./MailThreadService";
 import { mailBilling } from "./MailBillingService";
+import { mailAutomation } from "./MailAutomationService";
+import { mailDeliverability } from "./MailDeliverabilityService";
+import { mailSequence } from "./MailSequenceService";
+import { mailUnsubscribe } from "./MailUnsubscribeService";
+import { mailTicket } from "./MailTicketService";
+import { mailBackup } from "./MailBackupService";
+import { mailApiKey } from "./MailApiKeyService";
 
 import { mailNotifications } from "./MailNotificationService";
 
@@ -5347,6 +5354,310 @@ export class AdsMarketingModuleService {
 
   mailBillingTaxRate(tenantId: string) {
     return mailBilling.billingTaxRate(tenantId);
+  }
+
+  mailAutomationTriggers() {
+    return mailAutomation.automationTriggers();
+  }
+
+  mailAutomationActions() {
+    return mailAutomation.automationActionCatalog();
+  }
+
+  mailAutomations(tenantId: string) {
+    return mailAutomation.listAutomations(tenantId);
+  }
+
+  mailCreateAutomation(tenantId: string, input: any) {
+    return mailAutomation.createAutomation(tenantId, input);
+  }
+
+  mailAutomation(tenantId: string, automationId: string) {
+    return mailAutomation.getAutomation(tenantId, automationId);
+  }
+
+  mailUpdateAutomation(tenantId: string, automationId: string, patch: any) {
+    return mailAutomation.updateAutomation(tenantId, automationId, patch);
+  }
+
+  mailToggleAutomation(tenantId: string, automationId: string) {
+    return mailAutomation.toggleAutomation(tenantId, automationId);
+  }
+
+  mailDeleteAutomation(tenantId: string, automationId: string) {
+    return mailAutomation.deleteAutomation(tenantId, automationId);
+  }
+
+  mailRunAutomation(tenantId: string, automationId: string, messageId: string) {
+    return mailAutomation.runAutomation(tenantId, automationId, messageId);
+  }
+
+  mailTestAutomation(tenantId: string, automationId: string, sample: any) {
+    return mailAutomation.testAutomation(tenantId, automationId, sample);
+  }
+
+  mailAutomationDueRuns(tenantId: string) {
+    return mailAutomation.dueRuns(tenantId);
+  }
+
+  mailAutomationDashboard(tenantId: string) {
+    return mailAutomation.automationDashboard(tenantId);
+  }
+
+  mailAutomationLog(tenantId: string, limit?: number) {
+    return mailAutomation.automationLog(tenantId, limit);
+  }
+
+  mailDeliverabilityDashboard(tenantId: string) {
+    return mailDeliverability.deliverabilityDashboard(tenantId);
+  }
+
+  mailBounceStats(tenantId: string) {
+    return mailDeliverability.bounceStats(tenantId);
+  }
+
+  mailBounces(tenantId: string, type?: string) {
+    return mailDeliverability.listBounces(tenantId, type);
+  }
+
+  mailRecordBounce(tenantId: string, input: any) {
+    return mailDeliverability.recordBounce(tenantId, input);
+  }
+
+  mailRecordComplaint(tenantId: string, input: any) {
+    return mailDeliverability.recordComplaint(tenantId, input);
+  }
+
+  mailSuppressionList(tenantId: string, reason?: string) {
+    return mailDeliverability.suppressionList(tenantId, reason);
+  }
+
+  mailSuppressEmail(tenantId: string, input: any) {
+    return mailDeliverability.suppressEmail(tenantId, input.email, input.reason, input.note);
+  }
+
+  mailUnsuppressEmail(tenantId: string, email: string) {
+    return mailDeliverability.unsuppressEmail(tenantId, email);
+  }
+
+  mailSuppressionStatus(tenantId: string, email: string) {
+    return mailDeliverability.suppressionStatus(tenantId, email);
+  }
+
+  mailSendingReputation(tenantId: string) {
+    return mailDeliverability.sendingReputation(tenantId);
+  }
+
+  mailListHygiene(tenantId: string) {
+    return mailDeliverability.listHygiene(tenantId);
+  }
+
+  mailSequences(tenantId: string) {
+    return mailSequence.listSequences(tenantId);
+  }
+
+  mailCreateSequence(tenantId: string, input: any) {
+    return mailSequence.createSequence(tenantId, input);
+  }
+
+  mailSequence(tenantId: string, sequenceId: string) {
+    return mailSequence.getSequence(tenantId, sequenceId);
+  }
+
+  mailUpdateSequence(tenantId: string, sequenceId: string, patch: any) {
+    return mailSequence.updateSequence(tenantId, sequenceId, patch);
+  }
+
+  mailToggleSequence(tenantId: string, sequenceId: string) {
+    return mailSequence.toggleSequence(tenantId, sequenceId);
+  }
+
+  mailDeleteSequence(tenantId: string, sequenceId: string) {
+    return mailSequence.deleteSequence(tenantId, sequenceId);
+  }
+
+  mailEnrollContact(tenantId: string, sequenceId: string, email: string) {
+    return mailSequence.enrollContact(tenantId, sequenceId, email);
+  }
+
+  mailEnrollMany(tenantId: string, sequenceId: string, emails: string[]) {
+    return mailSequence.enrollMany(tenantId, sequenceId, emails);
+  }
+
+  mailPauseEnrollment(tenantId: string, enrollmentId: string) {
+    return mailSequence.pauseEnrollment(tenantId, enrollmentId);
+  }
+
+  mailResumeEnrollment(tenantId: string, enrollmentId: string) {
+    return mailSequence.resumeEnrollment(tenantId, enrollmentId);
+  }
+
+  mailUnenrollContact(tenantId: string, enrollmentId: string, reason?: string) {
+    return mailSequence.unenrollContact(tenantId, enrollmentId, reason);
+  }
+
+  mailAdvanceSequence(tenantId: string, sequenceId?: string) {
+    return mailSequence.advanceSequence(tenantId, sequenceId);
+  }
+
+  mailSequenceProgress(tenantId: string, sequenceId: string) {
+    return mailSequence.sequenceProgress(tenantId, sequenceId);
+  }
+
+  mailSequencesDashboard(tenantId: string) {
+    return mailSequence.sequencesDashboard(tenantId);
+  }
+
+  mailUnsubscribeLink(tenantId: string, email: string, category?: string) {
+    return mailUnsubscribe.generateUnsubscribeLink(tenantId, email, category);
+  }
+
+  mailUnsubscribe(tenantId: string, input: any) {
+    return mailUnsubscribe.unsubscribe(tenantId, input);
+  }
+
+  mailPreferences(tenantId: string, email: string) {
+    return mailUnsubscribe.getPreferences(tenantId, email);
+  }
+
+  mailUpdatePreferences(tenantId: string, email: string, patch: any) {
+    return mailUnsubscribe.updatePreferences(tenantId, email, patch);
+  }
+
+  mailUnsubscribeStatus(tenantId: string, email: string) {
+    return mailUnsubscribe.unsubscribeStatus(tenantId, email);
+  }
+
+  mailUnsubscribeLog(tenantId: string, limit?: number) {
+    return mailUnsubscribe.unsubscribeLog(tenantId, limit);
+  }
+
+  mailUnsubscribeDashboard(tenantId: string) {
+    return mailUnsubscribe.unsubscribeDashboard(tenantId);
+  }
+
+  mailTickets(tenantId: string, filters: any) {
+    return mailTicket.listTickets(tenantId, filters);
+  }
+
+  mailCreateTicket(tenantId: string, input: any) {
+    return mailTicket.createTicket(tenantId, input);
+  }
+
+  mailTicket(tenantId: string, ticketId: string) {
+    return mailTicket.getTicket(tenantId, ticketId);
+  }
+
+  mailUpdateTicket(tenantId: string, ticketId: string, patch: any) {
+    return mailTicket.updateTicket(tenantId, ticketId, patch);
+  }
+
+  mailAssignTicket(tenantId: string, ticketId: string, assignee: string) {
+    return mailTicket.assignTicket(tenantId, ticketId, assignee);
+  }
+
+  mailTicketPriority(tenantId: string, ticketId: string, priority: string) {
+    return mailTicket.setPriority(tenantId, ticketId, priority);
+  }
+
+  mailTicketTag(tenantId: string, ticketId: string, tag: string) {
+    return mailTicket.tagTicket(tenantId, ticketId, tag);
+  }
+
+  mailTicketUntag(tenantId: string, ticketId: string, tag: string) {
+    return mailTicket.untagTicket(tenantId, ticketId, tag);
+  }
+
+  mailTicketNote(tenantId: string, ticketId: string, note: string, author?: string) {
+    return mailTicket.addNote(tenantId, ticketId, note, author);
+  }
+
+  mailResolveTicket(tenantId: string, ticketId: string) {
+    return mailTicket.resolveTicket(tenantId, ticketId);
+  }
+
+  mailReopenTicket(tenantId: string, ticketId: string) {
+    return mailTicket.reopenTicket(tenantId, ticketId);
+  }
+
+  mailEscalateTicket(tenantId: string, ticketId: string) {
+    return mailTicket.escalateTicket(tenantId, ticketId);
+  }
+
+  mailTicketSla(tenantId: string) {
+    return mailTicket.slaOverview(tenantId);
+  }
+
+  mailTicketDashboard(tenantId: string) {
+    return mailTicket.ticketDashboard(tenantId);
+  }
+
+  mailTicketLog(tenantId: string, limit?: number) {
+    return mailTicket.ticketLog(tenantId, limit);
+  }
+
+  mailTicketEvents(tenantId: string, ticketId: string) {
+    return mailTicket.ticketEvents(tenantId, ticketId);
+  }
+
+  mailCreateBackup(tenantId: string, label?: string) {
+    return mailBackup.createBackup(tenantId, label);
+  }
+
+  mailBackups(tenantId: string) {
+    return mailBackup.listBackups(tenantId);
+  }
+
+  mailBackup(tenantId: string, backupId: string) {
+    return mailBackup.getBackup(tenantId, backupId);
+  }
+
+  mailDeleteBackup(tenantId: string, backupId: string) {
+    return mailBackup.deleteBackup(tenantId, backupId);
+  }
+
+  mailRestoreBackup(tenantId: string, backupId: string) {
+    return mailBackup.restoreBackup(tenantId, backupId);
+  }
+
+  mailBackupSchedule(tenantId: string) {
+    return mailBackup.backupSchedule(tenantId);
+  }
+
+  mailSetBackupSchedule(tenantId: string, input: any) {
+    return mailBackup.setBackupSchedule(tenantId, input);
+  }
+
+  mailBackupsDashboard(tenantId: string) {
+    return mailBackup.backupsDashboard(tenantId);
+  }
+
+  mailCreateApiKey(tenantId: string, input: any) {
+    return mailApiKey.createApiKey(tenantId, input);
+  }
+
+  mailApiKeys(tenantId: string) {
+    return mailApiKey.listApiKeys(tenantId);
+  }
+
+  mailApiKey(tenantId: string, apiKeyId: string) {
+    return mailApiKey.getApiKey(tenantId, apiKeyId);
+  }
+
+  mailRevokeApiKey(tenantId: string, apiKeyId: string) {
+    return mailApiKey.revokeApiKey(tenantId, apiKeyId);
+  }
+
+  mailVerifyApiKey(tenantId: string, key: string) {
+    return mailApiKey.verifyApiKey(tenantId, key);
+  }
+
+  mailApiKeyUsage(tenantId: string, apiKeyId: string) {
+    return mailApiKey.apiKeyUsage(tenantId, apiKeyId);
+  }
+
+  mailApiKeyDashboard(tenantId: string) {
+    return mailApiKey.apiKeyDashboard(tenantId);
   }
 }
 
