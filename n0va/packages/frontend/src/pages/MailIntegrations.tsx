@@ -28,6 +28,12 @@ const ACTION_LABELS: Record<string, string> = {
   share_link: "Share link",
   update_crm_deal: "Update deal",
   create_doc: "Create doc",
+  push_to_sheets: "Push to sheets",
+  create_ticket: "Create ticket",
+  post_comment: "Post comment",
+  send_sms: "Send SMS",
+  create_invoice: "Create invoice",
+  read_from_drive: "Read from drive",
 };
 
 export default function MailIntegrations() {

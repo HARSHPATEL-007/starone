@@ -2874,6 +2874,43 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/migrations/${migrationId}`, { method: "DELETE" }),
     mailMigrationSummary: () => request<any>("/ads-marketing-module/mail/migrations/summary"),
     mailMigrationLog: () => request<any>("/ads-marketing-module/mail/migrations/log"),
+    mailThreads: (opts?: Record<string, any>) => {
+      const params = new URLSearchParams();
+      if (opts?.mailboxId) params.set("mailboxId", opts.mailboxId);
+      if (opts?.folder) params.set("folder", opts.folder);
+      if (opts?.state) params.set("state", opts.state);
+      if (opts?.tag) params.set("tag", opts.tag);
+      if (opts?.priority) params.set("priority", opts.priority);
+      if (opts?.unreadOnly) params.set("unreadOnly", "true");
+      if (opts?.starredOnly) params.set("starredOnly", "true");
+      if (opts?.pinnedOnly) params.set("pinnedOnly", "true");
+      if (opts?.search) params.set("search", opts.search);
+      const qs = params.toString();
+      return request<any>(`/ads-marketing-module/mail/threads${qs ? `?${qs}` : ""}`);
+    },
+    mailThreadWorkspace: (threadId: string) => request<any>(`/ads-marketing-module/mail/threads/${threadId}`),
+    mailThreadSetState: (threadId: string, state: string) =>
+      request<any>(`/ads-marketing-module/mail/threads/${threadId}/state`, { method: "POST", body: JSON.stringify({ state }) }),
+    mailThreadPin: (threadId: string) => request<any>(`/ads-marketing-module/mail/threads/${threadId}/pin`, { method: "POST" }),
+    mailThreadUnpin: (threadId: string) => request<any>(`/ads-marketing-module/mail/threads/${threadId}/unpin`, { method: "POST" }),
+    mailThreadTag: (threadId: string, tag: string) =>
+      request<any>(`/ads-marketing-module/mail/threads/${threadId}/tags`, { method: "POST", body: JSON.stringify({ tag }) }),
+    mailThreadUntag: (threadId: string, tag: string) =>
+      request<any>(`/ads-marketing-module/mail/threads/${threadId}/tags/${encodeURIComponent(tag)}`, { method: "DELETE" }),
+    mailThreadPriority: (threadId: string, priority: string) =>
+      request<any>(`/ads-marketing-module/mail/threads/${threadId}/priority`, { method: "POST", body: JSON.stringify({ priority }) }),
+    mailThreadMerge: (targetThreadId: string, sourceThreadId: string) =>
+      request<any>("/ads-marketing-module/mail/threads/merge", { method: "POST", body: JSON.stringify({ targetThreadId, sourceThreadId }) }),
+    mailThreadDashboard: () => request<any>("/ads-marketing-module/mail/threads/dashboard"),
+    mailThreadLog: () => request<any>("/ads-marketing-module/mail/threads/log"),
+    mailBillingCoupons: () => request<any>("/ads-marketing-module/mail/billing/coupons"),
+    mailBillingCouponStatus: () => request<any>("/ads-marketing-module/mail/billing/coupons/status"),
+    mailBillingApplyCoupon: (code: string) =>
+      request<any>("/ads-marketing-module/mail/billing/coupons", { method: "POST", body: JSON.stringify({ code }) }),
+    mailBillingRemoveCoupon: () => request<any>("/ads-marketing-module/mail/billing/coupons", { method: "DELETE" }),
+    mailBillingTaxRate: () => request<any>("/ads-marketing-module/mail/billing/tax-rate"),
+    mailBillingSetTaxRate: (pct: number) =>
+      request<any>("/ads-marketing-module/mail/billing/tax-rate", { method: "PUT", body: JSON.stringify({ pct }) }),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

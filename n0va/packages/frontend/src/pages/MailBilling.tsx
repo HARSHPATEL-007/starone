@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { CreditCard, RefreshCw, AlertTriangle, TrendingUp, CheckCircle2, X, ChevronRight, Plus, Trash2, Zap, Package, Bell, Building2, Wallet, ArrowDownCircle, RotateCcw, BadgeDollarSign } from "lucide-react";
+import { CreditCard, RefreshCw, AlertTriangle, TrendingUp, CheckCircle2, X, ChevronRight, Plus, Trash2, Zap, Package, Bell, Building2, Wallet, ArrowDownCircle, RotateCcw, BadgeDollarSign, Tag, Percent } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
@@ -32,6 +32,8 @@ export default function MailBilling() {
   const [alertThreshold, setAlertThreshold] = useState(85);
   const [contractForm, setContractForm] = useState({ company: "", termMonths: "12", annualPrice: "", seats: "", contactEmail: "" });
   const [downgradeTarget, setDowngradeTarget] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [taxInput, setTaxInput] = useState("");
 
   const load = useCallback(async () => {
     const d = await api.adsMarketingModule.mailBillingDashboard().catch(() => null);
@@ -183,6 +185,34 @@ export default function MailBilling() {
     if (r?.summary) addToast("info", r.summary);
     setBusy(null);
     load();
+  }
+
+  async function applyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+    setBusy("coupon");
+    const r = unwrap(await api.adsMarketingModule.mailBillingApplyCoupon(code).catch(() => null));
+    setBusy(null);
+    if (r?.summary) { addToast("success", r.summary); setCouponInput(""); load(); }
+    else addToast("error", "Coupon could not be applied");
+  }
+
+  async function removeCoupon() {
+    setBusy("rmcoupon");
+    const r = unwrap(await api.adsMarketingModule.mailBillingRemoveCoupon().catch(() => null));
+    setBusy(null);
+    if (r?.summary) addToast("info", r.summary);
+    load();
+  }
+
+  async function saveTax() {
+    const pct = Number(taxInput);
+    if (!isFinite(pct)) { addToast("warning", "Enter a percentage between 0 and 30"); return; }
+    setBusy("tax");
+    const r = unwrap(await api.adsMarketingModule.mailBillingSetTaxRate(pct).catch(() => null));
+    setBusy(null);
+    if (r?.summary) { addToast("success", r.summary); setTaxInput(""); load(); }
+    else addToast("error", "Tax rate must be between 0 and 30");
   }
 
   async function cancelSub() {
@@ -432,6 +462,69 @@ export default function MailBilling() {
                 ))}
               </div>
               <div className="text-[10px] text-gray-600 mt-2">Threshold: {alertThreshold}% of limit · custom per-dimension thresholds available via API</div>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <div className="card min-w-0">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-1.5"><Tag className="w-4 h-4 text-n0va-400" /> Coupons &amp; promo</h3>
+              {dash.coupon?.active ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2 mb-3 space-y-1">
+                  <div className="text-xs font-semibold text-emerald-300">{dash.coupon.code} · {dash.coupon.label}</div>
+                  <div className="text-[11px] text-gray-400">
+                    {dash.coupon.flatOff ? `$${dash.coupon.flatOff} off` : `${dash.coupon.pctOff}% off`} · applied {String(dash.coupon.appliedAt || "").slice(0, 10)}
+                  </div>
+                  <div className="text-[11px] text-gray-500">{dash.coupon.expired ? "Expired" : `Expires ${String(dash.coupon.expiresAt || "").slice(0, 10)}`}</div>
+                  <button className="btn-secondary text-[10px] px-2 py-1 mt-1" disabled={busy === "rmcoupon"} onClick={removeCoupon}>Remove coupon</button>
+                </div>
+              ) : (
+                <div className="flex gap-2 mb-3">
+                  <input
+                    className="input text-xs"
+                    placeholder="Promo code (e.g. SPRING20)"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => { if (e.key === "Enter") applyCoupon(); }}
+                  />
+                  <button className="btn-primary text-xs shrink-0" disabled={busy === "coupon" || !couponInput.trim()} onClick={applyCoupon}>
+                    {busy === "coupon" ? "Applying…" : "Apply"}
+                  </button>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                {(dash.couponCatalog?.coupons || []).map((c: any) => (
+                  <div key={c.code} className="flex items-center justify-between bg-gray-900/60 rounded-lg px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="text-xs text-white font-semibold">{c.code} <span className="text-[10px] text-gray-500 font-normal">· {c.flatOff ? `$${c.flatOff} off` : `${c.pctOff}% off`}</span></div>
+                      <div className="text-[10px] text-gray-500 truncate">{c.label}</div>
+                    </div>
+                    <span className="text-[10px] text-gray-500 shrink-0 ml-2">{c.remaining}/{c.maxUses} left</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card min-w-0">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-1.5"><Percent className="w-4 h-4 text-n0va-400" /> Tax rate</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  className="input text-xs w-28"
+                  type="number"
+                  min={0}
+                  max={30}
+                  placeholder={String(dash.taxRate ?? 0)}
+                  value={taxInput}
+                  onChange={(e) => setTaxInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveTax(); }}
+                />
+                <span className="text-xs text-gray-500">%</span>
+                <button className="btn-primary text-xs" disabled={busy === "tax"} onClick={saveTax}>{busy === "tax" ? "Saving…" : "Save"}</button>
+              </div>
+              <div className="text-xs text-gray-400 space-y-1.5">
+                <div>Current rate: <span className="text-white font-semibold">{dash.taxRate ?? 0}%</span></div>
+                <div>Applied on top of discounts for new invoices (upgrades, add-ons, overage, manual).</div>
+                <div className="text-gray-600">Valid range 0–30%.</div>
+              </div>
             </div>
           </div>
 

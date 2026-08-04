@@ -73,6 +73,15 @@ export const OVERAGE_RATES: Record<string, number> = {
 
 export const DEFAULT_ALERT_THRESHOLD = 85;
 
+export const COUPONS: Record<string, any> = {
+  SPRING20: { code: "SPRING20", label: "20% off your next charge", pctOff: 20, flatOff: 0, expiresInDays: 60, maxUses: 500 },
+  N0VA1O: { code: "N0VA1O", label: "$100 off any plan change", pctOff: 0, flatOff: 100, expiresInDays: 30, maxUses: 100 },
+  TEAM10: { code: "TEAM10", label: "10% off — team plans", pctOff: 10, flatOff: 0, expiresInDays: 90, maxUses: 1000 },
+  VIP25: { code: "VIP25", label: "25% off add-ons", pctOff: 25, flatOff: 0, expiresInDays: 14, maxUses: 50 },
+};
+
+export const DEFAULT_TAX_RATE = 0;
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -185,25 +194,13 @@ export class MailBillingService {
     if ((state.addons || []).some((a: any) => a.addonId === def.id)) throw new Error(`Add-on "${def.name}" already active`);
     const daysLeft = Math.max(0, Math.min(30, Math.ceil((new Date(state.cycleEnd).getTime() - Date.now()) / 86400000)));
     const prorated = round2(def.monthlyPrice * (daysLeft / 30));
-    const invoice = {
-      tenantId,
-      kind: "addon" as string,
-      number: invoiceNumber(tenantId),
-      lines: [{ description: `Add-on: ${def.name} (prorated ${daysLeft} day(s))`, amount: prorated }],
-      total: prorated,
-      status: "open" as string,
-      issuedAt: new Date().toISOString(),
-      dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
-      paidAt: null as string | null,
-      createdAt: new Date().toISOString(),
-    };
-    const inserted = store.insert("mail_invoices", invoice);
+    const invoice = this.buildInvoice(tenantId, [{ description: `Add-on: ${def.name} (prorated ${daysLeft} day(s))`, amount: prorated }], "addon");
     store.update("mail_billing", (b: any) => b.tenantId === tenantId, {
       addons: [...(state.addons || []), { addonId: def.id, monthlyPrice: def.monthlyPrice, addedAt: new Date().toISOString() }],
       updatedAt: new Date().toISOString(),
     });
     this.log(tenantId, "addon_added", `${def.name} added — prorated $${prorated.toFixed(2)}`);
-    return { addonId: def.id, name: def.name, monthlyPrice: def.monthlyPrice, proration: prorated, invoice: { invoiceId: inserted._id, ...invoice }, summary: `${def.name} added — prorated $${prorated.toFixed(2)}` };
+    return { addonId: def.id, name: def.name, monthlyPrice: def.monthlyPrice, proration: prorated, invoice: { invoiceId: invoice._id, ...invoice }, summary: `${def.name} added — prorated $${prorated.toFixed(2)}` };
   }
 
   removeAddon(tenantId: string, addonId: string) {
@@ -277,6 +274,8 @@ export class MailBillingService {
         autoRenew: state.autoRenew,
         paymentMethodId: state.paymentMethodId,
       },
+      coupon: this.couponStatus(tenantId),
+      taxRate: this.taxRateOf(tenantId),
       summary: `${plan.name} plan — ${status} — ${overLimits.length ? `${overLimits.length} limit(s) exceeded` : rows.every((r) => r.pct === 0) ? "no usage yet" : `${rows.filter((r) => r.pct > 0).length} dimension(s) in use`}${recommendedPlan ? ` — upgrade to ${PLANS[recommendedPlan].name} recommended` : ""}`,
     };
   }
@@ -329,22 +328,13 @@ export class MailBillingService {
     if (policy.mode !== "bill") throw new Error("Overage billing is not enabled — set overage mode to 'bill' first");
     const status = this.overageStatus(tenantId);
     if (status.overages.length === 0) throw new Error("No overages to invoice");
-    const store = DataStore.mem();
-    const invoice = {
+    const invoice = this.buildInvoice(
       tenantId,
-      kind: "overage" as string,
-      number: invoiceNumber(tenantId),
-      lines: status.overages.map((o) => ({ description: `Overage: ${o.label} (${o.overUnits} unit(s) × $${o.rate})`, amount: o.projectedCost })),
-      total: status.projectedTotal,
-      status: "open" as string,
-      issuedAt: new Date().toISOString(),
-      dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
-      paidAt: null as string | null,
-      createdAt: new Date().toISOString(),
-    };
-    const inserted = store.insert("mail_invoices", invoice);
+      status.overages.map((o) => ({ description: `Overage: ${o.label} (${o.overUnits} unit(s) × $${o.rate})`, amount: o.projectedCost })),
+      "overage",
+    );
     this.log(tenantId, "overage_invoice", `Overage invoice ${invoice.number} issued — $${invoice.total.toFixed(2)}`);
-    return { invoice: { invoiceId: inserted._id, ...invoice }, total: invoice.total, summary: `Overage invoice ${invoice.number} issued — $${invoice.total.toFixed(2)}` };
+    return { invoice: { invoiceId: invoice._id, ...invoice }, total: invoice.total, summary: `Overage invoice ${invoice.number} issued — $${invoice.total.toFixed(2)}` };
   }
 
   contracts(tenantId: string) {
@@ -565,18 +555,7 @@ export class MailBillingService {
     const priceDiff = PLANS[target].priceMonthly - PLANS[from].priceMonthly;
     const daysLeft = Math.max(0, Math.min(30, Math.ceil((new Date(state.cycleEnd).getTime() - Date.now()) / 86400000)));
     const proration = round2(priceDiff * (daysLeft / 30));
-    const invoice = {
-      tenantId,
-      number: invoiceNumber(tenantId),
-      lines: [{ description: `Plan change: ${PLANS[from].name} → ${PLANS[target].name} (prorated ${daysLeft} day(s))`, amount: proration }],
-      total: proration,
-      status: "open" as string,
-      issuedAt: new Date().toISOString(),
-      dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
-      paidAt: null as string | null,
-      createdAt: new Date().toISOString(),
-    };
-    store.insert("mail_invoices", invoice);
+    const invoice = this.buildInvoice(tenantId, [{ description: `Plan change: ${PLANS[from].name} → ${PLANS[target].name} (prorated ${daysLeft} day(s))`, amount: proration }], "upgrade");
     state.plan = target;
     state.status = "active";
     state.updatedAt = new Date().toISOString();
@@ -640,22 +619,119 @@ export class MailBillingService {
     return { methodId, summary: `${method.brand} •••• ${method.last4} removed` };
   }
 
-  createInvoice(tenantId: string, input: any = {}) {
-    const lines = Array.isArray(input.lines) && input.lines.length ? input.lines : [{ description: String(input.description || "Manual charge").trim(), amount: Number(input.amount || 0) }];
+  private activeCoupon(tenantId: string): any {
+    const state = this.tenantState(tenantId);
+    const c = state.coupon;
+    if (!c) return null;
+    if (new Date(c.expiresAt).getTime() < Date.now()) return null;
+    return c;
+  }
+
+  private taxRateOf(tenantId: string): number {
+    const state = this.tenantState(tenantId);
+    return Number(state.taxRate || DEFAULT_TAX_RATE) || DEFAULT_TAX_RATE;
+  }
+
+  private buildInvoice(tenantId: string, lines: any[], kind: string, extra: any = {}): any {
+    const store = DataStore.mem();
+    const subtotal = round2(lines.reduce((s: number, l: any) => s + Number(l.amount || 0), 0));
+    const coupon = subtotal > 0 ? this.activeCoupon(tenantId) : null;
+    let discount = 0;
+    if (coupon) {
+      discount = round2(subtotal * (Number(coupon.pctOff) / 100) + Number(coupon.flatOff || 0));
+      if (discount > subtotal) discount = subtotal;
+    }
+    const afterDiscount = round2(subtotal - discount);
+    const taxRate = this.taxRateOf(tenantId);
+    const taxAmount = afterDiscount > 0 ? round2(afterDiscount * (taxRate / 100)) : 0;
+    const total = round2(afterDiscount + taxAmount);
     const invoice = {
       tenantId,
+      kind,
       number: invoiceNumber(tenantId),
       lines,
-      total: round2(lines.reduce((s: number, l: any) => s + Number(l.amount || 0), 0)),
+      subtotal,
+      discount,
+      taxRate,
+      taxAmount,
+      total,
       status: "open" as string,
       issuedAt: new Date().toISOString(),
       dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
       paidAt: null as string | null,
       createdAt: new Date().toISOString(),
+      ...extra,
     };
-    const inserted = DataStore.mem().insert("mail_invoices", invoice);
+    return store.insert("mail_invoices", invoice);
+  }
+
+  couponCatalog() {
+    const store = DataStore.mem();
+    const coupons = Object.keys(COUPONS).map((code) => {
+      const c = COUPONS[code];
+      const used = store.find("mail_billing", (b: any) => b.coupon && b.coupon.code === code).length;
+      return { ...c, used, remaining: Math.max(0, Number(c.maxUses) - used) };
+    });
+    return { coupons, summary: `${coupons.length} coupon(s) available` };
+  }
+
+  applyCoupon(tenantId: string, code: string) {
+    const c = COUPONS[String(code || "").toUpperCase()];
+    if (!c) throw new Error(`Unknown coupon code "${code}"`);
+    const store = DataStore.mem();
+    const used = store.find("mail_billing", (b: any) => b.tenantId !== tenantId && b.coupon && b.coupon.code === c.code).length;
+    if (used >= Number(c.maxUses)) throw new Error(`Coupon ${c.code} has reached its usage limit`);
+    this.tenantState(tenantId);
+    const coupon = {
+      code: c.code,
+      label: c.label,
+      pctOff: c.pctOff,
+      flatOff: c.flatOff,
+      appliedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + Number(c.expiresInDays) * 86400000).toISOString(),
+    };
+    store.update("mail_billing", (b: any) => b.tenantId === tenantId, { coupon, updatedAt: new Date().toISOString() });
+    this.log(tenantId, "coupon", `Coupon ${c.code} applied — ${c.label}`);
+    return { ...coupon, summary: `Coupon ${c.code} applied — ${c.label}` };
+  }
+
+  removeCoupon(tenantId: string) {
+    const store = DataStore.mem();
+    const state = this.tenantState(tenantId);
+    if (!state.coupon) return { active: false, summary: "No active coupon" };
+    const code = state.coupon.code;
+    store.update("mail_billing", (b: any) => b.tenantId === tenantId, { coupon: null, updatedAt: new Date().toISOString() });
+    this.log(tenantId, "coupon_removed", `Coupon ${code} removed`);
+    return { active: false, summary: `Coupon ${code} removed` };
+  }
+
+  couponStatus(tenantId: string) {
+    const state = this.tenantState(tenantId);
+    const c = state.coupon;
+    if (!c) return { active: false, summary: "No active coupon" };
+    const expired = new Date(c.expiresAt).getTime() < Date.now();
+    return { active: true, ...c, expired, summary: `Coupon ${c.code} ${expired ? "expired" : "active"} — ${c.label}` };
+  }
+
+  setTaxRate(tenantId: string, pct: any) {
+    const rate = round2(Number(pct));
+    if (!isFinite(rate) || rate < 0 || rate > 30) throw new Error("Tax rate must be between 0 and 30 percent");
+    this.tenantState(tenantId);
+    DataStore.mem().update("mail_billing", (b: any) => b.tenantId === tenantId, { taxRate: rate, updatedAt: new Date().toISOString() });
+    this.log(tenantId, "tax_rate", `Tax rate set to ${rate}%`);
+    return { taxRate: rate, summary: `Tax rate set to ${rate}%` };
+  }
+
+  billingTaxRate(tenantId: string) {
+    const rate = this.taxRateOf(tenantId);
+    return { taxRate: rate, summary: rate > 0 ? `${rate}% tax applied to new invoices` : "No tax configured" };
+  }
+
+  createInvoice(tenantId: string, input: any = {}) {
+    const lines = Array.isArray(input.lines) && input.lines.length ? input.lines : [{ description: String(input.description || "Manual charge").trim(), amount: Number(input.amount || 0) }];
+    const invoice = this.buildInvoice(tenantId, lines, String(input.kind || "manual"));
     this.log(tenantId, "invoice", `Invoice ${invoice.number} issued — $${invoice.total.toFixed(2)}`);
-    return { invoice: { invoiceId: inserted._id, ...inserted }, summary: `Invoice ${invoice.number} issued — $${invoice.total.toFixed(2)}` };
+    return { invoice: { invoiceId: invoice._id, ...invoice }, summary: `Invoice ${invoice.number} issued — $${invoice.total.toFixed(2)}` };
   }
 
   invoices(tenantId: string) {
@@ -769,6 +845,8 @@ export class MailBillingService {
       contract: this.contractStatus(tenantId),
       alerts: this.usageAlerts(tenantId),
       credits: this.creditBalance(tenantId),
+      coupon: this.couponStatus(tenantId),
+      taxRate: this.taxRateOf(tenantId),
       log,
       generatedAt: new Date().toISOString(),
     };

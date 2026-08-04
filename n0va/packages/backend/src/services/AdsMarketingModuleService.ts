@@ -83,6 +83,7 @@ import { mailWebhook } from "./MailWebhookService";
 import { mailAgentRegistry } from "./MailAgentRegistryService";
 import { mailIntegration } from "./MailIntegrationService";
 import { mailMigration } from "./MailMigrationService";
+import { mailThread } from "./MailThreadService";
 import { mailBilling } from "./MailBillingService";
 
 import { mailNotifications } from "./MailNotificationService";
@@ -5278,6 +5279,74 @@ export class AdsMarketingModuleService {
 
   mailCollab2Dashboard(tenantId: string) {
     return mailCollab2.collab2Dashboard(tenantId);
+  }
+
+  mailThreadList(tenantId: string, opts: any = {}) {
+    return mailThread.threadList(tenantId, opts);
+  }
+
+  mailThreadWorkspace(tenantId: string, threadId: string) {
+    return mailThread.threadWorkspace(tenantId, threadId);
+  }
+
+  mailThreadSetState(tenantId: string, threadId: string, state: string) {
+    return mailThread.setThreadState(tenantId, threadId, state);
+  }
+
+  mailThreadPin(tenantId: string, threadId: string) {
+    return mailThread.pinThread(tenantId, threadId);
+  }
+
+  mailThreadUnpin(tenantId: string, threadId: string) {
+    return mailThread.unpinThread(tenantId, threadId);
+  }
+
+  mailThreadTag(tenantId: string, threadId: string, tag: string) {
+    return mailThread.tagThread(tenantId, threadId, tag);
+  }
+
+  mailThreadUntag(tenantId: string, threadId: string, tag: string) {
+    return mailThread.untagThread(tenantId, threadId, tag);
+  }
+
+  mailThreadPriority(tenantId: string, threadId: string, priority: string) {
+    return mailThread.setThreadPriority(tenantId, threadId, priority);
+  }
+
+  mailThreadMerge(tenantId: string, targetThreadId: string, sourceThreadId: string) {
+    return mailThread.mergeThreads(tenantId, targetThreadId, sourceThreadId);
+  }
+
+  mailThreadDashboard(tenantId: string) {
+    return mailThread.threadDashboard(tenantId);
+  }
+
+  mailThreadLog(tenantId: string, limit?: number) {
+    return mailThread.threadLog(tenantId, limit);
+  }
+
+  mailBillingCoupons() {
+    return mailBilling.couponCatalog();
+  }
+
+  mailBillingApplyCoupon(tenantId: string, code: string) {
+    return mailBilling.applyCoupon(tenantId, code);
+  }
+
+  mailBillingRemoveCoupon(tenantId: string) {
+    return mailBilling.removeCoupon(tenantId);
+  }
+
+  mailBillingCouponStatus(tenantId: string) {
+    return mailBilling.couponStatus(tenantId);
+  }
+
+  mailBillingSetTaxRate(tenantId: string, pct: any) {
+    return mailBilling.setTaxRate(tenantId, pct);
+  }
+
+  mailBillingTaxRate(tenantId: string) {
+    return mailBilling.billingTaxRate(tenantId);
   }
 }
 

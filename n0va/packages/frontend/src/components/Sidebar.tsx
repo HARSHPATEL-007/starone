@@ -93,6 +93,7 @@ import {
   CalendarClock,
   MailOpen,
   Import,
+  GitMerge,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -132,6 +133,7 @@ const navItems = [
     { to: "/mail/notifications", icon: Bell, label: "Mail Alerts" },
     { to: "/mail/quantum", icon: Lock, label: "Mail Quantum" },
     { to: "/mail/import", icon: Import, label: "Mail Import" },
+    { to: "/mail/threads", icon: GitMerge, label: "Mail Threads" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

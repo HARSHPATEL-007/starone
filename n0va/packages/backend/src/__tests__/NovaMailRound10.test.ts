@@ -56,13 +56,15 @@ beforeAll(() => {
 });
 
 describe("connector catalog", () => {
-  it("exposes 10 connectors across 6 categories", () => {
+  it("exposes 15 connectors across 7 categories", () => {
     const cat = integration.connectorCatalog(T);
-    expect(cat.connectors).toHaveLength(10);
-    expect(cat.categories).toHaveLength(6);
+    expect(cat.connectors).toHaveLength(15);
+    expect(cat.categories).toHaveLength(7);
     expect(CONNECTORS.map((c) => c.id)).toContain("gmail");
     expect(CONNECTORS.map((c) => c.id)).toContain("notion");
+    expect(CONNECTORS.map((c) => c.id)).toContain("xero");
     expect(INTEGRATION_CATEGORIES).toContain("storage");
+    expect(INTEGRATION_CATEGORIES).toContain("finance");
   });
 
   it("catalog reflects installed connection status", () => {
@@ -304,7 +306,7 @@ describe("alerts & overview", () => {
     expect(o.connected).toBeGreaterThanOrEqual(5);
     expect(o.itemsSynced).toBeGreaterThan(0);
     expect(o.actionsRun).toBeGreaterThan(0);
-    expect(o.catalog.connectors).toHaveLength(10);
+    expect(o.catalog.connectors).toHaveLength(15);
     expect(o.connections.length).toBe(o.totalConnections);
     expect(o.summary).toContain("connection(s) active");
     expect(o.seed).toBeGreaterThan(0);

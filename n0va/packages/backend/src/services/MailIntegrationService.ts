@@ -17,7 +17,7 @@ function logEntry(tenantId: string, category: string, detail: string, extra: any
   });
 }
 
-export const INTEGRATION_CATEGORIES = ["email", "chat", "crm", "storage", "meetings", "docs"] as const;
+export const INTEGRATION_CATEGORIES = ["email", "chat", "crm", "storage", "meetings", "docs", "finance"] as const;
 
 export const CONNECTORS: any[] = [
   { id: "gmail", name: "Gmail", description: "Inbox, labels & calendar", category: "email", scopes: ["mail.read", "mail.send", "calendar.read"], actions: ["sync_mail", "create_event"], authType: "oauth2" },
@@ -25,11 +25,16 @@ export const CONNECTORS: any[] = [
   { id: "slack", name: "Slack", description: "Channels & direct messages", category: "chat", scopes: ["chat.write", "channel.read"], actions: ["post_to_chat", "forward_to_channel"], authType: "oauth2" },
   { id: "teams", name: "Microsoft Teams", description: "Teams, channels & meetings", category: "chat", scopes: ["channel.read", "message.write"], actions: ["post_to_chat", "forward_to_channel"], authType: "oauth2" },
   { id: "crm", name: "CRM", description: "Contacts, leads & pipeline", category: "crm", scopes: ["contacts.read", "contacts.write", "deals.write"], actions: ["push_to_crm", "sync_contacts", "update_crm_deal"], authType: "oauth2" },
-  { id: "drive", name: "Google Drive", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file", "share_link", "create_doc"], authType: "oauth2" },
-  { id: "dropbox", name: "Dropbox", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file", "share_link"], authType: "oauth2" },
+  { id: "drive", name: "Google Drive", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file", "share_link", "create_doc", "read_from_drive"], authType: "oauth2" },
+  { id: "dropbox", name: "Dropbox", description: "Files & folders", category: "storage", scopes: ["file.read", "file.write"], actions: ["upload_file", "share_link", "read_from_drive"], authType: "oauth2" },
   { id: "zoom", name: "Zoom", description: "Video meetings & recordings", category: "meetings", scopes: ["meeting.write"], actions: ["schedule_meeting"], authType: "oauth2" },
   { id: "calendar", name: "Calendar", description: "Events & availability", category: "meetings", scopes: ["calendar.read", "calendar.write"], actions: ["schedule_meeting", "create_event"], authType: "oauth2" },
   { id: "notion", name: "Notion", description: "Docs, pages & tasks", category: "docs", scopes: ["page.read", "page.write"], actions: ["create_task", "create_doc"], authType: "oauth2" },
+  { id: "google_sheets", name: "Google Sheets", description: "Spreadsheets & exports", category: "docs", scopes: ["sheet.read", "sheet.write"], actions: ["push_to_sheets", "sync_contacts"], authType: "oauth2" },
+  { id: "asana", name: "Asana", description: "Projects, tasks & tickets", category: "crm", scopes: ["task.write", "project.read"], actions: ["create_task", "create_ticket", "post_comment"], authType: "oauth2" },
+  { id: "whatsapp", name: "WhatsApp", description: "Messages & broadcasts", category: "chat", scopes: ["message.send"], actions: ["send_sms", "post_to_chat"], authType: "oauth2" },
+  { id: "webex", name: "Webex", description: "Meetings & team messaging", category: "meetings", scopes: ["meeting.write", "message.write"], actions: ["schedule_meeting", "create_event", "post_to_chat"], authType: "oauth2" },
+  { id: "xero", name: "Xero", description: "Invoices & contacts", category: "finance", scopes: ["invoice.write", "contacts.read"], actions: ["create_invoice", "sync_contacts"], authType: "oauth2" },
 ];
 
 const ACTION_LABELS: Record<string, string> = {
@@ -45,6 +50,12 @@ const ACTION_LABELS: Record<string, string> = {
   share_link: "Share file link",
   update_crm_deal: "Update CRM deal",
   create_doc: "Create document",
+  push_to_sheets: "Push to sheets",
+  create_ticket: "Create ticket",
+  post_comment: "Post comment",
+  send_sms: "Send SMS",
+  create_invoice: "Create invoice",
+  read_from_drive: "Read from drive",
 };
 
 export const BRIDGE_EVENTS = [
@@ -368,6 +379,38 @@ export class MailIntegrationService {
       const docId = `doc_${hashStr(seed).toString(16).slice(0, 12)}`;
       const title = params.title || "N0VA mail notes";
       result = { docId, title, pageUrl: `https://${c.id}.n0va.link/${docId}`, summary: `Document "${title}" created` };
+    } else if (action === "push_to_sheets") {
+      const sheetId = `sht_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const rowsWritten = 2 + (hashStr(seed + "|rows") % 40);
+      const tab = params.tab || "N0VA Export";
+      result = { sheetId, tab, rowsWritten, sheetUrl: `https://${c.id}.n0va.link/${sheetId}`, summary: `${rowsWritten} row(s) written to "${tab}"` };
+    } else if (action === "create_ticket") {
+      const ticketId = `tic_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const priorities = ["low", "medium", "high"];
+      const priority = priorities[hashStr(seed + "|prio") % priorities.length];
+      const title = params.title || "Ticket from N0VA mail";
+      result = { ticketId, title, priority, status: "open", assignee: params.assignee || "unassigned", summary: `Ticket "${title}" created (${priority})` };
+    } else if (action === "post_comment") {
+      const commentId = `cmm_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const thread = params.thread || "n0va-mail";
+      const text = params.text || "See the N0VA mail thread for context";
+      result = { commentId, thread, text, summary: `Comment posted on "${thread}"` };
+    } else if (action === "send_sms") {
+      const smsId = `sms_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const phone = params.phone || `+1555${String(1000 + (hashStr(seed + "|ph") % 9000))}`;
+      const text = params.text || "You have a new message from N0VA Mail";
+      result = { smsId, phone, delivered: true, summary: `SMS sent to ${phone}` };
+    } else if (action === "create_invoice") {
+      const invoiceId = `inv_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const amount = Number(params.amount) || 100 + (hashStr(seed + "|amt") % 900);
+      const dueInDays = (params.dueInDays as number) || 14;
+      result = { invoiceId, amount, currency: "USD", dueInDays, status: "sent", summary: `Invoice ${invoiceId} issued for $${amount} (due in ${dueInDays} day(s))` };
+    } else if (action === "read_from_drive") {
+      const fileId = `file_${hashStr(seed).toString(16).slice(0, 12)}`;
+      const name = params.name || "n0va-export.txt";
+      const sizeBytes = params.sizeBytes || 1024 + (hashStr(seed + "|sz") % 4096);
+      const preview = `${name} — ${sizeBytes} bytes, read ${new Date().toISOString().slice(0, 10)}`;
+      result = { fileId, name, sizeBytes, contentPreview: preview, summary: `Read "${name}" from ${c.name}` };
     } else {
       throw new Error(`Unsupported action "${action}"`);
     }

@@ -1336,10 +1336,6 @@ router.get("/mail/messages/:messageId", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailMessage(req.user!.tenantId, req.params.messageId));
 }));
 
-router.get("/mail/threads/:threadId", asyncHandler(async (req, res) => {
-  sendSuccess(res, adsMarketingModule.mailThread(req.user!.tenantId, req.params.threadId));
-}));
-
 router.post("/mail/messages/send", asyncHandler(async (req, res) => {
   const { mailboxId, ...input } = req.body || {};
   sendSuccess(res, adsMarketingModule.mailSend(req.user!.tenantId, mailboxId, input));
@@ -3043,6 +3039,85 @@ router.post("/mail/migrations/:migrationId/import", asyncHandler(async (req, res
 
 router.delete("/mail/migrations/:migrationId", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailDeleteMigration(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.get("/mail/threads/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/threads/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadLog(req.user!.tenantId, typeof req.query.limit === "string" ? Number(req.query.limit) : undefined));
+}));
+
+router.get("/mail/threads", asyncHandler(async (req, res) => {
+  const q = req.query;
+  sendSuccess(res, adsMarketingModule.mailThreadList(req.user!.tenantId, {
+    mailboxId: typeof q.mailboxId === "string" ? q.mailboxId : undefined,
+    folder: typeof q.folder === "string" ? q.folder : undefined,
+    state: typeof q.state === "string" ? q.state : undefined,
+    tag: typeof q.tag === "string" ? q.tag : undefined,
+    priority: typeof q.priority === "string" ? q.priority : undefined,
+    unreadOnly: q.unreadOnly === "true",
+    starredOnly: q.starredOnly === "true",
+    pinnedOnly: q.pinnedOnly === "true",
+    search: typeof q.search === "string" ? q.search : undefined,
+  }));
+}));
+
+router.post("/mail/threads/merge", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadMerge(req.user!.tenantId, req.body.targetThreadId, req.body.sourceThreadId));
+}));
+
+router.get("/mail/threads/:threadId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadWorkspace(req.user!.tenantId, req.params.threadId));
+}));
+
+router.post("/mail/threads/:threadId/state", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadSetState(req.user!.tenantId, req.params.threadId, req.body.state));
+}));
+
+router.post("/mail/threads/:threadId/pin", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadPin(req.user!.tenantId, req.params.threadId));
+}));
+
+router.post("/mail/threads/:threadId/unpin", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadUnpin(req.user!.tenantId, req.params.threadId));
+}));
+
+router.post("/mail/threads/:threadId/tags", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadTag(req.user!.tenantId, req.params.threadId, req.body.tag));
+}));
+
+router.delete("/mail/threads/:threadId/tags/:tag", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadUntag(req.user!.tenantId, req.params.threadId, req.params.tag));
+}));
+
+router.post("/mail/threads/:threadId/priority", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailThreadPriority(req.user!.tenantId, req.params.threadId, req.body.priority));
+}));
+
+router.get("/mail/billing/coupons", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCoupons());
+}));
+
+router.get("/mail/billing/coupons/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingCouponStatus(req.user!.tenantId));
+}));
+
+router.post("/mail/billing/coupons", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingApplyCoupon(req.user!.tenantId, req.body.code));
+}));
+
+router.delete("/mail/billing/coupons", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingRemoveCoupon(req.user!.tenantId));
+}));
+
+router.get("/mail/billing/tax-rate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingTaxRate(req.user!.tenantId));
+}));
+
+router.put("/mail/billing/tax-rate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBillingSetTaxRate(req.user!.tenantId, req.body.pct));
 }));
 
 export default router;

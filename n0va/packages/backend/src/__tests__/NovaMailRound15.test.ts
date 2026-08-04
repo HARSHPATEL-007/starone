@@ -167,7 +167,7 @@ describe("new provider actions", () => {
   it("catalog reflects the extended action lists", () => {
     const cat = integration.connectorCatalog(T);
     const g = cat.connectors.find((c: any) => c.id === "drive");
-    expect(g.actions).toHaveLength(3);
+    expect(g.actions).toHaveLength(4);
     expect(g.actions).toContain("create_doc");
   });
 });
