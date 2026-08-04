@@ -3132,6 +3132,39 @@ export const api = {
     mailFocusRoi: (users = 1, hourlyRate = 75) =>
       request<any>(`/ads-marketing-module/mail/focus/roi?users=${users}&hourlyRate=${hourlyRate}`),
     mailFocusLog: () => request<any>("/ads-marketing-module/mail/focus/log"),
+    mailComposerCatalog: () => request<any>("/ads-marketing-module/mail/composer/catalog"),
+    mailComposerDashboard: () => request<any>("/ads-marketing-module/mail/composer/dashboard"),
+    mailComposerDrafts: (status?: string) => {
+      const params = status ? `?status=${encodeURIComponent(status)}` : "";
+      return request<any>(`/ads-marketing-module/mail/composer/drafts${params}`);
+    },
+    mailComposerLog: () => request<any>("/ads-marketing-module/mail/composer/log"),
+    mailComposeDraft: (messageId: string, opts?: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/composer/draft", {
+        method: "POST",
+        body: JSON.stringify({ messageId, opts: opts || {} }),
+      }),
+    mailComposerRegenerate: (draftId: string) =>
+      request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}/regenerate`, { method: "POST" }),
+    mailComposerDislike: (draftId: string, feedback?: string) =>
+      request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}/dislike`, {
+        method: "POST",
+        body: JSON.stringify({ ...(feedback !== undefined ? { feedback } : {}) }),
+      }),
+    mailComposerSaveEdits: (draftId: string, patch?: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}/edits`, {
+        method: "POST",
+        body: JSON.stringify({ patch: patch || {} }),
+      }),
+    mailComposerSend: (draftId: string, mailboxId?: string) =>
+      request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}/send`, {
+        method: "POST",
+        body: JSON.stringify({ ...(mailboxId !== undefined ? { mailboxId } : {}) }),
+      }),
+    mailComposerDraftById: (draftId: string) =>
+      request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}`),
+    mailComposerDelete: (draftId: string) =>
+      request<any>(`/ads-marketing-module/mail/composer/drafts/${draftId}`, { method: "DELETE" }),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

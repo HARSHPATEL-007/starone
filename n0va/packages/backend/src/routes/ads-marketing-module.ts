@@ -3676,4 +3676,51 @@ router.get("/mail/focus/log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailFocusLog(req.user!.tenantId));
 }));
 
+router.get("/mail/composer/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerCatalog());
+}));
+
+router.get("/mail/composer/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/composer/drafts", asyncHandler(async (req, res) => {
+  const status = typeof req.query.status === "string" && req.query.status.length > 0 ? req.query.status : undefined;
+  sendSuccess(res, adsMarketingModule.mailComposerDrafts(req.user!.tenantId, status));
+}));
+
+router.get("/mail/composer/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerLog(req.user!.tenantId));
+}));
+
+router.post("/mail/composer/draft", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerDraft(req.user!.tenantId, String(req.body.messageId || ""), req.body.opts || req.body || undefined));
+}));
+
+router.post("/mail/composer/drafts/:draftId/regenerate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerRegenerate(req.user!.tenantId, req.params.draftId));
+}));
+
+router.post("/mail/composer/drafts/:draftId/dislike", asyncHandler(async (req, res) => {
+  const feedback = typeof req.body.feedback === "string" ? req.body.feedback : undefined;
+  sendSuccess(res, adsMarketingModule.mailComposerDislike(req.user!.tenantId, req.params.draftId, feedback));
+}));
+
+router.post("/mail/composer/drafts/:draftId/edits", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerSaveEdits(req.user!.tenantId, req.params.draftId, req.body.patch || req.body || undefined));
+}));
+
+router.post("/mail/composer/drafts/:draftId/send", asyncHandler(async (req, res) => {
+  const mailboxId = typeof req.body.mailboxId === "string" ? req.body.mailboxId : undefined;
+  sendSuccess(res, adsMarketingModule.mailComposerSend(req.user!.tenantId, req.params.draftId, mailboxId));
+}));
+
+router.get("/mail/composer/drafts/:draftId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerDraftById(req.user!.tenantId, req.params.draftId));
+}));
+
+router.delete("/mail/composer/drafts/:draftId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailComposerDelete(req.user!.tenantId, req.params.draftId));
+}));
+
 export default router;

@@ -100,6 +100,7 @@ import { mailAiGovernance } from "./MailAiGovernanceService";
 import { mailPerformance } from "./MailPerformanceService";
 import { mailChaos } from "./MailChaosService";
 import { mailFocus } from "./MailFocusService";
+import { mailComposer } from "./MailComposerService";
 
 import { mailQuantum } from "./MailQuantumService";
 
@@ -5892,6 +5893,50 @@ export class AdsMarketingModuleService {
 
   mailFocusDashboard(tenantId: string) {
     return mailFocus.focusDashboard(tenantId);
+  }
+
+  mailComposerCatalog() {
+    return mailComposer.composerCatalog();
+  }
+
+  mailComposerDraft(tenantId: string, messageId: string, opts?: any) {
+    return mailComposer.composeDraft(tenantId, messageId, opts || {});
+  }
+
+  mailComposerRegenerate(tenantId: string, draftId: string) {
+    return mailComposer.regenerateDraft(tenantId, draftId);
+  }
+
+  mailComposerDislike(tenantId: string, draftId: string, feedback?: string) {
+    return mailComposer.dislikeDraft(tenantId, draftId, feedback);
+  }
+
+  mailComposerSaveEdits(tenantId: string, draftId: string, patch?: any) {
+    return mailComposer.saveEdits(tenantId, draftId, patch || {});
+  }
+
+  mailComposerSend(tenantId: string, draftId: string, mailboxId?: string) {
+    return mailComposer.sendDraft(tenantId, draftId, mailboxId);
+  }
+
+  mailComposerDrafts(tenantId: string, status?: string) {
+    return mailComposer.listDrafts(tenantId, status);
+  }
+
+  mailComposerDraftById(tenantId: string, draftId: string) {
+    return mailComposer.getDraft(tenantId, draftId);
+  }
+
+  mailComposerDelete(tenantId: string, draftId: string) {
+    return mailComposer.deleteDraft(tenantId, draftId);
+  }
+
+  mailComposerDashboard(tenantId: string) {
+    return mailComposer.composerDashboard(tenantId);
+  }
+
+  mailComposerLog(tenantId: string) {
+    return mailComposer.composerLog(tenantId);
   }
 }
 

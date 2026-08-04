@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare, BrainCircuit, FolderSearch, Globe, Mic, Webhook, Plug, SendHorizonal, CalendarClock, MailOpen, Lock, Import, GitMerge, Workflow, Gauge, ListOrdered, Ticket, KeyRound, Fingerprint, Scale, Beaker } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare,    BrainCircuit, FolderSearch, Globe, Mic, Webhook, Plug, SendHorizonal, CalendarClock, MailOpen, Lock, Import, GitMerge, Workflow, Gauge, ListOrdered, Ticket, KeyRound, Fingerprint, Scale, Beaker, PenLine } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -61,6 +61,7 @@ const PAGE_ITEMS: SearchResult[] = [
     { type: "page", label: "Mail Performance", route: "/mail/performance", icon: Gauge },
     { type: "page", label: "Chaos Engineering", route: "/mail/chaos", icon: Beaker },
     { type: "page", label: "Focus Time", route: "/mail/focus", icon: Target },
+    { type: "page", label: "Neural Composer", route: "/mail/composer", icon: PenLine },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

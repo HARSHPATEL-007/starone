@@ -101,6 +101,7 @@ import {
   KeyRound,
   Fingerprint,
   Scale,
+  PenLine,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -152,6 +153,7 @@ const navItems = [
     { to: "/mail/performance", icon: Gauge, label: "Performance" },
     { to: "/mail/chaos", icon: Beaker, label: "Chaos Engineering" },
     { to: "/mail/focus", icon: Target, label: "Focus Time" },
+    { to: "/mail/composer", icon: PenLine, label: "Mail Composer" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
