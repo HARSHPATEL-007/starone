@@ -99,6 +99,8 @@ import {
   ListOrdered,
   Ticket,
   KeyRound,
+  Fingerprint,
+  Scale,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -144,6 +146,11 @@ const navItems = [
     { to: "/mail/sequences", icon: ListOrdered, label: "Mail Sequences" },
     { to: "/mail/tickets", icon: Ticket, label: "Mail Tickets" },
     { to: "/mail/admin", icon: KeyRound, label: "Mail Admin" },
+    { to: "/mail/biometrics", icon: Fingerprint, label: "Biometrics" },
+    { to: "/mail/zero-trust", icon: Shield, label: "Zero Trust" },
+    { to: "/mail/governance", icon: Scale, label: "AI Governance" },
+    { to: "/mail/performance", icon: Gauge, label: "Performance" },
+    { to: "/mail/chaos", icon: Beaker, label: "Chaos Engineering" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

@@ -3440,4 +3440,182 @@ router.delete("/mail/api-keys/:apiKeyId", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailRevokeApiKey(req.user!.tenantId, req.params.apiKeyId));
 }));
 
+router.get("/mail/biometrics/signals", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBiometricSignals());
+}));
+
+router.get("/mail/biometrics/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBiometricDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/biometrics/baseline", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBiometricBaseline(req.user!.tenantId));
+}));
+
+router.get("/mail/biometrics/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBiometricLog(req.user!.tenantId));
+}));
+
+router.post("/mail/biometrics/record", asyncHandler(async (req, res) => {
+  const value = typeof req.body.value === "number" ? req.body.value : undefined;
+  sendSuccess(res, adsMarketingModule.mailBiometricRecord(req.user!.tenantId, String(req.body.sessionId || ""), String(req.body.signalId || ""), value));
+}));
+
+router.get("/mail/biometrics/sessions/:sessionId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBiometricSession(req.user!.tenantId, req.params.sessionId));
+}));
+
+router.post("/mail/biometrics/sessions/:sessionId/evaluate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailBiometricEvaluate(req.user!.tenantId, req.params.sessionId));
+}));
+
+router.get("/mail/zero-trust/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/zero-trust/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustOverview(req.user!.tenantId));
+}));
+
+router.get("/mail/zero-trust/layers", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustLayers(req.user!.tenantId));
+}));
+
+router.get("/mail/zero-trust/devices", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustDevices(req.user!.tenantId));
+}));
+
+router.post("/mail/zero-trust/devices", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustEnroll(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/zero-trust/devices/:deviceId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustPosture(req.user!.tenantId, req.params.deviceId));
+}));
+
+router.post("/mail/zero-trust/access", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustAccess(req.user!.tenantId, req.body));
+}));
+
+router.get("/mail/zero-trust/honeytokens", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustHoneytokens(req.user!.tenantId));
+}));
+
+router.post("/mail/zero-trust/honeytokens/:tokenId/hit", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustHoneytokenHit(req.user!.tenantId, req.params.tokenId));
+}));
+
+router.get("/mail/zero-trust/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailZeroTrustLog(req.user!.tenantId));
+}));
+
+router.get("/mail/ai-governance/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/ai-governance/models", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceModels(req.user!.tenantId));
+}));
+
+router.post("/mail/ai-governance/models", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceRegister(req.user!.tenantId, req.body));
+}));
+
+router.post("/mail/ai-governance/models/:modelId/review", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceReview(req.user!.tenantId, req.params.modelId, String(req.body.decision || "")));
+}));
+
+router.post("/mail/ai-governance/scan-input", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceScanInput(req.user!.tenantId, String(req.body.text || "")));
+}));
+
+router.post("/mail/ai-governance/scan-output", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceScanOutput(req.user!.tenantId, String(req.body.text || "")));
+}));
+
+router.get("/mail/ai-governance/rate-limit", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceRateLimit(req.user!.tenantId, String(req.query.userId || "")));
+}));
+
+router.get("/mail/ai-governance/shadow-ai", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceShadow(req.user!.tenantId));
+}));
+
+router.post("/mail/ai-governance/red-team", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceRedTeam(req.user!.tenantId));
+}));
+
+router.get("/mail/ai-governance/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailAiGovernanceLog(req.user!.tenantId));
+}));
+
+router.get("/mail/performance/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/performance/caching", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceCaching(req.user!.tenantId));
+}));
+
+router.post("/mail/performance/cache/flush", asyncHandler(async (req, res) => {
+  const layerId = typeof req.body.layerId === "string" ? req.body.layerId : undefined;
+  sendSuccess(res, adsMarketingModule.mailPerformanceFlushCache(req.user!.tenantId, layerId));
+}));
+
+router.get("/mail/performance/query-optimization", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceQueryOptimization(req.user!.tenantId));
+}));
+
+router.post("/mail/performance/explain", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceExplainQuery(req.user!.tenantId, String(req.body.query || "")));
+}));
+
+router.get("/mail/performance/scalability", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceScalability(req.user!.tenantId));
+}));
+
+router.get("/mail/performance/edge", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceEdge(req.user!.tenantId));
+}));
+
+router.get("/mail/performance/sustainability", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceSustainability(req.user!.tenantId));
+}));
+
+router.get("/mail/performance/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailPerformanceLog(req.user!.tenantId));
+}));
+
+router.get("/mail/chaos/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/chaos/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosCatalog(req.user!.tenantId));
+}));
+
+router.get("/mail/chaos/experiments", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosExperiments(req.user!.tenantId));
+}));
+
+router.post("/mail/chaos/experiments", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosRun(req.user!.tenantId, String(req.body.experimentId || "")));
+}));
+
+router.get("/mail/chaos/resilience", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosResilience(req.user!.tenantId));
+}));
+
+router.get("/mail/chaos/game-days", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosGameDays(req.user!.tenantId));
+}));
+
+router.post("/mail/chaos/experiments/:runId/abort", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosAbort(req.user!.tenantId, req.params.runId));
+}));
+
+router.get("/mail/chaos/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailChaosLog(req.user!.tenantId));
+}));
+
 export default router;

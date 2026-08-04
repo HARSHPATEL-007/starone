@@ -3038,6 +3038,65 @@ export const api = {
       request<any>(`/ads-marketing-module/mail/api-keys/verify?key=${encodeURIComponent(key)}`),
     mailApiKeyUsage: (apiKeyId: string) => request<any>(`/ads-marketing-module/mail/api-keys/${apiKeyId}/usage`),
     mailApiKeyDashboard: () => request<any>("/ads-marketing-module/mail/api-keys/dashboard"),
+    mailBiometricSignals: () => request<any>("/ads-marketing-module/mail/biometrics/signals"),
+    mailBiometricDashboard: () => request<any>("/ads-marketing-module/mail/biometrics/dashboard"),
+    mailBiometricBaseline: () => request<any>("/ads-marketing-module/mail/biometrics/baseline"),
+    mailBiometricLog: () => request<any>("/ads-marketing-module/mail/biometrics/log"),
+    mailBiometricRecord: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/biometrics/record", { method: "POST", body: JSON.stringify(input) }),
+    mailBiometricSession: (sessionId: string) => request<any>(`/ads-marketing-module/mail/biometrics/sessions/${sessionId}`),
+    mailBiometricEvaluate: (sessionId: string) =>
+      request<any>(`/ads-marketing-module/mail/biometrics/sessions/${sessionId}/evaluate`, { method: "POST" }),
+    mailZeroTrustDashboard: () => request<any>("/ads-marketing-module/mail/zero-trust/dashboard"),
+    mailZeroTrustOverview: () => request<any>("/ads-marketing-module/mail/zero-trust/overview"),
+    mailZeroTrustLayers: () => request<any>("/ads-marketing-module/mail/zero-trust/layers"),
+    mailZeroTrustDevices: () => request<any>("/ads-marketing-module/mail/zero-trust/devices"),
+    mailZeroTrustEnroll: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/zero-trust/devices", { method: "POST", body: JSON.stringify(input) }),
+    mailZeroTrustPosture: (deviceId: string) => request<any>(`/ads-marketing-module/mail/zero-trust/devices/${deviceId}`),
+    mailZeroTrustAccess: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/zero-trust/access", { method: "POST", body: JSON.stringify(input) }),
+    mailZeroTrustHoneytokens: () => request<any>("/ads-marketing-module/mail/zero-trust/honeytokens"),
+    mailZeroTrustHoneytokenHit: (tokenId: string) =>
+      request<any>(`/ads-marketing-module/mail/zero-trust/honeytokens/${tokenId}/hit`, { method: "POST" }),
+    mailZeroTrustLog: () => request<any>("/ads-marketing-module/mail/zero-trust/log"),
+    mailAiGovernanceDashboard: () => request<any>("/ads-marketing-module/mail/ai-governance/dashboard"),
+    mailAiGovernanceModels: () => request<any>("/ads-marketing-module/mail/ai-governance/models"),
+    mailAiGovernanceRegister: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/ai-governance/models", { method: "POST", body: JSON.stringify(input) }),
+    mailAiGovernanceReview: (modelId: string, decision: string) =>
+      request<any>(`/ads-marketing-module/mail/ai-governance/models/${modelId}/review`, { method: "POST", body: JSON.stringify({ decision }) }),
+    mailAiGovernanceScanInput: (text: string) =>
+      request<any>("/ads-marketing-module/mail/ai-governance/scan-input", { method: "POST", body: JSON.stringify({ text }) }),
+    mailAiGovernanceScanOutput: (text: string) =>
+      request<any>("/ads-marketing-module/mail/ai-governance/scan-output", { method: "POST", body: JSON.stringify({ text }) }),
+    mailAiGovernanceRateLimit: (userId: string) =>
+      request<any>(`/ads-marketing-module/mail/ai-governance/rate-limit?userId=${encodeURIComponent(userId)}`),
+    mailAiGovernanceShadow: () => request<any>("/ads-marketing-module/mail/ai-governance/shadow-ai"),
+    mailAiGovernanceRedTeam: () =>
+      request<any>("/ads-marketing-module/mail/ai-governance/red-team", { method: "POST" }),
+    mailAiGovernanceLog: () => request<any>("/ads-marketing-module/mail/ai-governance/log"),
+    mailPerformanceDashboard: () => request<any>("/ads-marketing-module/mail/performance/dashboard"),
+    mailPerformanceCaching: () => request<any>("/ads-marketing-module/mail/performance/caching"),
+    mailPerformanceFlushCache: (layerId?: string) =>
+      request<any>("/ads-marketing-module/mail/performance/cache/flush", { method: "POST", body: JSON.stringify({ layerId }) }),
+    mailPerformanceQueryOptimization: () => request<any>("/ads-marketing-module/mail/performance/query-optimization"),
+    mailPerformanceExplainQuery: (query: string) =>
+      request<any>("/ads-marketing-module/mail/performance/explain", { method: "POST", body: JSON.stringify({ query }) }),
+    mailPerformanceScalability: () => request<any>("/ads-marketing-module/mail/performance/scalability"),
+    mailPerformanceEdge: () => request<any>("/ads-marketing-module/mail/performance/edge"),
+    mailPerformanceSustainability: () => request<any>("/ads-marketing-module/mail/performance/sustainability"),
+    mailPerformanceLog: () => request<any>("/ads-marketing-module/mail/performance/log"),
+    mailChaosDashboard: () => request<any>("/ads-marketing-module/mail/chaos/dashboard"),
+    mailChaosCatalog: () => request<any>("/ads-marketing-module/mail/chaos/catalog"),
+    mailChaosExperiments: () => request<any>("/ads-marketing-module/mail/chaos/experiments"),
+    mailChaosRun: (experimentId: string) =>
+      request<any>("/ads-marketing-module/mail/chaos/experiments", { method: "POST", body: JSON.stringify({ experimentId }) }),
+    mailChaosResilience: () => request<any>("/ads-marketing-module/mail/chaos/resilience"),
+    mailChaosGameDays: () => request<any>("/ads-marketing-module/mail/chaos/game-days"),
+    mailChaosAbort: (runId: string) =>
+      request<any>(`/ads-marketing-module/mail/chaos/experiments/${runId}/abort`, { method: "POST" }),
+    mailChaosLog: () => request<any>("/ads-marketing-module/mail/chaos/log"),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

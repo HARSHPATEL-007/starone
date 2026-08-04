@@ -94,6 +94,11 @@ import { mailBackup } from "./MailBackupService";
 import { mailApiKey } from "./MailApiKeyService";
 
 import { mailNotifications } from "./MailNotificationService";
+import { mailBiometric } from "./MailBiometricService";
+import { mailZeroTrust } from "./MailZeroTrustService";
+import { mailAiGovernance } from "./MailAiGovernanceService";
+import { mailPerformance } from "./MailPerformanceService";
+import { mailChaos } from "./MailChaosService";
 
 import { mailQuantum } from "./MailQuantumService";
 
@@ -5658,6 +5663,182 @@ export class AdsMarketingModuleService {
 
   mailApiKeyDashboard(tenantId: string) {
     return mailApiKey.apiKeyDashboard(tenantId);
+  }
+
+  mailBiometricSignals() {
+    return mailBiometric.signals();
+  }
+
+  mailBiometricRecord(tenantId: string, sessionId: string, signalId: string, value?: number) {
+    return mailBiometric.recordSignal(tenantId, sessionId, signalId, value);
+  }
+
+  mailBiometricSession(tenantId: string, sessionId: string) {
+    return mailBiometric.sessionScore(tenantId, sessionId);
+  }
+
+  mailBiometricEvaluate(tenantId: string, sessionId: string) {
+    return mailBiometric.evaluateAuth(tenantId, sessionId);
+  }
+
+  mailBiometricBaseline(tenantId: string) {
+    return mailBiometric.baseline(tenantId);
+  }
+
+  mailBiometricLog(tenantId: string) {
+    return mailBiometric.biometricLog(tenantId);
+  }
+
+  mailBiometricDashboard(tenantId: string) {
+    return mailBiometric.biometricDashboard(tenantId);
+  }
+
+  mailZeroTrustLayers(tenantId: string) {
+    return mailZeroTrust.layers(tenantId);
+  }
+
+  mailZeroTrustEnroll(tenantId: string, input: any) {
+    return mailZeroTrust.enrollDevice(tenantId, input);
+  }
+
+  mailZeroTrustDevices(tenantId: string) {
+    return mailZeroTrust.devices(tenantId);
+  }
+
+  mailZeroTrustPosture(tenantId: string, deviceId: string) {
+    return mailZeroTrust.devicePosture(tenantId, deviceId);
+  }
+
+  mailZeroTrustAccess(tenantId: string, input: any) {
+    return mailZeroTrust.accessRequest(tenantId, input);
+  }
+
+  mailZeroTrustHoneytokens(tenantId: string) {
+    return mailZeroTrust.honeytokens(tenantId);
+  }
+
+  mailZeroTrustHoneytokenHit(tenantId: string, tokenId: string) {
+    return mailZeroTrust.honeytokenHit(tenantId, tokenId);
+  }
+
+  mailZeroTrustOverview(tenantId: string) {
+    return mailZeroTrust.zeroTrustOverview(tenantId);
+  }
+
+  mailZeroTrustLog(tenantId: string) {
+    return mailZeroTrust.zeroTrustLog(tenantId);
+  }
+
+  mailZeroTrustDashboard(tenantId: string) {
+    return mailZeroTrust.zeroTrustDashboard(tenantId);
+  }
+
+  mailAiGovernanceModels(tenantId: string) {
+    return mailAiGovernance.modelCards(tenantId);
+  }
+
+  mailAiGovernanceRegister(tenantId: string, input: any) {
+    return mailAiGovernance.registerModel(tenantId, input);
+  }
+
+  mailAiGovernanceReview(tenantId: string, modelId: string, decision: string) {
+    return mailAiGovernance.reviewModel(tenantId, modelId, decision);
+  }
+
+  mailAiGovernanceScanInput(tenantId: string, text: string) {
+    return mailAiGovernance.scanInput(tenantId, text);
+  }
+
+  mailAiGovernanceScanOutput(tenantId: string, text: string) {
+    return mailAiGovernance.scanOutput(tenantId, text);
+  }
+
+  mailAiGovernanceRateLimit(tenantId: string, userId: string) {
+    return mailAiGovernance.rateLimit(tenantId, userId);
+  }
+
+  mailAiGovernanceShadow(tenantId: string) {
+    return mailAiGovernance.shadowAi(tenantId);
+  }
+
+  mailAiGovernanceRedTeam(tenantId: string) {
+    return mailAiGovernance.redTeam(tenantId);
+  }
+
+  mailAiGovernanceDashboard(tenantId: string) {
+    return mailAiGovernance.governanceDashboard(tenantId);
+  }
+
+  mailAiGovernanceLog(tenantId: string) {
+    return mailAiGovernance.governanceLog(tenantId);
+  }
+
+  mailPerformanceCaching(tenantId: string) {
+    return mailPerformance.caching(tenantId);
+  }
+
+  mailPerformanceFlushCache(tenantId: string, layerId?: string) {
+    return mailPerformance.flushCache(tenantId, layerId);
+  }
+
+  mailPerformanceQueryOptimization(tenantId: string) {
+    return mailPerformance.queryOptimization(tenantId);
+  }
+
+  mailPerformanceExplainQuery(tenantId: string, query: string) {
+    return mailPerformance.explainQuery(tenantId, query);
+  }
+
+  mailPerformanceScalability(tenantId: string) {
+    return mailPerformance.scalability(tenantId);
+  }
+
+  mailPerformanceEdge(tenantId: string) {
+    return mailPerformance.edge(tenantId);
+  }
+
+  mailPerformanceSustainability(tenantId: string) {
+    return mailPerformance.sustainability(tenantId);
+  }
+
+  mailPerformanceDashboard(tenantId: string) {
+    return mailPerformance.performanceDashboard(tenantId);
+  }
+
+  mailPerformanceLog(tenantId: string) {
+    return mailPerformance.perfLog(tenantId);
+  }
+
+  mailChaosCatalog(tenantId: string) {
+    return mailChaos.catalog(tenantId);
+  }
+
+  mailChaosRun(tenantId: string, experimentId: string) {
+    return mailChaos.runExperiment(tenantId, experimentId);
+  }
+
+  mailChaosExperiments(tenantId: string) {
+    return mailChaos.experiments(tenantId);
+  }
+
+  mailChaosResilience(tenantId: string) {
+    return mailChaos.resilienceScore(tenantId);
+  }
+
+  mailChaosGameDays(tenantId: string) {
+    return mailChaos.gameDays(tenantId);
+  }
+
+  mailChaosAbort(tenantId: string, runId: string) {
+    return mailChaos.abortExperiment(tenantId, runId);
+  }
+
+  mailChaosLog(tenantId: string) {
+    return mailChaos.chaosLog(tenantId);
+  }
+
+  mailChaosDashboard(tenantId: string) {
+    return mailChaos.chaosDashboard(tenantId);
   }
 }
 

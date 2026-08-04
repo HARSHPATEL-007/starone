@@ -43,6 +43,11 @@ const MailDeliverability = lazy(() => import("./pages/MailDeliverability"));
 const MailSequences = lazy(() => import("./pages/MailSequences"));
 const MailTickets = lazy(() => import("./pages/MailTickets"));
 const MailAdmin = lazy(() => import("./pages/MailAdmin"));
+const MailBiometrics = lazy(() => import("./pages/MailBiometrics"));
+const MailTrust = lazy(() => import("./pages/MailTrust"));
+const MailGovernance = lazy(() => import("./pages/MailGovernance"));
+const MailPerformance = lazy(() => import("./pages/MailPerformance"));
+const MailChaos = lazy(() => import("./pages/MailChaos"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -241,6 +246,11 @@ export default function App() {
                 <Route path="/mail/sequences" element={<MailSequences />} />
                 <Route path="/mail/tickets" element={<MailTickets />} />
                 <Route path="/mail/admin" element={<MailAdmin />} />
+                <Route path="/mail/biometrics" element={<MailBiometrics />} />
+                <Route path="/mail/zero-trust" element={<MailTrust />} />
+                <Route path="/mail/governance" element={<MailGovernance />} />
+                <Route path="/mail/performance" element={<MailPerformance />} />
+                <Route path="/mail/chaos" element={<MailChaos />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />
