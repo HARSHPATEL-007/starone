@@ -18,6 +18,12 @@ const EVENT_LABELS: Record<string, string> = {
   "mail.folder_change": "Folder",
   "mail.spam_detected": "Spam",
   "mail.ai_suggestion": "AI",
+  "mail.presence": "Presence",
+  "mail.comment_added": "Comment",
+  "mail.reaction_added": "Reaction",
+  "mail.voice_note": "Voice",
+  "mail.typing": "Typing",
+  "mail.cursor_position": "Cursor",
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -29,6 +35,12 @@ const EVENT_COLORS: Record<string, string> = {
   "mail.folder_change": "bg-cyan-100 text-cyan-700",
   "mail.spam_detected": "bg-rose-100 text-rose-700",
   "mail.ai_suggestion": "bg-fuchsia-100 text-fuchsia-700",
+  "mail.presence": "bg-teal-100 text-teal-700",
+  "mail.comment_added": "bg-indigo-100 text-indigo-700",
+  "mail.reaction_added": "bg-pink-100 text-pink-700",
+  "mail.voice_note": "bg-orange-100 text-orange-700",
+  "mail.typing": "bg-lime-100 text-lime-700",
+  "mail.cursor_position": "bg-sky-100 text-sky-700",
 };
 
 export default function MailLabels() {

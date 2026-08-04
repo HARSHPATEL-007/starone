@@ -3318,6 +3318,12 @@ export const api = {
     mailRealtimeOverview: () => request<any>("/ads-marketing-module/mail/realtime/overview"),
     mailRealtimeLog: (limit?: number) =>
       request<any>(`/ads-marketing-module/mail/realtime/log${limit ? `?limit=${limit}` : ""}`),
+    mailRealtimeTyping: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/realtime/typing", { method: "POST", body: JSON.stringify(input) }),
+    mailRealtimePresence: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/realtime/presence", { method: "POST", body: JSON.stringify(input) }),
+    mailRealtimeCursor: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/mail/realtime/cursor", { method: "POST", body: JSON.stringify(input) }),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

@@ -4123,4 +4123,16 @@ router.get("/mail/realtime/log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailRealtimeLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
 }));
 
+router.post("/mail/realtime/typing", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRealtimeTyping(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/realtime/presence", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRealtimePresence(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/mail/realtime/cursor", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailRealtimeCursor(req.user!.tenantId, req.body || {}));
+}));
+
 export default router;

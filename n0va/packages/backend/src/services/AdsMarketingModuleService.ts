@@ -6327,6 +6327,18 @@ export class AdsMarketingModuleService {
   mailRealtimeLog(tenantId: string, limit?: number) {
     return mailRealtime.realtimeLog(tenantId, limit);
   }
+
+  mailRealtimeTyping(tenantId: string, input: any) {
+    return mailRealtime.sendTyping(tenantId, input);
+  }
+
+  mailRealtimePresence(tenantId: string, input: any) {
+    return mailRealtime.sendPresence(tenantId, input);
+  }
+
+  mailRealtimeCursor(tenantId: string, input: any) {
+    return mailRealtime.sendCursor(tenantId, input);
+  }
 }
 
 export const adsMarketingModule = new AdsMarketingModuleService();

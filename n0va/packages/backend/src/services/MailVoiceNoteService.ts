@@ -1,4 +1,5 @@
 import { DataStore } from "./DataStore";
+import { mailRealtime } from "./MailRealtimeService";
 
 function hashStr(s: string): number {
   let h = 0;
@@ -64,6 +65,15 @@ export class MailVoiceNoteService {
       indexed: true,
     });
     this.log(tenantId, note, "recorded");
+    mailRealtime.emit("mail.voice_note", tenantId, {
+      messageId: msg._id,
+      threadId: msg.threadId || null,
+      noteId: note._id,
+      title: note.title,
+      durationSec: note.durationSec,
+      emotion: note.emotion,
+      subject: msg.subject,
+    });
     return {
       noteId: note._id,
       ...note,

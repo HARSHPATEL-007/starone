@@ -168,12 +168,14 @@ describe("label dashboard + log", () => {
 });
 
 describe("mail realtime event catalog", () => {
-  it("exposes the 8 Â§4.3 events", () => {
-    expect(MAIL_EVENTS).toHaveLength(8);
+  it("exposes the 14 Â§4.3 events", () => {
+    expect(MAIL_EVENTS).toHaveLength(14);
     const events = MAIL_EVENTS.map((e) => e.event);
     expect(events).toEqual([
       "mail.received", "mail.sent", "mail.read", "mail.thread_update",
       "mail.label_change", "mail.folder_change", "mail.spam_detected", "mail.ai_suggestion",
+      "mail.presence", "mail.comment_added", "mail.reaction_added", "mail.voice_note",
+      "mail.typing", "mail.cursor_position",
     ]);
   });
 
@@ -277,7 +279,7 @@ describe("mail realtime emits", () => {
     const overview = mailRealtime.realtimeOverview(T2);
     expect(overview.counts["mail.sent"]).toBe(2);
     expect(overview.total).toBe(2);
-    expect(overview.eventCatalog).toHaveLength(8);
+    expect(overview.eventCatalog).toHaveLength(14);
     expect(overview.wired).toBe(false);
     expect(overview.summary).toContain("2 mail event(s)");
   });

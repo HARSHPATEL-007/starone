@@ -1,13 +1,38 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   MessagesSquare, RefreshCw, Plus, X, Send, Trash2, Users, Smile, Eye, Pencil, FilePen,
-  CheckCircle2, XCircle, ShieldCheck, UserCog, AtSign, DoorOpen, KeyRound,
+  CheckCircle2, XCircle, ShieldCheck, UserCog, AtSign, DoorOpen, KeyRound, Radio, MousePointer2,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
 import { SkeletonCard } from "../components/Skeleton";
+import { useMailRealtime } from "../hooks/useSocket";
 
 const unwrap = (r: any) => (r && r.data !== undefined ? r.data : r);
+
+const RT_LABELS: Record<string, string> = {
+  "mail.received": "Received", "mail.sent": "Sent", "mail.read": "Read", "mail.thread_update": "Thread",
+  "mail.label_change": "Label", "mail.folder_change": "Folder", "mail.spam_detected": "Spam", "mail.ai_suggestion": "AI",
+  "mail.presence": "Presence", "mail.comment_added": "Comment", "mail.reaction_added": "Reaction", "mail.voice_note": "Voice",
+  "mail.typing": "Typing", "mail.cursor_position": "Cursor",
+};
+
+const RT_COLORS: Record<string, string> = {
+  "mail.received": "bg-blue-100 text-blue-700",
+  "mail.sent": "bg-emerald-100 text-emerald-700",
+  "mail.read": "bg-slate-100 text-slate-600",
+  "mail.thread_update": "bg-violet-100 text-violet-700",
+  "mail.label_change": "bg-amber-100 text-amber-700",
+  "mail.folder_change": "bg-cyan-100 text-cyan-700",
+  "mail.spam_detected": "bg-rose-100 text-rose-700",
+  "mail.ai_suggestion": "bg-fuchsia-100 text-fuchsia-700",
+  "mail.presence": "bg-teal-100 text-teal-700",
+  "mail.comment_added": "bg-indigo-100 text-indigo-700",
+  "mail.reaction_added": "bg-pink-100 text-pink-700",
+  "mail.voice_note": "bg-orange-100 text-orange-700",
+  "mail.typing": "bg-lime-100 text-lime-700",
+  "mail.cursor_position": "bg-sky-100 text-sky-700",
+};
 
 const emptyDraft = { subject: "", body: "", collaborators: "", dueAt: "" };
 const emptyApproval = { subject: "", approvers: "", requiredCount: "1", reason: "" };
@@ -16,6 +41,9 @@ const emptyRole = { member: "", role: "editor" };
 
 export default function MailCollaboration() {
   const { addToast } = useToast();
+  const { connected: rtConnected, events: rtEvents } = useMailRealtime(
+    (() => { try { return JSON.parse(localStorage.getItem("n0va_user") || "{}").tenantId || "tenant_001"; } catch { return "tenant_001"; } })()
+  );
   const [summary, setSummary] = useState<any>(null);
   const [presence, setPresence] = useState<any>(null);
   const [drafts, setDrafts] = useState<any[]>([]);
@@ -138,6 +166,37 @@ export default function MailCollaboration() {
       await loadAll();
     } catch (e: any) {
       addToast("error", "Delete failed", e?.message);
+    }
+  }
+
+  async function broadcastPresence(status: string) {
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailRealtimePresence({ userId: "user_001", status }));
+      addToast("success", "Presence updated", r?.summary || "");
+    } catch (e: any) {
+      addToast("error", "Presence failed", e?.message);
+    }
+  }
+
+  async function broadcastTyping() {
+    const t = threads[0];
+    if (!t) { addToast("warning", "No thread", "Open an inbox message first."); return; }
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailRealtimeTyping({ userId: "user_001", threadId: t.threadId, isTyping: true }));
+      addToast("success", "Typing ping", r?.summary || "");
+    } catch (e: any) {
+      addToast("error", "Typing failed", e?.message);
+    }
+  }
+
+  async function broadcastCursor() {
+    const t = threads[0];
+    if (!t) { addToast("warning", "No thread", "Open an inbox message first."); return; }
+    try {
+      const r = unwrap(await api.adsMarketingModule.mailRealtimeCursor({ userId: "user_001", threadId: t.threadId, position: 24 }));
+      addToast("success", "Cursor ping", r?.summary || "");
+    } catch (e: any) {
+      addToast("error", "Cursor failed", e?.message);
     }
   }
 
@@ -467,6 +526,29 @@ export default function MailCollaboration() {
             <div className="card p-4">
               <p className="text-2xl font-bold text-white">{collab2?.mentions?.unread || 0}</p>
               <p className="text-xs text-gray-500 mt-1">Unread mentions</p>
+            </div>
+          </div>
+
+          <div className="card p-4 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2"><Radio className="w-4 h-4 text-n0va-400" /> Live collaboration <span className={`text-[10px] px-1.5 py-0.5 rounded ${rtConnected ? "bg-emerald-500/15 text-emerald-400" : "bg-gray-500/10 text-gray-500"}`}>{rtConnected ? "connected" : "offline"}</span></h3>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(["online", "away", "busy", "offline"] as const).map((s) => (
+                  <button key={s} className="btn-secondary text-[11px] px-2 py-1" onClick={() => broadcastPresence(s)}>Set {s}</button>
+                ))}
+                <button className="btn-secondary text-[11px] px-2 py-1 flex items-center gap-1" onClick={broadcastTyping}><Send className="w-3 h-3" /> Typing</button>
+                <button className="btn-secondary text-[11px] px-2 py-1 flex items-center gap-1" onClick={broadcastCursor}><MousePointer2 className="w-3 h-3" /> Cursor</button>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-500">Bidirectional §3.8 events — presence, typing and cursor pings broadcast to the whole tenant room.</p>
+            <div className="flex flex-wrap gap-1.5">
+              {rtEvents.slice(0, 6).map((e: any, i: number) => (
+                <span key={i} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${RT_COLORS[e.event] || "bg-gray-100 text-gray-600"}`}>
+                  {RT_LABELS[e.event] || e.event}
+                  <span className="font-normal opacity-70">{e.payload?.userId ? e.payload.userId : e.payload?.author ? e.payload.author : e.event.split(".")[1]}</span>
+                </span>
+              ))}
+              {rtEvents.length === 0 && <span className="text-xs text-gray-600">No live events yet — add a comment, react, or ping a status above.</span>}
             </div>
           </div>
 

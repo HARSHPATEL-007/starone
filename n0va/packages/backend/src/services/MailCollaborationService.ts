@@ -1,4 +1,5 @@
 import { DataStore } from "./DataStore";
+import { mailRealtime } from "./MailRealtimeService";
 
 function hashStr(s: string): number {
   let h = 0;
@@ -43,6 +44,14 @@ export class MailCollaborationService {
       author: input.author || "user_001",
       mentions: this.resolveMentions(tenantId, String(input.text)),
     });
+    mailRealtime.emit("mail.comment_added", tenantId, {
+      messageId,
+      threadId: comment.threadId,
+      commentId: comment._id,
+      author: comment.author,
+      subject: msg.subject,
+      text: String(input.text),
+    });
     return { commentId: comment._id, ...comment, summary: `Comment added on "${msg.subject}"` };
   }
 
@@ -74,6 +83,14 @@ export class MailCollaborationService {
       r.tenantId === tenantId && r.messageId === messageId && r.emoji === input.emoji && r.user === user);
     if (existing) throw new Error(`Reaction "${input.emoji}" already added by ${user}`);
     const reaction = DataStore.mem().insert("mail_reactions", { tenantId, messageId, threadId: msg.threadId || msg._id, emoji: input.emoji, user });
+    mailRealtime.emit("mail.reaction_added", tenantId, {
+      messageId,
+      threadId: reaction.threadId,
+      reactionId: reaction._id,
+      emoji: input.emoji,
+      user,
+      subject: msg.subject,
+    });
     return { reactionId: reaction._id, messageId, emoji: input.emoji, user, summary: `Added ${input.emoji} on "${msg.subject}"` };
   }
 

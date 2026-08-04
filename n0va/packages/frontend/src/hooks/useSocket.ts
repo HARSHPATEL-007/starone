@@ -107,6 +107,8 @@ export function useTenantActivity(tenantId: string) {
 export const MAIL_REALTIME_EVENTS = [
   "mail.received", "mail.sent", "mail.read", "mail.thread_update",
   "mail.label_change", "mail.folder_change", "mail.spam_detected", "mail.ai_suggestion",
+  "mail.presence", "mail.comment_added", "mail.reaction_added", "mail.voice_note",
+  "mail.typing", "mail.cursor_position",
 ] as const;
 
 export type MailRealtimeEvent = (typeof MAIL_REALTIME_EVENTS)[number];
