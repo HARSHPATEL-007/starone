@@ -99,6 +99,7 @@ import { mailZeroTrust } from "./MailZeroTrustService";
 import { mailAiGovernance } from "./MailAiGovernanceService";
 import { mailPerformance } from "./MailPerformanceService";
 import { mailChaos } from "./MailChaosService";
+import { mailFocus } from "./MailFocusService";
 
 import { mailQuantum } from "./MailQuantumService";
 
@@ -5839,6 +5840,58 @@ export class AdsMarketingModuleService {
 
   mailChaosDashboard(tenantId: string) {
     return mailChaos.chaosDashboard(tenantId);
+  }
+
+  mailFocusModes() {
+    return mailFocus.focusModes();
+  }
+
+  mailFocusActivate(tenantId: string, mode: string, durationMin?: number) {
+    return mailFocus.activateFocus(tenantId, mode, durationMin);
+  }
+
+  mailFocusStatus(tenantId: string) {
+    return mailFocus.focusStatus(tenantId);
+  }
+
+  mailFocusEnd(tenantId: string, sessionId: string) {
+    return mailFocus.endFocus(tenantId, sessionId);
+  }
+
+  mailFocusExtend(tenantId: string, sessionId: string, minutes: number) {
+    return mailFocus.extendFocus(tenantId, sessionId, minutes);
+  }
+
+  mailFocusTiers(tenantId: string) {
+    return mailFocus.notificationTiers(tenantId);
+  }
+
+  mailFocusBatch(tenantId: string) {
+    return mailFocus.smartBatch(tenantId);
+  }
+
+  mailFocusBatchIntelligence(tenantId: string, messageIds: string[]) {
+    return mailFocus.batchIntelligence(tenantId, messageIds);
+  }
+
+  mailFocusExecuteBatches(tenantId: string, actions: { messageId: string; action: string }[]) {
+    return mailFocus.executeBatchSuggestions(tenantId, actions);
+  }
+
+  mailFocusFriction(tenantId: string, input?: Record<string, number>) {
+    return mailFocus.frictionScore(tenantId, input);
+  }
+
+  mailFocusRoi(tenantId: string, users: number, hourlyRate: number) {
+    return mailFocus.roiCalculator(tenantId, users, hourlyRate);
+  }
+
+  mailFocusLog(tenantId: string) {
+    return mailFocus.focusLog(tenantId);
+  }
+
+  mailFocusDashboard(tenantId: string) {
+    return mailFocus.focusDashboard(tenantId);
   }
 }
 

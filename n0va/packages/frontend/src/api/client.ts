@@ -3097,6 +3097,41 @@ export const api = {
     mailChaosAbort: (runId: string) =>
       request<any>(`/ads-marketing-module/mail/chaos/experiments/${runId}/abort`, { method: "POST" }),
     mailChaosLog: () => request<any>("/ads-marketing-module/mail/chaos/log"),
+    mailFocusDashboard: () => request<any>("/ads-marketing-module/mail/focus/dashboard"),
+    mailFocusModes: () => request<any>("/ads-marketing-module/mail/focus/modes"),
+    mailFocusStatus: () => request<any>("/ads-marketing-module/mail/focus/status"),
+    mailFocusActivate: (mode: string, durationMin?: number) =>
+      request<any>("/ads-marketing-module/mail/focus/activate", {
+        method: "POST",
+        body: JSON.stringify({ mode, ...(durationMin !== undefined ? { durationMin } : {}) }),
+      }),
+    mailFocusEnd: (sessionId: string) =>
+      request<any>(`/ads-marketing-module/mail/focus/sessions/${sessionId}/end`, { method: "POST" }),
+    mailFocusExtend: (sessionId: string, minutes: number) =>
+      request<any>(`/ads-marketing-module/mail/focus/sessions/${sessionId}/extend`, {
+        method: "POST",
+        body: JSON.stringify({ minutes }),
+      }),
+    mailFocusTiers: () => request<any>("/ads-marketing-module/mail/focus/tiers"),
+    mailFocusBatch: () => request<any>("/ads-marketing-module/mail/focus/batch"),
+    mailFocusBatchIntelligence: (messageIds: string[]) =>
+      request<any>("/ads-marketing-module/mail/focus/batch-intelligence", {
+        method: "POST",
+        body: JSON.stringify({ messageIds }),
+      }),
+    mailFocusExecuteBatches: (actions: { messageId: string; action: string }[]) =>
+      request<any>("/ads-marketing-module/mail/focus/batch-intelligence/execute", {
+        method: "POST",
+        body: JSON.stringify({ actions }),
+      }),
+    mailFocusFriction: (input?: Record<string, number>) =>
+      request<any>("/ads-marketing-module/mail/focus/friction", {
+        method: "POST",
+        body: JSON.stringify({ input: input || {} }),
+      }),
+    mailFocusRoi: (users = 1, hourlyRate = 75) =>
+      request<any>(`/ads-marketing-module/mail/focus/roi?users=${users}&hourlyRate=${hourlyRate}`),
+    mailFocusLog: () => request<any>("/ads-marketing-module/mail/focus/log"),
     mailBillingPlans: () => request<any>("/ads-marketing-module/mail/billing/plans"),
     mailBillingSummary: () => request<any>("/ads-marketing-module/mail/billing/summary"),
     mailBillingDashboard: () => request<any>("/ads-marketing-module/mail/billing/dashboard"),

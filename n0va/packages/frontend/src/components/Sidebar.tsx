@@ -151,6 +151,7 @@ const navItems = [
     { to: "/mail/governance", icon: Scale, label: "AI Governance" },
     { to: "/mail/performance", icon: Gauge, label: "Performance" },
     { to: "/mail/chaos", icon: Beaker, label: "Chaos Engineering" },
+    { to: "/mail/focus", icon: Target, label: "Focus Time" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },

@@ -73,6 +73,8 @@ export default function MailInbox() {
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [selected, setSelected] = useState<string[]>([]);
   const [batchLabel, setBatchLabel] = useState("");
+  const [pullY, setPullY] = useState(0);
+  const [pullStart, setPullStart] = useState<number | null>(null);
 
   const loadSummary = useCallback(async () => {
     const [sum, mb] = await Promise.all([
@@ -119,6 +121,31 @@ export default function MailInbox() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mailboxes]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    if (window.scrollY > 0) return;
+    setPullStart(e.touches[0]?.clientY ?? null);
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (pullStart === null || window.scrollY > 0) return;
+    const dy = (e.touches[0]?.clientY ?? pullStart) - pullStart;
+    if (dy > 0) {
+      if (dy > 10) e.preventDefault();
+      setPullY(Math.min(110, dy * 0.55));
+    }
+  }
+
+  async function onTouchEnd() {
+    if (pullY >= 60) {
+      setPullY(0);
+      addToast("info", "Refreshing inbox…");
+      await loadAll();
+    } else {
+      setPullY(0);
+    }
+    setPullStart(null);
+  }
 
   async function openMessage(m: any) {
     if (!m.read) {
@@ -252,7 +279,11 @@ export default function MailInbox() {
   const selectedMsg = thread?.messages?.find((m: any) => m._id === threadMsgId) || thread?.messages?.[0];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+      <div className="flex items-center justify-center -mt-2 lg:hidden overflow-hidden" style={{ height: pullY, opacity: pullY > 0 ? 1 : 0 }}>
+        <RefreshCw className={`w-4 h-4 text-n0va-400 ${pullY >= 60 ? "animate-spin" : ""}`} />
+        <span className="text-xs text-gray-400 ml-2">{pullY >= 60 ? "Release to refresh" : "Pull to refresh"}</span>
+      </div>
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Mail className="w-6 h-6 text-n0va-400" /> N0VA Mail</h1>

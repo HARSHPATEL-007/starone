@@ -3618,4 +3618,62 @@ router.get("/mail/chaos/log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.mailChaosLog(req.user!.tenantId));
 }));
 
+router.get("/mail/focus/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusDashboard(req.user!.tenantId));
+}));
+
+router.get("/mail/focus/modes", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusModes());
+}));
+
+router.get("/mail/focus/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusStatus(req.user!.tenantId));
+}));
+
+router.post("/mail/focus/activate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusActivate(req.user!.tenantId, String(req.body.mode || ""), req.body.durationMin !== undefined ? Number(req.body.durationMin) : undefined));
+}));
+
+router.post("/mail/focus/sessions/:sessionId/end", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusEnd(req.user!.tenantId, req.params.sessionId));
+}));
+
+router.post("/mail/focus/sessions/:sessionId/extend", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusExtend(req.user!.tenantId, req.params.sessionId, Number(req.body.minutes || 0)));
+}));
+
+router.get("/mail/focus/tiers", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusTiers(req.user!.tenantId));
+}));
+
+router.get("/mail/focus/batch", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusBatch(req.user!.tenantId));
+}));
+
+router.post("/mail/focus/batch-intelligence", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusBatchIntelligence(req.user!.tenantId, req.body.messageIds || []));
+}));
+
+router.post("/mail/focus/batch-intelligence/execute", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusExecuteBatches(req.user!.tenantId, req.body.actions || []));
+}));
+
+router.get("/mail/focus/friction", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusFriction(req.user!.tenantId));
+}));
+
+router.post("/mail/focus/friction", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusFriction(req.user!.tenantId, req.body.input || undefined));
+}));
+
+router.get("/mail/focus/roi", asyncHandler(async (req, res) => {
+  const users = typeof req.query.users === "string" ? Number(req.query.users) : 1;
+  const hourlyRate = typeof req.query.hourlyRate === "string" ? Number(req.query.hourlyRate) : 75;
+  sendSuccess(res, adsMarketingModule.mailFocusRoi(req.user!.tenantId, users, hourlyRate));
+}));
+
+router.get("/mail/focus/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.mailFocusLog(req.user!.tenantId));
+}));
+
 export default router;

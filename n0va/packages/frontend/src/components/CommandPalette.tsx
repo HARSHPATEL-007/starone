@@ -60,6 +60,7 @@ const PAGE_ITEMS: SearchResult[] = [
     { type: "page", label: "AI Governance", route: "/mail/governance", icon: Scale },
     { type: "page", label: "Mail Performance", route: "/mail/performance", icon: Gauge },
     { type: "page", label: "Chaos Engineering", route: "/mail/chaos", icon: Beaker },
+    { type: "page", label: "Focus Time", route: "/mail/focus", icon: Target },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },
