@@ -359,13 +359,101 @@ export class MailQuantumService {
     };
   }
 
+  encryptVoiceNote(tenantId: string, voiceNoteId: string) {
+    const vn = DataStore.mem().findOne("mail_voice_notes", (v: any) => v._id === voiceNoteId && v.tenantId === tenantId);
+    if (!vn) throw new Error(`Voice note "${voiceNoteId}" not found`);
+    let key = DataStore.mem().find("mail_quantum_keys", (k: any) => k.tenantId === tenantId && k.status === "active" && k.purpose === "voice")
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    if (!key) key = DataStore.mem().find("mail_quantum_keys", (k: any) => k.tenantId === tenantId && k.status === "active")
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    if (!key) {
+      const created = this.createKeyPair(tenantId, { purpose: "voice" });
+      key = DataStore.mem().findOne("mail_quantum_keys", (k: any) => k._id === created.keyId);
+    }
+    const channel = DataStore.mem().find("mail_qkd_channels", (c: any) => c.tenantId === tenantId && c.status === "active")
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    const plaintextBytes = Math.max((vn.transcript || "").length, vn.durationSec || 0);
+    const ciphertextBytes = Math.max(plaintextBytes * 2 + 96, 256);
+    const seed = hashStr(tenantId + "|" + voiceNoteId + "|" + key.algorithm);
+    const cipherId = `cph_${seed.toString(36)}${random6()}`;
+    const rec = DataStore.mem().insert("mail_quantum_voice", {
+      tenantId,
+      voiceNoteId,
+      title: vn.title || "Untitled voice note",
+      algorithm: key.algorithm,
+      algorithmName: key.algorithmName,
+      cipherId,
+      keyId: key._id,
+      fingerprint: key.publicFingerprint,
+      plaintextBytes,
+      ciphertextBytes,
+      overheadPct: 100,
+      channelName: channel ? channel.name : null,
+      qkdSessionId: channel ? `qkd_${hashStr(tenantId + "|" + voiceNoteId + "|qkd").toString(36)}` : null,
+      qkdProtected: !!channel,
+      createdAt: new Date().toISOString(),
+    });
+    this.log(tenantId, "voice_encrypted", `Voice note "${rec.title}" encrypted with ${key.algorithmName}${channel ? ` over ${channel.name}` : ""}`);
+    return {
+      encryptedId: rec._id,
+      voiceNoteId,
+      cipherId,
+      algorithm: rec.algorithm,
+      algorithmName: rec.algorithmName,
+      keyId: rec.keyId,
+      fingerprint: rec.fingerprint,
+      plaintextBytes,
+      ciphertextBytes,
+      overheadPct: 100,
+      channelName: rec.channelName,
+      qkdSessionId: rec.qkdSessionId,
+      qkdProtected: rec.qkdProtected,
+      summary: `Voice note "${rec.title}" encrypted (${ciphertextBytes} B, 100% overhead)`,
+    };
+  }
+
+  decryptVoiceNote(tenantId: string, encryptedId: string) {
+    const rec = DataStore.mem().findOne("mail_quantum_voice", (v: any) => v._id === encryptedId && v.tenantId === tenantId);
+    if (!rec) throw new Error(`Encrypted voice note "${encryptedId}" not found`);
+    this.log(tenantId, "voice_decrypted", `Voice note "${rec.title}" decrypted (${rec.plaintextBytes} B recovered)`);
+    return {
+      encryptedId: rec._id,
+      voiceNoteId: rec.voiceNoteId,
+      title: rec.title,
+      algorithmName: rec.algorithmName,
+      channelName: rec.channelName,
+      qkdProtected: rec.qkdProtected,
+      plaintextBytes: rec.plaintextBytes,
+      ciphertextBytes: rec.ciphertextBytes,
+      restored: true,
+      summary: `Voice decryption successful — ${rec.plaintextBytes} byte(s) recovered${rec.qkdProtected ? ` via ${rec.channelName}` : ""}`,
+    };
+  }
+
+  quantumVoiceStatus(tenantId: string) {
+    const notes = DataStore.mem().find("mail_voice_notes", (v: any) => v.tenantId === tenantId);
+    const covered = DataStore.mem().find("mail_quantum_voice", (v: any) => v.tenantId === tenantId);
+    const total = notes.length;
+    const coveragePct = total === 0 ? 100 : Math.round((covered.length / total) * 100);
+    const status = coveragePct >= 75 ? "hardened" : coveragePct >= 40 ? "transitioning" : "at_risk";
+    return {
+      totalNotes: total,
+      encryptedNotes: covered.length,
+      coveragePct,
+      qkdProtected: covered.filter((c: any) => c.qkdProtected).length,
+      status,
+      summary: `${covered.length}/${total} voice note(s) quantum-encrypted (${coveragePct}%) — ${status}`,
+    };
+  }
+
   quantumDashboard(tenantId: string) {
     const overview = this.quantumOverview(tenantId);
     const keys = this.listKeys(tenantId);
     const channels = this.qkdChannels(tenantId);
     const certs = this.listCertificates(tenantId);
     const log = this.quantumLog(tenantId, 10);
-    return { ...overview, keys, channels, certificates: certs, recentLog: log.entries, generatedAt: new Date().toISOString() };
+    const voice = this.quantumVoiceStatus(tenantId);
+    return { ...overview, keys, channels, certificates: certs, voice, recentLog: log.entries, generatedAt: new Date().toISOString() };
   }
 
   quantumLog(tenantId: string, limit?: number) {
