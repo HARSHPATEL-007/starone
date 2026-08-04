@@ -24,6 +24,7 @@ const MailCampaigns = lazy(() => import("./pages/MailCampaigns"));
 const MailDiscovery = lazy(() => import("./pages/MailDiscovery"));
 const MailDomains = lazy(() => import("./pages/MailDomains"));
 const MailVoice = lazy(() => import("./pages/MailVoice"));
+const MailVoiceConsole = lazy(() => import("./pages/MailVoiceConsole"));
 const MailCommandCenter = lazy(() => import("./pages/MailCommandCenter"));
 const MailDispatch = lazy(() => import("./pages/MailDispatch"));
 const MailCalendar = lazy(() => import("./pages/MailCalendar"));
@@ -235,6 +236,7 @@ export default function App() {
                 <Route path="/mail/discovery" element={<MailDiscovery />} />
                 <Route path="/mail/domains" element={<MailDomains />} />
                 <Route path="/mail/voice" element={<MailVoice />} />
+                <Route path="/mail/voice-commands" element={<MailVoiceConsole />} />
                 <Route path="/mail/command-center" element={<MailCommandCenter />} />
                 <Route path="/mail/dispatch" element={<MailDispatch />} />
                 <Route path="/mail/calendar" element={<MailCalendar />} />
