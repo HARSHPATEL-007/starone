@@ -3759,6 +3759,33 @@ export const api = {
     n0va1oAccountLru: () => request<any>("/ads-marketing-module/n0va1o/auth/accounts/lru"),
     n0va1oEvictAccounts: (limit?: number) =>
       request<any>("/ads-marketing-module/n0va1o/auth/accounts/evict", { method: "POST", body: JSON.stringify({ limit }) }),
+    n0va1oOauthAuthorizeUrl: (input: { connectionId: string; redirectUri?: string; scopes?: string[]; expiresInSeconds?: number }) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/oauth/authorize", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oOauthCallback: (input: { connectionId: string; code: string; state: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/oauth/callback", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oOauthRefresh: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/oauth/${encodeURIComponent(connectionId)}/refresh`, { method: "POST" }),
+    n0va1oOauthRevoke: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/oauth/${encodeURIComponent(connectionId)}/revoke`, { method: "POST" }),
+    n0va1oOauthStatus: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/oauth/${encodeURIComponent(connectionId)}/status`),
+    n0va1oMigrationCatalog: () => request<any>("/ads-marketing-module/n0va1o/migration/catalog"),
+    n0va1oMigrationStart: (input: { source: string; label?: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/migration/start", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oMigrations: () => request<any>("/ads-marketing-module/n0va1o/migrations"),
+    n0va1oMigrationDashboard: () => request<any>("/ads-marketing-module/n0va1o/migrations/dashboard"),
+    n0va1oMigrationLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/migrations/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oMigrationPlan: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}/plan`),
+    n0va1oMigrationRunPhase: (migrationId: string, phaseId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}/phases/${encodeURIComponent(phaseId)}/run`, { method: "POST" }),
+    n0va1oMigrationStatus: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}/status`),
+    n0va1oMigration: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}`),
+    n0va1oMigrationDelete: (migrationId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}`, { method: "DELETE" }),
   },
 
   agentSwarm: {

@@ -219,6 +219,129 @@ export class N0VA1OAuthService {
     return { oldToken: tokenId, rotated, summary: "Token rotated — previous token retired" };
   }
 
+  oauthAuthorizeUrl(tenantId: string, input: any) {
+    const connectionId = String(input?.connectionId || "").replace(/^ca_/, "");
+    const conn = DataStore.mem().findOne("n0va1o_connections", (c: any) => c.tenantId === tenantId && c._id === connectionId);
+    if (!conn) throw new Error("Connection not found");
+    const redirectUri = input?.redirectUri ? String(input.redirectUri) : "https://app.n0va.io/callback";
+    const expiresInSeconds = Number.isFinite(input?.expiresInSeconds) ? Math.max(60, Math.min(Math.floor(input.expiresInSeconds), 900)) : 600;
+    const now = Date.now();
+    const state = `st_${hashStr(`${tenantId}|${connectionId}|${now}`).toString(36)}${random6()}`;
+    const scope = Array.isArray(input?.scopes) && input.scopes.length ? input.scopes.join(" ") : (conn.scopes || ["gateway.read"]).join(" ");
+    DataStore.mem().update("n0va1o_connections", (c: any) => c._id === connectionId, {
+      oauthState: state,
+      oauthScope: scope,
+      oauthStateExpiresAt: new Date(now + expiresInSeconds * 1000).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+    });
+    logEntry(tenantId, "oauth_authorize_started", `OAuth authorization URL issued for connection "${conn.label}" (${scope})`, { connectionId, state, expiresInSeconds });
+    return {
+      connectionId: `ca_${connectionId}`,
+      authorizationUrl: `https://auth.n0va.io/oauth2/authorize?response_type=code&client_id=n0va1o_gateway&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`,
+      state,
+      expiresInSeconds,
+      expiresAt: new Date(now + expiresInSeconds * 1000).toISOString(),
+      summary: `OAuth authorization URL issued — expires in ${expiresInSeconds}s`,
+    };
+  }
+
+  oauthCallback(tenantId: string, input: any) {
+    const connectionId = String(input?.connectionId || "").replace(/^ca_/, "");
+    const conn = DataStore.mem().findOne("n0va1o_connections", (c: any) => c.tenantId === tenantId && c._id === connectionId);
+    if (!conn) throw new Error("Connection not found");
+    const state = String(input?.state || "");
+    const code = String(input?.code || "");
+    if (!code) throw new Error("Authorization code is required");
+    if (!conn.oauthState || conn.oauthState !== state) throw new Error("OAuth state mismatch — re-issue the authorization URL");
+    if (conn.oauthStateExpiresAt && new Date(conn.oauthStateExpiresAt).getTime() < Date.now()) throw new Error("OAuth state expired — re-issue the authorization URL");
+    const now = Date.now();
+    const ttlMin = 50 + hashStr(`${tenantId}|${connectionId}|${state}|ttl`) % 50;
+    const accessToken = `oat_${hashStr(`${tenantId}|${connectionId}|${state}|at`).toString(36)}${random6()}`;
+    const refreshToken = `rft_${hashStr(`${tenantId}|${connectionId}|${state}|rt`).toString(36)}${random6()}`;
+    const tokenExpiresAt = new Date(now + ttlMin * 60000).toISOString();
+    DataStore.mem().update("n0va1o_connections", (c: any) => c._id === connectionId, {
+      status: "connected",
+      oauthAuthorized: true,
+      oauthAccessToken: accessToken,
+      oauthRefreshToken: refreshToken,
+      tokenExpiresAt,
+      lastVerifiedAt: new Date(now).toISOString(),
+      oauthState: null,
+      oauthStateExpiresAt: null,
+      updatedAt: new Date(now).toISOString(),
+    });
+    logEntry(tenantId, "oauth_authorized", `OAuth 2.0 authorization completed for connection "${conn.label}" (${ttlMin} min TTL)`, { connectionId, ttlMin });
+    return {
+      connectionId: `ca_${connectionId}`,
+      accessToken,
+      refreshToken,
+      tokenType: "Bearer",
+      expiresIn: ttlMin * 60,
+      tokenExpiresAt,
+      scope: conn.oauthScope,
+      summary: `OAuth 2.0 complete — "${conn.label}" connected, token valid ${ttlMin} min`,
+    };
+  }
+
+  oauthRefresh(tenantId: string, connectionId: string) {
+    const id = connectionId.replace(/^ca_/, "");
+    const conn = DataStore.mem().findOne("n0va1o_connections", (c: any) => c.tenantId === tenantId && c._id === id);
+    if (!conn) throw new Error("Connection not found");
+    if (!conn.oauthAuthorized || !conn.oauthRefreshToken) throw new Error("Connection has no active OAuth refresh token");
+    const now = Date.now();
+    const ttlMin = 60 + hashStr(`${tenantId}|${id}|refresh`) % 60;
+    const oldExpiry = conn.tokenExpiresAt ? new Date(conn.tokenExpiresAt).getTime() : 0;
+    const newExpiry = Math.max(now + ttlMin * 60000, oldExpiry);
+    const accessToken = `oat_${hashStr(`${tenantId}|${id}|${now}|at`).toString(36)}${random6()}`;
+    DataStore.mem().update("n0va1o_connections", (c: any) => c._id === id, {
+      oauthAccessToken: accessToken,
+      tokenExpiresAt: new Date(newExpiry).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+    });
+    logEntry(tenantId, "oauth_refreshed", `OAuth token refreshed for connection "${conn.label}" — expiry ${newExpiry > now + ttlMin * 60000 ? "extended" : "renewed"}`, { connectionId: id, ttlMin });
+    return {
+      connectionId: `ca_${id}`,
+      accessToken,
+      tokenExpiresAt: new Date(newExpiry).toISOString(),
+      refreshed: true,
+      neverShorted: newExpiry >= oldExpiry,
+      summary: `Token refreshed — valid until ${new Date(newExpiry).toISOString().slice(0, 19)}`,
+    };
+  }
+
+  oauthRevoke(tenantId: string, connectionId: string) {
+    const id = connectionId.replace(/^ca_/, "");
+    const conn = DataStore.mem().findOne("n0va1o_connections", (c: any) => c.tenantId === tenantId && c._id === id);
+    if (!conn) throw new Error("Connection not found");
+    DataStore.mem().update("n0va1o_connections", (c: any) => c._id === id, {
+      oauthAuthorized: false,
+      oauthAccessToken: null,
+      oauthRefreshToken: null,
+      tokenExpiresAt: null,
+      status: "disconnected",
+      updatedAt: new Date().toISOString(),
+    });
+    logEntry(tenantId, "oauth_revoked", `OAuth access revoked for connection "${conn.label}"`, { connectionId: id });
+    return { connectionId: `ca_${id}`, revoked: true, summary: `OAuth access revoked for "${conn.label}"` };
+  }
+
+  oauthStatus(tenantId: string, connectionId: string) {
+    const id = connectionId.replace(/^ca_/, "");
+    const conn = DataStore.mem().findOne("n0va1o_connections", (c: any) => c.tenantId === tenantId && c._id === id);
+    if (!conn) throw new Error("Connection not found");
+    const authorized = conn.oauthAuthorized === true;
+    const expired = conn.tokenExpiresAt ? new Date(conn.tokenExpiresAt).getTime() < Date.now() : false;
+    return {
+      connectionId: `ca_${id}`,
+      oauthAuthorized: authorized,
+      oauthState: conn.oauthState ?? null,
+      oauthScope: conn.oauthScope ?? null,
+      tokenExpiresAt: conn.tokenExpiresAt ?? null,
+      status: conn.status,
+      summary: authorized ? (expired ? "OAuth token expired — refresh required" : "OAuth authorized") : "Not OAuth authorized",
+    };
+  }
+
   createConnection(tenantId: string, input: any) {
     const platformId = String(input?.platformId || "");
     const agentId = String(input?.agentId || "");

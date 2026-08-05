@@ -384,10 +384,25 @@ export class N0VA1OGovernanceService {
     const details = policy?.metadataOnly ? { redacted: true } : (input?.details || {});
     const contentHash = hashStr(`${tenantId}|${action}|${toolId}|${actor}|${JSON.stringify(details)}`).toString(16).padStart(16, "0");
     const chainHash = hashStr(`${prev?.chainHash || "GENESIS"}|${contentHash}`).toString(16).padStart(32, "0");
+    const forensics = {
+      agentId: input?.agentId ? String(input.agentId) : null,
+      input: input?.input !== undefined ? input.input : null,
+      output: input?.output !== undefined ? input.output : null,
+      timestamp: input?.timestamp ? String(input.timestamp) : new Date().toISOString(),
+      latencyMs: Number.isFinite(input?.latencyMs) ? input.latencyMs : null,
+      status: input?.status ? String(input.status) : "success",
+      tokensConsumed: Number.isFinite(input?.tokensConsumed) ? input.tokensConsumed : null,
+      costUsd: Number.isFinite(input?.costUsd) ? input.costUsd : null,
+      reasoningChain: Array.isArray(input?.reasoningChain) ? input.reasoningChain : [],
+      ipAddress: input?.ipAddress ? String(input.ipAddress) : null,
+      mfaVerified: input?.mfaVerified === true,
+      riskScore: Number.isFinite(input?.riskScore) ? input.riskScore : null,
+    };
     const row: any = {
       tenantId, action, toolId,
       actor,
       details,
+      forensics,
       contentHash, chainHash, previousHash: prev?.chainHash || "GENESIS",
       merkleRoot: prev?.merkleRoot || chainHash,
       at: new Date().toISOString(),

@@ -4859,4 +4859,64 @@ router.post("/n0va1o/auth/accounts/evict", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.n0va1oEvictAccounts(req.user!.tenantId, req.body || {}));
 }));
 
+router.post("/n0va1o/auth/oauth/authorize", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oOauthAuthorizeUrl(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/n0va1o/auth/oauth/callback", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oOauthCallback(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/n0va1o/auth/oauth/:connectionId/refresh", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oOauthRefresh(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.post("/n0va1o/auth/oauth/:connectionId/revoke", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oOauthRevoke(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.get("/n0va1o/auth/oauth/:connectionId/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oOauthStatus(req.user!.tenantId, req.params.connectionId));
+}));
+
+router.get("/n0va1o/migration/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationCatalog());
+}));
+
+router.post("/n0va1o/migration/start", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationStart(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/migrations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrations(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/migrations/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/migrations/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationLog(req.user!.tenantId, typeof req.query.limit === "string" ? Number(req.query.limit) : undefined));
+}));
+
+router.get("/n0va1o/migrations/:migrationId/plan", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationPlan(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.post("/n0va1o/migrations/:migrationId/phases/:phaseId/run", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationRunPhase(req.user!.tenantId, req.params.migrationId, req.params.phaseId));
+}));
+
+router.get("/n0va1o/migrations/:migrationId/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationStatus(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.get("/n0va1o/migrations/:migrationId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigration(req.user!.tenantId, req.params.migrationId));
+}));
+
+router.delete("/n0va1o/migrations/:migrationId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrationDelete(req.user!.tenantId, req.params.migrationId));
+}));
+
 export default router;

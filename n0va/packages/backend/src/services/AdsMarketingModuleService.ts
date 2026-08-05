@@ -126,6 +126,7 @@ import { n0va1oAudit } from "./N0VA1OAuditService";
 import { n0va1oSdk } from "./N0VA1OSdkService";
 import { n0va1oDeployment } from "./N0VA1ODeploymentService";
 import { n0va1oObservability } from "./N0VA1OObservabilityService";
+import { n0va1oMigration } from "./N0VA1OMigrationService";
 
 import { mailCollab2 } from "./MailCollabV2Service";
 const campaignSummaryService = new CampaignSummaryService();
@@ -7070,6 +7071,66 @@ export class AdsMarketingModuleService {
 
   n0va1oEvictAccounts(tenantId: string, opts?: any) {
     return n0va1oAuth.evictAccounts(tenantId, opts || {});
+  }
+
+  n0va1oMigrationCatalog() {
+    return n0va1oMigration.migrationCatalog();
+  }
+
+  n0va1oMigrationStart(tenantId: string, input: any) {
+    return n0va1oMigration.startMigration(tenantId, input || {});
+  }
+
+  n0va1oMigrations(tenantId: string) {
+    return n0va1oMigration.listMigrations(tenantId);
+  }
+
+  n0va1oMigration(tenantId: string, migrationId: string) {
+    return n0va1oMigration.getMigration(tenantId, migrationId);
+  }
+
+  n0va1oMigrationPlan(tenantId: string, migrationId: string) {
+    return n0va1oMigration.migrationPlan(tenantId, migrationId);
+  }
+
+  n0va1oMigrationRunPhase(tenantId: string, migrationId: string, phaseId: string) {
+    return n0va1oMigration.runMigrationPhase(tenantId, migrationId, phaseId);
+  }
+
+  n0va1oMigrationStatus(tenantId: string, migrationId: string) {
+    return n0va1oMigration.migrationStatus(tenantId, migrationId);
+  }
+
+  n0va1oMigrationDelete(tenantId: string, migrationId: string) {
+    return n0va1oMigration.deleteMigration(tenantId, migrationId);
+  }
+
+  n0va1oMigrationDashboard(tenantId: string) {
+    return n0va1oMigration.migrationDashboard(tenantId);
+  }
+
+  n0va1oMigrationLog(tenantId: string, limit?: number) {
+    return n0va1oMigration.migrationLog(tenantId, limit);
+  }
+
+  n0va1oOauthAuthorizeUrl(tenantId: string, input: any) {
+    return n0va1oAuth.oauthAuthorizeUrl(tenantId, input || {});
+  }
+
+  n0va1oOauthCallback(tenantId: string, input: any) {
+    return n0va1oAuth.oauthCallback(tenantId, input || {});
+  }
+
+  n0va1oOauthRefresh(tenantId: string, connectionId: string) {
+    return n0va1oAuth.oauthRefresh(tenantId, connectionId);
+  }
+
+  n0va1oOauthRevoke(tenantId: string, connectionId: string) {
+    return n0va1oAuth.oauthRevoke(tenantId, connectionId);
+  }
+
+  n0va1oOauthStatus(tenantId: string, connectionId: string) {
+    return n0va1oAuth.oauthStatus(tenantId, connectionId);
   }
 }
 
