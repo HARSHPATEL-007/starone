@@ -113,6 +113,14 @@ import { mailContactBulk } from "./MailContactBulkService";
 import { mailLabel } from "./MailLabelService";
 import { mailRealtime } from "./MailRealtimeService";
 
+import { n0va1oCatalog } from "./N0VA1OCatalogService";
+import { n0va1oAuth } from "./N0VA1OAuthService";
+import { n0va1oRouting } from "./N0VA1ORoutingService";
+import { n0va1oExec } from "./N0VA1OExecutionService";
+import { n0va1oTrigger } from "./N0VA1OTriggerService";
+import { n0va1oGov } from "./N0VA1OGovernanceService";
+import { n0va1oPlugin } from "./N0VA1OPluginService";
+
 import { mailCollab2 } from "./MailCollabV2Service";
 const campaignSummaryService = new CampaignSummaryService();
 
@@ -6338,6 +6346,372 @@ export class AdsMarketingModuleService {
 
   mailRealtimeCursor(tenantId: string, input: any) {
     return mailRealtime.sendCursor(tenantId, input);
+  }
+
+  // ---- N0VA1O gateway (Round 44) ----
+
+  n0va1oGatewayCatalog(tenantId: string) {
+    return n0va1oCatalog.gatewayCatalog(tenantId);
+  }
+
+  n0va1oCatalogSearch(tenantId: string, query: string, category?: string) {
+    return n0va1oCatalog.catalogSearch(tenantId, query, category);
+  }
+
+  n0va1oCategoryCatalog() {
+    return n0va1oCatalog.categoryCatalog();
+  }
+
+  n0va1oPlanCatalog(tenantId: string) {
+    return n0va1oCatalog.planCatalog(tenantId);
+  }
+
+  n0va1oSetPlan(tenantId: string, plan: string) {
+    return n0va1oCatalog.setPlan(tenantId, plan);
+  }
+
+  n0va1oUsageStatus(tenantId: string) {
+    return n0va1oCatalog.usageStatus(tenantId);
+  }
+
+  n0va1oGatewayOverview(tenantId: string) {
+    return n0va1oCatalog.gatewayOverview(tenantId);
+  }
+
+  n0va1oAuthCatalog() {
+    return n0va1oAuth.authCatalog();
+  }
+
+  n0va1oRegisterAgent(tenantId: string, input: any) {
+    return n0va1oAuth.registerAgent(tenantId, input);
+  }
+
+  n0va1oAgents(tenantId: string) {
+    return n0va1oAuth.listAgents(tenantId);
+  }
+
+  n0va1oAgent(tenantId: string, agentId: string) {
+    return n0va1oAuth.getAgent(tenantId, agentId);
+  }
+
+  n0va1oDeactivateAgent(tenantId: string, agentId: string) {
+    return n0va1oAuth.deactivateAgent(tenantId, agentId);
+  }
+
+  n0va1oMintJitToken(tenantId: string, input: any) {
+    return n0va1oAuth.mintJitToken(tenantId, input);
+  }
+
+  n0va1oTokens(tenantId: string, agentId?: string) {
+    return n0va1oAuth.listTokens(tenantId, agentId);
+  }
+
+  n0va1oTokenStatus(tenantId: string, tokenId: string) {
+    return n0va1oAuth.tokenStatus(tenantId, tokenId);
+  }
+
+  n0va1oRevokeToken(tenantId: string, tokenId: string) {
+    return n0va1oAuth.revokeToken(tenantId, tokenId);
+  }
+
+  n0va1oRotateToken(tenantId: string, tokenId: string) {
+    return n0va1oAuth.rotateToken(tenantId, tokenId);
+  }
+
+  n0va1oCreateConnection(tenantId: string, input: any) {
+    return n0va1oAuth.createConnection(tenantId, input);
+  }
+
+  n0va1oConnections(tenantId: string, status?: string) {
+    return n0va1oAuth.listConnections(tenantId, status);
+  }
+
+  n0va1oConnection(tenantId: string, connectionId: string) {
+    return n0va1oAuth.getConnection(tenantId, connectionId);
+  }
+
+  n0va1oAuthorizeConnection(tenantId: string, connectionId: string) {
+    return n0va1oAuth.authorizeConnection(tenantId, connectionId);
+  }
+
+  n0va1oDisconnectConnection(tenantId: string, connectionId: string) {
+    return n0va1oAuth.disconnectConnection(tenantId, connectionId);
+  }
+
+  n0va1oAddAccount(tenantId: string, input: any) {
+    return n0va1oAuth.addAccount(tenantId, input);
+  }
+
+  n0va1oAccounts(tenantId: string, connectionId?: string) {
+    return n0va1oAuth.listAccounts(tenantId, connectionId);
+  }
+
+  n0va1oSwitchAccount(tenantId: string, accountId: string) {
+    return n0va1oAuth.switchAccount(tenantId, accountId);
+  }
+
+  n0va1oAuthDashboard(tenantId: string) {
+    return n0va1oAuth.authDashboard(tenantId);
+  }
+
+  n0va1oAuthLog(tenantId: string, limit?: number) {
+    return n0va1oAuth.authLog(tenantId, limit);
+  }
+
+  n0va1oMcpCatalog() {
+    return n0va1oRouting.mcpCatalog();
+  }
+
+  n0va1oDiscoverTools(tenantId: string, query: string, opts?: any) {
+    return n0va1oRouting.discoverTools(tenantId, query, opts || {});
+  }
+
+  n0va1oTranslateRequest(tenantId: string, input: any) {
+    return n0va1oRouting.translateRequest(tenantId, input);
+  }
+
+  n0va1oCreateRoutingPolicy(tenantId: string, input: any) {
+    return n0va1oRouting.createRoutingPolicy(tenantId, input);
+  }
+
+  n0va1oRoutingPolicies(tenantId: string) {
+    return n0va1oRouting.listRoutingPolicies(tenantId);
+  }
+
+  n0va1oRoutingPolicy(tenantId: string, teamId: string) {
+    return n0va1oRouting.getRoutingPolicy(tenantId, teamId);
+  }
+
+  n0va1oUpdateRoutingPolicy(tenantId: string, teamId: string, input: any) {
+    return n0va1oRouting.updateRoutingPolicy(tenantId, teamId, input);
+  }
+
+  n0va1oDeleteRoutingPolicy(tenantId: string, teamId: string) {
+    return n0va1oRouting.deleteRoutingPolicy(tenantId, teamId);
+  }
+
+  n0va1oEvaluateToolAccess(tenantId: string, input: any) {
+    return n0va1oRouting.evaluateToolAccess(tenantId, input);
+  }
+
+  n0va1oRequestAccess(tenantId: string, input: any) {
+    return n0va1oRouting.requestAccess(tenantId, input);
+  }
+
+  n0va1oAccessRequests(tenantId: string, status?: string) {
+    return n0va1oRouting.listAccessRequests(tenantId, status);
+  }
+
+  n0va1oResolveAccessRequest(tenantId: string, requestId: string, decision: string) {
+    return n0va1oRouting.resolveAccessRequest(tenantId, requestId, decision);
+  }
+
+  n0va1oRoutingLog(tenantId: string, limit?: number) {
+    return n0va1oRouting.routingLog(tenantId, limit);
+  }
+
+  n0va1oRoutingOverview(tenantId: string) {
+    return n0va1oRouting.routingOverview(tenantId);
+  }
+
+  n0va1oSandboxCatalog() {
+    return n0va1oExec.sandboxCatalog();
+  }
+
+  n0va1oSpawnSandbox(tenantId: string, input: any) {
+    return n0va1oExec.spawnSandbox(tenantId, input);
+  }
+
+  n0va1oExecInSandbox(tenantId: string, sandboxId: string, input: any) {
+    return n0va1oExec.execInSandbox(tenantId, sandboxId, input);
+  }
+
+  n0va1oTerminateSandbox(tenantId: string, sandboxId: string) {
+    return n0va1oExec.terminateSandbox(tenantId, sandboxId);
+  }
+
+  n0va1oSandboxes(tenantId: string, status?: string) {
+    return n0va1oExec.listSandboxes(tenantId, status);
+  }
+
+  n0va1oSandbox(tenantId: string, sandboxId: string) {
+    return n0va1oExec.getSandbox(tenantId, sandboxId);
+  }
+
+  n0va1oPutFile(tenantId: string, input: any) {
+    return n0va1oExec.putFile(tenantId, input);
+  }
+
+  n0va1oFile(tenantId: string, fileId: string) {
+    return n0va1oExec.getFile(tenantId, fileId);
+  }
+
+  n0va1oFiles(tenantId: string) {
+    return n0va1oExec.listFiles(tenantId);
+  }
+
+  n0va1oDeleteFile(tenantId: string, fileId: string) {
+    return n0va1oExec.deleteFile(tenantId, fileId);
+  }
+
+  n0va1oVfsOverview(tenantId: string) {
+    return n0va1oExec.vfsOverview(tenantId);
+  }
+
+  n0va1oRecipeCatalog() {
+    return n0va1oExec.recipeCatalog();
+  }
+
+  n0va1oCompileRecipe(tenantId: string, input: any) {
+    return n0va1oExec.compileRecipe(tenantId, input);
+  }
+
+  n0va1oRecipes(tenantId: string) {
+    return n0va1oExec.listRecipes(tenantId);
+  }
+
+  n0va1oRecipe(tenantId: string, recipeId: string) {
+    return n0va1oExec.getRecipe(tenantId, recipeId);
+  }
+
+  n0va1oExecuteRecipe(tenantId: string, recipeId: string) {
+    return n0va1oExec.executeRecipe(tenantId, recipeId);
+  }
+
+  n0va1oExecutions(tenantId: string, limit?: number) {
+    return n0va1oExec.listExecutions(tenantId, limit);
+  }
+
+  n0va1oExecLog(tenantId: string, limit?: number) {
+    return n0va1oExec.execLog(tenantId, limit);
+  }
+
+  n0va1oExecDashboard(tenantId: string) {
+    return n0va1oExec.execDashboard(tenantId);
+  }
+
+  n0va1oTriggerCatalog() {
+    return n0va1oTrigger.triggerCatalog();
+  }
+
+  n0va1oCreateTrigger(tenantId: string, input: any) {
+    return n0va1oTrigger.createTrigger(tenantId, input);
+  }
+
+  n0va1oTriggers(tenantId: string) {
+    return n0va1oTrigger.listTriggers(tenantId);
+  }
+
+  n0va1oTrigger(tenantId: string, triggerId: string) {
+    return n0va1oTrigger.getTrigger(tenantId, triggerId);
+  }
+
+  n0va1oToggleTrigger(tenantId: string, triggerId: string) {
+    return n0va1oTrigger.toggleTrigger(tenantId, triggerId);
+  }
+
+  n0va1oDeleteTrigger(tenantId: string, triggerId: string) {
+    return n0va1oTrigger.deleteTrigger(tenantId, triggerId);
+  }
+
+  n0va1oFireEvent(tenantId: string, input: any) {
+    return n0va1oTrigger.fireEvent(tenantId, input);
+  }
+
+  n0va1oDeliveries(tenantId: string, limit?: number) {
+    return n0va1oTrigger.listDeliveries(tenantId, limit);
+  }
+
+  n0va1oTriggerStats(tenantId: string) {
+    return n0va1oTrigger.triggerStats(tenantId);
+  }
+
+  n0va1oTriggerLog(tenantId: string, limit?: number) {
+    return n0va1oTrigger.triggerLog(tenantId, limit);
+  }
+
+  n0va1oTriggerOverview(tenantId: string) {
+    return n0va1oTrigger.triggerOverview(tenantId);
+  }
+
+  n0va1oZeroTrustStatus(tenantId: string) {
+    return n0va1oGov.zeroTrustStatus(tenantId);
+  }
+
+  n0va1oSchemaModifierCatalog() {
+    return n0va1oGov.schemaModifierCatalog();
+  }
+
+  n0va1oCreateModifier(tenantId: string, input: any) {
+    return n0va1oGov.createModifier(tenantId, input);
+  }
+
+  n0va1oModifiers(tenantId: string) {
+    return n0va1oGov.listModifiers(tenantId);
+  }
+
+  n0va1oDeleteModifier(tenantId: string, modifierId: string) {
+    return n0va1oGov.deleteModifier(tenantId, modifierId);
+  }
+
+  n0va1oEvaluateCall(tenantId: string, input: any) {
+    return n0va1oGov.evaluateCall(tenantId, input);
+  }
+
+  n0va1oHitlQueue(tenantId: string) {
+    return n0va1oGov.hitlQueue(tenantId);
+  }
+
+  n0va1oHitl(tenantId: string, hitlId: string) {
+    return n0va1oGov.getHitl(tenantId, hitlId);
+  }
+
+  n0va1oResolveHitl(tenantId: string, hitlId: string, decision: string, input?: any) {
+    return n0va1oGov.resolveHitl(tenantId, hitlId, decision, input || {});
+  }
+
+  n0va1oHitlStatus(tenantId: string) {
+    return n0va1oGov.hitlStatus(tenantId);
+  }
+
+  n0va1oAppendAudit(tenantId: string, input: any) {
+    return n0va1oGov.appendAudit(tenantId, input);
+  }
+
+  n0va1oAuditLog(tenantId: string, limit?: number) {
+    return n0va1oGov.auditLog(tenantId, limit);
+  }
+
+  n0va1oVerifyAuditChain(tenantId: string) {
+    return n0va1oGov.verifyAuditChain(tenantId);
+  }
+
+  n0va1oGovernanceDashboard(tenantId: string) {
+    return n0va1oGov.governanceDashboard(tenantId);
+  }
+
+  n0va1oPluginCatalog() {
+    return n0va1oPlugin.pluginCatalog();
+  }
+
+  n0va1oPluginStatus(tenantId: string) {
+    return n0va1oPlugin.pluginStatus(tenantId);
+  }
+
+  n0va1oTogglePlugin(tenantId: string, slotId: string) {
+    return n0va1oPlugin.togglePlugin(tenantId, slotId);
+  }
+
+  n0va1oRunPluginCycle(tenantId: string) {
+    return n0va1oPlugin.runPluginCycle(tenantId);
+  }
+
+  n0va1oPluginLog(tenantId: string, limit?: number) {
+    return n0va1oPlugin.pluginLog(tenantId, limit);
+  }
+
+  n0va1oPluginDashboard(tenantId: string) {
+    return n0va1oPlugin.pluginDashboard(tenantId);
   }
 }
 

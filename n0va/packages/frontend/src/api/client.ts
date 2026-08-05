@@ -4056,5 +4056,147 @@ export const api = {
     portfolioOptimization: (campaigns: any[]) => request("/campaign-ai-bidding-agent/portfolio-optimization", { method: "POST", body: JSON.stringify({ campaigns }) }),
     bidAnomalies: (campaignId: string) => request<any>(`/campaign-ai-bidding-agent/campaign/${campaignId}/bid-anomalies`),
     scenarioComparison: (campaignId: string, scenarios: any[]) => request(`/campaign-ai-bidding-agent/campaign/${campaignId}/scenario-comparison`, { method: "POST", body: JSON.stringify({ scenarios }) }),
+
+    // ---- N0VA1O gateway (Round 44) ----
+    n0va1oGatewayCatalog: () => request<any>("/ads-marketing-module/n0va1o/gateway-catalog"),
+    n0va1oCatalogSearch: (q: string, category?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/catalog/search?q=${encodeURIComponent(q)}${category ? `&category=${encodeURIComponent(category)}` : ""}`),
+    n0va1oCategories: () => request<any>("/ads-marketing-module/n0va1o/categories"),
+    n0va1oPlans: () => request<any>("/ads-marketing-module/n0va1o/plans"),
+    n0va1oSetPlan: (plan: string) => request<any>("/ads-marketing-module/n0va1o/plans", { method: "POST", body: JSON.stringify({ plan }) }),
+    n0va1oUsage: () => request<any>("/ads-marketing-module/n0va1o/usage"),
+    n0va1oOverview: () => request<any>("/ads-marketing-module/n0va1o/overview"),
+    n0va1oAuthCatalog: () => request<any>("/ads-marketing-module/n0va1o/auth/catalog"),
+    n0va1oRegisterAgent: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/agents", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oAgents: () => request<any>("/ads-marketing-module/n0va1o/auth/agents"),
+    n0va1oAgent: (agentId: string) => request<any>(`/ads-marketing-module/n0va1o/auth/agents/${agentId}`),
+    n0va1oDeactivateAgent: (agentId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/agents/${agentId}`, { method: "DELETE" }),
+    n0va1oMintJitToken: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/tokens", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oTokens: (agentId?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/tokens${agentId ? `?agentId=${agentId}` : ""}`),
+    n0va1oTokenStatus: (tokenId: string) => request<any>(`/ads-marketing-module/n0va1o/auth/tokens/${tokenId}`),
+    n0va1oRevokeToken: (tokenId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/tokens/${tokenId}`, { method: "DELETE" }),
+    n0va1oRotateToken: (tokenId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/tokens/${tokenId}/rotate`, { method: "POST" }),
+    n0va1oCreateConnection: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/connections", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oConnections: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/connections${status ? `?status=${status}` : ""}`),
+    n0va1oConnection: (connectionId: string) => request<any>(`/ads-marketing-module/n0va1o/auth/connections/${connectionId}`),
+    n0va1oAuthorizeConnection: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/connections/${connectionId}/authorize`, { method: "POST" }),
+    n0va1oDisconnectConnection: (connectionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/connections/${connectionId}/disconnect`, { method: "POST" }),
+    n0va1oAddAccount: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/accounts", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oAccounts: (connectionId?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/accounts${connectionId ? `?connectionId=${connectionId}` : ""}`),
+    n0va1oSwitchAccount: (accountId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/accounts/${accountId}/switch`, { method: "POST" }),
+    n0va1oAuthDashboard: () => request<any>("/ads-marketing-module/n0va1o/auth/dashboard"),
+    n0va1oAuthLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oMcpCatalog: () => request<any>("/ads-marketing-module/n0va1o/routing/mcp"),
+    n0va1oDiscoverTools: (query: string, limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/routing/tools/discover?query=${encodeURIComponent(query)}${limit ? `&limit=${limit}` : ""}`),
+    n0va1oTranslateRequest: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/routing/translate", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oCreateRoutingPolicy: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/routing/policies", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oRoutingPolicies: () => request<any>("/ads-marketing-module/n0va1o/routing/policies"),
+    n0va1oRoutingPolicy: (teamId: string) => request<any>(`/ads-marketing-module/n0va1o/routing/policies/${teamId}`),
+    n0va1oUpdateRoutingPolicy: (teamId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/n0va1o/routing/policies/${teamId}`, { method: "PUT", body: JSON.stringify(input) }),
+    n0va1oDeleteRoutingPolicy: (teamId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/routing/policies/${teamId}`, { method: "DELETE" }),
+    n0va1oEvaluateToolAccess: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/routing/tools/evaluate", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oRequestAccess: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/routing/access-requests", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oAccessRequests: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/routing/access-requests${status ? `?status=${status}` : ""}`),
+    n0va1oResolveAccessRequest: (requestId: string, decision: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/routing/access-requests/${requestId}/resolve`, { method: "POST", body: JSON.stringify({ decision }) }),
+    n0va1oRoutingLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/routing/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oRoutingOverview: () => request<any>("/ads-marketing-module/n0va1o/routing/overview"),
+    n0va1oSandboxCatalog: () => request<any>("/ads-marketing-module/n0va1o/exec/sandbox-catalog"),
+    n0va1oSpawnSandbox: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/exec/sandboxes", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oExecInSandbox: (sandboxId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/sandboxes/${sandboxId}/exec`, { method: "POST", body: JSON.stringify(input) }),
+    n0va1oTerminateSandbox: (sandboxId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/sandboxes/${sandboxId}/terminate`, { method: "POST" }),
+    n0va1oSandboxes: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/sandboxes${status ? `?status=${status}` : ""}`),
+    n0va1oSandbox: (sandboxId: string) => request<any>(`/ads-marketing-module/n0va1o/exec/sandboxes/${sandboxId}`),
+    n0va1oPutFile: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/exec/files", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oFiles: () => request<any>("/ads-marketing-module/n0va1o/exec/files"),
+    n0va1oFile: (fileId: string) => request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}`),
+    n0va1oDeleteFile: (fileId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}`, { method: "DELETE" }),
+    n0va1oVfs: () => request<any>("/ads-marketing-module/n0va1o/exec/vfs"),
+    n0va1oRecipeCatalog: () => request<any>("/ads-marketing-module/n0va1o/exec/recipe-catalog"),
+    n0va1oCompileRecipe: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/exec/recipes", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oRecipes: () => request<any>("/ads-marketing-module/n0va1o/exec/recipes"),
+    n0va1oRecipe: (recipeId: string) => request<any>(`/ads-marketing-module/n0va1o/exec/recipes/${recipeId}`),
+    n0va1oExecuteRecipe: (recipeId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/recipes/${recipeId}/execute`, { method: "POST" }),
+    n0va1oExecutions: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/executions${limit ? `?limit=${limit}` : ""}`),
+    n0va1oExecLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oExecDashboard: () => request<any>("/ads-marketing-module/n0va1o/exec/dashboard"),
+    n0va1oTriggerCatalog: () => request<any>("/ads-marketing-module/n0va1o/triggers/catalog"),
+    n0va1oCreateTrigger: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/triggers", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oTriggers: () => request<any>("/ads-marketing-module/n0va1o/triggers"),
+    n0va1oTrigger: (triggerId: string) => request<any>(`/ads-marketing-module/n0va1o/triggers/${triggerId}`),
+    n0va1oToggleTrigger: (triggerId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/triggers/${triggerId}/toggle`, { method: "POST" }),
+    n0va1oDeleteTrigger: (triggerId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/triggers/${triggerId}`, { method: "DELETE" }),
+    n0va1oFireEvent: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/triggers/fire", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oDeliveries: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/triggers/deliveries${limit ? `?limit=${limit}` : ""}`),
+    n0va1oTriggerStats: () => request<any>("/ads-marketing-module/n0va1o/triggers/stats"),
+    n0va1oTriggerLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/triggers/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oTriggerOverview: () => request<any>("/ads-marketing-module/n0va1o/triggers/overview"),
+    n0va1oZeroTrust: () => request<any>("/ads-marketing-module/n0va1o/gov/zero-trust"),
+    n0va1oModifierCatalog: () => request<any>("/ads-marketing-module/n0va1o/gov/modifiers/catalog"),
+    n0va1oCreateModifier: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/gov/modifiers", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oModifiers: () => request<any>("/ads-marketing-module/n0va1o/gov/modifiers"),
+    n0va1oDeleteModifier: (modifierId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/gov/modifiers/${modifierId}`, { method: "DELETE" }),
+    n0va1oEvaluateCall: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/gov/evaluate", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oHitlQueue: () => request<any>("/ads-marketing-module/n0va1o/gov/hitl"),
+    n0va1oHitl: (hitlId: string) => request<any>(`/ads-marketing-module/n0va1o/gov/hitl/${hitlId}`),
+    n0va1oResolveHitl: (hitlId: string, decision: string, input?: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/n0va1o/gov/hitl/${hitlId}/resolve`, { method: "POST", body: JSON.stringify({ ...(input || {}), decision }) }),
+    n0va1oHitlStatus: () => request<any>("/ads-marketing-module/n0va1o/gov/hitl-status"),
+    n0va1oAppendAudit: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/gov/audit", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oAuditLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/gov/audit${limit ? `?limit=${limit}` : ""}`),
+    n0va1oVerifyAuditChain: () => request<any>("/ads-marketing-module/n0va1o/gov/audit/verify"),
+    n0va1oGovernanceDashboard: () => request<any>("/ads-marketing-module/n0va1o/gov/dashboard"),
+    n0va1oPluginCatalog: () => request<any>("/ads-marketing-module/n0va1o/plugins/catalog"),
+    n0va1oPluginStatus: () => request<any>("/ads-marketing-module/n0va1o/plugins"),
+    n0va1oTogglePlugin: (slotId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/plugins/${slotId}/toggle`, { method: "POST" }),
+    n0va1oRunPluginCycle: () => request<any>("/ads-marketing-module/n0va1o/plugins/cycle", { method: "POST" }),
+    n0va1oPluginLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/plugins/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oPluginDashboard: () => request<any>("/ads-marketing-module/n0va1o/plugins/dashboard"),
   },
 };
