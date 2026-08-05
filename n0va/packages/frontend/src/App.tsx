@@ -57,6 +57,12 @@ const MailResidency = lazy(() => import("./pages/MailResidency"));
 const MailBranding = lazy(() => import("./pages/MailBranding"));
 const MailMarketplace = lazy(() => import("./pages/MailMarketplace"));
 const MailDevCenter = lazy(() => import("./pages/MailDevCenter"));
+const N0VA1OOverview = lazy(() => import("./pages/N0VA1OOverview"));
+const N0VA1OCatalog = lazy(() => import("./pages/N0VA1OCatalog"));
+const N0VA1OConnections = lazy(() => import("./pages/N0VA1OConnections"));
+const N0VA1ORecipes = lazy(() => import("./pages/N0VA1ORecipes"));
+const N0VA1OGovernance = lazy(() => import("./pages/N0VA1OGovernance"));
+const N0VA1OCompliance = lazy(() => import("./pages/N0VA1OCompliance"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -381,6 +387,12 @@ export default function App() {
                 <Route path="/portfolio-budget-optimizer" element={<PortfolioBudgetOptimizer />} />
                 <Route path="/campaign-saturation" element={<CampaignSaturation />} />
                 <Route path="/n0va1o" element={<N0VA1OGateway />} />
+                <Route path="/n0va1o/overview" element={<N0VA1OOverview />} />
+                <Route path="/n0va1o/catalog" element={<N0VA1OCatalog />} />
+                <Route path="/n0va1o/connections" element={<N0VA1OConnections />} />
+                <Route path="/n0va1o/recipes" element={<N0VA1ORecipes />} />
+                <Route path="/n0va1o/governance" element={<N0VA1OGovernance />} />
+                <Route path="/n0va1o/compliance" element={<N0VA1OCompliance />} />
                 <Route path="/marketing-intelligence" element={<MarketingIntelligence />} />
                 <Route path="/agent-intelligence" element={<AgentIntelligence />} />
                 <Route path="/predictive-bidding" element={<PredictiveBidding />} />
