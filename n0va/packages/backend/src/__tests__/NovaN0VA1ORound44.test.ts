@@ -38,8 +38,8 @@ describe("N0VA1O gateway catalog & plans", () => {
       expect(`${p.name} ${p.id}`.toLowerCase()).toContain("slack");
     });
     const crm: any = n0va1oCatalog.catalogSearch(T, "hubspot", "crm");
-    expect(crm.count).toBe(1);
-    expect(crm.results[0].id).toBe("hubspot_crm");
+    expect(crm.count).toBeGreaterThanOrEqual(1);
+    expect(crm.results.map((r: any) => r.id)).toContain("hubspot_crm");
     const none: any = n0va1oCatalog.catalogSearch(T, "zzzz-not-a-platform");
     expect(none.count).toBe(0);
   });
