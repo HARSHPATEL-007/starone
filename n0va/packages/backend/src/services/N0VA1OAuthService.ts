@@ -78,6 +78,7 @@ export class N0VA1OAuthService {
       approvalRequiredFor,
       maxDailyActions,
       webhookUrl,
+      ownerEmail: input?.ownerEmail ? String(input.ownerEmail).toLowerCase().trim() : null,
       actionsToday: 0,
       status: "active",
       apiKey: `n0va1o_ag_${hashStr(tenantId + name + "key").toString(36)}${random6()}`,
@@ -87,8 +88,30 @@ export class N0VA1OAuthService {
     };
     const inserted = DataStore.mem().insert("n0va1o_agents", row);
     logEntry(tenantId, "agent_registered", `Agent "${name}" registered (${row.authMethod}, autonomy ${row.autonomyLevel})`, { agentId: inserted._id, scopes: row.scopes, permissions: row.permissions });
+    const toolsByScope = new Set<string>();
+    for (const s of row.scopes) {
+      if (s.includes("read") || s === "gateway.read") toolsByScope.add("catalog_search");
+      if (s.includes("write") || s === "gateway.write") toolsByScope.add("recipe_execute");
+      if (s.includes("discover") || s === "tools.discover") toolsByScope.add("tools_discover");
+      if (s.includes("connect") || s === "gateway.connect") toolsByScope.add("connection_authorize");
+      if (s.includes("execute") || s === "tools.execute") toolsByScope.add("tool_execute");
+      if (s.includes("data")) toolsByScope.add("vfs_read");
+      if (s.includes("admin")) toolsByScope.add("policy_admin");
+    }
+    const toolsAvailable = ["catalog_search", "tools_discover", "tool_execute", "recipe_compile", "recipe_execute", "vfs_read", "vfs_offload", "sandbox_spawn", "connection_authorize", "policy_admin"].filter((t) => toolsByScope.has(t) || t.startsWith("recipe"));
+    const fallbackTools = ["catalog_search", "tools_discover", "tool_execute"];
+    const seed = `${tenantId}|${name}|sandbox`;
     return {
       agentId: inserted._id, ...row, api_key: row.apiKey, scopes: row.scopes,
+      tools_available: toolsAvailable,
+      fallback_tools: fallbackTools,
+      session_endpoint: `wss://gateway.n0va.io/v1/agents/${inserted._id}/sessions`,
+      sandbox_config: {
+        cpu_quota: 0.5 + (hashStr(seed + "cpu") % 40) / 100,
+        ram_quota: 128 + (hashStr(seed + "ram") % 7) * 128,
+        timeout_seconds: 120 + (hashStr(seed + "to") % 7) * 60,
+        network_mode: "isolated",
+      },
       summary: `Agent "${name}" registered with ${row.scopes.length} scope(s), ${row.permissions.length} permission(s), autonomy ${row.autonomyLevel}`,
     };
   }
@@ -289,9 +312,90 @@ export class N0VA1OAuthService {
     const account = DataStore.mem().findOne("n0va1o_accounts", (a: any) => a.tenantId === tenantId && a._id === id);
     if (!account) throw new Error("Account not found");
     DataStore.mem().update("n0va1o_accounts", (a: any) => a.tenantId === tenantId && a.active, { active: false, updatedAt: new Date().toISOString() });
-    DataStore.mem().update("n0va1o_accounts", (a: any) => a._id === id, { active: true, updatedAt: new Date().toISOString() });
+    DataStore.mem().update("n0va1o_accounts", (a: any) => a._id === id, { active: true, lastUsedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     logEntry(tenantId, "account_switched", `Switched to account "${account.accountName}"`, { accountId: id });
     return { accountId: `ac_${id}`, accountName: account.accountName, switchLatencyMs: 15, summary: `Active account → "${account.accountName}" (15ms switch)` };
+  }
+
+  refreshAccountHealth(tenantId: string) {
+    const accounts = DataStore.mem().find("n0va1o_accounts", (a: any) => a.tenantId === tenantId);
+    const now = new Date().toISOString();
+    const rows = accounts.map((a: any) => {
+      const score = hashStr(`${tenantId}|${a._id}|health`) % 100;
+      const status = score >= 70 ? "healthy" : score >= 40 ? "degraded" : "critical";
+      DataStore.mem().update("n0va1o_accounts", (x: any) => x._id === a._id, {
+        healthScore: score,
+        healthStatus: status,
+        lastHealthCheckAt: now,
+        errorCount: score < 40 ? 1 + (hashStr(`${tenantId}|${a._id}|errs`) % 3) : 0,
+      });
+      return { accountId: `ac_${a._id}`, accountName: a.accountName, healthScore: score, healthStatus: status };
+    });
+    return {
+      checked: accounts.length,
+      accounts: rows,
+      summary: `Health checked for ${accounts.length} account(s) — ${rows.filter((r) => r.healthStatus === "healthy").length} healthy`,
+    };
+  }
+
+  accountHealth(tenantId: string) {
+    const accounts = DataStore.mem().find("n0va1o_accounts", (a: any) => a.tenantId === tenantId);
+    const rows = accounts.map((a: any) => ({
+      accountId: `ac_${a._id}`,
+      accountName: a.accountName,
+      platformId: a.platformId,
+      healthScore: a.healthScore ?? (hashStr(`${tenantId}|${a._id}|health`) % 100),
+      healthStatus: a.healthStatus ?? (a.healthScore != null ? a.healthScore >= 70 ? "healthy" : a.healthScore >= 40 ? "degraded" : "critical" : "unknown"),
+      lastHealthCheckAt: a.lastHealthCheckAt ?? null,
+      errorCount: a.errorCount ?? 0,
+      active: a.active,
+    }));
+    return {
+      accounts: rows,
+      total: rows.length,
+      healthy: rows.filter((r) => r.healthStatus === "healthy").length,
+      degraded: rows.filter((r) => r.healthStatus === "degraded").length,
+      critical: rows.filter((r) => r.healthStatus === "critical").length,
+      summary: `${rows.filter((r) => r.healthStatus === "healthy").length}/${rows.length} account(s) healthy`,
+    };
+  }
+
+  accountLru(tenantId: string, opts?: any) {
+    const limit = Number.isFinite(opts?.limit) ? Math.max(1, Math.min(Math.floor(opts.limit), 100)) : 5;
+    const accounts = DataStore.mem().find("n0va1o_accounts", (a: any) => a.tenantId === tenantId);
+    const evicted = accounts.filter((a: any) => a.status === "evicted");
+    const activePool = accounts.filter((a: any) => a.status !== "evicted");
+    const ordered = activePool.slice().sort((a, b) => {
+      const la = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
+      const lb = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
+      return la - lb;
+    });
+    const evictable = ordered.filter((a: any) => !a.active);
+    return {
+      poolSize: activePool.length,
+      evictedCount: evicted.length,
+      order: ordered.map((a: any) => ({ accountId: `ac_${a._id}`, accountName: a.accountName, active: a.active, lastUsedAt: a.lastUsedAt ?? null, evictable: !a.active })),
+      evictionCandidates: evictable.slice(0, limit).map((a: any) => `ac_${a._id}`),
+      evictionLimit: limit,
+      summary: `${activePool.length} account(s) in pool — ${evictable.length} evictable, oldest ${evictable[0]?.accountName ?? "n/a"} first`,
+    };
+  }
+
+  evictAccounts(tenantId: string, opts?: any) {
+    const limit = Number.isFinite(opts?.limit) ? Math.max(1, Math.min(Math.floor(opts.limit), 100)) : 5;
+    const lru = this.accountLru(tenantId, { limit });
+    const evicted = lru.evictionCandidates.map((accountId: string) => {
+      const id = accountId.replace(/^ac_/, "");
+      const account = DataStore.mem().findOne("n0va1o_accounts", (a: any) => a.tenantId === tenantId && a._id === id);
+      DataStore.mem().update("n0va1o_accounts", (a: any) => a._id === id, { status: "evicted", active: false, evictedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      logEntry(tenantId, "account_evicted", `LRU eviction: account "${account?.accountName}"`, { accountId: id });
+      return accountId;
+    });
+    return {
+      evicted,
+      evictedCount: evicted.length,
+      summary: `${evicted.length} account(s) evicted via LRU (oldest-first, active account protected)`,
+    };
   }
 
   createSession(tenantId: string, input: any) {
@@ -304,6 +408,10 @@ export class N0VA1OAuthService {
       runtime: String(input?.sandboxConfig?.runtime || "python311"),
       memoryMB: Number.isFinite(input?.sandboxConfig?.memoryMB) ? Math.max(64, Math.min(Math.floor(input.sandboxConfig.memoryMB), 8192)) : 256,
       ttlSeconds: ttlSec,
+      cpu_quota: Number.isFinite(input?.sandboxConfig?.cpu_quota) ? Math.max(0.25, Math.min(input.sandboxConfig.cpu_quota, 8)) : 1,
+      ram_quota: Number.isFinite(input?.sandboxConfig?.ram_quota) ? Math.max(64, Math.min(Math.floor(input.sandboxConfig.ram_quota), 16384)) : 512,
+      timeout_seconds: Number.isFinite(input?.sandboxConfig?.timeout_seconds) ? Math.max(10, Math.min(Math.floor(input.sandboxConfig.timeout_seconds), 3600)) : 300,
+      network_mode: ["isolated", "proxy_only", "direct"].includes(input?.sandboxConfig?.network_mode) ? input.sandboxConfig.network_mode : "isolated",
     };
     const seed = `${tenantId}|${agentId}|${now}`;
     const sessionId = `ses_${hashStr(seed).toString(36)}${random6()}`;
@@ -326,6 +434,8 @@ export class N0VA1OAuthService {
       session_id: sessionId, sessionId,
       agentId, agentName: agent.name,
       endpoint: row.endpoint,
+      websocket_url: `wss://gateway.n0va.io/v1/sessions/${sessionId}/events`,
+      sandbox_url: `https://sandbox.n0va.io/s/${sessionId}`,
       context_tokens: contextTokens, contextTokens,
       status: "active",
       expiresAt: row.expiresAt,

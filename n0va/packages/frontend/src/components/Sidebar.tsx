@@ -277,6 +277,7 @@ const navItems = [
   { to: "/n0va1o/recipes", icon: Zap, label: "Recipes & Triggers" },
   { to: "/n0va1o/governance", icon: Shield, label: "Governance" },
   { to: "/n0va1o/compliance", icon: Scale, label: "Compliance" },
+  { to: "/n0va1o/cli", icon: Terminal, label: "Universal CLI" },
   { to: "/marketing-intelligence", icon: TrendingUp, label: "Marketing Intel" },
   { to: "/agent-intelligence", icon: Cpu, label: "Agent Intel" },
   { to: "/predictive-bidding", icon: TrendingUp, label: "Predictive Bidding" },

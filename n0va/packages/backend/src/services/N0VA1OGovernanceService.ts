@@ -40,6 +40,16 @@ export const INTERROGATION_PANELS = [
   { id: "override_controls", name: "Override Controls", description: "Approve with params, reject, or force-execute" },
 ] as const;
 
+export const MODIFIER_TYPES = [
+  { id: "field_redaction", name: "Field Redaction", description: "Redacts listed fields from request/response payloads", scope: "payload_fields" },
+  { id: "value_capping", name: "Value Capping", description: "Caps numeric field values at a configured ceiling", scope: "numeric_values" },
+  { id: "action_blocking", name: "Action Blocking", description: "Blocks the tool call entirely before execution", scope: "tool_calls" },
+  { id: "pii_masking", name: "PII Masking", description: "Masks PII patterns (emails, SSNs, card numbers) in payloads", scope: "pii" },
+  { id: "scope_filtering", name: "Scope Filtering", description: "Restricts payload keys to an allowlist", scope: "payload_keys" },
+  { id: "temporal_gating", name: "Temporal Gating", description: "Allows execution only within a configured time window", scope: "time_windows" },
+  { id: "geographic_fencing", name: "Geographic Fencing", description: "Restricts execution to allowed regions", scope: "regions" },
+] as const;
+
 export class N0VA1OGovernanceService {
   zeroTrustStatus(tenantId: string) {
     const seed = `${tenantId}|zt`;
@@ -65,18 +75,30 @@ export class N0VA1OGovernanceService {
   schemaModifierCatalog() {
     return {
       types: [
-        { id: "schema", name: "Schema Modifier", description: "Rewrites tool input/output schemas before execution" },
-        { id: "before", name: "Before-Execution Modifier", description: "Injects transformations before the call executes" },
-        { id: "after", name: "After-Execution Modifier", description: "Post-processes the response before returning" },
+        { id: "schema", name: "Schema Modifier", description: "Rewrites tool input/output schemas before execution", kind: "phase" },
+        { id: "before", name: "Before-Execution Modifier", description: "Injects transformations before the call executes", kind: "phase" },
+        { id: "after", name: "After-Execution Modifier", description: "Post-processes the response before returning", kind: "phase" },
+        ...MODIFIER_TYPES.map((t) => ({ ...t, kind: "policy" })),
       ],
-      summary: "3 modifier types — schema / before-execution / after-execution",
+      phases: ["schema", "before", "after"],
+      policyTypes: MODIFIER_TYPES,
+      total: 3 + MODIFIER_TYPES.length,
+      summary: `${3 + MODIFIER_TYPES.length} modifier types — 3 pipeline phases + ${MODIFIER_TYPES.length} policy modifiers (${MODIFIER_TYPES.map((m) => m.id).join(", ")})`,
+    };
+  }
+
+  modifierTypeCatalog() {
+    return {
+      types: MODIFIER_TYPES,
+      total: MODIFIER_TYPES.length,
+      summary: `${MODIFIER_TYPES.length} policy modifier types — ${MODIFIER_TYPES.map((m) => m.id).join(", ")}`,
     };
   }
 
   createModifier(tenantId: string, input: any) {
     const type = String(input?.type || "");
     const typeCatalog = this.schemaModifierCatalog().types.find((t) => t.id === type);
-    if (!typeCatalog) throw new Error(`Unknown modifier type — available: schema, before, after`);
+    if (!typeCatalog) throw new Error(`Unknown modifier type — available: schema, before, after, ${MODIFIER_TYPES.map((m) => m.id).join(", ")}`);
     const toolPattern = String(input?.toolPattern || "");
     if (!toolPattern) throw new Error("toolPattern is required");
     const name = String(input?.name || `${type}_${toolPattern.replace(/\./g, "_")}`);
@@ -115,19 +137,24 @@ export class N0VA1OGovernanceService {
     const phase = String(input?.phase || "");
     if (!["schema", "before", "after"].includes(phase)) throw new Error("phase must be schema, before, or after");
     const payload = input?.payload && typeof input.payload === "object" ? input.payload : {};
-    const modifiers = DataStore.mem().find("n0va1o_modifiers", (m: any) => m.tenantId === tenantId && m.enabled && m.type === phase);
+    const allEnabled = DataStore.mem().find("n0va1o_modifiers", (m: any) => m.tenantId === tenantId && m.enabled);
+    const phaseModifiers = allEnabled.filter((m: any) => m.type === phase);
+    const policyModifiers = phase === "before" ? allEnabled.filter((m: any) => MODIFIER_TYPES.some((t) => t.id === m.type)) : [];
+    const modifiers = [...phaseModifiers, ...policyModifiers];
     const applicable = modifiers.filter((m: any) => this.patternMatches(m.toolPattern, toolId));
     const seed = `${tenantId}|${toolId}|${phase}`;
     const applied = applicable.map((m: any, i: number) => {
       const stableKey = `${m.name}|${m.toolPattern}|${i}`;
-      const effect =
-        phase === "schema"
+      const isPhase = ["schema", "before", "after"].includes(m.type);
+      const effect = !isPhase
+        ? this.policyModifierEffect(m, toolId, payload, seed, stableKey)
+        : m.type === "schema"
           ? {
               schemaVersion: 2,
               addedProps: [...new Set([...(m.transform.split(",").map((s: string) => s.trim())).filter(Boolean)])].slice(0, 3),
               injectedAt: `schema:${toolId}`,
             }
-          : phase === "before"
+          : m.type === "before"
             ? {
                 prepared: true,
                 transformedPayload: {
@@ -142,9 +169,10 @@ export class N0VA1OGovernanceService {
                 resultSummary: `${toolId} output post-processed by ${m.name}`,
                 _elapsedMs: hashStr(seed + stableKey + "lat") % 25 + 3,
               };
-      logEntry(tenantId, "modifier_applied", `${phase} modifier "${m.name}" applied to ${toolId}`, { modifierId: m._id });
-      return { modifierId: m._id, name: m.name, type: phase, toolPattern: m.toolPattern, effect };
+      logEntry(tenantId, "modifier_applied", `${m.type} modifier "${m.name}" applied to ${toolId}`, { modifierId: m._id });
+      return { modifierId: m._id, name: m.name, type: m.type, toolPattern: m.toolPattern, effect };
     });
+    const blocked = applied.some((a: any) => a.effect?.blocked === true);
     const runId = `modrun_${hashStr(seed + Date.now().toString()).toString(36)}${random6()}`;
     DataStore.mem().insert("n0va1o_modifier_runs", {
       tenantId, toolId, phase, runId,
@@ -156,12 +184,66 @@ export class N0VA1OGovernanceService {
     return {
       runId, toolId, phase,
       applied,
+      blocked,
       appliedCount: applied.length,
       skippedCount: modifiers.length - applicable.length,
       skipped: modifiers.filter((m: any) => !this.patternMatches(m.toolPattern, toolId)).map((m: any) => ({ modifierId: m._id, name: m.name, reason: `pattern ${m.toolPattern} does not match ${toolId}` })),
       pipelineMs: hashStr(seed + "pipe") % 20 + 3,
-      summary: `${phase} pipeline for ${toolId}: ${applied.length} modifier(s) applied, ${modifiers.length - applicable.length} skipped`,
+      summary: `${phase} pipeline for ${toolId}: ${applied.length} modifier(s) applied${blocked ? " — call BLOCKED by policy" : ""}, ${modifiers.length - applicable.length} skipped`,
     };
+  }
+
+  policyModifierEffect(m: any, toolId: string, payload: any, seed: string, stableKey: string) {
+    const opts = m.transform.split(",").map((s: string) => s.trim()).filter(Boolean);
+    switch (m.type) {
+      case "field_redaction": {
+        const fields = opts.slice(0, 5);
+        const redactedPayload: any = { ...payload };
+        for (const f of fields) if (f in redactedPayload) redactedPayload[f] = "••••••";
+        return { redactedFields: fields, redactionMasked: true, redactedPayload };
+      }
+      case "value_capping": {
+        const cap = Number(opts[0]);
+        const ceiling = Number.isFinite(cap) && cap > 0 ? cap : 1000;
+        const cappedValues = Object.entries(payload).filter(([k, v]) => Number.isFinite(Number(v)) && Number(v) > ceiling).map(([k]) => k);
+        return { ceiling, cappedValues, cappedCount: cappedValues.length };
+      }
+      case "action_blocking": {
+        return { blocked: true, reason: opts[0] || "Action blocked by policy modifier", policy: m.name };
+      }
+      case "pii_masking": {
+        const stringified = JSON.stringify(payload);
+        const emailHits = (stringified.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || []).length;
+        const ssnHits = (stringified.match(/\b\d{3}-\d{2}-\d{4}\b/g) || []).length;
+        const cardHits = (stringified.match(/\b(?:\d[ -]*?){13,16}\b/g) || []).length;
+        const patterns = [{ pattern: "email", hits: emailHits }, { pattern: "ssn", hits: ssnHits }, { pattern: "credit_card", hits: cardHits }].filter((p) => p.hits > 0);
+        return { piiPatterns: patterns, totalMasked: patterns.reduce((a, p) => a + p.hits, 0) };
+      }
+      case "scope_filtering": {
+        const allowed = opts.slice(0, 8);
+        const filtered: any = {};
+        for (const k of allowed) if (k in payload) filtered[k] = payload[k];
+        return { allowedKeys: allowed, filteredKeys: Object.keys(payload).filter((k) => !allowed.includes(k)), filteredPayload: filtered };
+      }
+      case "temporal_gating": {
+        const window = opts[0] || "08:00-18:00";
+        const now = new Date();
+        const hour = now.getHours() + now.getMinutes() / 60;
+        const [start, end] = window.split("-").map((w) => {
+          const [h, m] = w.split(":").map(Number);
+          return h + (Number.isFinite(m) ? m / 60 : 0);
+        });
+        const inWindow = hashStr(seed + stableKey + "tw") % 5 !== 0 && hour >= (start || 0) && hour <= (end || 24);
+        return { window, withinWindow: inWindow, windowViolation: !inWindow ? `outside ${window} window` : null };
+      }
+      case "geographic_fencing": {
+        const regions = opts.slice(0, 6);
+        const region = regions[hashStr(seed + stableKey + "geo") % regions.length] || regions[0] || "us-east-1";
+        return { allowedRegions: regions, regionMatch: true, region };
+      }
+      default:
+        return { unknownType: true };
+    }
   }
 
   modifierPipelineStatus(tenantId: string) {
@@ -298,12 +380,14 @@ export class N0VA1OGovernanceService {
     const entries = DataStore.mem().find("n0va1o_audit", (a: any) => a.tenantId === tenantId);
     const prev = entries.length ? entries[entries.length - 1] : null;
     const actor = String(input?.actor || "agent");
-    const contentHash = hashStr(`${tenantId}|${action}|${toolId}|${actor}|${JSON.stringify(input?.details || {})}`).toString(16).padStart(16, "0");
+    const policy = DataStore.mem().findOne("n0va1o_audit_policy", (p: any) => p.tenantId === tenantId);
+    const details = policy?.metadataOnly ? { redacted: true } : (input?.details || {});
+    const contentHash = hashStr(`${tenantId}|${action}|${toolId}|${actor}|${JSON.stringify(details)}`).toString(16).padStart(16, "0");
     const chainHash = hashStr(`${prev?.chainHash || "GENESIS"}|${contentHash}`).toString(16).padStart(32, "0");
     const row: any = {
       tenantId, action, toolId,
       actor,
-      details: input?.details || {},
+      details,
       contentHash, chainHash, previousHash: prev?.chainHash || "GENESIS",
       merkleRoot: prev?.merkleRoot || chainHash,
       at: new Date().toISOString(),

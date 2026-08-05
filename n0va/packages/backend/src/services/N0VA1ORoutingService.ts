@@ -24,10 +24,25 @@ export const MCP_TRANSPORTS = [
 ] as const;
 
 export const PROTOCOL_TRANSLATORS = [
-  { id: "rest", target: "REST", convertsFrom: ["soap", "graphql", "grpc"] },
+  { id: "rest", target: "REST", convertsFrom: ["soap", "graphql", "grpc", "webdav", "ftp", "odata"] },
   { id: "graphql", target: "GraphQL", convertsFrom: ["rest", "soap", "grpc"] },
   { id: "soap", target: "SOAP", convertsFrom: ["rest", "graphql", "grpc"] },
   { id: "grpc", target: "gRPC", convertsFrom: ["rest", "soap", "graphql"] },
+  { id: "webdav", target: "WebDAV", convertsFrom: ["rest"] },
+  { id: "ftp", target: "FTP/SFTP", convertsFrom: ["rest"] },
+  { id: "odata", target: "OData", convertsFrom: ["rest"] },
+] as const;
+
+export const PROTOCOL_TRANSLATION_PAIRS = [
+  { source: "REST", target: "SOAP", description: "JSON payload → SOAP envelope with WS-Security header" },
+  { source: "REST", target: "GraphQL", description: "REST collection → GraphQL query with field selection" },
+  { source: "REST", target: "gRPC", description: "REST call → gRPC unary call over HTTP/2" },
+  { source: "GraphQL", target: "REST", description: "GraphQL query → flattened REST resource" },
+  { source: "gRPC", target: "REST", description: "gRPC unary → JSON REST endpoint" },
+  { source: "WebDAV", target: "REST", description: "WebDAV PROPFIND/COPY → REST file operations" },
+  { source: "FTP/SFTP", target: "REST", description: "FTP/SFTP transfer → REST object-store calls" },
+  { source: "SOAP", target: "REST", description: "SOAP envelope → JSON REST resource" },
+  { source: "OData", target: "REST", description: "OData $filter/$select → REST query params" },
 ] as const;
 
 export const INTENT_KEYWORDS: Record<string, string[]> = {
@@ -80,11 +95,21 @@ export class N0VA1ORoutingService {
     return {
       transports: MCP_TRANSPORTS,
       protocolTranslators: PROTOCOL_TRANSLATORS,
+      translationPairs: PROTOCOL_TRANSLATION_PAIRS,
       endpoints: [
         { id: "default", name: "Default gateway", url: "https://mcp.n0va.io/mcp", transport: "http_sse" },
         { id: "ws_default", name: "WebSocket gateway", url: "wss://mcp.n0va.io/ws", transport: "websocket" },
       ],
-      summary: `MCP mesh: ${MCP_TRANSPORTS.length} transports, ${PROTOCOL_TRANSLATORS.length} protocol translators`,
+      summary: `MCP mesh: ${MCP_TRANSPORTS.length} transports, ${PROTOCOL_TRANSLATORS.length} protocol translators, ${PROTOCOL_TRANSLATION_PAIRS.length} translation pairs`,
+    };
+  }
+
+  translationCatalog() {
+    return {
+      pairs: PROTOCOL_TRANSLATION_PAIRS,
+      total: PROTOCOL_TRANSLATION_PAIRS.length,
+      translators: PROTOCOL_TRANSLATORS,
+      summary: `${PROTOCOL_TRANSLATION_PAIRS.length} protocol translation pairs — REST, GraphQL, SOAP, gRPC, WebDAV, FTP/SFTP, OData`,
     };
   }
 
@@ -103,6 +128,8 @@ export class N0VA1ORoutingService {
     const preferredLatency = Number.isFinite(opts?.preferredLatency) ? Math.max(1, opts.preferredLatency) : null;
     const maxTools = Number.isFinite(opts?.maxTools) ? Math.max(1, Math.min(Math.floor(opts.maxTools), 50)) : opts?.limit || 4;
     const contextWindowSize = Number.isFinite(opts?.contextWindowSize) ? Math.max(512, Math.min(Math.floor(opts.contextWindowSize), 1000000)) : 8192;
+    const includeDeprecated = Boolean(opts?.includeDeprecated);
+    const requireSandbox = Boolean(opts?.requireSandbox);
     let pool = TOOL_ROUTING.filter((t) => t.intent === intent || !intent);
     if (riskTolerance === "low") pool = pool.filter((t) => t.risk === "low");
     else if (riskTolerance === "medium") pool = pool.filter((t) => t.risk !== "critical");
@@ -118,6 +145,12 @@ export class N0VA1ORoutingService {
       })
       .sort((a, b) => b.score - a.score);
     const top = scored.slice(0, maxTools);
+    const fallbackPool = scored.slice(maxTools, maxTools + 3);
+    const fallbackTools = fallbackPool.length
+      ? fallbackPool.map(({ id, name, risk }) => ({ toolId: id, name, risk }))
+      : top.length
+        ? []
+        : TOOL_ROUTING.filter((t) => t.intent === "read" && t.risk === "low").slice(0, 3).map((t) => ({ toolId: t.id, name: t.name, risk: t.risk }));
     logEntry(tenantId, "tools_discovered", `Intent "${intent}" → ${top.length} tool(s) injected (risk_tolerance ${riskTolerance})`, { query: q, tools: top.map((t) => t.id) });
     return {
       intent,
@@ -133,8 +166,12 @@ export class N0VA1ORoutingService {
       context_window_size: contextWindowSize,
       preferred_latency: preferredLatency,
       risk_tolerance: riskTolerance,
+      include_deprecated: includeDeprecated,
+      require_sandbox: requireSandbox,
+      fallback_tools: fallbackTools,
+      fallback_used: top.length === 0 && fallbackTools.length > 0,
       reasoning: `Matched ${top.length} of ${pool.length} candidate tools for intent "${intent}" (risk tolerance ${riskTolerance})`,
-      summary: `Intent "${intent}" — ${top.length} tool(s) injected`,
+      summary: `Intent "${intent}" — ${top.length} tool(s) injected${top.length === 0 && fallbackTools.length ? `, ${fallbackTools.length} fallback tool(s)` : ""}`,
     };
   }
 

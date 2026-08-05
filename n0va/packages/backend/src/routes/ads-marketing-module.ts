@@ -4587,4 +4587,276 @@ router.get("/n0va1o/compliance/log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.n0va1oComplianceLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
 }));
 
+router.get("/n0va1o/cli/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCliCatalog());
+}));
+
+router.get("/n0va1o/cli/status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCliStatus(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/cli/install", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oInstallCli(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/n0va1o/cli/auth", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oAuthenticateCli(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/n0va1o/cli/auth/:sessionId/complete", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCompleteCliAuth(req.user!.tenantId, req.params.sessionId));
+}));
+
+router.get("/n0va1o/cli/sessions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCliSessions(req.user!.tenantId, typeof req.query.status === "string" ? req.query.status : undefined));
+}));
+
+router.post("/n0va1o/cli/sessions/:sessionId/end", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oEndCliSession(req.user!.tenantId, req.params.sessionId));
+}));
+
+router.get("/n0va1o/cli/discover", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCliDiscover(req.user!.tenantId, typeof req.query.q === "string" ? req.query.q : ""));
+}));
+
+router.post("/n0va1o/cli/exec", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oExecuteCliCommand(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/cli/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCliDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/cli/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oCliLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
+}));
+
+router.get("/n0va1o/audit/policy", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oAuditPolicy(req.user!.tenantId));
+}));
+
+router.put("/n0va1o/audit/policy", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSetAuditPolicy(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/audit/export", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oExportAuditCsv(req.user!.tenantId, typeof req.query.kind === "string" ? req.query.kind : "audit", typeof req.query.framework === "string" ? req.query.framework : undefined));
+}));
+
+router.get("/n0va1o/audit/retention", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oRetentionStatus(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/audit/retention/apply", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oApplyRetention(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/audit/directory", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDirectoryGroups(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/audit/directory/sync", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSyncDirectory(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/audit/directory/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDirectoryDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/audit/directory/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDirectoryLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
+}));
+
+router.get("/n0va1o/audit/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oAuditDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/audit/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oAuditCenterLog(req.user!.tenantId, typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined));
+}));
+
+router.get("/n0va1o/sdk/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkCatalog());
+}));
+
+router.post("/n0va1o/sdk/snippet", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkSnippet(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/sdk/install-guide", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkInstallGuide(req.user!.tenantId, typeof req.query.language === "string" ? req.query.language : "python"));
+}));
+
+router.get("/n0va1o/sdk/version", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkCheckVersion(req.user!.tenantId, typeof req.query.language === "string" ? req.query.language : "python"));
+}));
+
+router.get("/n0va1o/sdk/projects", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkProjects(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/sdk/projects", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkCreateProject(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/n0va1o/sdk/usage", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkRecordUsage(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/sdk/usage", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkUsage(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/sdk/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/sdk/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSdkLog(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/deploy/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployCatalog());
+}));
+
+router.post("/n0va1o/deploy", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployCreate(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/deploy", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployments(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/deploy/health", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployHealth(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/deploy/onboarding", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oOnboarding(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/deploy/migrate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oMigrateConnections(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/deploy/troubleshoot-catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTroubleshootCatalog());
+}));
+
+router.post("/n0va1o/deploy/troubleshoot", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTroubleshoot(req.user!.tenantId, typeof req.body?.issue === "string" ? req.body.issue : ""));
+}));
+
+router.post("/n0va1o/deploy/issues/:issueId/resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oResolveIssue(req.user!.tenantId, req.params.issueId));
+}));
+
+router.get("/n0va1o/deploy/issues", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oIssues(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/deploy/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/deploy/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployLog(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/deploy/:deploymentId/provision", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployProvision(req.user!.tenantId, req.params.deploymentId));
+}));
+
+router.get("/n0va1o/deploy/:deploymentId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployment(req.user!.tenantId, req.params.deploymentId));
+}));
+
+router.delete("/n0va1o/deploy/:deploymentId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeployDelete(req.user!.tenantId, req.params.deploymentId));
+}));
+
+router.get("/n0va1o/observe/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oObserveCatalog());
+}));
+
+router.post("/n0va1o/observe/telemetry", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTelemetry(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/observe/telemetry/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTelemetryStats(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/observe/traces", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTrace(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/observe/traces", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTraces(req.user!.tenantId, typeof req.query.status === "string" ? req.query.status : undefined));
+}));
+
+router.get("/n0va1o/observe/traces/:traceId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oGetTrace(req.user!.tenantId, req.params.traceId));
+}));
+
+router.post("/n0va1o/observe/errors", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oReportError(req.user!.tenantId, req.body || {}));
+}));
+
+router.post("/n0va1o/observe/errors/:errorId/retry", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oRetryDecision(req.params.errorId, typeof req.body?.attempt === "number" ? req.body.attempt : 1));
+}));
+
+router.post("/n0va1o/observe/errors/:errorId/resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oResolveError(req.params.errorId));
+}));
+
+router.get("/n0va1o/observe/errors", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oErrors(req.user!.tenantId, typeof req.query.status === "string" ? req.query.status : undefined));
+}));
+
+router.get("/n0va1o/observe/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oObserveDashboard(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/observe/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oObserveLog(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/modifiers/types", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oModifierTypes());
+}));
+
+router.get("/n0va1o/modifiers/catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oModifierCatalog());
+}));
+
+router.get("/n0va1o/routing/translation-catalog", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTranslationCatalog());
+}));
+
+router.post("/n0va1o/triggers/ingest", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oIngestWebhook(req.user!.tenantId, req.body || {}));
+}));
+
+router.get("/n0va1o/triggers/ingest-overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oIngestOverview(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/auth/accounts/health", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oAccountHealth(req.user!.tenantId));
+}));
+
+router.post("/n0va1o/auth/accounts/health/refresh", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oRefreshAccountHealth(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/auth/accounts/lru", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oAccountLru(req.user!.tenantId, {}));
+}));
+
+router.post("/n0va1o/auth/accounts/evict", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oEvictAccounts(req.user!.tenantId, req.body || {}));
+}));
+
 export default router;

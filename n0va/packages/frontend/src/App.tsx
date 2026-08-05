@@ -63,6 +63,7 @@ const N0VA1OConnections = lazy(() => import("./pages/N0VA1OConnections"));
 const N0VA1ORecipes = lazy(() => import("./pages/N0VA1ORecipes"));
 const N0VA1OGovernance = lazy(() => import("./pages/N0VA1OGovernance"));
 const N0VA1OCompliance = lazy(() => import("./pages/N0VA1OCompliance"));
+const N0VA1OCli = lazy(() => import("./pages/N0VA1OCli"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -393,6 +394,7 @@ export default function App() {
                 <Route path="/n0va1o/recipes" element={<N0VA1ORecipes />} />
                 <Route path="/n0va1o/governance" element={<N0VA1OGovernance />} />
                 <Route path="/n0va1o/compliance" element={<N0VA1OCompliance />} />
+                <Route path="/n0va1o/cli" element={<N0VA1OCli />} />
                 <Route path="/marketing-intelligence" element={<MarketingIntelligence />} />
                 <Route path="/agent-intelligence" element={<AgentIntelligence />} />
                 <Route path="/predictive-bidding" element={<PredictiveBidding />} />

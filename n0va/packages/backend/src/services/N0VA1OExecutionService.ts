@@ -251,6 +251,116 @@ export class N0VA1OExecutionService {
     };
   }
 
+  vfsAwkProcess(tenantId: string, fileId: string, program: string) {
+    const id = fileId.replace(/^fl_/, "");
+    const file = DataStore.mem().findOne("n0va1o_files", (f: any) => f.tenantId === tenantId && f._id === id);
+    if (!file) throw new Error("File not found");
+    const prog = String(program || "").trim();
+    if (!prog) throw new Error("program is required (e.g. '{ print $1 }' or '{ sum $2 }')");
+    const content = this.vfsContent(file);
+    const lines = content.split("\n").filter((l) => l.trim().length > 0);
+    const output: string[] = [];
+    const sumMatch = prog.match(/sum\s+\$(\d+)/);
+    const printMatch = prog.match(/print\s+\$(\d+)/);
+    if (sumMatch) {
+      const col = Number(sumMatch[1]);
+      let sum = 0;
+      let numeric = 0;
+      for (const line of lines) {
+        const v = Number(line.split(/[,;\s]+/)[col - 1]);
+        if (Number.isFinite(v)) { sum += v; numeric++; }
+      }
+      output.push(`sum = ${Math.round(sum * 100) / 100} (${numeric} numeric value(s))`);
+    } else if (printMatch) {
+      const col = Number(printMatch[1]);
+      for (const line of lines.slice(0, 20)) {
+        const field = line.split(/[,;\s]+/)[col - 1] || "";
+        output.push(field);
+      }
+    } else if (/count/i.test(prog)) {
+      output.push(`count = ${lines.length}`);
+    } else {
+      for (const line of lines.slice(0, 10)) output.push(line);
+    }
+    logEntry(tenantId, "vfs_awk", `awk "${prog.slice(0, 60)}" on ${file.filename} → ${lines.length} line(s) processed`, { fileId: id });
+    return {
+      fileId, filename: file.filename, program: prog,
+      processedLines: lines.length,
+      outputLines: output.length,
+      output,
+      summary: `awk "${prog.slice(0, 40)}" processed ${lines.length} line(s) — ${output.length} output line(s)`,
+    };
+  }
+
+  vfsConvertFormat(tenantId: string, fileId: string, targetFormat: string) {
+    const id = fileId.replace(/^fl_/, "");
+    const file = DataStore.mem().findOne("n0va1o_files", (f: any) => f.tenantId === tenantId && f._id === id);
+    if (!file) throw new Error("File not found");
+    const fmt = String(targetFormat || "").toLowerCase();
+    if (!["csv", "json", "md", "html", "txt"].includes(fmt)) throw new Error("targetFormat must be one of: csv, json, md, html, txt");
+    const content = this.vfsContent(file);
+    const trimmed = content.trim();
+    const sourceFormat = trimmed.startsWith("[") || trimmed.startsWith("{")
+      ? "json"
+      : trimmed.split("\n").every((l) => l.includes(",")) && trimmed.split("\n").length > 1
+        ? "csv"
+        : /<[a-z][\s\S]*>/i.test(trimmed)
+          ? "html"
+          : /^#\s/m.test(trimmed)
+            ? "md"
+            : "txt";
+    let converted = "";
+    if (sourceFormat === "csv" && fmt === "json") {
+      const rows = trimmed.split("\n").map((l) => l.split(","));
+      const header = rows[0] || [];
+      converted = JSON.stringify(rows.slice(1, 21).map((r) => Object.fromEntries(header.map((h, i) => [h, r[i] || ""]))), null, 1);
+    } else if (sourceFormat === "json" && fmt === "csv") {
+      let parsed: any[] = [];
+      try { parsed = Array.isArray(JSON.parse(trimmed)) ? JSON.parse(trimmed) : [JSON.parse(trimmed)]; } catch { parsed = []; }
+      const keys = Array.from(new Set(parsed.flatMap((o) => Object.keys(o || {})))).slice(0, 6);
+      converted = [keys.join(",")].concat(parsed.slice(0, 20).map((o) => keys.map((k) => String(o?.[k] ?? "")).join(","))).join("\n");
+    } else if (fmt === "html" && sourceFormat !== "html") {
+      converted = `<pre>\n${content.replace(/&/g, "&amp;").replace(/</g, "&lt;")}\n</pre>`;
+    } else if (fmt === "md" && sourceFormat === "html") {
+      converted = content.replace(/<[^>]+>/g, "").split("\n").filter(Boolean).map((l) => `> ${l}`).join("\n");
+    } else if (fmt === "txt") {
+      converted = content.replace(/<[^>]+>/g, "");
+    } else {
+      converted = content.slice(0, 4000);
+    }
+    const outputSizeBytes = converted.length;
+    logEntry(tenantId, "vfs_converted", `${file.filename}: ${sourceFormat.toUpperCase()} → ${fmt.toUpperCase()} (${outputSizeBytes} bytes)`, { fileId: id });
+    return {
+      fileId, filename: file.filename,
+      sourceFormat, targetFormat: fmt,
+      outputSizeBytes,
+      convertedChars: converted.length,
+      preview: converted.slice(0, 240),
+      summary: `${file.filename} converted ${sourceFormat.toUpperCase()} → ${fmt.toUpperCase()} (${outputSizeBytes} bytes)`,
+    };
+  }
+
+  vfsStreamExport(tenantId: string, fileId: string, input: any) {
+    const id = fileId.replace(/^fl_/, "");
+    const file = DataStore.mem().findOne("n0va1o_files", (f: any) => f.tenantId === tenantId && f._id === id);
+    if (!file) throw new Error("File not found");
+    const chunkSize = Number.isFinite(input?.chunkSize) ? Math.max(4096, Math.min(Math.floor(input.chunkSize), 1048576)) : 65536;
+    const totalBytes = file.sizeBytes || this.vfsContent(file).length;
+    const totalChunks = Math.max(1, Math.ceil(totalBytes / chunkSize));
+    const seed = `${tenantId}|${fileId}|${chunkSize}`;
+    const exportId = `exp_${hashStr(seed + "id").toString(36)}${random6()}`;
+    const durationMs = totalChunks * (20 + (hashStr(seed + "chunk") % 60));
+    logEntry(tenantId, "vfs_streamed", `${file.filename} stream-exported — ${totalChunks} chunk(s) of ${chunkSize} bytes (${durationMs}ms)`, { fileId: id, exportId });
+    return {
+      fileId, filename: file.filename, exportId,
+      chunkSize, totalChunks, transferBytes: totalBytes,
+      durationMs,
+      throughputKBps: totalBytes ? Math.round((totalBytes / 1024) / Math.max(1, durationMs / 1000)) : 0,
+      destination: `vfs://exports/${exportId}`,
+      summary: `Streamed ${file.filename} (${totalBytes} B) in ${totalChunks} × ${chunkSize} B chunks — ${durationMs}ms`,
+    };
+  }
+
   getFile(tenantId: string, fileId: string) {
     const id = fileId.replace(/^fl_/, "");
     const file = DataStore.mem().findOne("n0va1o_files", (f: any) => f.tenantId === tenantId && f._id === id);

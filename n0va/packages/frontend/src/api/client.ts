@@ -3657,6 +3657,109 @@ export const api = {
       request<any>(`/ads-marketing-module/n0va1o/compliance/audit-trail/${agentId}`),
     n0va1oComplianceLog: (limit?: number) =>
       request<any>(`/ads-marketing-module/n0va1o/compliance/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oCliCatalog: () => request<any>("/ads-marketing-module/n0va1o/cli/catalog"),
+    n0va1oCliStatus: () => request<any>("/ads-marketing-module/n0va1o/cli/status"),
+    n0va1oInstallCli: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/cli/install", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oAuthenticateCli: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/cli/auth", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oCompleteCliAuth: (sessionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/cli/auth/${sessionId}/complete`, { method: "POST" }),
+    n0va1oCliSessions: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/cli/sessions${status ? `?status=${status}` : ""}`),
+    n0va1oEndCliSession: (sessionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/cli/sessions/${sessionId}/end`, { method: "POST" }),
+    n0va1oCliDiscover: (q: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/cli/discover?q=${encodeURIComponent(q)}`),
+    n0va1oExecuteCliCommand: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/cli/exec", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oCliDashboard: () => request<any>("/ads-marketing-module/n0va1o/cli/dashboard"),
+    n0va1oCliLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/cli/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oAuditPolicy: () => request<any>("/ads-marketing-module/n0va1o/audit/policy"),
+    n0va1oSetAuditPolicy: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/audit/policy", { method: "PUT", body: JSON.stringify(input) }),
+    n0va1oExportAuditCsv: (kind?: string, framework?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/audit/export${kind ? `?kind=${kind}` : ""}${framework ? `&framework=${encodeURIComponent(framework)}` : ""}`),
+    n0va1oRetentionStatus: () => request<any>("/ads-marketing-module/n0va1o/audit/retention"),
+    n0va1oApplyRetention: () =>
+      request<any>("/ads-marketing-module/n0va1o/audit/retention/apply", { method: "POST" }),
+    n0va1oDirectoryGroups: () => request<any>("/ads-marketing-module/n0va1o/audit/directory"),
+    n0va1oSyncDirectory: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/audit/directory/sync", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oDirectoryDashboard: () => request<any>("/ads-marketing-module/n0va1o/audit/directory/dashboard"),
+    n0va1oDirectoryLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/audit/directory/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oAuditDashboard: () => request<any>("/ads-marketing-module/n0va1o/audit/dashboard"),
+    n0va1oAuditCenterLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/audit/log${limit ? `?limit=${limit}` : ""}`),
+    n0va1oSdkCatalog: () => request<any>("/ads-marketing-module/n0va1o/sdk/catalog"),
+    n0va1oSdkSnippet: (input: { language: string; feature: string; scopePrefix?: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/sdk/snippet", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oSdkInstallGuide: (language: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/sdk/install-guide?language=${encodeURIComponent(language)}`),
+    n0va1oSdkCheckVersion: (language: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/sdk/version?language=${encodeURIComponent(language)}`),
+    n0va1oSdkProjects: () => request<any>("/ads-marketing-module/n0va1o/sdk/projects"),
+    n0va1oSdkCreateProject: (input: { name: string; language: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/sdk/projects", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oSdkRecordUsage: (projectId: string) =>
+      request<any>("/ads-marketing-module/n0va1o/sdk/usage", { method: "POST", body: JSON.stringify({ projectId }) }),
+    n0va1oSdkUsage: () => request<any>("/ads-marketing-module/n0va1o/sdk/usage"),
+    n0va1oSdkDashboard: () => request<any>("/ads-marketing-module/n0va1o/sdk/dashboard"),
+    n0va1oSdkLog: () => request<any>("/ads-marketing-module/n0va1o/sdk/log"),
+    n0va1oDeployCatalog: () => request<any>("/ads-marketing-module/n0va1o/deploy/catalog"),
+    n0va1oDeployCreate: (input: { name: string; mode: string; target: string; region: string; vpcId?: string; cloudAccountId?: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/deploy", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oDeployments: () => request<any>("/ads-marketing-module/n0va1o/deploy"),
+    n0va1oDeployment: (deploymentId: string) => request<any>(`/ads-marketing-module/n0va1o/deploy/${deploymentId}`),
+    n0va1oDeployProvision: (deploymentId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/deploy/${deploymentId}/provision`, { method: "POST" }),
+    n0va1oDeployHealth: () => request<any>("/ads-marketing-module/n0va1o/deploy/health"),
+    n0va1oDeployDelete: (deploymentId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/deploy/${deploymentId}`, { method: "DELETE" }),
+    n0va1oMigrateConnections: (input: { fromDeploymentId?: string; toDeploymentId: string; connectionIds: string[] }) =>
+      request<any>("/ads-marketing-module/n0va1o/deploy/migrate", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oOnboarding: () => request<any>("/ads-marketing-module/n0va1o/deploy/onboarding"),
+    n0va1oTroubleshootCatalog: () => request<any>("/ads-marketing-module/n0va1o/deploy/troubleshoot-catalog"),
+    n0va1oTroubleshoot: (issue: string) =>
+      request<any>("/ads-marketing-module/n0va1o/deploy/troubleshoot", { method: "POST", body: JSON.stringify({ issue }) }),
+    n0va1oResolveIssue: (issueId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/deploy/issues/${issueId}/resolve`, { method: "POST" }),
+    n0va1oIssues: () => request<any>("/ads-marketing-module/n0va1o/deploy/issues"),
+    n0va1oDeployDashboard: () => request<any>("/ads-marketing-module/n0va1o/deploy/dashboard"),
+    n0va1oDeployLog: () => request<any>("/ads-marketing-module/n0va1o/deploy/log"),
+    n0va1oObserveCatalog: () => request<any>("/ads-marketing-module/n0va1o/observe/catalog"),
+    n0va1oTelemetry: (input: { signal: string; scope?: string; value?: unknown; message?: string; durationMs?: number; status?: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/observe/telemetry", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oTelemetryStats: () => request<any>("/ads-marketing-module/n0va1o/observe/telemetry/stats"),
+    n0va1oTrace: (input: { name: string; durationMs?: number; status?: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/observe/traces", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oTraces: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/observe/traces${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+    n0va1oGetTrace: (traceId: string) => request<any>(`/ads-marketing-module/n0va1o/observe/traces/${traceId}`),
+    n0va1oReportError: (input: { errorClass: string; message: string; scope?: string }) =>
+      request<any>("/ads-marketing-module/n0va1o/observe/errors", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oRetryDecision: (errorId: string, attempt: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/observe/errors/${errorId}/retry`, { method: "POST", body: JSON.stringify({ attempt }) }),
+    n0va1oResolveError: (errorId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/observe/errors/${errorId}/resolve`, { method: "POST" }),
+    n0va1oErrors: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/observe/errors${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+    n0va1oObserveDashboard: () => request<any>("/ads-marketing-module/n0va1o/observe/dashboard"),
+    n0va1oObserveLog: () => request<any>("/ads-marketing-module/n0va1o/observe/log"),
+    n0va1oModifierTypes: () => request<any>("/ads-marketing-module/n0va1o/modifiers/types"),
+    n0va1oModifierCatalog: () => request<any>("/ads-marketing-module/n0va1o/modifiers/catalog"),
+    n0va1oTranslationCatalog: () => request<any>("/ads-marketing-module/n0va1o/routing/translation-catalog"),
+    n0va1oIngestWebhook: (input: { event: string; payload?: unknown; signature?: string; timestamp?: number; body?: string; limitPerMinute?: number }) =>
+      request<any>("/ads-marketing-module/n0va1o/triggers/ingest", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oIngestOverview: () => request<any>("/ads-marketing-module/n0va1o/triggers/ingest-overview"),
+    n0va1oAccountHealth: () => request<any>("/ads-marketing-module/n0va1o/auth/accounts/health"),
+    n0va1oRefreshAccountHealth: () =>
+      request<any>("/ads-marketing-module/n0va1o/auth/accounts/health/refresh", { method: "POST" }),
+    n0va1oAccountLru: () => request<any>("/ads-marketing-module/n0va1o/auth/accounts/lru"),
+    n0va1oEvictAccounts: (limit?: number) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/accounts/evict", { method: "POST", body: JSON.stringify({ limit }) }),
   },
 
   agentSwarm: {

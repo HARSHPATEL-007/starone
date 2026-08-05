@@ -1435,11 +1435,11 @@ export const PLAN_TIERS = [
 ] as const;
 
 export const THROUGHPUT_TARGETS = [
-  { plan: "free", requestsPerMinute: 10, requestsPerHour: 600, recipeCompilesPerDay: 25, concurrentSandboxes: 1 },
-  { plan: "growth", requestsPerMinute: 100, requestsPerHour: 6000, recipeCompilesPerDay: 500, concurrentSandboxes: 5 },
-  { plan: "pro", requestsPerMinute: 1000, requestsPerHour: 60000, recipeCompilesPerDay: 10000, concurrentSandboxes: 25 },
-  { plan: "enterprise", requestsPerMinute: 5000, requestsPerHour: 300000, recipeCompilesPerDay: 100000, concurrentSandboxes: 100 },
-  { plan: "transcendent", requestsPerMinute: 10000, requestsPerHour: 600000, recipeCompilesPerDay: 1000000, concurrentSandboxes: 1000 },
+  { plan: "free", requestsPerMinute: 10, requestsPerHour: 600, recipeCompilesPerDay: 25, concurrentSandboxes: 1, executionsPerDay: 100, concurrentAgents: 1, workflowSteps: 500, sandboxSeconds: 1800, toolCallP99Ms: 480, endToEndLatencyMs: 150, apiCallsPerDay: 1000, webhookIngestPerSec: 5, multiAccountSwitch: 10 },
+  { plan: "growth", requestsPerMinute: 100, requestsPerHour: 6000, recipeCompilesPerDay: 500, concurrentSandboxes: 5, executionsPerDay: 2000, concurrentAgents: 5, workflowSteps: 10000, sandboxSeconds: 43200, toolCallP99Ms: 360, endToEndLatencyMs: 90, apiCallsPerDay: 10000, webhookIngestPerSec: 20, multiAccountSwitch: 25 },
+  { plan: "pro", requestsPerMinute: 1000, requestsPerHour: 60000, recipeCompilesPerDay: 10000, concurrentSandboxes: 25, executionsPerDay: 50000, concurrentAgents: 25, workflowSteps: 250000, sandboxSeconds: 864000, toolCallP99Ms: 250, endToEndLatencyMs: 60, apiCallsPerDay: 100000, webhookIngestPerSec: 50, multiAccountSwitch: 100 },
+  { plan: "enterprise", requestsPerMinute: 5000, requestsPerHour: 300000, recipeCompilesPerDay: 100000, concurrentSandboxes: 100, executionsPerDay: 500000, concurrentAgents: 250, workflowSteps: 2500000, sandboxSeconds: 4320000, toolCallP99Ms: 150, endToEndLatencyMs: 35, apiCallsPerDay: 1000000, webhookIngestPerSec: 150, multiAccountSwitch: 500 },
+  { plan: "transcendent", requestsPerMinute: 10000, requestsPerHour: 600000, recipeCompilesPerDay: 1000000, concurrentSandboxes: 1000, executionsPerDay: 5000000, concurrentAgents: 2500, workflowSteps: 25000000, sandboxSeconds: 25920000, toolCallP99Ms: 80, endToEndLatencyMs: 20, apiCallsPerDay: 10000000, webhookIngestPerSec: 500, multiAccountSwitch: 2000 },
 ] as const;
 
 export const LATENCY_BENCHMARKS = [
@@ -1593,18 +1593,40 @@ export class N0VA1OCatalogService {
     const currentRpm = Math.min(Math.floor((hashStr(seed) % 1000) / 100) + 1, 100);
     const executions = DataStore.mem().find("n0va1o_executions", (e: any) => e.tenantId === tenantId);
     const recipes = DataStore.mem().find("n0va1o_recipes", (r: any) => r.tenantId === tenantId);
+    const agents = DataStore.mem().find("n0va1o_agents", (a: any) => a.tenantId === tenantId);
     const sandboxes = DataStore.mem().find("n0va1o_sandboxes", (s: any) => s.tenantId === tenantId && s.status === "running").length;
+    const hash = (suffix: string) => hashStr(`${seed}|${suffix}`);
     const current = {
       requestsPerMinute: currentRpm,
       requestsPerHour: currentRpm * 60,
       recipeCompilesPerDay: recipes.length,
       concurrentSandboxes: sandboxes,
+      executionsPerDay: executions.length * 10 + currentRpm,
+      concurrentAgents: agents.length,
+      workflowSteps: recipes.length * 4 + currentRpm,
+      sandboxSeconds: sandboxes * 3600 + (hash("ss") % 600),
+      toolCallP99Ms: 250 + (hash("p99") % 150),
+      endToEndLatencyMs: 45 + (hash("e2e") % 60),
+      apiCallsPerDay: currentRpm * 240,
+      webhookIngestPerSec: hash("ing") % 4,
+      multiAccountSwitch: 1 + (hash("mas") % 3),
     };
+    const matrixKeys = ["requestsPerMinute", "requestsPerHour", "recipeCompilesPerDay", "concurrentSandboxes", "executionsPerDay", "concurrentAgents", "workflowSteps", "sandboxSeconds", "toolCallP99Ms", "endToEndLatencyMs", "apiCallsPerDay", "webhookIngestPerSec", "multiAccountSwitch"] as const;
+    const matrix = matrixKeys.map((k) => {
+      const t = (target as any)[k] as number;
+      const c = (current as any)[k] as number;
+      const pct = k === "toolCallP99Ms" || k === "endToEndLatencyMs"
+        ? Math.min(100, Math.round((c / Math.max(t, 1)) * 100))
+        : Math.min(100, Math.round((c / Math.max(t, 1)) * 100));
+      return { metric: k, target: t, current: c, utilizationPct: pct, verdict: pct < 70 ? "healthy" : pct < 90 ? "elevated" : "critical" };
+    });
     const pct = Math.min(100, Math.round((currentRpm / target.requestsPerMinute) * 100));
     return {
       plan: state.plan,
       target,
       current,
+      matrix,
+      metrics: matrixKeys.length,
       utilizationPct: pct,
       headroomPct: Math.max(0, 100 - pct),
       verdict: pct < 70 ? "healthy" : pct < 90 ? "elevated" : "critical",

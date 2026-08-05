@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare,    BrainCircuit, FolderSearch, Globe, Mic, Volume2, Webhook, Plug, SendHorizonal, CalendarClock, MailOpen, Lock, Import, GitMerge, Workflow, Gauge, ListOrdered, Ticket, KeyRound, Fingerprint, Scale, Beaker, PenLine, MapPin, Store, Code2, AtSign, Tag } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare,    BrainCircuit, FolderSearch, Globe, Mic, Volume2, Webhook, Plug, SendHorizonal, CalendarClock, MailOpen, Lock, Import, GitMerge, Workflow, Gauge, ListOrdered, Ticket, KeyRound, Fingerprint, Scale, Beaker, PenLine, MapPin, Store, Code2, AtSign, Tag, Terminal } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -75,6 +75,7 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "Recipes & Triggers", route: "/n0va1o/recipes", icon: Zap },
   { type: "page", label: "N0VA1O Governance", route: "/n0va1o/governance", icon: Shield },
   { type: "page", label: "N0VA1O Compliance", route: "/n0va1o/compliance", icon: Scale },
+  { type: "page", label: "N0VA1O Universal CLI", route: "/n0va1o/cli", icon: Terminal },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

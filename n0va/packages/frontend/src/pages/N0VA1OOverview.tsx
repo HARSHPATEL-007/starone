@@ -92,7 +92,7 @@ export default function N0VA1OOverview() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2"><Layers className="w-5 h-5 text-n0va-300" /> N0VA1O Gateway</h1>
-          <p className="text-sm text-gray-500">One gateway to 200+ platforms — JIT auth, deterministic recipes, human-in-the-loop governance.</p>
+          <p className="text-sm text-gray-500">One gateway to 1,380+ platforms — JIT auth, deterministic recipes, human-in-the-loop governance.</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-1.5 text-xs text-gray-400">

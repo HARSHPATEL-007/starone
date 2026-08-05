@@ -121,6 +121,11 @@ import { n0va1oTrigger } from "./N0VA1OTriggerService";
 import { n0va1oGov } from "./N0VA1OGovernanceService";
 import { n0va1oPlugin } from "./N0VA1OPluginService";
 import { n0va1oCompliance } from "./N0VA1OComplianceService";
+import { n0va1oCli } from "./N0VA1OClIService";
+import { n0va1oAudit } from "./N0VA1OAuditService";
+import { n0va1oSdk } from "./N0VA1OSdkService";
+import { n0va1oDeployment } from "./N0VA1ODeploymentService";
+import { n0va1oObservability } from "./N0VA1OObservabilityService";
 
 import { mailCollab2 } from "./MailCollabV2Service";
 const campaignSummaryService = new CampaignSummaryService();
@@ -6793,6 +6798,278 @@ export class AdsMarketingModuleService {
 
   n0va1oComplianceLog(tenantId: string, limit?: number) {
     return n0va1oCompliance.complianceLog(tenantId, limit);
+  }
+
+  n0va1oCliCatalog() {
+    return n0va1oCli.cliCatalog();
+  }
+
+  n0va1oCliStatus(tenantId: string) {
+    return n0va1oCli.cliInstallStatus(tenantId);
+  }
+
+  n0va1oInstallCli(tenantId: string, input: any) {
+    return n0va1oCli.installCli(tenantId, input || {});
+  }
+
+  n0va1oAuthenticateCli(tenantId: string, input: any) {
+    return n0va1oCli.authenticateCli(tenantId, input || {});
+  }
+
+  n0va1oCompleteCliAuth(tenantId: string, sessionId: string) {
+    return n0va1oCli.completeCliAuth(tenantId, sessionId);
+  }
+
+  n0va1oCliSessions(tenantId: string, status?: string) {
+    return n0va1oCli.cliSessions(tenantId, status);
+  }
+
+  n0va1oEndCliSession(tenantId: string, sessionId: string) {
+    return n0va1oCli.endCliSession(tenantId, sessionId);
+  }
+
+  n0va1oCliDiscover(tenantId: string, query: string) {
+    return n0va1oCli.cliDiscover(tenantId, query);
+  }
+
+  n0va1oExecuteCliCommand(tenantId: string, input: any) {
+    return n0va1oCli.executeCliCommand(tenantId, input || {});
+  }
+
+  n0va1oCliDashboard(tenantId: string) {
+    return n0va1oCli.cliDashboard(tenantId);
+  }
+
+  n0va1oCliLog(tenantId: string, limit?: number) {
+    return n0va1oCli.cliLog(tenantId, limit);
+  }
+
+  n0va1oAuditPolicy(tenantId: string) {
+    return n0va1oAudit.auditPolicy(tenantId);
+  }
+
+  n0va1oSetAuditPolicy(tenantId: string, input: any) {
+    return n0va1oAudit.setAuditPolicy(tenantId, input || {});
+  }
+
+  n0va1oExportAuditCsv(tenantId: string, kind: string, framework?: string) {
+    return n0va1oAudit.exportAuditCsv(tenantId, { kind, framework });
+  }
+
+  n0va1oRetentionStatus(tenantId: string) {
+    return n0va1oAudit.retentionStatus(tenantId);
+  }
+
+  n0va1oApplyRetention(tenantId: string) {
+    return n0va1oAudit.applyRetention(tenantId);
+  }
+
+  n0va1oDirectoryGroups(tenantId: string) {
+    return n0va1oAudit.directoryGroups(tenantId);
+  }
+
+  n0va1oSyncDirectory(tenantId: string, input: any) {
+    return n0va1oAudit.syncDirectory(tenantId, input || {});
+  }
+
+  n0va1oDirectoryDashboard(tenantId: string) {
+    return n0va1oAudit.directoryDashboard(tenantId);
+  }
+
+  n0va1oDirectoryLog(tenantId: string, limit?: number) {
+    return n0va1oAudit.directoryLog(tenantId, limit);
+  }
+
+  n0va1oAuditDashboard(tenantId: string) {
+    return n0va1oAudit.auditDashboard(tenantId);
+  }
+
+  n0va1oAuditCenterLog(tenantId: string, limit?: number) {
+    return n0va1oAudit.auditLog(tenantId, limit);
+  }
+
+  n0va1oSdkCatalog() {
+    return n0va1oSdk.sdkCatalog();
+  }
+
+  n0va1oSdkSnippet(tenantId: string, input: any) {
+    return n0va1oSdk.generateSdkSnippet(tenantId, input || {});
+  }
+
+  n0va1oSdkInstallGuide(tenantId: string, language: string) {
+    return n0va1oSdk.sdkInstallGuide(tenantId, language);
+  }
+
+  n0va1oSdkCheckVersion(tenantId: string, language: string) {
+    return n0va1oSdk.checkSdkVersion(tenantId, language);
+  }
+
+  n0va1oSdkProjects(tenantId: string) {
+    return n0va1oSdk.sdkProjects(tenantId);
+  }
+
+  n0va1oSdkCreateProject(tenantId: string, input: any) {
+    return n0va1oSdk.createSdkProject(tenantId, input || {});
+  }
+
+  n0va1oSdkRecordUsage(tenantId: string, input: any) {
+    return n0va1oSdk.recordSdkUsage(tenantId, input || {});
+  }
+
+  n0va1oSdkUsage(tenantId: string) {
+    return n0va1oSdk.sdkUsage(tenantId);
+  }
+
+  n0va1oSdkDashboard(tenantId: string) {
+    return n0va1oSdk.sdkDashboard(tenantId);
+  }
+
+  n0va1oSdkLog(tenantId: string) {
+    return n0va1oSdk.sdkLog(tenantId);
+  }
+
+  n0va1oDeployCatalog() {
+    return n0va1oDeployment.deploymentCatalog();
+  }
+
+  n0va1oDeployCreate(tenantId: string, input: any) {
+    return n0va1oDeployment.createDeployment(tenantId, input || {});
+  }
+
+  n0va1oDeployments(tenantId: string) {
+    return n0va1oDeployment.listDeployments(tenantId);
+  }
+
+  n0va1oDeployment(tenantId: string, deploymentId: string) {
+    return n0va1oDeployment.getDeployment(tenantId, deploymentId);
+  }
+
+  n0va1oDeployProvision(tenantId: string, deploymentId: string) {
+    return n0va1oDeployment.runProvision(tenantId, deploymentId);
+  }
+
+  n0va1oDeployHealth(tenantId: string) {
+    return n0va1oDeployment.deploymentHealth(tenantId);
+  }
+
+  n0va1oDeployDelete(tenantId: string, deploymentId: string) {
+    return n0va1oDeployment.deleteDeployment(tenantId, deploymentId);
+  }
+
+  n0va1oMigrateConnections(tenantId: string, input: any) {
+    return n0va1oDeployment.migrateConnections(tenantId, input || {});
+  }
+
+  n0va1oOnboarding(tenantId: string) {
+    return n0va1oDeployment.onboardingChecklist(tenantId);
+  }
+
+  n0va1oTroubleshootCatalog() {
+    return n0va1oDeployment.troubleshootingCatalog();
+  }
+
+  n0va1oTroubleshoot(tenantId: string, issue: string) {
+    return n0va1oDeployment.troubleshoot(tenantId, issue);
+  }
+
+  n0va1oResolveIssue(tenantId: string, issueId: string) {
+    return n0va1oDeployment.resolveIssue(tenantId, issueId);
+  }
+
+  n0va1oIssues(tenantId: string) {
+    return n0va1oDeployment.issuesList(tenantId);
+  }
+
+  n0va1oDeployDashboard(tenantId: string) {
+    return n0va1oDeployment.deploymentDashboard(tenantId);
+  }
+
+  n0va1oDeployLog(tenantId: string) {
+    return n0va1oDeployment.deploymentLog(tenantId);
+  }
+
+  n0va1oObserveCatalog() {
+    return n0va1oObservability.observabilityCatalog();
+  }
+
+  n0va1oTelemetry(tenantId: string, input: any) {
+    return n0va1oObservability.recordTelemetry(tenantId, input || {});
+  }
+
+  n0va1oTrace(tenantId: string, input: any) {
+    return n0va1oObservability.recordTrace(tenantId, input || {});
+  }
+
+  n0va1oTraces(tenantId: string, status?: string) {
+    return n0va1oObservability.tracesList(tenantId, status);
+  }
+
+  n0va1oGetTrace(tenantId: string, traceId: string) {
+    return n0va1oObservability.getTrace(tenantId, traceId);
+  }
+
+  n0va1oTelemetryStats(tenantId: string) {
+    return n0va1oObservability.telemetryStats(tenantId);
+  }
+
+  n0va1oReportError(tenantId: string, input: any) {
+    return n0va1oObservability.reportError(tenantId, input || {});
+  }
+
+  n0va1oRetryDecision(errorId: string, attempt: number) {
+    return n0va1oObservability.retryDecision(errorId, attempt);
+  }
+
+  n0va1oResolveError(errorId: string) {
+    return n0va1oObservability.resolveError(errorId);
+  }
+
+  n0va1oErrors(tenantId: string, status?: string) {
+    return n0va1oObservability.errorsList(tenantId, status);
+  }
+
+  n0va1oObserveDashboard(tenantId: string) {
+    return n0va1oObservability.observabilityDashboard(tenantId);
+  }
+
+  n0va1oObserveLog(tenantId: string) {
+    return n0va1oObservability.observabilityLog(tenantId);
+  }
+
+  n0va1oModifierTypes() {
+    return n0va1oGov.modifierTypeCatalog();
+  }
+
+  n0va1oModifierCatalog() {
+    return n0va1oGov.schemaModifierCatalog();
+  }
+
+  n0va1oTranslationCatalog() {
+    return n0va1oRouting.translationCatalog();
+  }
+
+  n0va1oIngestWebhook(tenantId: string, input: any) {
+    return n0va1oTrigger.ingestWebhook(tenantId, input || {});
+  }
+
+  n0va1oIngestOverview(tenantId: string) {
+    return n0va1oTrigger.ingestOverview(tenantId);
+  }
+
+  n0va1oAccountHealth(tenantId: string) {
+    return n0va1oAuth.accountHealth(tenantId);
+  }
+
+  n0va1oRefreshAccountHealth(tenantId: string) {
+    return n0va1oAuth.refreshAccountHealth(tenantId);
+  }
+
+  n0va1oAccountLru(tenantId: string, opts?: any) {
+    return n0va1oAuth.accountLru(tenantId, opts || {});
+  }
+
+  n0va1oEvictAccounts(tenantId: string, opts?: any) {
+    return n0va1oAuth.evictAccounts(tenantId, opts || {});
   }
 }
 

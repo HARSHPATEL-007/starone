@@ -102,7 +102,7 @@ export default function N0VA1OCatalog() {
                 <Search className="w-4 h-4 text-gray-500 shrink-0" />
                 <input
                   className="bg-transparent outline-none text-sm text-gray-200 w-full"
-                  placeholder="Search 200 platforms (name, id, capability)…"
+                  placeholder="Search 1,380+ platforms (name, id, capability)…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") doSearch(); }}

@@ -408,12 +408,12 @@ describe("N0VA1O execution & virtual filesystem", () => {
 });
 
 describe("N0VA1O triggers", () => {
-  it("triggerCatalog exposes 10 bidirectional events", () => {
+  it("triggerCatalog exposes 17 bidirectional events", () => {
     const cat: any = n0va1oTrigger.triggerCatalog();
-    expect(cat.events).toHaveLength(10);
+    expect(cat.events).toHaveLength(17);
     expect(cat.events[0].event).toBe("n0va1o.connection_established");
     expect(cat.sources).toHaveLength(4);
-    expect(cat.totalEvents).toBe(10);
+    expect(cat.totalEvents).toBe(17);
   });
 
   it("createTrigger validates event, source and target URL", () => {
@@ -456,7 +456,7 @@ describe("N0VA1O triggers", () => {
     expect(del.deleted).toBe(true);
     expect(n0va1oTrigger.listTriggers(T).total).toBe(1);
     const o: any = n0va1oTrigger.triggerOverview(T);
-    expect(o.events).toHaveLength(10);
+    expect(o.events).toHaveLength(17);
     expect(o.totalTriggers).toBe(1);
     expect(o.enabled).toBe(1);
   });

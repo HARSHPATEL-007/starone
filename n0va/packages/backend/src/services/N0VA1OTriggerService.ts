@@ -19,14 +19,21 @@ function logEntry(tenantId: string, category: string, detail: string, extra: any
 
 export const TRIGGER_EVENTS = [
   { event: "n0va1o.connection_established", description: "A connector connection was authorized", direction: "outbound" },
+  { event: "n0va1o.connection_failed", description: "A connector connection attempt failed", direction: "outbound" },
   { event: "n0va1o.agent_registered", description: "A new agent was registered with the gateway", direction: "outbound" },
+  { event: "n0va1o.agent_action_completed", description: "An agent action finished executing", direction: "outbound" },
   { event: "n0va1o.tool_discovered", description: "Intent-driven tool discovery injected tools", direction: "outbound" },
   { event: "n0va1o.recipe_compiled", description: "A recipe compiled to a deterministic API", direction: "outbound" },
   { event: "n0va1o.recipe_executed", description: "A recipe finished executing", direction: "outbound" },
   { event: "n0va1o.sandbox_created", description: "An ephemeral sandbox spawned", direction: "outbound" },
   { event: "n0va1o.sandbox_terminated", description: "An ephemeral sandbox terminated", direction: "outbound" },
+  { event: "n0va1o.sandbox_execution_complete", description: "A sandboxed execution completed", direction: "outbound" },
   { event: "n0va1o.file_offloaded", description: "A >10MB payload offloaded to virtual filesystem", direction: "outbound" },
+  { event: "n0va1o.approval_required", description: "A tool call was escalated for HITL approval", direction: "outbound" },
   { event: "n0va1o.hitl_escalated", description: "A tool call escalated for human review", direction: "outbound" },
+  { event: "n0va1o.schema_drift_detected", description: "A provider schema drift was detected", direction: "outbound" },
+  { event: "n0va1o.rate_limit_approaching", description: "A plan rate limit is approaching", direction: "outbound" },
+  { event: "n0va1o.token_rotated", description: "A JIT token was rotated", direction: "outbound" },
   { event: "n0va1o.security_alert", description: "A security policy was triggered", direction: "outbound" },
 ] as const;
 
@@ -173,6 +180,104 @@ export class N0VA1OTriggerService {
       totalTriggers: triggers.length,
       enabled: triggers.filter((t: any) => t.enabled).length,
       summary: `${triggers.filter((t: any) => t.enabled).length}/${triggers.length} trigger(s) active`,
+    };
+  }
+
+  private deliverEvent(tenantId: string, event: string, payload: any, sourceId: string) {
+    const source = TRIGGER_SOURCES.find((s) => s.id === sourceId) || TRIGGER_SOURCES[3];
+    const matches = DataStore.mem().find("n0va1o_triggers", (t: any) => t.tenantId === tenantId && t.event === event && t.enabled);
+    return matches.map((t: any) => {
+      const seed = `${tenantId}|${event}|${t._id}|${hashStr(JSON.stringify(payload))}`;
+      const fail = hashStr(seed + "fail") % 7 === 0;
+      const latencyMs = Math.min(t.latencyTargetMs, Math.max(20, (hashStr(seed + "lat") % t.latencyTargetMs) + 15));
+      const signature = `sha256=${hashStr(seed + "sig").toString(16).padStart(64, "0")}`;
+      const delivery: any = {
+        tenantId, triggerId: t._id, triggerName: t.name, event,
+        source: source.id, status: fail ? "failed" : "delivered",
+        latencyMs, signature, targetUrl: t.targetUrl,
+        payload, at: new Date().toISOString(),
+      };
+      const inserted = DataStore.mem().insert("n0va1o_deliveries", delivery);
+      DataStore.mem().update("n0va1o_triggers", (x: any) => x._id === t._id, {
+        deliveryCount: (t.deliveryCount || 0) + 1,
+        successCount: (t.successCount || 0) + (fail ? 0 : 1),
+        updatedAt: new Date().toISOString(),
+      });
+      return { deliveryId: inserted._id, ...delivery, deliveryIdRaw: inserted._id };
+    });
+  }
+
+  fireEvent(tenantId: string, input: any) {
+    const event = String(input?.event || "");
+    const catalogEvent = TRIGGER_EVENTS.find((e) => e.event === event);
+    if (!catalogEvent) throw new Error(`Unknown trigger event — available: ${TRIGGER_EVENTS.map((e) => e.event).join(", ")}`);
+    const payload = input?.payload || {};
+    const sourceId = String(input?.source || "internal");
+    const deliveries = this.deliverEvent(tenantId, event, payload, sourceId);
+    logEntry(tenantId, "event_fired", `${event} fired via ${sourceId} — ${deliveries.length} trigger(s) matched`, { payload });
+    return {
+      event, source: sourceId, matchedTriggers: deliveries.length,
+      deliveries,
+      summary: `${event} fired — ${deliveries.length} delivery(ies), ${deliveries.filter((d: any) => d.status === "delivered").length} succeeded`,
+    };
+  }
+
+  ingestWebhook(tenantId: string, input: any) {
+    const event = String(input?.event || "");
+    const catalogEvent = TRIGGER_EVENTS.find((e) => e.event === event);
+    if (!catalogEvent) throw new Error(`Unknown trigger event — available: ${TRIGGER_EVENTS.map((e) => e.event).join(", ")}`);
+    const payload = input?.payload || {};
+    const signature = String(input?.signature || "");
+    const timestamp = Number(input?.timestamp) || Date.now();
+    const body = String(input?.body || JSON.stringify(payload));
+    const now = Date.now();
+    const expected = `sha256=${hashStr(`${tenantId}|${event}|${timestamp}|${body}`).toString(16).padStart(64, "0")}`;
+    const signatureVerified = signature === expected;
+    const windowMs = 300000;
+    const timestampFresh = Math.abs(now - timestamp) <= windowMs;
+    const dup = DataStore.mem().findOne("n0va1o_webhook_ingest", (r: any) => r.tenantId === tenantId && r.event === event && r.signature === signature);
+    const replayDetected = Boolean(dup);
+    const limitPerMinute = Number.isFinite(input?.limitPerMinute) ? Math.max(1, Math.min(Math.floor(input.limitPerMinute), 10000)) : 60;
+    const recent = DataStore.mem().find("n0va1o_webhook_ingest", (r: any) => r.tenantId === tenantId && r.event === event && now - new Date(r.at).getTime() < 60000);
+    const rateLimited = recent.length >= limitPerMinute;
+    if (signatureVerified && !replayDetected && !rateLimited) {
+      DataStore.mem().insert("n0va1o_webhook_ingest", {
+        tenantId, event, signature, payload, body, timestamp, at: new Date(now).toISOString(),
+        createdAt: new Date(now).toISOString(), updatedAt: new Date(now).toISOString(),
+      });
+      const deliveries = this.deliverEvent(tenantId, event, payload, "webhook");
+      logEntry(tenantId, "webhook_ingested", `${event} ingested via webhook — signature verified, ${deliveries.length} delivery(ies)`, {});
+      return {
+        accepted: true, event,
+        signatureVerified, timestampFresh, replayDetected, rateLimited,
+        remaining: Math.max(0, limitPerMinute - recent.length - 1),
+        limitPerMinute,
+        deliveries,
+        summary: `Webhook accepted — ${event} → ${deliveries.length} delivery(ies), ${deliveries.filter((d: any) => d.status === "delivered").length} succeeded`,
+      };
+    }
+    const reason = !signatureVerified ? "signature mismatch" : replayDetected ? "replay detected (duplicate signature)" : rateLimited ? `rate limit exceeded (${limitPerMinute}/min)` : !timestampFresh ? "timestamp outside 5-minute window" : "policy rejected";
+    logEntry(tenantId, "webhook_rejected", `${event} webhook rejected — ${reason}`, {});
+    return {
+      accepted: false, event,
+      signatureVerified, timestampFresh, replayDetected, rateLimited,
+      reason,
+      verdict: replayDetected ? "replay" : rateLimited ? "rate_limited" : "rejected",
+      summary: `Webhook rejected — ${reason}`,
+    };
+  }
+
+  ingestOverview(tenantId: string) {
+    const rows = DataStore.mem().find("n0va1o_webhook_ingest", (r: any) => r.tenantId === tenantId);
+    return {
+      ingested: rows.length,
+      byEvent: TRIGGER_EVENTS.map((e) => ({ event: e.event, count: rows.filter((r: any) => r.event === e.event).length })).filter((e) => e.count > 0),
+      security: {
+        signatureEnforced: true,
+        replayWindowMs: 300000,
+        defaultLimitPerMinute: 60,
+      },
+      summary: `${rows.length} webhook payload(s) ingested with signature + replay + rate-limit verification`,
     };
   }
 }
