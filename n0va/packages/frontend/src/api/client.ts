@@ -4101,8 +4101,15 @@ export const api = {
     n0va1oAuthLog: (limit?: number) =>
       request<any>(`/ads-marketing-module/n0va1o/auth/log${limit ? `?limit=${limit}` : ""}`),
     n0va1oMcpCatalog: () => request<any>("/ads-marketing-module/n0va1o/routing/mcp"),
-    n0va1oDiscoverTools: (query: string, limit?: number) =>
-      request<any>(`/ads-marketing-module/n0va1o/routing/tools/discover?query=${encodeURIComponent(query)}${limit ? `&limit=${limit}` : ""}`),
+    n0va1oDiscoverTools: (query: string, opts?: { limit?: number; maxTools?: number; contextWindowSize?: number; preferredLatency?: number; riskTolerance?: string }) => {
+      const p = new URLSearchParams({ query });
+      if (opts?.limit) p.set("limit", String(opts.limit));
+      if (opts?.maxTools) p.set("maxTools", String(opts.maxTools));
+      if (opts?.contextWindowSize) p.set("contextWindowSize", String(opts.contextWindowSize));
+      if (opts?.preferredLatency) p.set("preferredLatency", String(opts.preferredLatency));
+      if (opts?.riskTolerance) p.set("riskTolerance", opts.riskTolerance);
+      return request<any>(`/ads-marketing-module/n0va1o/routing/tools/discover?${p.toString()}`);
+    },
     n0va1oTranslateRequest: (input: Record<string, any>) =>
       request<any>("/ads-marketing-module/n0va1o/routing/translate", { method: "POST", body: JSON.stringify(input) }),
     n0va1oCreateRoutingPolicy: (input: Record<string, any>) =>
@@ -4198,5 +4205,35 @@ export const api = {
     n0va1oPluginLog: (limit?: number) =>
       request<any>(`/ads-marketing-module/n0va1o/plugins/log${limit ? `?limit=${limit}` : ""}`),
     n0va1oPluginDashboard: () => request<any>("/ads-marketing-module/n0va1o/plugins/dashboard"),
+    n0va1oThroughputStatus: () => request<any>("/ads-marketing-module/n0va1o/catalog/throughput"),
+    n0va1oLatencyBenchmarks: () => request<any>("/ads-marketing-module/n0va1o/catalog/latency"),
+    n0va1oAuthMethodCatalog: () => request<any>("/ads-marketing-module/n0va1o/catalog/auth-methods"),
+    n0va1oCreateSession: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/auth/sessions", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oListSessions: (status?: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/sessions${status ? `?status=${status}` : ""}`),
+    n0va1oGetSession: (sessionId: string) => request<any>(`/ads-marketing-module/n0va1o/auth/sessions/${sessionId}`),
+    n0va1oEndSession: (sessionId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/auth/sessions/${sessionId}/end`, { method: "POST" }),
+    n0va1oVfsChunkRead: (fileId: string, offset: number, length: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/chunk?offset=${offset}&length=${length}`),
+    n0va1oVfsGrepSearch: (fileId: string, pattern: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/grep`, { method: "POST", body: JSON.stringify({ pattern }) }),
+    n0va1oVfsPandasQuery: (fileId: string, query: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/pandas`, { method: "POST", body: JSON.stringify({ query }) }),
+    n0va1oVfsSummarizeStats: (fileId: string) => request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/stats`),
+    n0va1oRunModifierPipeline: (input: Record<string, any>) =>
+      request<any>("/ads-marketing-module/n0va1o/gov/modifiers/run", { method: "POST", body: JSON.stringify(input) }),
+    n0va1oModifierPipelineStatus: () => request<any>("/ads-marketing-module/n0va1o/gov/modifiers/pipeline-status"),
+    n0va1oComplianceFrameworkCatalog: () => request<any>("/ads-marketing-module/n0va1o/compliance/frameworks"),
+    n0va1oComplianceMapping: () => request<any>("/ads-marketing-module/n0va1o/compliance/mapping"),
+    n0va1oComplianceEvidence: (framework: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/compliance/evidence/${framework}`),
+    n0va1oComplianceReports: () => request<any>("/ads-marketing-module/n0va1o/compliance/reports"),
+    n0va1oComplianceDashboard: () => request<any>("/ads-marketing-module/n0va1o/compliance/dashboard"),
+    n0va1oAgentAuditTrail: (agentId: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/compliance/audit-trail/${agentId}`),
+    n0va1oComplianceLog: (limit?: number) =>
+      request<any>(`/ads-marketing-module/n0va1o/compliance/log${limit ? `?limit=${limit}` : ""}`),
   },
 };

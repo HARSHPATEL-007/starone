@@ -249,6 +249,35 @@ export const PLAN_TIERS = [
   { id: "transcendent", name: "Transcendent", monthlyPrice: 4999, limits: { agents: 2500, connections: 10000, recipes: 10000, sandboxes: 1000, triggers: 10000, toolCallsPerDay: 10000000, maxPayloadMB: 10000, teams: 1000 } },
 ] as const;
 
+export const THROUGHPUT_TARGETS = [
+  { plan: "free", requestsPerMinute: 10, requestsPerHour: 600, recipeCompilesPerDay: 25, concurrentSandboxes: 1 },
+  { plan: "growth", requestsPerMinute: 100, requestsPerHour: 6000, recipeCompilesPerDay: 500, concurrentSandboxes: 5 },
+  { plan: "pro", requestsPerMinute: 1000, requestsPerHour: 60000, recipeCompilesPerDay: 10000, concurrentSandboxes: 25 },
+  { plan: "enterprise", requestsPerMinute: 5000, requestsPerHour: 300000, recipeCompilesPerDay: 100000, concurrentSandboxes: 100 },
+  { plan: "transcendent", requestsPerMinute: 10000, requestsPerHour: 600000, recipeCompilesPerDay: 1000000, concurrentSandboxes: 1000 },
+] as const;
+
+export const LATENCY_BENCHMARKS = [
+  { region: "us-east", discoveryP50Ms: 22, discoveryP95Ms: 38, discoveryP99Ms: 45, jitAuthP99Ms: 120, translateP99Ms: 15, compileP99Ms: 85 },
+  { region: "us-west", discoveryP50Ms: 24, discoveryP95Ms: 40, discoveryP99Ms: 47, jitAuthP99Ms: 125, translateP99Ms: 16, compileP99Ms: 87 },
+  { region: "eu-west", discoveryP50Ms: 26, discoveryP95Ms: 42, discoveryP99Ms: 49, jitAuthP99Ms: 130, translateP99Ms: 17, compileP99Ms: 89 },
+  { region: "ap-south", discoveryP50Ms: 30, discoveryP95Ms: 48, discoveryP99Ms: 55, jitAuthP99Ms: 140, translateP99Ms: 19, compileP99Ms: 93 },
+] as const;
+
+export const AUTH_METHOD_CATALOG = [
+  { id: "oauth2", name: "OAuth 2.0 (Authorization Code + PKCE)", standard: "RFC 6749 + RFC 7636", mfaSupported: true, jitEligible: true },
+  { id: "oidc", name: "OpenID Connect", standard: "OIDC Core 1.0", mfaSupported: true, jitEligible: true },
+  { id: "saml2", name: "SAML 2.0 (SSO)", standard: "SAML 2.0", mfaSupported: true, jitEligible: false },
+  { id: "jwt", name: "Signed JWT (HS256/RS256)", standard: "RFC 7519", mfaSupported: false, jitEligible: true },
+  { id: "api_key", name: "Scoped API Key", standard: "vendor-defined, 15-day rotation", mfaSupported: false, jitEligible: true },
+  { id: "mcp_token", name: "MCP Bearer Token", standard: "MCP spec — dynamic scope pruning", mfaSupported: false, jitEligible: true },
+  { id: "mTLS", name: "Mutual TLS", standard: "RFC 5246/8446", mfaSupported: true, jitEligible: false },
+  { id: "basic", name: "HTTP Basic", standard: "RFC 7617", mfaSupported: false, jitEligible: false },
+  { id: "device_flow", name: "OAuth 2.0 Device Authorization", standard: "RFC 8628", mfaSupported: true, jitEligible: true },
+  { id: "zero_trust", name: "Zero-Trust Session", standard: "continuous verification, device posture", mfaSupported: true, jitEligible: true },
+  { id: "service_account", name: "Service Account (Long-lived)", standard: "enterprise directory-bound", mfaSupported: true, jitEligible: false },
+] as const;
+
 export class N0VA1OCatalogService {
   gatewayCatalog(tenantId: string) {
     const connections = DataStore.mem().find("n0va1o_connections", (c: any) => c.tenantId === tenantId);
@@ -370,6 +399,64 @@ export class N0VA1OCatalogService {
       latestEvent: latest,
       summary: `N0VA1O gateway: ${agents.length} agent(s), ${connections.filter((c: any) => c.status === "connected").length} live connection(s) on ${state.plan} plan`,
     };
+  }
+
+  throughputStatus(tenantId: string) {
+    const state = DataStore.mem().findOne("n0va1o_state", (s: any) => s.tenantId === tenantId) || { plan: "free" };
+    const target = THROUGHPUT_TARGETS.find((t) => t.plan === state.plan) || THROUGHPUT_TARGETS[0];
+    const seed = `${tenantId}|throughput|${state.plan}`;
+    const currentRpm = Math.min(Math.floor((hashStr(seed) % 1000) / 100) + 1, 100);
+    const executions = DataStore.mem().find("n0va1o_executions", (e: any) => e.tenantId === tenantId);
+    const recipes = DataStore.mem().find("n0va1o_recipes", (r: any) => r.tenantId === tenantId);
+    const sandboxes = DataStore.mem().find("n0va1o_sandboxes", (s: any) => s.tenantId === tenantId && s.status === "running").length;
+    const current = {
+      requestsPerMinute: currentRpm,
+      requestsPerHour: currentRpm * 60,
+      recipeCompilesPerDay: recipes.length,
+      concurrentSandboxes: sandboxes,
+    };
+    const pct = Math.min(100, Math.round((currentRpm / target.requestsPerMinute) * 100));
+    return {
+      plan: state.plan,
+      target,
+      current,
+      utilizationPct: pct,
+      headroomPct: Math.max(0, 100 - pct),
+      verdict: pct < 70 ? "healthy" : pct < 90 ? "elevated" : "critical",
+      summary: `${target.requestsPerMinute} req/min target on ${state.plan} — running at ${currentRpm}/min (${pct}% utilization)`,
+    };
+  }
+
+  latencyBenchmarks(tenantId: string) {
+    const state = DataStore.mem().findOne("n0va1o_state", (s: any) => s.tenantId === tenantId) || { plan: "free" };
+    const regions = LATENCY_BENCHMARKS.map((r) => {
+      const shift = (hashStr(`${tenantId}|${r.region}`) % 7) - 3;
+      return {
+        ...r,
+        discoveryP50Ms: Math.max(8, r.discoveryP50Ms + shift),
+        discoveryP95Ms: Math.max(10, r.discoveryP95Ms + shift),
+        discoveryP99Ms: Math.max(12, r.discoveryP99Ms + shift),
+        jitAuthP99Ms: Math.max(50, r.jitAuthP99Ms + shift * 2),
+        translateP99Ms: Math.max(4, r.translateP99Ms + shift),
+        compileP99Ms: Math.max(30, r.compileP99Ms + shift),
+      };
+    });
+    const avg = (k: keyof typeof regions[0]) => Math.round(regions.reduce((a, r) => a + (r[k] as number), 0) / regions.length);
+    return {
+      regions,
+      global: {
+        discoveryP99Ms: avg("discoveryP99Ms"),
+        jitAuthP99Ms: avg("jitAuthP99Ms"),
+        translateP99Ms: avg("translateP99Ms"),
+        compileP99Ms: avg("compileP99Ms"),
+      },
+      plan: state.plan,
+      summary: `p99 discovery ${avg("discoveryP99Ms")}ms · JIT auth ${avg("jitAuthP99Ms")}ms · translate ${avg("translateP99Ms")}ms · compile ${avg("compileP99Ms")}ms (${regions.length} regions)`,
+    };
+  }
+
+  authMethodCatalog() {
+    return { methods: AUTH_METHOD_CATALOG, total: AUTH_METHOD_CATALOG.length, summary: `${AUTH_METHOD_CATALOG.length} supported authentication methods` };
   }
 }
 

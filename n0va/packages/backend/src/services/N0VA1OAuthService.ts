@@ -38,6 +38,14 @@ export const SCOPE_RANK: Record<string, number> = {
   "audit.read": 40, "catalog.read": 30, "gateway.read": 20,
 };
 
+export const AUTONOMY_LEVELS = ["autonomous", "assisted", "manual"] as const;
+
+export const PERMISSIONS = [
+  "mail.read", "mail.send", "crm.read", "crm.write", "calendar.read", "calendar.write",
+  "analytics.read", "finance.read", "storage.read", "storage.write", "tasks.read", "tasks.write",
+  "chat.read", "chat.send", "docs.read", "docs.write", "compliance.review", "admin.manage",
+] as const;
+
 export class N0VA1OAuthService {
   authCatalog() {
     return { methods: AUTH_METHODS, scopes: SCOPES, totalMethods: AUTH_METHODS.length, summary: `${AUTH_METHODS.length} JIT auth methods` };
@@ -48,6 +56,16 @@ export class N0VA1OAuthService {
     if (!name) throw new Error("Agent name is required");
     const requestedScopes = Array.isArray(input?.scopes) ? input.scopes.filter((s: string) => (SCOPES as readonly string[]).includes(s)) : [];
     if (input?.scopes && requestedScopes.length !== input.scopes.length) throw new Error(`Unknown scope(s) — allowed: ${SCOPES.join(", ")}`);
+    const permissions = Array.isArray(input?.permissions)
+      ? input.permissions.filter((p: string) => (PERMISSIONS as readonly string[]).includes(p))
+      : [];
+    if (input?.permissions && permissions.length !== input.permissions.length) throw new Error(`Unknown permission(s) — allowed: ${PERMISSIONS.join(", ")}`);
+    const autonomyLevel = (AUTONOMY_LEVELS as readonly string[]).includes(input?.autonomyLevel) ? input.autonomyLevel : "assisted";
+    if (input?.autonomyLevel && !(AUTONOMY_LEVELS as readonly string[]).includes(input?.autonomyLevel)) throw new Error(`Unknown autonomy level — allowed: ${AUTONOMY_LEVELS.join(", ")}`);
+    const approvalRequiredFor = Array.isArray(input?.approvalRequiredFor) ? input.approvalRequiredFor.filter((t: string) => String(t).trim().length > 0) : [];
+    const maxDailyActions = Number.isFinite(input?.maxDailyActions) ? Math.max(1, Math.min(Math.floor(input.maxDailyActions), 1000)) : 100;
+    const webhookUrl = input?.webhookUrl ? String(input.webhookUrl) : "";
+    if (webhookUrl && !/^https:\/\//.test(webhookUrl)) throw new Error("webhookUrl must be an https URL");
     const now = Date.now();
     const row: any = {
       tenantId,
@@ -55,6 +73,12 @@ export class N0VA1OAuthService {
       description: String(input?.description || ""),
       authMethod: AUTH_METHODS.some((m) => m.id === input?.authMethod) ? input.authMethod : "mcp_token",
       scopes: requestedScopes.length ? requestedScopes : ["gateway.read", "tools.discover"],
+      permissions,
+      autonomyLevel,
+      approvalRequiredFor,
+      maxDailyActions,
+      webhookUrl,
+      actionsToday: 0,
       status: "active",
       apiKey: `n0va1o_ag_${hashStr(tenantId + name + "key").toString(36)}${random6()}`,
       createdAt: new Date(now).toISOString(),
@@ -62,8 +86,11 @@ export class N0VA1OAuthService {
       lastUsedAt: null,
     };
     const inserted = DataStore.mem().insert("n0va1o_agents", row);
-    logEntry(tenantId, "agent_registered", `Agent "${name}" registered (${row.authMethod})`, { agentId: inserted._id, scopes: row.scopes });
-    return { agentId: inserted._id, ...row, summary: `Agent "${name}" registered with ${row.scopes.length} scope(s)` };
+    logEntry(tenantId, "agent_registered", `Agent "${name}" registered (${row.authMethod}, autonomy ${row.autonomyLevel})`, { agentId: inserted._id, scopes: row.scopes, permissions: row.permissions });
+    return {
+      agentId: inserted._id, ...row, api_key: row.apiKey, scopes: row.scopes,
+      summary: `Agent "${name}" registered with ${row.scopes.length} scope(s), ${row.permissions.length} permission(s), autonomy ${row.autonomyLevel}`,
+    };
   }
 
   listAgents(tenantId: string) {
@@ -265,6 +292,77 @@ export class N0VA1OAuthService {
     DataStore.mem().update("n0va1o_accounts", (a: any) => a._id === id, { active: true, updatedAt: new Date().toISOString() });
     logEntry(tenantId, "account_switched", `Switched to account "${account.accountName}"`, { accountId: id });
     return { accountId: `ac_${id}`, accountName: account.accountName, switchLatencyMs: 15, summary: `Active account → "${account.accountName}" (15ms switch)` };
+  }
+
+  createSession(tenantId: string, input: any) {
+    const agentId = String(input?.agentId || "");
+    const agent = DataStore.mem().findOne("n0va1o_agents", (a: any) => a.tenantId === tenantId && a._id === agentId);
+    if (!agent) throw new Error("Agent not found");
+    const now = Date.now();
+    const ttlSec = Number.isFinite(input?.ttlSeconds) ? Math.max(60, Math.min(Math.floor(input.ttlSeconds), 86400)) : 3600;
+    const sandboxConfig = {
+      runtime: String(input?.sandboxConfig?.runtime || "python311"),
+      memoryMB: Number.isFinite(input?.sandboxConfig?.memoryMB) ? Math.max(64, Math.min(Math.floor(input.sandboxConfig.memoryMB), 8192)) : 256,
+      ttlSeconds: ttlSec,
+    };
+    const seed = `${tenantId}|${agentId}|${now}`;
+    const sessionId = `ses_${hashStr(seed).toString(36)}${random6()}`;
+    const contextTokens = 4000 + (hashStr(`${tenantId}|${agentId}|context`) % 12000);
+    const row: any = {
+      tenantId, agentId, agentName: agent.name,
+      sessionId,
+      userDefinedId: String(input?.userDefinedId || ""),
+      endpoint: `wss://gateway.n0va.io/v1/sessions/${sessionId}/events`,
+      contextTokens,
+      sandboxConfig,
+      status: "active",
+      createdAt: new Date(now).toISOString(),
+      expiresAt: new Date(now + ttlSec * 1000).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+    };
+    DataStore.mem().insert("n0va1o_sessions", row);
+    logEntry(tenantId, "session_created", `Session ${sessionId} created for "${agent.name}" (${contextTokens} context tokens)`, { agentId, sessionId });
+    return {
+      session_id: sessionId, sessionId,
+      agentId, agentName: agent.name,
+      endpoint: row.endpoint,
+      context_tokens: contextTokens, contextTokens,
+      status: "active",
+      expiresAt: row.expiresAt,
+      sandboxConfig,
+      summary: `Session created — ${contextTokens} context tokens, expires in ${Math.round(ttlSec / 60)} min`,
+    };
+  }
+
+  listSessions(tenantId: string, status?: string) {
+    let sessions = DataStore.mem().find("n0va1o_sessions", (s: any) => s.tenantId === tenantId);
+    if (status) sessions = sessions.filter((s: any) => s.status === status);
+    const now = Date.now();
+    return {
+      sessions: sessions.map((s: any) => ({
+        session_id: s.sessionId, sessionId: s.sessionId, agentId: s.agentId, agentName: s.agentName,
+        userDefinedId: s.userDefinedId, status: s.status, contextTokens: s.contextTokens,
+        createdAt: s.createdAt, expiresAt: s.expiresAt,
+        expired: new Date(s.expiresAt).getTime() < now,
+      })),
+      total: sessions.length,
+      active: sessions.filter((s: any) => s.status === "active" && new Date(s.expiresAt).getTime() >= now).length,
+    };
+  }
+
+  getSession(tenantId: string, sessionId: string) {
+    const session = DataStore.mem().findOne("n0va1o_sessions", (s: any) => s.tenantId === tenantId && s.sessionId === sessionId);
+    if (!session) throw new Error("Session not found");
+    return { session_id: session.sessionId, sessionId: session.sessionId, ...session };
+  }
+
+  endSession(tenantId: string, sessionId: string) {
+    const session = DataStore.mem().findOne("n0va1o_sessions", (s: any) => s.tenantId === tenantId && s.sessionId === sessionId);
+    if (!session) throw new Error("Session not found");
+    if (session.status === "ended") throw new Error("Session already ended");
+    DataStore.mem().update("n0va1o_sessions", (s: any) => s.sessionId === sessionId, { status: "ended", endedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    logEntry(tenantId, "session_ended", `Session ${sessionId} ended`, { agentId: session.agentId, sessionId });
+    return { sessionId, status: "ended", summary: `Session ${sessionId} ended` };
   }
 
   authDashboard(tenantId: string) {

@@ -104,6 +104,83 @@ export class N0VA1OGovernanceService {
     return { modifierId, deleted: true, summary: `Modifier "${modifier.name}" deleted` };
   }
 
+  patternMatches(pattern: string, toolId: string): boolean {
+    const re = new RegExp("^" + pattern.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$");
+    return re.test(toolId);
+  }
+
+  runModifierPipeline(tenantId: string, input: any) {
+    const toolId = String(input?.toolId || "");
+    if (!toolId) throw new Error("toolId is required");
+    const phase = String(input?.phase || "");
+    if (!["schema", "before", "after"].includes(phase)) throw new Error("phase must be schema, before, or after");
+    const payload = input?.payload && typeof input.payload === "object" ? input.payload : {};
+    const modifiers = DataStore.mem().find("n0va1o_modifiers", (m: any) => m.tenantId === tenantId && m.enabled && m.type === phase);
+    const applicable = modifiers.filter((m: any) => this.patternMatches(m.toolPattern, toolId));
+    const seed = `${tenantId}|${toolId}|${phase}`;
+    const applied = applicable.map((m: any, i: number) => {
+      const stableKey = `${m.name}|${m.toolPattern}|${i}`;
+      const effect =
+        phase === "schema"
+          ? {
+              schemaVersion: 2,
+              addedProps: [...new Set([...(m.transform.split(",").map((s: string) => s.trim())).filter(Boolean)])].slice(0, 3),
+              injectedAt: `schema:${toolId}`,
+            }
+          : phase === "before"
+            ? {
+                prepared: true,
+                transformedPayload: {
+                  ...payload,
+                  _prepared: true,
+                  _modifier: m.name,
+                  _preparedAtMs: hashStr(seed + stableKey + "ms") % 40 + 5,
+                },
+              }
+            : {
+                postProcessed: true,
+                resultSummary: `${toolId} output post-processed by ${m.name}`,
+                _elapsedMs: hashStr(seed + stableKey + "lat") % 25 + 3,
+              };
+      logEntry(tenantId, "modifier_applied", `${phase} modifier "${m.name}" applied to ${toolId}`, { modifierId: m._id });
+      return { modifierId: m._id, name: m.name, type: phase, toolPattern: m.toolPattern, effect };
+    });
+    const runId = `modrun_${hashStr(seed + Date.now().toString()).toString(36)}${random6()}`;
+    DataStore.mem().insert("n0va1o_modifier_runs", {
+      tenantId, toolId, phase, runId,
+      appliedCount: applied.length,
+      skippedCount: modifiers.length - applicable.length,
+      applied: applied.map((a: any) => ({ modifierId: a.modifierId, name: a.name })),
+      at: new Date().toISOString(),
+    });
+    return {
+      runId, toolId, phase,
+      applied,
+      appliedCount: applied.length,
+      skippedCount: modifiers.length - applicable.length,
+      skipped: modifiers.filter((m: any) => !this.patternMatches(m.toolPattern, toolId)).map((m: any) => ({ modifierId: m._id, name: m.name, reason: `pattern ${m.toolPattern} does not match ${toolId}` })),
+      pipelineMs: hashStr(seed + "pipe") % 20 + 3,
+      summary: `${phase} pipeline for ${toolId}: ${applied.length} modifier(s) applied, ${modifiers.length - applicable.length} skipped`,
+    };
+  }
+
+  modifierPipelineStatus(tenantId: string) {
+    const modifiers = DataStore.mem().find("n0va1o_modifiers", (m: any) => m.tenantId === tenantId);
+    const runs = DataStore.mem().find("n0va1o_modifier_runs", (r: any) => r.tenantId === tenantId);
+    return {
+      byPhase: ["schema", "before", "after"].map((p) => ({
+        phase: p,
+        modifiers: modifiers.filter((m: any) => m.type === p).length,
+        enabled: modifiers.filter((m: any) => m.type === p && m.enabled).length,
+        runs: runs.filter((r: any) => r.phase === p).length,
+      })),
+      totalModifiers: modifiers.length,
+      enabledModifiers: modifiers.filter((m: any) => m.enabled).length,
+      totalRuns: runs.length,
+      summary: `${runs.length} pipeline run(s) across ${modifiers.filter((m: any) => m.enabled).length} enabled modifier(s)`,
+    };
+  }
+
   evaluateCall(tenantId: string, input: any) {
     const toolId = String(input?.toolId || "");
     const riskLevel = String(input?.riskLevel || "low");

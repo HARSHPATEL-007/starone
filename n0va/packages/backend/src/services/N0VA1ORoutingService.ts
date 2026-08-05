@@ -99,7 +99,13 @@ export class N0VA1ORoutingService {
       }
       intent = Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[1] > 0 ? Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0] : "read";
     }
-    const pool = TOOL_ROUTING.filter((t) => t.intent === intent || !intent);
+    const riskTolerance = ["low", "medium", "high"].includes(opts?.riskTolerance) ? opts.riskTolerance : "high";
+    const preferredLatency = Number.isFinite(opts?.preferredLatency) ? Math.max(1, opts.preferredLatency) : null;
+    const maxTools = Number.isFinite(opts?.maxTools) ? Math.max(1, Math.min(Math.floor(opts.maxTools), 50)) : opts?.limit || 4;
+    const contextWindowSize = Number.isFinite(opts?.contextWindowSize) ? Math.max(512, Math.min(Math.floor(opts.contextWindowSize), 1000000)) : 8192;
+    let pool = TOOL_ROUTING.filter((t) => t.intent === intent || !intent);
+    if (riskTolerance === "low") pool = pool.filter((t) => t.risk === "low");
+    else if (riskTolerance === "medium") pool = pool.filter((t) => t.risk !== "critical");
     const scored = pool
       .map((t) => {
         const hay = `${t.name} ${t.id} ${t.protocols.join(" ")}`.toLowerCase();
@@ -111,15 +117,23 @@ export class N0VA1ORoutingService {
         return { ...t, score };
       })
       .sort((a, b) => b.score - a.score);
-    const top = scored.slice(0, opts?.limit || 4);
-    logEntry(tenantId, "tools_discovered", `Intent "${intent}" → ${top.length} tool(s) injected`, { query: q, tools: top.map((t) => t.id) });
+    const top = scored.slice(0, maxTools);
+    logEntry(tenantId, "tools_discovered", `Intent "${intent}" → ${top.length} tool(s) injected (risk_tolerance ${riskTolerance})`, { query: q, tools: top.map((t) => t.id) });
     return {
       intent,
       query: q,
-      tools: top.map(({ id, name, protocols, risk }) => ({ toolId: id, name, protocols, risk })),
+      tools: top.map(({ id, name, protocols, risk }) => ({
+        toolId: id, name, protocols, risk,
+        risk_level: risk,
+        latency_p99: preferredLatency ? Math.max(preferredLatency, 10) : 45,
+        permissions_required: risk === "critical" || risk === "high" ? ["gateway.write"] : ["gateway.read"],
+      })),
       injectedCount: top.length,
       discoveryP99Ms: 45,
-      reasoning: `Matched ${top.length} of ${pool.length} candidate tools for intent "${intent}"`,
+      context_window_size: contextWindowSize,
+      preferred_latency: preferredLatency,
+      risk_tolerance: riskTolerance,
+      reasoning: `Matched ${top.length} of ${pool.length} candidate tools for intent "${intent}" (risk tolerance ${riskTolerance})`,
       summary: `Intent "${intent}" — ${top.length} tool(s) injected`,
     };
   }

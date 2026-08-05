@@ -120,6 +120,7 @@ import { n0va1oExec } from "./N0VA1OExecutionService";
 import { n0va1oTrigger } from "./N0VA1OTriggerService";
 import { n0va1oGov } from "./N0VA1OGovernanceService";
 import { n0va1oPlugin } from "./N0VA1OPluginService";
+import { n0va1oCompliance } from "./N0VA1OComplianceService";
 
 import { mailCollab2 } from "./MailCollabV2Service";
 const campaignSummaryService = new CampaignSummaryService();
@@ -6712,6 +6713,86 @@ export class AdsMarketingModuleService {
 
   n0va1oPluginDashboard(tenantId: string) {
     return n0va1oPlugin.pluginDashboard(tenantId);
+  }
+
+  n0va1oThroughputStatus(tenantId: string) {
+    return n0va1oCatalog.throughputStatus(tenantId);
+  }
+
+  n0va1oLatencyBenchmarks(tenantId: string) {
+    return n0va1oCatalog.latencyBenchmarks(tenantId);
+  }
+
+  n0va1oAuthMethodCatalog() {
+    return n0va1oCatalog.authMethodCatalog();
+  }
+
+  n0va1oCreateSession(tenantId: string, input: any) {
+    return n0va1oAuth.createSession(tenantId, input);
+  }
+
+  n0va1oListSessions(tenantId: string, status?: string) {
+    return n0va1oAuth.listSessions(tenantId, status);
+  }
+
+  n0va1oGetSession(tenantId: string, sessionId: string) {
+    return n0va1oAuth.getSession(tenantId, sessionId);
+  }
+
+  n0va1oEndSession(tenantId: string, sessionId: string) {
+    return n0va1oAuth.endSession(tenantId, sessionId);
+  }
+
+  n0va1oVfsChunkRead(tenantId: string, fileId: string, offset: number, length: number) {
+    return n0va1oExec.vfsChunkRead(tenantId, fileId, offset, length);
+  }
+
+  n0va1oVfsGrepSearch(tenantId: string, fileId: string, pattern: string) {
+    return n0va1oExec.vfsGrepSearch(tenantId, fileId, pattern);
+  }
+
+  n0va1oVfsPandasQuery(tenantId: string, fileId: string, query: string) {
+    return n0va1oExec.vfsPandasQuery(tenantId, fileId, query);
+  }
+
+  n0va1oVfsSummarizeStats(tenantId: string, fileId: string) {
+    return n0va1oExec.vfsSummarizeStats(tenantId, fileId);
+  }
+
+  n0va1oRunModifierPipeline(tenantId: string, input: any) {
+    return n0va1oGov.runModifierPipeline(tenantId, input);
+  }
+
+  n0va1oModifierPipelineStatus(tenantId: string) {
+    return n0va1oGov.modifierPipelineStatus(tenantId);
+  }
+
+  n0va1oComplianceFrameworkCatalog() {
+    return n0va1oCompliance.complianceFrameworkCatalog();
+  }
+
+  n0va1oComplianceMapping(tenantId: string) {
+    return n0va1oCompliance.complianceMapping(tenantId);
+  }
+
+  n0va1oComplianceEvidence(tenantId: string, frameworkId: string) {
+    return n0va1oCompliance.complianceEvidence(tenantId, frameworkId);
+  }
+
+  n0va1oComplianceReports(tenantId: string) {
+    return n0va1oCompliance.complianceReports(tenantId);
+  }
+
+  n0va1oComplianceDashboard(tenantId: string) {
+    return n0va1oCompliance.complianceDashboard(tenantId);
+  }
+
+  n0va1oAgentAuditTrail(tenantId: string, agentId: string) {
+    return n0va1oCompliance.agentAuditTrail(tenantId, agentId);
+  }
+
+  n0va1oComplianceLog(tenantId: string, limit?: number) {
+    return n0va1oCompliance.complianceLog(tenantId, limit);
   }
 }
 
