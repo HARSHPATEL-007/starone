@@ -64,6 +64,9 @@ const N0VA1ORecipes = lazy(() => import("./pages/N0VA1ORecipes"));
 const N0VA1OGovernance = lazy(() => import("./pages/N0VA1OGovernance"));
 const N0VA1OCompliance = lazy(() => import("./pages/N0VA1OCompliance"));
 const N0VA1OCli = lazy(() => import("./pages/N0VA1OCli"));
+const N0VA1OSdk = lazy(() => import("./pages/N0VA1OSdk"));
+const N0VA1ODeploy = lazy(() => import("./pages/N0VA1ODeploy"));
+const N0VA1OObserve = lazy(() => import("./pages/N0VA1OObserve"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -395,6 +398,9 @@ export default function App() {
                 <Route path="/n0va1o/governance" element={<N0VA1OGovernance />} />
                 <Route path="/n0va1o/compliance" element={<N0VA1OCompliance />} />
                 <Route path="/n0va1o/cli" element={<N0VA1OCli />} />
+                <Route path="/n0va1o/sdk" element={<N0VA1OSdk />} />
+                <Route path="/n0va1o/deploy" element={<N0VA1ODeploy />} />
+                <Route path="/n0va1o/observe" element={<N0VA1OObserve />} />
                 <Route path="/marketing-intelligence" element={<MarketingIntelligence />} />
                 <Route path="/agent-intelligence" element={<AgentIntelligence />} />
                 <Route path="/predictive-bidding" element={<PredictiveBidding />} />

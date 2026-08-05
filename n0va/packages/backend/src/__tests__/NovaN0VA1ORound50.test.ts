@@ -74,13 +74,13 @@ describe("N0VA1O depth — protocol translation pairs", () => {
   it("translationCatalog exposes all 9 spec pairs", () => {
     const cat: any = n0va1oRouting.translationCatalog();
     expect(cat.pairs).toHaveLength(9);
-    const ids = cat.pairs.map((p: any) => p.id);
-    expect(ids).toContain("rest_to_soap");
-    expect(ids).toContain("rest_to_graphql");
-    expect(ids).toContain("rest_to_grpc");
-    expect(ids).toContain("webdav_to_rest");
-    expect(ids).toContain("ftp_to_rest");
-    expect(ids).toContain("odata_to_rest");
+    const pairKeys = cat.pairs.map((p: any) => `${p.source}->${p.target}`);
+    expect(pairKeys).toContain("REST->SOAP");
+    expect(pairKeys).toContain("REST->GraphQL");
+    expect(pairKeys).toContain("REST->gRPC");
+    expect(pairKeys).toContain("WebDAV->REST");
+    expect(pairKeys).toContain("FTP/SFTP->REST");
+    expect(pairKeys).toContain("OData->REST");
     expect(cat.total).toBe(9);
     expect(cat.summary).toContain("9");
   });
@@ -88,16 +88,16 @@ describe("N0VA1O depth — protocol translation pairs", () => {
   it("mcpCatalog surfaces translation pairs and translator transport", () => {
     const cat: any = n0va1oRouting.mcpCatalog();
     expect(cat.translationPairs).toHaveLength(9);
-    expect(cat.translators.some((t: any) => t.protocol === "webdav")).toBe(true);
-    expect(cat.translators.some((t: any) => t.protocol === "odata")).toBe(true);
+    expect(cat.protocolTranslators.some((t: any) => t.id === "webdav")).toBe(true);
+    expect(cat.protocolTranslators.some((t: any) => t.id === "odata")).toBe(true);
   });
 
   it("discoverTools v2 supports fallback + include_deprecated + require_sandbox", () => {
-    const r1: any = n0va1oRouting.discoverTools(T, "definitely no tool matches this", { maxTools: 2 });
+    const r1: any = n0va1oRouting.discoverTools(T, "zzz", { maxTools: 2, intent: "bogus_intent" });
     expect(Array.isArray(r1.tools)).toBe(true);
     expect(r1.fallback_used).toBe(true);
     expect(r1.fallback_tools.length).toBeGreaterThanOrEqual(1);
-    const r2: any = n0va1oRouting.discoverTools(T, "slack", { include_deprecated: true, require_sandbox: false });
+    const r2: any = n0va1oRouting.discoverTools(T, "slack", { includeDeprecated: true, requireSandbox: false });
     expect(r2.include_deprecated).toBe(true);
     expect(r2.require_sandbox).toBe(false);
   });
@@ -125,18 +125,18 @@ describe("N0VA1O depth — policy modifiers (7 types)", () => {
     const run = n0va1oGov.runModifierPipeline(T, { toolId: "storage.delete_file", phase: "before", payload: { cardNumber: "4111-1111-1111-1111", cvv: "123", name: "Jane" } });
     expect(run.runId).toMatch(/^modrun_/);
     expect(run.appliedCount).toBe(4);
-    const blocked = run.applied.find((a: any) => a.type === "action_blocking");
+    const blocked: any = run.applied.find((a: any) => a.type === "action_blocking");
     expect(blocked.effect.blocked).toBe(true);
     expect(run.blocked).toBe(true);
     expect(run.summary).toContain("BLOCKED");
     const redactRun = n0va1oGov.runModifierPipeline(T, { toolId: "crm.read", phase: "before", payload: { cardNumber: "4111-1111-1111-1111", cvv: "123", name: "Jane" } });
-    const redacted = redactRun.applied.find((a: any) => a.type === "field_redaction");
+    const redacted: any = redactRun.applied.find((a: any) => a.type === "field_redaction");
     expect(redacted.effect.redactedFields).toEqual(["cardNumber", "cvv"]);
     const capRun = n0va1oGov.runModifierPipeline(T, { toolId: "crm.read", phase: "before", payload: { amount: 5000 } });
-    const capped = capRun.applied.find((a: any) => a.type === "value_capping");
+    const capped: any = capRun.applied.find((a: any) => a.type === "value_capping");
     expect(capped.effect.cappedValues).toEqual(["amount"]);
     const piiRun = n0va1oGov.runModifierPipeline(T, { toolId: "crm.read", phase: "before", payload: { email: "jane@n0va.io" } });
-    const masked = piiRun.applied.find((a: any) => a.type === "pii_masking");
+    const masked: any = piiRun.applied.find((a: any) => a.type === "pii_masking");
     expect(masked.effect.piiPatterns.map((p: any) => p.pattern)).toEqual(["email"]);
     expect(masked.effect.totalMasked).toBe(1);
   });
@@ -215,7 +215,7 @@ describe("N0VA1O depth — 13-metric throughput matrix", () => {
   it("targets are monotonic across all plans", () => {
     const targets: any = n0va1oCatalog.gatewayCatalog(T);
     const plans: any = n0va1oCatalog.planCatalog(T);
-    expect(plans.plans).toHaveLength(5);
+    expect(plans.tiers).toHaveLength(5);
   });
 });
 

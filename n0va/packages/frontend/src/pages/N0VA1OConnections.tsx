@@ -18,6 +18,8 @@ export default function N0VA1OConnections() {
   const [tokens, setTokens] = useState<any>(null);
   const [conns, setConns] = useState<any>(null);
   const [accounts, setAccounts] = useState<any>(null);
+  const [acctHealth, setAcctHealth] = useState<any>(null);
+  const [translations, setTranslations] = useState<any>(null);
   const [sessions, setSessions] = useState<any>(null);
   const [log, setLog] = useState<any[]>([]);
   const [platforms, setPlatforms] = useState<any[]>([]);
@@ -35,7 +37,7 @@ export default function N0VA1OConnections() {
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [a, t, c, ac, s, l, cat] = await Promise.all([
+    const [a, t, c, ac, s, l, cat, ah, tr] = await Promise.all([
       api.adsMarketingModule.n0va1oAgents().catch(() => null),
       api.adsMarketingModule.n0va1oTokens().catch(() => null),
       api.adsMarketingModule.n0va1oConnections().catch(() => null),
@@ -43,6 +45,8 @@ export default function N0VA1OConnections() {
       api.adsMarketingModule.n0va1oListSessions().catch(() => null),
       api.adsMarketingModule.n0va1oAuthLog().catch(() => null),
       api.adsMarketingModule.n0va1oGatewayCatalog().catch(() => null),
+      api.adsMarketingModule.n0va1oAccountHealth().catch(() => null),
+      api.adsMarketingModule.n0va1oTranslationCatalog().catch(() => null),
     ]);
     setAgents(unwrap(a) || null);
     setTokens(unwrap(t) || null);
@@ -50,6 +54,8 @@ export default function N0VA1OConnections() {
     setAccounts(unwrap(ac) || null);
     setSessions(unwrap(s) || null);
     setLog((unwrap(l)?.entries || []).slice(0, 10));
+    setAcctHealth(unwrap(ah) || null);
+    setTranslations(unwrap(tr) || null);
     const catData = unwrap(cat);
     if (catData?.platforms) setPlatforms(catData.platforms);
     setLoading(false);
@@ -448,11 +454,26 @@ export default function N0VA1OConnections() {
               <div className="rounded-lg bg-gray-900/50 p-3 space-y-2">
                 <p className="text-[11px] text-gray-500">Account pool — {accounts?.total ?? 0} account(s)
                   {accounts?.activeAccount ? ` · active: ${(accounts?.accounts || []).find((a: any) => a.accountId === accounts.activeAccount)?.accountName || ""}` : ""}</p>
+                {acctHealth && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">{acctHealth.healthy} healthy</span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30">{acctHealth.degraded} degraded</span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-red-500/15 text-red-400 border border-red-500/30">{acctHealth.critical} critical</span>
+                  </div>
+                )}
                 {(accounts?.accounts || []).slice(0, 6).map((a: any) => (
                   <div key={a.accountId} className="flex items-center gap-2 text-xs">
                     <span className={`w-1.5 h-1.5 rounded-full ${a.active ? "bg-emerald-400" : "bg-gray-600"}`} />
                     <span className="text-gray-300 truncate">{a.accountName}</span>
                     <span className="text-gray-600 truncate">{a.platformId}</span>
+                    {acctHealth && (() => {
+                      const h = acctHealth.accounts?.find((x: any) => x.accountId === a.accountId);
+                      return h ? (
+                        <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[9px] ${h.healthStatus === "healthy" ? "bg-emerald-500/15 text-emerald-400" : h.healthStatus === "degraded" ? "bg-amber-500/15 text-amber-400" : "bg-red-500/15 text-red-400"}`}>
+                          {h.healthStatus} {h.healthScore}
+                        </span>
+                      ) : null;
+                    })()}
                     {!a.active && (
                       <button onClick={() => switchAccount(a.accountId)} disabled={busy === `sw-${a.accountId}`}
                         className="ml-auto px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-400 text-[10px]">Switch</button>
@@ -491,6 +512,31 @@ export default function N0VA1OConnections() {
                 </div>
               ))}
               {(sessions?.sessions || []).length === 0 && <p className="text-xs text-gray-500 py-2">No sessions yet.</p>}
+            </div>
+          </section>
+
+          <section className="rounded-xl bg-gray-800/60 border border-gray-700/50 p-4 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold flex items-center gap-2"><RefreshCw className="w-4 h-4 text-n0va-300" /> Protocol translation</h2>
+              {translations?.summary && <p className="text-[11px] text-gray-500">{translations.summary}</p>}
+            </div>
+            <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+              {(translations?.pairs || []).map((p: any, i: number) => (
+                <div key={i} className="rounded-lg bg-gray-900/60 border border-gray-700/60 p-2">
+                  <p className="text-xs text-gray-200">
+                    <code className="text-n0va-300">{p.source}</code>
+                    <span className="mx-1 text-gray-500">→</span>
+                    <code className="text-emerald-400">{p.target}</code>
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-0.5 truncate" title={p.description}>{p.description}</p>
+                </div>
+              ))}
+              {!translations?.pairs?.length && <p className="text-xs text-gray-500 py-2">No translation pairs.</p>}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {(translations?.translators || []).map((tr: any, i: number) => (
+                <span key={i} className="px-1.5 py-0.5 rounded bg-gray-900/60 text-[9px] text-gray-400 border border-gray-700/60">{tr.name}</span>
+              ))}
             </div>
           </section>
 

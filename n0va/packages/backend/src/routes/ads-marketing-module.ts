@@ -4394,17 +4394,12 @@ router.post("/n0va1o/triggers", asyncHandler(async (req, res) => {
 router.get("/n0va1o/triggers", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.n0va1oTriggers(req.user!.tenantId));
 }));
-
-router.get("/n0va1o/triggers/:triggerId", asyncHandler(async (req, res) => {
-  sendSuccess(res, adsMarketingModule.n0va1oTrigger(req.user!.tenantId, req.params.triggerId));
+router.post("/n0va1o/triggers/ingest", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oIngestWebhook(req.user!.tenantId, req.body || {}));
 }));
 
-router.post("/n0va1o/triggers/:triggerId/toggle", asyncHandler(async (req, res) => {
-  sendSuccess(res, adsMarketingModule.n0va1oToggleTrigger(req.user!.tenantId, req.params.triggerId));
-}));
-
-router.delete("/n0va1o/triggers/:triggerId", asyncHandler(async (req, res) => {
-  sendSuccess(res, adsMarketingModule.n0va1oDeleteTrigger(req.user!.tenantId, req.params.triggerId));
+router.get("/n0va1o/triggers/ingest-overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oIngestOverview(req.user!.tenantId));
 }));
 
 router.post("/n0va1o/triggers/fire", asyncHandler(async (req, res) => {
@@ -4425,6 +4420,18 @@ router.get("/n0va1o/triggers/log", asyncHandler(async (req, res) => {
 
 router.get("/n0va1o/triggers/overview", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.n0va1oTriggerOverview(req.user!.tenantId));
+}));
+
+router.get("/n0va1o/triggers/:triggerId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oTrigger(req.user!.tenantId, req.params.triggerId));
+}));
+
+router.post("/n0va1o/triggers/:triggerId/toggle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oToggleTrigger(req.user!.tenantId, req.params.triggerId));
+}));
+
+router.delete("/n0va1o/triggers/:triggerId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oDeleteTrigger(req.user!.tenantId, req.params.triggerId));
 }));
 
 router.get("/n0va1o/gov/zero-trust", asyncHandler(async (req, res) => {
@@ -4835,13 +4842,6 @@ router.get("/n0va1o/routing/translation-catalog", asyncHandler(async (req, res) 
   sendSuccess(res, adsMarketingModule.n0va1oTranslationCatalog());
 }));
 
-router.post("/n0va1o/triggers/ingest", asyncHandler(async (req, res) => {
-  sendSuccess(res, adsMarketingModule.n0va1oIngestWebhook(req.user!.tenantId, req.body || {}));
-}));
-
-router.get("/n0va1o/triggers/ingest-overview", asyncHandler(async (req, res) => {
-  sendSuccess(res, adsMarketingModule.n0va1oIngestOverview(req.user!.tenantId));
-}));
 
 router.get("/n0va1o/auth/accounts/health", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.n0va1oAccountHealth(req.user!.tenantId));

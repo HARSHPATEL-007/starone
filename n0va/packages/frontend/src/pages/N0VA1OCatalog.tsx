@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
-  Share2, RefreshCw, Boxes, FolderTree, Link2, Search, X, Grid3X3,
+  Share2, RefreshCw, Boxes, FolderTree, Link2, Search, X, Grid3X3, Gauge, Clock3,
 } from "lucide-react";
 import { api } from "../api/client";
 import { useToast } from "../components/Toast";
@@ -11,6 +11,8 @@ const unwrap = (r: any) => (r && r.data !== undefined ? r.data : r);
 export default function N0VA1OCatalog() {
   const { addToast } = useToast();
   const [catalog, setCatalog] = useState<any>(null);
+  const [throughput, setThroughput] = useState<any>(null);
+  const [latency, setLatency] = useState<any>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -23,6 +25,10 @@ export default function N0VA1OCatalog() {
     const c = unwrap((await api.adsMarketingModule.n0va1oGatewayCatalog().catch(() => null)) || null);
     setCatalog(c);
     setResults((prev) => (prev.length ? prev : (c?.platforms || []).slice(0, 50)));
+    const t = unwrap((await api.adsMarketingModule.n0va1oThroughputStatus().catch(() => null)) || null);
+    if (t) setThroughput(t);
+    const l = unwrap((await api.adsMarketingModule.n0va1oLatencyBenchmarks().catch(() => null)) || null);
+    if (l) setLatency(l);
     setLoading(false);
   }, []);
 
@@ -149,6 +155,70 @@ export default function N0VA1OCatalog() {
                 : `Showing first ${results.length} of ${catalog?.totalPlatforms ?? 0} platforms`}
               {searchInfo && <button onClick={clearSearch} className="ml-2 text-n0va-300 hover:underline">Reset</button>}
             </p>
+          </section>
+
+          <section className="rounded-xl bg-gray-800/60 border border-gray-700/50 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2"><Gauge className="w-4 h-4 text-n0va-300" /> Throughput & latency</h2>
+              {throughput?.summary && <p className="text-[11px] text-gray-500">{throughput.summary}</p>}
+            </div>
+            {throughput && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full bg-n0va-500/15 text-n0va-300 text-[10px] border border-n0va-500/40">
+                    plan: {throughput.plan} · target {throughput.target?.requestsPerMinute} req/min
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] border ${throughput.utilizationPct < 70 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : throughput.utilizationPct < 90 ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : "bg-red-500/15 text-red-400 border-red-500/30"}`}>
+                    {throughput.utilizationPct}% utilized
+                  </span>
+                </div>
+                <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {(throughput.matrix || []).map((m: any) => (
+                    <div key={m.metric} className="rounded-lg bg-gray-900/60 border border-gray-700/60 p-2 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <code className="text-[10px] text-gray-400 truncate">{m.metric}</code>
+                        <span className={`shrink-0 text-[10px] font-medium ${m.verdict === "healthy" ? "text-emerald-400" : m.verdict === "elevated" ? "text-amber-400" : "text-red-400"}`}>{m.verdict}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-gray-800 overflow-hidden">
+                        <div className={`h-full rounded-full ${m.verdict === "healthy" ? "bg-emerald-500" : m.verdict === "elevated" ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${Math.min(100, m.utilizationPct)}%` }} />
+                      </div>
+                      <div className="text-[10px] text-gray-500">{m.current} / {m.target}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {latency && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="text-gray-500 text-[10px] uppercase">
+                      <th className="text-left py-1 pr-2 font-medium">Region</th>
+                      <th className="text-right py-1 px-2 font-medium">discovery p50</th>
+                      <th className="text-right py-1 px-2 font-medium">p99</th>
+                      <th className="text-right py-1 px-2 font-medium">JIT auth p99</th>
+                      <th className="text-right py-1 px-2 font-medium">translate p99</th>
+                      <th className="text-right py-1 px-2 font-medium">compile p99</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(latency.regions || []).map((r: any) => (
+                      <tr key={r.region} className="border-t border-gray-800 text-gray-300">
+                        <td className="py-1.5 pr-2 font-medium text-gray-200">{r.region}</td>
+                        <td className="py-1.5 px-2 text-right">{r.discoveryP50Ms}ms</td>
+                        <td className="py-1.5 px-2 text-right">{r.discoveryP99Ms}ms</td>
+                        <td className="py-1.5 px-2 text-right">{r.jitAuthP99Ms}ms</td>
+                        <td className="py-1.5 px-2 text-right">{r.translateP99Ms}ms</td>
+                        <td className="py-1.5 px-2 text-right">{r.compileP99Ms}ms</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {latency.global && (
+                  <p className="mt-2 text-[10px] text-gray-500 flex items-center gap-1"><Clock3 className="w-3 h-3" /> {latency.summary}</p>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

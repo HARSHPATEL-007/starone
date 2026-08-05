@@ -80,7 +80,7 @@ export class N0VA1ODeploymentService {
     if (!targetInfo) throw new Error(`Unknown deployment target — available: ${DEPLOY_TARGETS.map((t) => t.id).join(", ")}`);
     const region = String(input?.region || "us-east");
     if (!DEPLOY_REGIONS.some((r) => r.id === region)) throw new Error(`Unknown region — available: ${DEPLOY_REGIONS.map((r) => r.id).join(", ")}`);
-    if ((modeInfo.requires === "vpcId" || mode === "hybrid") && !String(input?.vpcId || "").trim()) throw new Error("vpcId is required for VPC-based modes");
+    if (((modeInfo as any).requires === "vpcId" || mode === "hybrid") && !String(input?.vpcId || "").trim()) throw new Error("vpcId is required for VPC-based modes");
     if (mode === "byoc" && !String(input?.cloudAccountId || "").trim()) throw new Error("cloudAccountId is required for BYOC");
     const now = new Date().toISOString();
     const seed = `${tenantId}|${name}|${mode}|${target}|${region}`;

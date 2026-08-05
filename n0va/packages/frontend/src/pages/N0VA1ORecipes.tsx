@@ -36,6 +36,9 @@ export default function N0VA1ORecipes() {
   const [sandboxForm, setSandboxForm] = useState<any>({ runtimeId: "python311", label: "", ttlSec: 300 });
   const [triggerForm, setTriggerForm] = useState<any>({ event: "", source: "webhook", targetUrl: "", name: "" });
   const [fireForm, setFireForm] = useState<any>({ event: "", source: "internal", payload: "{}" });
+  const [ingestForm, setIngestForm] = useState<any>({ event: "", body: "smoke-payload", timestamp: String(Date.now()) });
+  const [ingestRes, setIngestRes] = useState<any>(null);
+  const [ingestOverview, setIngestOverview] = useState<any>(null);
   const [fileForm, setFileForm] = useState<any>({ filename: "", sizeBytes: 1024, content: "" });
   const [execCode, setExecCode] = useState<string>("");
   const [statsRes, setStatsRes] = useState<any>(null);
@@ -44,7 +47,7 @@ export default function N0VA1ORecipes() {
   const [autoRefresh, setAutoRefresh] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [d, c, r, e, s, f, v, to, t, ts, dl, p, l] = await Promise.all([
+    const [d, c, r, e, s, f, v, to, t, ts, dl, p, l, io] = await Promise.all([
       api.adsMarketingModule.n0va1oExecDashboard().catch(() => null),
       api.adsMarketingModule.n0va1oRecipeCatalog().catch(() => null),
       api.adsMarketingModule.n0va1oRecipes().catch(() => null),
@@ -58,6 +61,7 @@ export default function N0VA1ORecipes() {
       api.adsMarketingModule.n0va1oDeliveries().catch(() => null),
       api.adsMarketingModule.n0va1oPluginDashboard().catch(() => null),
       api.adsMarketingModule.n0va1oExecLog().catch(() => null),
+      api.adsMarketingModule.n0va1oIngestOverview().catch(() => null),
     ]);
     setDash(unwrap(d) || null);
     setCatalog(unwrap(c) || null);
@@ -72,6 +76,7 @@ export default function N0VA1ORecipes() {
     setDeliveries((unwrap(dl)?.deliveries || []).slice(0, 10));
     setPlugins(unwrap(p) || null);
     setExecLog((unwrap(l)?.entries || []).slice(0, 10));
+    setIngestOverview(unwrap(io) || null);
     setLoading(false);
   }, []);
 
@@ -240,6 +245,24 @@ export default function N0VA1ORecipes() {
       await loadData();
     } catch (e: any) {
       addToast("error", "Fire failed", e?.message?.includes("JSON") ? "Invalid JSON payload" : e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function runIngest() {
+    setBusy("ingest");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oIngestWebhook({
+        event: ingestForm.event,
+        body: ingestForm.body,
+        timestamp: Number(ingestForm.timestamp) || Date.now(),
+      }));
+      setIngestRes(r);
+      addToast(r.accepted ? "success" : "error", r.accepted ? "Payload accepted" : "Payload rejected", r.summary || r.verdict || "");
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Ingest failed", e?.message);
     } finally {
       setBusy("");
     }
@@ -536,6 +559,33 @@ export default function N0VA1ORecipes() {
                 <input className="flex-1 min-w-32 rounded-lg bg-gray-800 border border-gray-700 px-2 py-1.5 text-xs text-gray-200 font-mono" placeholder='{"key": "value"}'
                   value={fireForm.payload} onChange={(e) => setFireForm({ ...fireForm, payload: e.target.value })} />
               </div>
+            </div>
+            <div className="rounded-lg bg-gray-900/50 p-3 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[11px] text-gray-500 flex-1">Webhook ingest — signature + replay + rate-limit verified before triggers fire.</p>
+                {ingestOverview && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] border border-n0va-500/40 bg-n0va-500/10 text-n0va-300" title={ingestOverview.summary}>
+                    {ingestOverview.ingested ?? 0} ingested · sig + replay + {ingestOverview.security?.defaultLimitPerMinute ?? 60}/min limit
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select className="flex-1 min-w-40 rounded-lg bg-gray-800 border border-gray-700 px-2 py-1.5 text-xs text-gray-200" value={ingestForm.event} onChange={(e) => setIngestForm({ ...ingestForm, event: e.target.value })}>
+                  <option value="">Select event…</option>
+                  {(trigOverview?.events || []).map((e: any) => <option key={e.event} value={e.event}>{e.event}</option>)}
+                </select>
+                <input className="flex-1 min-w-32 rounded-lg bg-gray-800 border border-gray-700 px-2 py-1.5 text-xs text-gray-200 font-mono" placeholder="payload body"
+                  value={ingestForm.body} onChange={(e) => setIngestForm({ ...ingestForm, body: e.target.value })} />
+                <button onClick={runIngest} disabled={busy === "ingest" || !ingestForm.event}
+                  className="px-3 py-2 rounded-lg bg-n0va-500 hover:bg-n0va-400 text-white text-xs font-medium disabled:opacity-40">
+                  {busy === "ingest" ? "Ingesting…" : "Ingest"}
+                </button>
+              </div>
+              {ingestRes && (
+                <p className={`text-[11px] ${ingestRes.accepted ? "text-emerald-400" : "text-amber-400"}`}>
+                  verdict: {ingestRes.verdict} · accepted: {String(ingestRes.accepted)} — {ingestRes.summary}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               {(deliveries || []).map((d: any, i: number) => (

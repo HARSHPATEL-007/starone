@@ -205,7 +205,7 @@ describe("N0VA1O intent routing & MCP mesh", () => {
   it("mcpCatalog exposes 3 transports and 4 protocol translators", () => {
     const mcp: any = n0va1oRouting.mcpCatalog();
     expect(mcp.transports.map((t: any) => t.id)).toEqual(["stdio", "http_sse", "websocket"]);
-    expect(mcp.protocolTranslators.map((t: any) => t.target)).toEqual(["REST", "GraphQL", "SOAP", "gRPC"]);
+    expect(mcp.protocolTranslators.map((t: any) => t.target)).toEqual(["REST", "GraphQL", "SOAP", "gRPC", "WebDAV", "FTP/SFTP", "OData"]);
     expect(mcp.endpoints.length).toBeGreaterThanOrEqual(2);
     expect(mcp.summary).toContain("MCP mesh");
   });
@@ -475,7 +475,8 @@ describe("N0VA1O governance & audit", () => {
 
   it("schema modifiers CRUD", () => {
     const cat: any = n0va1oGov.schemaModifierCatalog();
-    expect(cat.types).toHaveLength(3);
+    expect(cat.types).toHaveLength(10);
+    expect(cat.phases).toEqual(["schema", "before", "after"]);
     const mod: any = n0va1oGov.createModifier(T, { type: "schema", toolPattern: "email.*", transform: "redact PII", name: "PII guard" });
     expect(mod.modifierId).toBeTruthy();
     expect(mod.summary).toContain("registered");

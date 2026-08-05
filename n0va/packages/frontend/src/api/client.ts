@@ -3749,7 +3749,6 @@ export const api = {
     n0va1oObserveDashboard: () => request<any>("/ads-marketing-module/n0va1o/observe/dashboard"),
     n0va1oObserveLog: () => request<any>("/ads-marketing-module/n0va1o/observe/log"),
     n0va1oModifierTypes: () => request<any>("/ads-marketing-module/n0va1o/modifiers/types"),
-    n0va1oModifierCatalog: () => request<any>("/ads-marketing-module/n0va1o/modifiers/catalog"),
     n0va1oTranslationCatalog: () => request<any>("/ads-marketing-module/n0va1o/routing/translation-catalog"),
     n0va1oIngestWebhook: (input: { event: string; payload?: unknown; signature?: string; timestamp?: number; body?: string; limitPerMinute?: number }) =>
       request<any>("/ads-marketing-module/n0va1o/triggers/ingest", { method: "POST", body: JSON.stringify(input) }),
