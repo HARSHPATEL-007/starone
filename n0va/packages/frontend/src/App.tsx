@@ -67,6 +67,10 @@ const N0VA1OCli = lazy(() => import("./pages/N0VA1OCli"));
 const N0VA1OSdk = lazy(() => import("./pages/N0VA1OSdk"));
 const N0VA1ODeploy = lazy(() => import("./pages/N0VA1ODeploy"));
 const N0VA1OObserve = lazy(() => import("./pages/N0VA1OObserve"));
+const N0VA1OMigration = lazy(() => import("./pages/N0VA1OMigration"));
+const N0VA1OVfs = lazy(() => import("./pages/N0VA1OVfs"));
+const N0VA1OPlugins = lazy(() => import("./pages/N0VA1OPlugins"));
+const N0VA1OAudit = lazy(() => import("./pages/N0VA1OAudit"));
 const AutonomousCampaignManager = lazy(() => import("./pages/AutonomousCampaignManager"));
 const UnifiedAdsPipeline = lazy(() => import("./pages/UnifiedAdsPipeline"));
 const Campaigns = lazy(() => import("./pages/Campaigns"));
@@ -401,6 +405,10 @@ export default function App() {
                 <Route path="/n0va1o/sdk" element={<N0VA1OSdk />} />
                 <Route path="/n0va1o/deploy" element={<N0VA1ODeploy />} />
                 <Route path="/n0va1o/observe" element={<N0VA1OObserve />} />
+                <Route path="/n0va1o/migration" element={<N0VA1OMigration />} />
+                <Route path="/n0va1o/vfs" element={<N0VA1OVfs />} />
+                <Route path="/n0va1o/plugins" element={<N0VA1OPlugins />} />
+                <Route path="/n0va1o/audit" element={<N0VA1OAudit />} />
                 <Route path="/marketing-intelligence" element={<MarketingIntelligence />} />
                 <Route path="/agent-intelligence" element={<AgentIntelligence />} />
                 <Route path="/predictive-bidding" element={<PredictiveBidding />} />

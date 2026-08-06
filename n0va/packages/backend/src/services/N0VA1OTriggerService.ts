@@ -109,41 +109,6 @@ export class N0VA1OTriggerService {
     return { triggerId, deleted: true, summary: `Trigger "${trigger.name}" deleted` };
   }
 
-  fireEvent(tenantId: string, input: any) {
-    const event = String(input?.event || "");
-    const catalogEvent = TRIGGER_EVENTS.find((e) => e.event === event);
-    if (!catalogEvent) throw new Error(`Unknown trigger event — available: ${TRIGGER_EVENTS.map((e) => e.event).join(", ")}`);
-    const payload = input?.payload || {};
-    const sourceId = String(input?.source || "internal");
-    const source = TRIGGER_SOURCES.find((s) => s.id === sourceId) || TRIGGER_SOURCES[3];
-    const matches = DataStore.mem().find("n0va1o_triggers", (t: any) => t.tenantId === tenantId && t.event === event && t.enabled);
-    const deliveries = matches.map((t: any) => {
-      const seed = `${tenantId}|${event}|${t._id}|${hashStr(JSON.stringify(payload))}`;
-      const fail = hashStr(seed + "fail") % 7 === 0;
-      const latencyMs = Math.min(t.latencyTargetMs, Math.max(20, (hashStr(seed + "lat") % t.latencyTargetMs) + 15));
-      const signature = `sha256=${hashStr(seed + "sig").toString(16).padStart(64, "0")}`;
-      const delivery: any = {
-        tenantId, triggerId: t._id, triggerName: t.name, event,
-        source: source.id, status: fail ? "failed" : "delivered",
-        latencyMs, signature, targetUrl: t.targetUrl,
-        payload, at: new Date().toISOString(),
-      };
-      const inserted = DataStore.mem().insert("n0va1o_deliveries", delivery);
-      DataStore.mem().update("n0va1o_triggers", (x: any) => x._id === t._id, {
-        deliveryCount: (t.deliveryCount || 0) + 1,
-        successCount: (t.successCount || 0) + (fail ? 0 : 1),
-        updatedAt: new Date().toISOString(),
-      });
-      return { deliveryId: inserted._id, ...delivery, deliveryIdRaw: inserted._id };
-    });
-    logEntry(tenantId, "event_fired", `${event} fired via ${source.id} — ${deliveries.length} trigger(s) matched`, { payload });
-    return {
-      event, source: source.id, matchedTriggers: deliveries.length,
-      deliveries,
-      summary: `${event} fired — ${deliveries.length} delivery(ies), ${deliveries.filter((d: any) => d.status === "delivered").length} succeeded`,
-    };
-  }
-
   listDeliveries(tenantId: string, limit = 25) {
     const deliveries = DataStore.mem().find("n0va1o_deliveries", (d: any) => d.tenantId === tenantId)
       .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, limit);

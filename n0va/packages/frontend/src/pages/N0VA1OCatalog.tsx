@@ -13,6 +13,8 @@ export default function N0VA1OCatalog() {
   const [catalog, setCatalog] = useState<any>(null);
   const [throughput, setThroughput] = useState<any>(null);
   const [latency, setLatency] = useState<any>(null);
+  const [planInfo, setPlanInfo] = useState<any>(null);
+  const [usage, setUsage] = useState<any>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -29,8 +31,25 @@ export default function N0VA1OCatalog() {
     if (t) setThroughput(t);
     const l = unwrap((await api.adsMarketingModule.n0va1oLatencyBenchmarks().catch(() => null)) || null);
     if (l) setLatency(l);
+    const p = unwrap((await api.adsMarketingModule.n0va1oPlans().catch(() => null)) || null);
+    if (p) setPlanInfo(p);
+    const u = unwrap((await api.adsMarketingModule.n0va1oUsageStatus().catch(() => null)) || null);
+    if (u) setUsage(u);
     setLoading(false);
   }, []);
+
+  async function switchPlan(plan: string) {
+    setBusy("plan");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oSetPlan(plan));
+      addToast("success", "Plan updated", r.summary);
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Plan change failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
 
   useEffect(() => { loadData(); }, [loadData]);
   useEffect(() => {
@@ -220,6 +239,63 @@ export default function N0VA1OCatalog() {
               </div>
             )}
           </section>
+
+          {(planInfo || usage) && (
+            <section className="rounded-xl bg-gray-800/60 border border-gray-700/50 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2"><Gauge className="w-4 h-4 text-n0va-300" /> Plans & usage</h2>
+                {usage?.summary && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] border ${usage.status === "within_limits" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-red-500/15 text-red-400 border-red-500/30"}`}>
+                    {usage.summary}
+                  </span>
+                )}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {(planInfo?.tiers || []).map((t: any) => (
+                  <div key={t.id} className={`rounded-lg border p-3 space-y-1.5 ${t.id === planInfo?.currentPlan ? "bg-n0va-500/10 border-n0va-500/40" : "bg-gray-900/60 border-gray-700/60"}`}>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-sm font-medium text-gray-200">{t.name}</p>
+                      {t.id === planInfo?.currentPlan && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-n0va-500/20 text-n0va-300 text-[9px] font-semibold">CURRENT</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-500">${t.monthlyPrice}/mo</p>
+                    <div className="space-y-0.5">
+                      {Object.entries(t.limits || {}).map(([k, v]) => (
+                        <p key={k} className="text-[9px] text-gray-500 flex justify-between gap-1">
+                          <span className="truncate">{k}</span><span className="shrink-0 font-mono">{v as any}</span>
+                        </p>
+                      ))}
+                    </div>
+                    {t.id !== planInfo?.currentPlan && (
+                      <button onClick={() => switchPlan(t.id)} disabled={busy === "plan"}
+                        className="w-full px-2 py-1 rounded-lg bg-gray-800 hover:bg-n0va-500/20 text-gray-300 text-[10px]">Switch</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {usage && (
+                <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {(usage.usage || []).map((u: any) => {
+                    const pct = u.limit > 0 ? Math.round((u.used / u.limit) * 100) : 0;
+                    return (
+                      <div key={u.dimension} className="rounded-lg bg-gray-900/60 border border-gray-700/60 p-2 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <code className="text-[10px] text-gray-400 truncate">{u.dimension}</code>
+                          <span className={`shrink-0 text-[10px] font-medium ${u.used > u.limit ? "text-red-400" : pct > 75 ? "text-amber-400" : "text-emerald-400"}`}>
+                            {u.used} / {u.limit}
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-gray-800 overflow-hidden">
+                          <div className={`h-full rounded-full ${u.used > u.limit ? "bg-red-500" : pct > 75 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((p: any) => (

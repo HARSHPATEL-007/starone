@@ -32,6 +32,13 @@ export default function N0VA1OConnections() {
   const [connForm, setConnForm] = useState<any>({ platformId: "", agentId: "", label: "", authMethod: "oauth2", scopes: "gateway.read" });
   const [sessionForm, setSessionForm] = useState<any>({ agentId: "", ttlSeconds: 3600, userDefinedId: "" });
   const [mintForm, setMintForm] = useState<any>({ agentId: "", ttlSec: 3600, scopes: "" });
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
+  const [oauthConn, setOauthConn] = useState<any>(null);
+  const [oauthRes, setOauthRes] = useState<any>(null);
+  const [oauthCode, setOauthCode] = useState("");
+  const [oauthState, setOauthState] = useState("");
+  const [oauthStatus, setOauthStatus] = useState<any>(null);
+  const [lru, setLru] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -184,6 +191,120 @@ export default function N0VA1OConnections() {
       await loadData();
     } catch (e: any) {
       addToast("error", "Failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function openOAuth(connectionId: string) {
+    setOauthConn(conns?.connections?.find((c: any) => c.connectionId === connectionId) || null);
+    setOauthRes(null); setOauthStatus(null); setOauthCode(""); setOauthState("");
+    setShowOAuthModal(true);
+  }
+
+  async function startOAuth() {
+    if (!oauthConn) return;
+    setBusy("oauth-start");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oOauthAuthorizeUrl({ connectionId: oauthConn.connectionId }));
+      setOauthRes(r);
+      addToast("success", "Authorization URL issued", r.summary);
+      if (r.state) setOauthState(r.state);
+    } catch (e: any) {
+      addToast("error", "Failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function completeOAuth() {
+    if (!oauthConn) return;
+    setBusy("oauth-cb");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oOauthCallback({ connectionId: oauthConn.connectionId, code: oauthCode, state: oauthState }));
+      addToast("success", "OAuth completed", r.summary);
+      setShowOAuthModal(false);
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "OAuth failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function refreshOAuth(connectionId: string) {
+    setBusy(`oauth-rf-${connectionId}`);
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oOauthRefresh(connectionId));
+      addToast("success", "Token refreshed", r.summary);
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Refresh failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function revokeOAuth(connectionId: string) {
+    setBusy(`oauth-rv-${connectionId}`);
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oOauthRevoke(connectionId));
+      addToast("warning", "OAuth revoked", r.summary);
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Revoke failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function getOauthStatus(connectionId: string) {
+    setBusy(`oauth-st-${connectionId}`);
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oOauthStatus(connectionId));
+      setOauthStatus(r);
+      addToast("success", "OAuth status", r.summary);
+    } catch (e: any) {
+      addToast("error", "Failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function refreshHealth() {
+    setBusy("health");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oRefreshAccountHealth());
+      addToast("success", "Health refreshed", r.summary);
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function showLru() {
+    setBusy("lru");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oAccountLru());
+      setLru(r);
+      addToast("success", "LRU snapshot", r.summary);
+    } catch (e: any) {
+      addToast("error", "Failed", e?.message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function evictAccounts() {
+    setBusy("evict");
+    try {
+      const r = unwrap(await api.adsMarketingModule.n0va1oEvictAccounts(2));
+      addToast("warning", "Accounts evicted", r.summary);
+      await loadData();
+    } catch (e: any) {
+      addToast("error", "Evict failed", e?.message);
     } finally {
       setBusy("");
     }
@@ -435,6 +556,22 @@ export default function N0VA1OConnections() {
                     <div className="flex gap-1 ml-auto">
                       <button onClick={() => addAccount(c.connectionId)} disabled={busy === `acc-${c.connectionId}`}
                         className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400" title="Add account">+ Acct</button>
+                      <button onClick={() => openOAuth(c.connectionId)} disabled={busy === `oauth-open-${c.connectionId}`}
+                        className="px-2 py-1 rounded-lg bg-violet-500/15 hover:bg-violet-500/25 text-violet-300" title="OAuth 2.0">
+                        <KeyRound className="w-3.5 h-3.5" />
+                      </button>
+                      {c.oauthAuthorized && (
+                        <>
+                          <button onClick={() => refreshOAuth(c.connectionId)} disabled={busy === `oauth-rf-${c.connectionId}`}
+                            className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-n0va-500/20 text-gray-400" title="Refresh token">
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => revokeOAuth(c.connectionId)} disabled={busy === `oauth-rv-${c.connectionId}`}
+                            className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400" title="Revoke OAuth">
+                            <Ban className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                       {c.status !== "connected" ? (
                         <button onClick={() => authorizeConn(c.connectionId)} disabled={busy === `auth-${c.connectionId}`}
                           className="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400" title="Authorize">
@@ -459,6 +596,24 @@ export default function N0VA1OConnections() {
                     <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">{acctHealth.healthy} healthy</span>
                     <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-amber-500/15 text-amber-400 border border-amber-500/30">{acctHealth.degraded} degraded</span>
                     <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-red-500/15 text-red-400 border border-red-500/30">{acctHealth.critical} critical</span>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  <button onClick={refreshHealth} disabled={busy === "health"}
+                    className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 text-[10px]">Refresh health</button>
+                  <button onClick={showLru} disabled={busy === "lru"}
+                    className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 text-[10px]">LRU snapshot</button>
+                  <button onClick={evictAccounts} disabled={busy === "evict"}
+                    className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px]">Evict least-used</button>
+                </div>
+                {lru && (
+                  <div className="rounded-lg bg-gray-900/70 border border-gray-700/60 p-2 space-y-1">
+                    <p className="text-[10px] text-gray-400">{lru.summary || "LRU snapshot"}</p>
+                    {(lru.queue || []).slice(0, 5).map((a: any, i: number) => (
+                      <p key={i} className="text-[10px] font-mono text-gray-500 truncate">
+                        {i + 1}. {a.accountName} · {a.platformId} · {a.lastUsedAt}
+                      </p>
+                    ))}
                   </div>
                 )}
                 {(accounts?.accounts || []).slice(0, 6).map((a: any) => (
@@ -656,6 +811,79 @@ export default function N0VA1OConnections() {
                   className="w-full px-3 py-2 rounded-lg bg-n0va-500 hover:bg-n0va-400 text-white text-sm font-medium">
                   {busy === "createConn" ? "Creating…" : "Create connection"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {showOAuthModal && (
+            <div className={modalWrap} onClick={() => setShowOAuthModal(false)}>
+              <div className={modalBox} onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-200 flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-violet-400" /> OAuth 2.0 · {oauthConn?.label || oauthConn?.connectionId || ""}
+                  </h3>
+                  <button onClick={() => setShowOAuthModal(false)} className="text-gray-500 hover:text-gray-300"><X className="w-4 h-4" /></button>
+                </div>
+
+                <button onClick={startOAuth} disabled={busy === "oauth-start"}
+                  className="w-full px-3 py-2 rounded-lg bg-violet-500 hover:bg-violet-400 text-white text-sm font-medium">
+                  {busy === "oauth-start" ? "Issuing…" : oauthRes ? "Re-issue authorization URL" : "Start OAuth flow"}
+                </button>
+
+                {oauthRes && (
+                  <div className="rounded-lg bg-gray-900/70 border border-violet-500/30 p-2.5 space-y-1.5">
+                    <p className="text-[11px] text-gray-300 break-all">
+                      <span className="text-gray-500">URL: </span>
+                      <code className="text-violet-300 break-all">{oauthRes.authorizationUrl}</code>
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-violet-500/15 text-violet-300 font-mono">state {oauthRes.state}</span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-gray-700 text-gray-300">expires in {oauthRes.expiresInSeconds}s</span>
+                      {oauthRes.expiresAt && <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-gray-700 text-gray-400">until {new Date(oauthRes.expiresAt).toLocaleString()}</span>}
+                    </div>
+                    {oauthRes.authorizationUrl && (
+                      <button onClick={() => copyText(oauthRes.authorizationUrl, "Authorization URL")}
+                        className="text-[10px] text-gray-400 hover:text-gray-200 underline">Copy URL</button>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <label className="flex flex-col gap-1 text-gray-500">Authorization code
+                    <input className="rounded-lg bg-gray-800 border border-gray-700 px-2 py-1.5 text-gray-200 font-mono" placeholder="auth_…" value={oauthCode} onChange={(e) => setOauthCode(e.target.value)} /></label>
+                  <label className="flex flex-col gap-1 text-gray-500">State
+                    <input className="rounded-lg bg-gray-800 border border-gray-700 px-2 py-1.5 text-gray-200 font-mono" placeholder="st_…" value={oauthState} onChange={(e) => setOauthState(e.target.value)} /></label>
+                </div>
+                <button onClick={completeOAuth} disabled={busy === "oauth-cb" || !oauthCode || !oauthState}
+                  className="w-full px-3 py-2 rounded-lg bg-n0va-500 hover:bg-n0va-400 text-white text-sm font-medium">
+                  {busy === "oauth-cb" ? "Exchanging…" : "Complete authorization (callback)"}
+                </button>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <button onClick={() => getOauthStatus(oauthConn.connectionId)} disabled={busy === `oauth-st-${oauthConn?.connectionId}`}
+                    className="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs">Status</button>
+                  {oauthStatus && (
+                    <div className="w-full rounded-lg bg-gray-900/70 border border-gray-700/60 p-2.5 space-y-1 text-[11px]">
+                      <p className="text-gray-300">
+                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] ${oauthStatus.oauthAuthorized ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>
+                          {oauthStatus.oauthAuthorized ? "authorized" : "not authorized"}
+                        </span>
+                        {oauthStatus.oauthState && <span className="ml-1.5 font-mono text-violet-300">{oauthStatus.oauthState}</span>}
+                      </p>
+                      {oauthStatus.oauthScope && <p className="text-gray-500">scope: <code className="text-gray-400">{oauthStatus.oauthScope}</code></p>}
+                      {oauthStatus.tokenExpiresAt && <p className="text-gray-500">token expires {new Date(oauthStatus.tokenExpiresAt).toLocaleString()}</p>}
+                      {oauthStatus.summary && <p className="text-gray-500">{oauthStatus.summary}</p>}
+                    </div>
+                  )}
+                  {oauthStatus?.oauthAuthorized && (
+                    <>
+                      <button onClick={() => refreshOAuth(oauthConn.connectionId)} disabled={busy === `oauth-rf-${oauthConn?.connectionId}`}
+                        className="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-n0va-500/20 text-gray-300 text-xs">Refresh token</button>
+                      <button onClick={() => revokeOAuth(oauthConn.connectionId)} disabled={busy === `oauth-rv-${oauthConn?.connectionId}`}
+                        className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs">Revoke</button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}

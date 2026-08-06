@@ -6765,6 +6765,22 @@ export class AdsMarketingModuleService {
     return n0va1oExec.vfsSummarizeStats(tenantId, fileId);
   }
 
+  n0va1oVfsAwkProcess(tenantId: string, fileId: string, program: string) {
+    return n0va1oExec.vfsAwkProcess(tenantId, fileId, program);
+  }
+
+  n0va1oVfsConvertFormat(tenantId: string, fileId: string, targetFormat: string) {
+    return n0va1oExec.vfsConvertFormat(tenantId, fileId, targetFormat);
+  }
+
+  n0va1oVfsStreamExport(tenantId: string, fileId: string, input: any) {
+    return n0va1oExec.vfsStreamExport(tenantId, fileId, input);
+  }
+
+  n0va1oSimulateDirectoryPulse(tenantId: string, email: string) {
+    return n0va1oAudit.simulateDirectoryPulse(tenantId, email);
+  }
+
   n0va1oRunModifierPipeline(tenantId: string, input: any) {
     return n0va1oGov.runModifierPipeline(tenantId, input);
   }

@@ -1,0 +1,730 @@
+import {
+  AppWindow,
+  Building2,
+  Calendar,
+  CheckSquare,
+  Clapperboard,
+  Cloud,
+  Contact,
+  Crown,
+  FileText,
+  GraduationCap,
+  Globe,
+  Heart,
+  HeartPulse,
+  Image,
+  Landmark,
+  LayoutTemplate,
+  LineChart,
+  Mail,
+  Megaphone,
+  MessagesSquare,
+  Mic,
+  MonitorSmartphone,
+  PanelsTopLeft,
+  PenTool,
+  Presentation,
+  Scale,
+  Shield,
+  SlidersHorizontal,
+  Sparkles,
+  StickyNote,
+  Table2,
+  TrendingUp,
+  UserCog,
+  Users,
+  Vault,
+  Video,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+export interface ModuleDef {
+  id: string;
+  name: string;
+  short: string;
+  category: string;
+  icon: LucideIcon;
+  status: "live" | "planned";
+  path?: string;
+  tagline: string;
+  description: string;
+  features: string[];
+}
+
+export const MODULES: ModuleDef[] = [
+  {
+    id: "n0va1o",
+    name: "N0VA1O",
+    short: "Gateway",
+    category: "AI & Core",
+    icon: Globe,
+    status: "live",
+    path: "/n0va1o",
+    tagline: "Infinite Integration Gateway",
+    description:
+      "The connective core of the N0VA Enterprise System - 1,384 connected platforms, MCP mesh, recipes, triggers, agents, JIT tokens, universal CLI, SDKs, deployment, observability, migration and OAuth.",
+    features: [
+      "1,384-platform catalog across 17 categories",
+      "Recipe compiler + sandboxed execution + VFS",
+      "Zero-trust governance, HITL and tamper-proof audit",
+      "Universal CLI, SDKs, deploy & observe",
+    ],
+  },
+  {
+    id: "n0va-ani",
+    name: "N0VA ANI",
+    short: "ANI",
+    category: "AI & Core",
+    icon: Sparkles,
+    status: "planned",
+    tagline: "Personal AI assistant",
+    description:
+      "Your ambient AI companion - unified memory, voice commands, proactive suggestions and one-tap automation across every N0VA module.",
+    features: [
+      "Cross-module context & unified memory",
+      "Voice-first command layer",
+      "Proactive daily briefings",
+      "One-tap multi-step automations",
+    ],
+  },
+  {
+    id: "n0va-insights",
+    name: "N0VA INSIGHTS",
+    short: "Insights",
+    category: "AI & Core",
+    icon: LineChart,
+    status: "planned",
+    tagline: "Analytics for everything",
+    description:
+      "A single query surface across every module - charts, natural-language questions, anomaly alerts and executive digests.",
+    features: [
+      "Cross-module metric queries",
+      "Natural-language chart builder",
+      "Anomaly & trend alerts",
+      "Executive digests",
+    ],
+  },
+  {
+    id: "n0va-workspace-studio",
+    name: "N0VA WORKSPACE STUDIO",
+    short: "Studio",
+    category: "AI & Core",
+    icon: PanelsTopLeft,
+    status: "planned",
+    tagline: "Build your own workspace",
+    description:
+      "Compose custom workspaces from every N0VA module - layouts, widgets, dashboards and role-based home screens.",
+    features: [
+      "Drag-and-drop layout builder",
+      "Widgets from any module",
+      "Role-based home screens",
+      "Shareable workspace templates",
+    ],
+  },
+  {
+    id: "n0va-mail",
+    name: "N0VA MAIL",
+    short: "Mail",
+    category: "Communication",
+    icon: Mail,
+    status: "live",
+    path: "/mail",
+    tagline: "Neural email with everything",
+    description:
+      "A full enterprise mail platform - neural mailbox, rules, campaigns, sequences, OAuth, eDiscovery, quantum security, billing, focus and 50+ dedicated pages.",
+    features: [
+      "Neural mailbox with auto-priority",
+      "Rules, automations, sequences & campaigns",
+      "eDiscovery, legal holds & compliance packs",
+      "Quantum-safe encryption & zero-trust",
+    ],
+  },
+  {
+    id: "n0va-chat",
+    name: "N0VA CHAT",
+    short: "Chat",
+    category: "Communication",
+    icon: MessagesSquare,
+    status: "planned",
+    tagline: "Team & AI messaging",
+    description:
+      "Channels, threads and direct messages with N0VA ANI in every conversation, plus bridges to external chat platforms.",
+    features: [
+      "Channels, threads & DMs",
+      "AI copilot in every conversation",
+      "Slack/Teams bridges via N0VA1O",
+      "Voice notes & reactions",
+    ],
+  },
+  {
+    id: "n0va-meet",
+    name: "N0VA MEET",
+    short: "Meet",
+    category: "Communication",
+    icon: Video,
+    status: "planned",
+    tagline: "Video meetings that run themselves",
+    description:
+      "HD meetings with live transcription, AI action items, scheduling, recordings and automatic follow-up assignment.",
+    features: [
+      "HD video + screen sharing",
+      "Live transcription & AI minutes",
+      "One-click scheduling from mail",
+      "Auto-assigned action items",
+    ],
+  },
+  {
+    id: "n0va-voice",
+    name: "N0VA VOICE",
+    short: "Voice",
+    category: "Communication",
+    icon: Mic,
+    status: "planned",
+    tagline: "Voice mail, calls & commands",
+    description:
+      "Unified voice - voicemail transcription, voice notes in mail, phone system and voice commands across the suite.",
+    features: [
+      "Voicemail-to-text",
+      "Voice notes & transcription",
+      "Suite-wide voice commands",
+      "Call routing & logs",
+    ],
+  },
+  {
+    id: "n0va-contacts",
+    name: "N0VA CONTACTS",
+    short: "Contacts",
+    category: "Communication",
+    icon: Contact,
+    status: "planned",
+    tagline: "One address book for everything",
+    description:
+      "A single contact graph powering mail, chat, meet, CRM and sales - with merge, dedupe and bulk tools built in.",
+    features: [
+      "Unified contact graph",
+      "Merge, dedupe & bulk import",
+      "Engagement history",
+      "Syncs to every module",
+    ],
+  },
+  {
+    id: "n0va-groups",
+    name: "N0VA GROUPS",
+    short: "Groups",
+    category: "Communication",
+    icon: Users,
+    status: "planned",
+    tagline: "Teams, groups & distribution lists",
+    description:
+      "Manage teams, distribution lists and shared spaces used across mail, chat, calendars and approvals.",
+    features: [
+      "Dynamic distribution lists",
+      "Team membership management",
+      "Shared mailboxes & spaces",
+      "Approval-friendly groups",
+    ],
+  },
+  {
+    id: "n0va-docs",
+    name: "N0VA DOCS",
+    short: "Docs",
+    category: "Content",
+    icon: FileText,
+    status: "planned",
+    tagline: "Collaborative documents",
+    description:
+      "Real-time collaborative docs with AI drafting, comments, approvals, version history and mail integration.",
+    features: [
+      "Real-time co-editing",
+      "AI drafting & summarization",
+      "Comments, mentions & approvals",
+      "Version history",
+    ],
+  },
+  {
+    id: "n0va-sheets",
+    name: "N0VA SHEETS",
+    short: "Sheets",
+    category: "Content",
+    icon: Table2,
+    status: "planned",
+    tagline: "Smart spreadsheets",
+    description:
+      "Spreadsheets with formulas, pivot tables, charts, AI data analysis and N0VA1O connectors.",
+    features: [
+      "Formulas & pivot tables",
+      "AI analysis & chart generation",
+      "Live data connectors",
+      "Collaborative cells",
+    ],
+  },
+  {
+    id: "n0va-slides",
+    name: "N0VA SLIDES",
+    short: "Slides",
+    category: "Content",
+    icon: Presentation,
+    status: "planned",
+    tagline: "Presentations, fast",
+    description:
+      "Slide decks with AI theme generation, brand enforcement, presenter coach and one-click publish.",
+    features: [
+      "AI deck generation",
+      "Brand kit enforcement",
+      "Presenter coach",
+      "Publish & share",
+    ],
+  },
+  {
+    id: "n0va-drawings",
+    name: "N0VA DRAWINGS",
+    short: "Drawings",
+    category: "Content",
+    icon: PenTool,
+    status: "planned",
+    tagline: "Diagrams & whiteboards",
+    description:
+      "Whiteboards, flowcharts and diagrams that stay editable inside docs and meet recordings.",
+    features: [
+      "Infinite whiteboard",
+      "Auto-layout diagrams",
+      "Embed in docs & meet",
+      "Real-time collaboration",
+    ],
+  },
+  {
+    id: "n0va-keep",
+    name: "N0VA KEEP",
+    short: "Keep",
+    category: "Content",
+    icon: StickyNote,
+    status: "planned",
+    tagline: "Notes that catch up with you",
+    description:
+      "Quick notes, checklists and voice memos that surface at the right moment across the suite.",
+    features: [
+      "Quick capture & checklists",
+      "AI organization & reminders",
+      "Voice memo transcription",
+      "Context-aware surfacing",
+    ],
+  },
+  {
+    id: "n0va-forms",
+    name: "N0VA FORMS",
+    short: "Forms",
+    category: "Content",
+    icon: CheckSquare,
+    status: "planned",
+    tagline: "Forms & surveys",
+    description:
+      "Build forms, quizzes and surveys with AI question generation and results that flow into Sheets.",
+    features: [
+      "Drag-and-drop builder",
+      "AI question suggestions",
+      "Response analytics",
+      "Sheets & CRM integration",
+    ],
+  },
+  {
+    id: "n0va-booklm-education",
+    name: "N0VA BOOKLM EDUCATION",
+    short: "BookLM",
+    category: "Content",
+    icon: GraduationCap,
+    status: "planned",
+    tagline: "Learn anything, together",
+    description:
+      "Course materials, AI study guides, practice quizzes and classroom spaces with progress tracking.",
+    features: [
+      "AI study guides from any source",
+      "Practice quizzes & flashcards",
+      "Classroom spaces",
+      "Progress tracking",
+    ],
+  },
+  {
+    id: "n0va-sites",
+    name: "N0VA SITES",
+    short: "Sites",
+    category: "Content",
+    icon: LayoutTemplate,
+    status: "planned",
+    tagline: "Publish intranets & pages",
+    description:
+      "Build intranet sites, knowledge bases and public pages with blocks, themes and access control.",
+    features: [
+      "Block-based site builder",
+      "Intranet & knowledge base templates",
+      "Granular access control",
+      "Custom domains",
+    ],
+  },
+  {
+    id: "n0va-pics",
+    name: "N0VA PICS",
+    short: "Pics",
+    category: "Media",
+    icon: Image,
+    status: "planned",
+    tagline: "Photos & image library",
+    description:
+      "Central image library with AI tagging, smart search, editing and brand-safe asset delivery.",
+    features: [
+      "AI tagging & smart search",
+      "In-browser editing",
+      "Brand-safe asset library",
+      "Auto-resize & delivery",
+    ],
+  },
+  {
+    id: "n0va-videos",
+    name: "N0VA VIDEOS",
+    short: "Videos",
+    category: "Media",
+    icon: Clapperboard,
+    status: "planned",
+    tagline: "Video library & studio",
+    description:
+      "Host, transcribe, edit and share video - meeting recordings, training and marketing content in one place.",
+    features: [
+      "Secure video hosting",
+      "Auto transcription & chapters",
+      "In-browser editing",
+      "Analytics & sharing",
+    ],
+  },
+  {
+    id: "n0va-storage",
+    name: "N0VA CLOUD STORAGE",
+    short: "Storage",
+    category: "Content",
+    icon: Cloud,
+    status: "planned",
+    tagline: "Storage with AI built in",
+    description:
+      "Files, folders, tiers and versioning across the suite - with AI search, smart cleanup and N0VA1O VFS.",
+    features: [
+      "Smart folders & versioning",
+      "AI file search & tagging",
+      "Storage tiering & forecasts",
+      "VFS integration",
+    ],
+  },
+  {
+    id: "n0va-calendar",
+    name: "N0VA CALENDAR",
+    short: "Calendar",
+    category: "Scheduling",
+    icon: Calendar,
+    status: "planned",
+    tagline: "One calendar for the enterprise",
+    description:
+      "Shared calendars, scheduling links, room booking and mail-aware busy negotiation.",
+    features: [
+      "Shared & resource calendars",
+      "Scheduling links",
+      "Mail-aware availability",
+      "Meeting room booking",
+    ],
+  },
+  {
+    id: "n0va-tasks",
+    name: "N0VA TASKS",
+    short: "Tasks",
+    category: "Scheduling",
+    icon: CheckSquare,
+    status: "planned",
+    tagline: "Tasks that chase themselves",
+    description:
+      "Tasks extracted from mail, meetings and chats with assignments, due dates, reminders and boards.",
+    features: [
+      "Auto-extraction from mail & meet",
+      "Boards, lists & timelines",
+      "Smart due-date reminders",
+      "Delegation & approvals",
+    ],
+  },
+  {
+    id: "n0va-ads-marketing",
+    name: "N0VA ADS & MARKETING",
+    short: "Marketing",
+    category: "Business & Revenue",
+    icon: Megaphone,
+    status: "live",
+    path: "/",
+    tagline: "Full-funnel marketing execution",
+    description:
+      "The complete marketing module - campaigns, audiences, creatives, budget autopilot, command center, one-click execution and silent-guardian layer.",
+    features: [
+      "Command center daily execution",
+      "Budget autopilot & portfolio optimization",
+      "Creative engine & fatigue monitoring",
+      "Silent-guardian brand safety",
+    ],
+  },
+  {
+    id: "n0va-sales",
+    name: "N0VA SALES",
+    short: "Sales",
+    category: "Business & Revenue",
+    icon: TrendingUp,
+    status: "planned",
+    tagline: "Pipeline, deals & outreach",
+    description:
+      "Deals, pipelines, quotes and outreach sequences with CRM sync and AI forecasting.",
+    features: [
+      "Pipeline & deal stages",
+      "Quotes & proposals",
+      "Outreach sequences",
+      "AI deal forecasting",
+    ],
+  },
+  {
+    id: "n0va-revenue",
+    name: "N0VA REVENUE",
+    short: "Revenue",
+    category: "Business & Revenue",
+    icon: Crown,
+    status: "planned",
+    tagline: "Subscription & revenue operations",
+    description:
+      "Plans, add-ons, invoicing, dunning and revenue recognition across the whole suite.",
+    features: [
+      "Plan & add-on catalogs",
+      "Invoicing & proration",
+      "Dunning & payment methods",
+      "Revenue recognition",
+    ],
+  },
+  {
+    id: "n0va-cx",
+    name: "N0VA CUSTOMER EXPERIENCE",
+    short: "CX",
+    category: "Business & Revenue",
+    icon: Heart,
+    status: "planned",
+    tagline: "Support that closes the loop",
+    description:
+      "Ticketing, CSAT, knowledge base and customer health powered by mail and chat history.",
+    features: [
+      "Tickets & SLAs",
+      "CSAT & NPS",
+      "Customer health scores",
+      "Knowledge base",
+    ],
+  },
+  {
+    id: "n0va-operations-teams",
+    name: "N0VA OPERATIONS TEAMS",
+    short: "Ops Teams",
+    category: "Business & Revenue",
+    icon: MessagesSquare,
+    status: "planned",
+    tagline: "Shared inboxes & ops hubs",
+    description:
+      "Shared inboxes, team workflows, escalation lanes and SLAs for operations teams.",
+    features: [
+      "Shared inboxes",
+      "Team workflows & queues",
+      "Escalation lanes",
+      "SLA tracking",
+    ],
+  },
+  {
+    id: "n0va-finance",
+    name: "N0VA FINANCE",
+    short: "Finance",
+    category: "Business & Revenue",
+    icon: Landmark,
+    status: "planned",
+    tagline: "Expenses, budgets & close",
+    description:
+      "Budgets, expenses, approvals and close with audit-grade trails and N0VA1O connectors.",
+    features: [
+      "Budgets & forecasts",
+      "Expense reports & approvals",
+      "Invoices & payments",
+      "Audit-grade trails",
+    ],
+  },
+  {
+    id: "n0va-founder-dashboard",
+    name: "N0VA FOUNDER DASHBOARD",
+    short: "Founder",
+    category: "Business & Revenue",
+    icon: Crown,
+    status: "planned",
+    tagline: "Every number that matters",
+    description:
+      "A one-screen pulse of revenue, growth, engagement and risk across every module - built for the founder.",
+    features: [
+      "Unified company pulse",
+      "Revenue & growth KPIs",
+      "Module-by-module drilldown",
+      "Weekly founder digest",
+    ],
+  },
+  {
+    id: "n0va-business-dashboard",
+    name: "N0VA BUSINESS DASHBOARD",
+    short: "Business",
+    category: "Business & Revenue",
+    icon: Building2,
+    status: "planned",
+    tagline: "Operations at a glance",
+    description:
+      "Department-level dashboards for operations, finance, sales and support teams.",
+    features: [
+      "Department dashboards",
+      "KPI tracking & goals",
+      "Team performance",
+      "Shareable reports",
+    ],
+  },
+  {
+    id: "n0va-hr",
+    name: "N0VA HR",
+    short: "HR",
+    category: "People",
+    icon: UserCog,
+    status: "planned",
+    tagline: "People, hiring & performance",
+    description:
+      "Profiles, hiring pipelines, onboarding, time off and performance reviews in one place.",
+    features: [
+      "Employee profiles & directory",
+      "Hiring pipelines",
+      "Onboarding & time off",
+      "Performance reviews",
+    ],
+  },
+  {
+    id: "n0va-admin",
+    name: "N0VA ADMIN",
+    short: "Admin",
+    category: "IT & Security",
+    icon: Shield,
+    status: "planned",
+    tagline: "Administer the whole suite",
+    description:
+      "Provisioning, roles, policies and audit across every module from one admin surface.",
+    features: [
+      "User provisioning & roles",
+      "Cross-module policies",
+      "Audit & compliance",
+      "License management",
+    ],
+  },
+  {
+    id: "n0va-admin-console",
+    name: "N0VA ADMIN CONSOLE",
+    short: "Console",
+    category: "IT & Security",
+    icon: SlidersHorizontal,
+    status: "planned",
+    tagline: "Deep system administration",
+    description:
+      "Service-level admin - domains, DNS, mail flow, integrations, security settings and system health.",
+    features: [
+      "Domains & DNS records",
+      "Mail flow & routing",
+      "Integration admin",
+      "System health & maintenance",
+    ],
+  },
+  {
+    id: "n0va-endpoint",
+    name: "N0VA ENDPOINT MANAGEMENT",
+    short: "Endpoints",
+    category: "IT & Security",
+    icon: MonitorSmartphone,
+    status: "planned",
+    tagline: "Devices, posture & updates",
+    description:
+      "Enroll and manage devices, enforce posture and push updates with zero-trust alignment.",
+    features: [
+      "Device enrollment & inventory",
+      "Posture & compliance checks",
+      "Patch & update policies",
+      "Zero-trust enforcement",
+    ],
+  },
+  {
+    id: "n0va-vault",
+    name: "N0VA VAULT",
+    short: "Vault",
+    category: "IT & Security",
+    icon: Vault,
+    status: "planned",
+    tagline: "Secrets, keys & passwords",
+    description:
+      "Secrets management, passkeys, API keys and quantum-safe key storage for the enterprise.",
+    features: [
+      "Secrets & API keys vault",
+      "Passkeys & MFA",
+      "Rotation & expiry policies",
+      "Quantum-safe key storage",
+    ],
+  },
+  {
+    id: "n0va-health",
+    name: "N0VA HEALTH",
+    short: "Health",
+    category: "IT & Security",
+    icon: HeartPulse,
+    status: "planned",
+    tagline: "Service health & incidents",
+    description:
+      "Live health across every module - uptime, incidents, SLAs, chaos engineering and postmortems.",
+    features: [
+      "Live uptime & latency",
+      "Incident lifecycle P0-P4",
+      "SLA tracking",
+      "Chaos & resilience",
+    ],
+  },
+  {
+    id: "n0va-legal",
+    name: "N0VA LEGAL",
+    short: "Legal",
+    category: "IT & Security",
+    icon: Scale,
+    status: "planned",
+    tagline: "Matters, holds & compliance",
+    description:
+      "Matters, contracts, legal holds, eDiscovery handoffs and compliance report packs.",
+    features: [
+      "Matter & contract tracking",
+      "Legal holds & eDiscovery",
+      "Compliance report packs",
+      "Audit-chain exports",
+    ],
+  },
+  {
+    id: "n0va-appset",
+    name: "N0VA APPSET",
+    short: "Appset",
+    category: "IT & Security",
+    icon: AppWindow,
+    status: "planned",
+    tagline: "App catalog & licensing",
+    description:
+      "The enterprise app catalog - install, license, update and secure every N0VA application.",
+    features: [
+      "App catalog & installs",
+      "Licensing & seats",
+      "Update management",
+      "Security baselines",
+    ],
+  },
+];
+
+export const MODULE_CATEGORIES = [...new Set(MODULES.map((m) => m.category))];
+
+export function moduleById(id: string): ModuleDef | undefined {
+  return MODULES.find((m) => m.id === id);
+}
+
+export const LIVE_MODULES = MODULES.filter((m) => m.status === "live");
+export const PLANNED_MODULES = MODULES.filter((m) => m.status === "planned");

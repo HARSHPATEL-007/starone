@@ -63,6 +63,18 @@ export default function N0VA1OGovernance() {
   const [pForm, setPForm] = useState({ teamId: "", endpoint: "", whitelist: "", blacklist: "", approvalRequired: "", ssoRequired: false });
   const [evalForm, setEvalForm] = useState({ toolId: "", teamId: "", riskLevel: "low", action: "", reasoning: "" });
   const [aForm, setAForm] = useState({ action: "", toolId: "", actor: "admin", details: "" });
+  const [pipeForm, setPipeForm] = useState({ toolId: "gateway.write", phase: "before", payload: "{\"amount\":5000,\"email\":\"ana@n0va.io\",\"region\":\"us-east-1\"}" });
+  const [pipeRes, setPipeRes] = useState<any>(null);
+  const [pipeStatus, setPipeStatus] = useState<any>(null);
+
+  const runPipeline = async () => {
+    let payload: any = {};
+    try { payload = JSON.parse(pipeForm.payload || "{}"); } catch { toast("Payload must be valid JSON", "error"); return; }
+    const d = await act("pipe", () => api.adsMarketingModule.n0va1oRunModifierPipeline({ toolId: pipeForm.toolId, phase: pipeForm.phase, payload }), "Pipeline run");
+    if (d) setPipeRes(d);
+    const s = await act("pipest", () => api.adsMarketingModule.n0va1oModifierPipelineStatus(), "");
+    if (s) setPipeStatus(s);
+  };
 
   const addToastFn = () => {
     if (!toastRef.current && (window as any).__n0vaToast) toastRef.current = (window as any).__n0vaToast;
@@ -278,6 +290,55 @@ export default function N0VA1OGovernance() {
               <span key={t.id} className="text-[11px] px-2 py-0.5 rounded-full bg-gray-700/50 border border-gray-600/50 text-gray-300">{t.name}</span>
             ))}
           </div>
+          <div className="rounded-lg bg-gray-900/60 border border-gray-700/50 p-2.5 space-y-2 mb-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1 text-[10px] text-gray-500">Tool ID
+                <input className="w-40 rounded-lg bg-gray-800 border border-gray-700 px-2 py-1 text-xs text-gray-200 font-mono" value={pipeForm.toolId} onChange={(e) => setPipeForm({ ...pipeForm, toolId: e.target.value })} /></label>
+              <label className="flex flex-col gap-1 text-[10px] text-gray-500">Phase
+                <select className="rounded-lg bg-gray-800 border border-gray-700 px-2 py-1 text-xs text-gray-200" value={pipeForm.phase} onChange={(e) => setPipeForm({ ...pipeForm, phase: e.target.value })}>
+                  <option value="schema">schema</option>
+                  <option value="before">before</option>
+                  <option value="after">after</option>
+                </select></label>
+              <button onClick={runPipeline} disabled={busy === "pipe"}
+                className="px-3 py-1.5 rounded-lg bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-xs text-violet-300">
+                {busy === "pipe" ? "Running…" : "Run pipeline"}
+              </button>
+              <button onClick={async () => { const s = await act("pipest", () => api.adsMarketingModule.n0va1oModifierPipelineStatus(), ""); if (s) setPipeStatus(s); }}
+                className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs text-gray-300">Status</button>
+            </div>
+            <textarea className="w-full rounded-lg bg-gray-800 border border-gray-700 px-2 py-1.5 text-[10px] text-gray-300 font-mono h-16"
+              value={pipeForm.payload} onChange={(e) => setPipeForm({ ...pipeForm, payload: e.target.value })} />
+          </div>
+          {pipeStatus && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {(pipeStatus.byPhase || []).map((p: any) => (
+                <span key={p.phase} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-700/50 border border-gray-600/50 text-gray-300">
+                  {p.phase}: {p.modifiers} mod · {p.enabled} on · {p.runs} runs
+                </span>
+              ))}
+            </div>
+          )}
+          {pipeRes && (
+            <div className="rounded-lg bg-gray-900/70 border border-violet-500/30 p-2.5 mb-3 space-y-1">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-[11px] font-mono text-violet-300">{pipeRes.runId}</p>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${pipeRes.blocked ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"}`}>
+                  {pipeRes.blocked ? "blocked" : "applied"}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400">{pipeRes.summary} · {pipeRes.pipelineMs}ms</p>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {(pipeRes.applied || []).map((a: any, i: number) => (
+                  <div key={i} className="rounded bg-gray-800/60 border border-gray-700/50 px-2 py-1">
+                    <p className="text-[10px] text-gray-300">{a.name} <span className="text-gray-500">· {a.type} · {a.toolPattern}</span></p>
+                    <p className="text-[9px] text-gray-500 font-mono break-all">{JSON.stringify(a.effect)}</p>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setPipeRes(null)} className="text-[10px] text-gray-500 hover:text-gray-300">Clear</button>
+            </div>
+          )}
           <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
             {(modifiers?.modifiers || []).length === 0 && <p className="text-xs text-gray-500">No modifiers registered.</p>}
             {(modifiers?.modifiers || []).map((m: any) => (

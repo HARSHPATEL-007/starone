@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare,    BrainCircuit, FolderSearch, Globe, Mic, Volume2, Webhook, Plug, SendHorizonal, CalendarClock, MailOpen, Lock, Import, GitMerge, Workflow, Gauge, ListOrdered, Ticket, KeyRound, Fingerprint, Scale, Beaker, PenLine, MapPin, Store, Code2, AtSign, Tag, Terminal, Rocket, Waves } from "lucide-react";
+import { Search, Megaphone, Palette, LayoutGrid, Users, Bot, FileJson, BarChart3,   Shield, Layers, LayoutDashboard, Activity, ScrollText, Settings, Calendar, CalendarDays, HeartPulse, TrendingDown, Wallet, GitCompare, TrendingUp, Split,   SearchX, Eye, Bell, Link2,   BookTemplate, FileText, CreditCard, CheckSquare, CheckCircle, MessageCircle,   Crosshair, LifeBuoy, Zap, Calculator,   Sparkles, User, Upload, Download, FolderOpen, Target, ListFilter, ExternalLink, DollarSign, FileInput, Hash, Archive, Camera, Award, Send, ClipboardList, GitBranch, Mail, Mailbox, Inbox, Signature, ShieldAlert, AlarmClock, Paperclip, MessagesSquare,    BrainCircuit, FolderSearch, Globe, Mic, Volume2, Webhook, Plug, SendHorizonal, CalendarClock, MailOpen, Lock, Import, GitMerge, Workflow, Gauge, ListOrdered, Ticket, KeyRound, Fingerprint, Scale, Beaker, PenLine, MapPin, Store, Code2, AtSign, Tag, Terminal, Rocket, Waves, Database, HardDrive, Puzzle, ShieldCheck } from "lucide-react";
 import { api } from "../api/client";
 
 interface SearchResult {
@@ -79,6 +79,10 @@ const PAGE_ITEMS: SearchResult[] = [
   { type: "page", label: "N0VA1O SDK", route: "/n0va1o/sdk", icon: Code2 },
   { type: "page", label: "N0VA1O Deploy", route: "/n0va1o/deploy", icon: Rocket },
   { type: "page", label: "N0VA1O Observe", route: "/n0va1o/observe", icon: Waves },
+  { type: "page", label: "N0VA1O Migration", route: "/n0va1o/migration", icon: Database },
+  { type: "page", label: "VFS Explorer", route: "/n0va1o/vfs", icon: HardDrive },
+  { type: "page", label: "Plugin Engine", route: "/n0va1o/plugins", icon: Puzzle },
+  { type: "page", label: "Audit Center", route: "/n0va1o/audit", icon: ShieldCheck },
   { type: "page", label: "Campaigns", route: "/campaigns", icon: Megaphone },
   { type: "page", label: "Calendar", route: "/campaign-calendar", icon: Calendar },
   { type: "page", label: "Creatives", route: "/creatives", icon: Palette },

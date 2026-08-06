@@ -3486,6 +3486,7 @@ export const api = {
     n0va1oCategories: () => request<any>("/ads-marketing-module/n0va1o/categories"),
     n0va1oPlans: () => request<any>("/ads-marketing-module/n0va1o/plans"),
     n0va1oSetPlan: (plan: string) => request<any>("/ads-marketing-module/n0va1o/plans", { method: "POST", body: JSON.stringify({ plan }) }),
+    n0va1oUsageStatus: () => request<any>("/ads-marketing-module/n0va1o/usage"),
     n0va1oUsage: () => request<any>("/ads-marketing-module/n0va1o/usage"),
     n0va1oOverview: () => request<any>("/ads-marketing-module/n0va1o/overview"),
     n0va1oAuthCatalog: () => request<any>("/ads-marketing-module/n0va1o/auth/catalog"),
@@ -3644,6 +3645,14 @@ export const api = {
     n0va1oVfsPandasQuery: (fileId: string, query: string) =>
       request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/pandas`, { method: "POST", body: JSON.stringify({ query }) }),
     n0va1oVfsSummarizeStats: (fileId: string) => request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/stats`),
+    n0va1oVfsAwkProcess: (fileId: string, program: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/awk`, { method: "POST", body: JSON.stringify({ program }) }),
+    n0va1oVfsConvertFormat: (fileId: string, targetFormat: string) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/convert`, { method: "POST", body: JSON.stringify({ targetFormat }) }),
+    n0va1oVfsStreamExport: (fileId: string, input: Record<string, any>) =>
+      request<any>(`/ads-marketing-module/n0va1o/exec/files/${fileId}/stream`, { method: "POST", body: JSON.stringify(input || {}) }),
+    n0va1oSimulateDirectoryPulse: (email: string) =>
+      request<any>("/ads-marketing-module/n0va1o/audit/directory/pulse", { method: "POST", body: JSON.stringify({ email }) }),
     n0va1oRunModifierPipeline: (input: Record<string, any>) =>
       request<any>("/ads-marketing-module/n0va1o/gov/modifiers/run", { method: "POST", body: JSON.stringify(input) }),
     n0va1oModifierPipelineStatus: () => request<any>("/ads-marketing-module/n0va1o/gov/modifiers/pipeline-status"),

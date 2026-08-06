@@ -4558,6 +4558,22 @@ router.get("/n0va1o/exec/files/:fileId/stats", asyncHandler(async (req, res) => 
   sendSuccess(res, adsMarketingModule.n0va1oVfsSummarizeStats(req.user!.tenantId, req.params.fileId));
 }));
 
+router.post("/n0va1o/exec/files/:fileId/awk", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oVfsAwkProcess(req.user!.tenantId, req.params.fileId, String(req.body?.program || "")));
+}));
+
+router.post("/n0va1o/exec/files/:fileId/convert", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oVfsConvertFormat(req.user!.tenantId, req.params.fileId, String(req.body?.targetFormat || "")));
+}));
+
+router.post("/n0va1o/exec/files/:fileId/stream", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oVfsStreamExport(req.user!.tenantId, req.params.fileId, req.body || {}));
+}));
+
+router.post("/n0va1o/audit/directory/pulse", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.n0va1oSimulateDirectoryPulse(req.user!.tenantId, String(req.body?.email || "")));
+}));
+
 router.post("/n0va1o/gov/modifiers/run", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.n0va1oRunModifierPipeline(req.user!.tenantId, req.body || {}));
 }));
