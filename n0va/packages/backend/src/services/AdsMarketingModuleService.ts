@@ -129,6 +129,20 @@ import { n0va1oObservability } from "./N0VA1OObservabilityService";
 import { n0va1oMigration } from "./N0VA1OMigrationService";
 
 import { mailCollab2 } from "./MailCollabV2Service";
+import { campaignAlertOrchestrator } from "./CampaignAlertOrchestratorService";
+import { campaignOptimizerService } from "./CampaignOptimizerService";
+import { chatRoom } from "./ChatRoomService";
+import { chatMessage } from "./ChatMessageService";
+import { chatPresence } from "./ChatPresenceService";
+import { chatSearch } from "./ChatSearchService";
+import { chatHuddle } from "./ChatHuddleService";
+import { chatBot } from "./ChatBotService";
+import { chatNotification } from "./ChatNotificationService";
+import { chatCompliance } from "./ChatComplianceService";
+import { chatAnalytics } from "./ChatAnalyticsService";
+import { chatCommandCenter } from "./ChatCommandCenterService";
+import { chatAdmin } from "./ChatAdminService";
+import { chatRealtime } from "./ChatRealtimeService";
 const campaignSummaryService = new CampaignSummaryService();
 
 interface ModuleHealthCheck {
@@ -7148,6 +7162,132 @@ export class AdsMarketingModuleService {
   n0va1oOauthStatus(tenantId: string, connectionId: string) {
     return n0va1oAuth.oauthStatus(tenantId, connectionId);
   }
+
+  // ---- N0VA CHAT ----
+
+  chatOverview(tenantId: string, userId: string) {
+    return chatCommandCenter.discoverRooms(tenantId, userId);
+  }
+
+  chatListRooms(tenantId: string, opts: any) { return chatRoom.listRooms(tenantId, opts); }
+  chatRoom(tenantId: string, roomId: string) { return chatRoom.getRoom(tenantId, roomId); }
+  chatCreateRoom(tenantId: string, input: any) { return chatRoom.createRoom(tenantId, input); }
+  chatUpdateRoom(tenantId: string, roomId: string, patch: any) { return chatRoom.updateRoom(tenantId, roomId, patch); }
+  chatArchiveRoom(tenantId: string, roomId: string, opts: any) { return chatRoom.archiveRoom(tenantId, roomId, opts); }
+  chatRestoreRoom(tenantId: string, roomId: string) { return chatRoom.restoreRoom(tenantId, roomId); }
+  chatAddMember(tenantId: string, roomId: string, userId: string, role: string) { return chatRoom.addMember(tenantId, roomId, userId, role); }
+  chatRemoveMember(tenantId: string, roomId: string, userId: string) { return chatRoom.removeMember(tenantId, roomId, userId); }
+  chatSetMemberRole(tenantId: string, roomId: string, userId: string, role: string) { return chatRoom.setMemberRole(tenantId, roomId, userId, role); }
+  chatMarkRoomRead(tenantId: string, roomId: string, userId: string) { return chatRoom.markRead(tenantId, roomId, userId); }
+  chatMyRooms(tenantId: string, userId: string) { return chatRoom.myRooms(tenantId, userId); }
+  chatRoomTemplates(tenantId: string) { return chatRoom.roomTemplates(tenantId); }
+  chatInstantiateTemplate(tenantId: string, templateId: string, input: any) { return chatRoom.instantiateTemplate(tenantId, templateId, input); }
+  chatArchiveSweep(tenantId: string) { return chatRoom.autoArchiveSweep(tenantId); }
+  chatRoomHyperContext(tenantId: string, roomId: string) { return chatRoom.hyperContextLinks(tenantId, roomId); }
+
+  chatSendMessage(tenantId: string, roomId: string, input: any) { return chatMessage.sendMessage(tenantId, roomId, input); }
+  chatMessages(tenantId: string, roomId: string, opts: any) { return chatMessage.listMessages(tenantId, roomId, opts); }
+  chatMessage(tenantId: string, messageId: string) { return chatMessage.getMessage(tenantId, messageId); }
+  chatEditMessage(tenantId: string, messageId: string, patch: any) { return chatMessage.editMessage(tenantId, messageId, patch); }
+  chatDeleteMessage(tenantId: string, messageId: string, opts: any) { return chatMessage.deleteMessage(tenantId, messageId, opts); }
+  chatReact(tenantId: string, messageId: string, emoji: string, userId: string) { return chatMessage.addReaction(tenantId, messageId, emoji, userId); }
+  chatUnreact(tenantId: string, messageId: string, emoji: string, userId: string) { return chatMessage.removeReaction(tenantId, messageId, emoji, userId); }
+  chatReplyThread(tenantId: string, messageId: string, input: any) { return chatMessage.replyToThread(tenantId, messageId, input); }
+  chatThread(tenantId: string, messageId: string, opts: any) { return chatMessage.getThread(tenantId, messageId, opts); }
+  chatThreadSummary(tenantId: string, messageId: string) { return chatMessage.summarizeThread(tenantId, messageId); }
+  chatThreadResolve(tenantId: string, messageId: string, resolved: boolean) { return chatMessage.markThreadResolved(tenantId, messageId, resolved); }
+  chatMarkDecision(tenantId: string, messageId: string, opts: any) { return chatMessage.markDecision(tenantId, messageId, opts); }
+  chatPin(tenantId: string, messageId: string, pinned: boolean) { return chatMessage.pinMessage(tenantId, messageId, pinned); }
+  chatPinned(tenantId: string, roomId?: string) { return chatMessage.pinnedMessages(tenantId, roomId); }
+
+  chatPresence(tenantId: string, userId: string) { return chatPresence.getPresence(tenantId, userId); }
+  chatPresenceList(tenantId: string, userIds?: string[]) { return chatPresence.listPresence(tenantId, userIds); }
+  chatUpdatePresence(tenantId: string, userId: string, input: any) { return chatPresence.updatePresence(tenantId, userId, input); }
+  chatCustomStatus(tenantId: string, userId: string, statusText: string | null) { return chatPresence.setCustomStatus(tenantId, userId, statusText); }
+  chatRegisterDevice(tenantId: string, userId: string, device: any) { return chatPresence.registerDevice(tenantId, userId, device); }
+  chatFocusMode(tenantId: string, userId: string, input: any) { return chatPresence.setFocusMode(tenantId, userId, input); }
+  chatCalendarStatus(tenantId: string, userId: string, input: any) { return chatPresence.updateCalendarStatus(tenantId, userId, input); }
+  chatPresenceDashboard(tenantId: string) { return chatPresence.presenceDashboard(tenantId); }
+
+  chatSearch(tenantId: string, opts: any) { return chatSearch.search(tenantId, opts); }
+  chatParseQuery(query: string) { return chatSearch.parseQuery(query); }
+  chatSemanticSearch(tenantId: string, query: string, opts: any) { return chatSearch.semanticSearch(tenantId, query, opts); }
+  chatSaveSearch(tenantId: string, input: any) { return chatSearch.saveSearch(tenantId, input); }
+  chatSavedSearches(tenantId: string) { return chatSearch.listSavedSearches(tenantId); }
+  chatDeleteSavedSearch(tenantId: string, savedId: string) { return chatSearch.deleteSavedSearch(tenantId, savedId); }
+  chatSearchStats(tenantId: string) { return chatSearch.searchStats(tenantId); }
+
+  chatHuddles(tenantId: string, roomId?: string) { return chatHuddle.listHuddles(tenantId, roomId); }
+  chatStartHuddle(tenantId: string, roomId: string, input: any) { return chatHuddle.startHuddle(tenantId, roomId, input); }
+  chatHuddle(tenantId: string, huddleId: string) { return chatHuddle.getHuddle(tenantId, huddleId); }
+  chatJoinHuddle(tenantId: string, huddleId: string, userId: string) { return chatHuddle.joinHuddle(tenantId, huddleId, userId); }
+  chatLeaveHuddle(tenantId: string, huddleId: string, userId: string) { return chatHuddle.leaveHuddle(tenantId, huddleId, userId); }
+  chatEndHuddle(tenantId: string, huddleId: string) { return chatHuddle.endHuddle(tenantId, huddleId); }
+  chatStartRecording(tenantId: string, huddleId: string) { return chatHuddle.startRecording(tenantId, huddleId); }
+  chatStopRecording(tenantId: string, huddleId: string) { return chatHuddle.stopRecording(tenantId, huddleId); }
+  chatRecording(tenantId: string, huddleId: string) { return chatHuddle.getRecording(tenantId, huddleId); }
+  chatHuddleWall(tenantId: string) { return chatHuddle.huddleWall(tenantId); }
+
+  chatListBots(tenantId: string) { return chatBot.listBots(tenantId); }
+  chatGetBot(tenantId: string, botId: string) { return chatBot.getBot(tenantId, botId); }
+  chatCreateBot(tenantId: string, input: any) { return chatBot.createBot(tenantId, input); }
+  chatUpdateBot(tenantId: string, botId: string, patch: any) { return chatBot.updateBot(tenantId, botId, patch); }
+  chatToggleBot(tenantId: string, botId: string, enabled: boolean) { return chatBot.toggleBot(tenantId, botId, enabled); }
+  chatDeleteBot(tenantId: string, botId: string) { return chatBot.deleteBot(tenantId, botId); }
+  chatBotCommands() { return chatBot.slashCommands(); }
+  chatBotDispatch(tenantId: string, roomId: string, userId: string, raw: string) { return chatBot.dispatchCommand(tenantId, roomId, userId, raw); }
+  chatBotDashboard(tenantId: string) { return chatBot.botDashboard(tenantId); }
+
+  chatNotificationsList(tenantId: string) { return chatNotification.listRules(tenantId); }
+  chatNotificationsCreate(tenantId: string, input: any) { return chatNotification.createRule(tenantId, input); }
+  chatNotificationsUpdate(tenantId: string, ruleId: string, patch: any) { return chatNotification.updateRule(tenantId, ruleId, patch); }
+  chatNotificationsToggle(tenantId: string, ruleId: string, enabled: boolean) { return chatNotification.toggleRule(tenantId, ruleId, enabled); }
+  chatNotificationsDelete(tenantId: string, ruleId: string) { return chatNotification.deleteRule(tenantId, ruleId); }
+  chatNotificationsEvaluate(tenantId: string, ruleId: string, message: any) { return chatNotification.evaluateRule(tenantId, ruleId, message); }
+  chatNotificationsEvaluateAll(tenantId: string, message: any) { return chatNotification.evaluateAll(tenantId, message); }
+  chatNotificationsDigest(tenantId: string, userId: string, opts: any) { return chatNotification.sendDigest(tenantId, userId, opts); }
+  chatNotificationsSettings(tenantId: string, userId: string) { return chatNotification.notificationSettings(tenantId, userId); }
+  chatNotificationsUpdateSettings(tenantId: string, userId: string, patch: any) { return chatNotification.updateSettings(tenantId, userId, patch); }
+  chatNotificationsInbox(tenantId: string, userId: string, opts: any) { return chatNotification.priorityInbox(tenantId, userId, opts); }
+
+  chatCompliancePolicies(tenantId: string) { return chatCompliance.listPolicies(tenantId); }
+  chatCompliancePolicy(tenantId: string, policyId: string) { return chatCompliance.getPolicy(tenantId, policyId); }
+  chatComplianceUpdatePolicy(tenantId: string, policyId: string, patch: any) { return chatCompliance.updatePolicy(tenantId, policyId, patch); }
+  chatComplianceEvaluate(tenantId: string, message: any) { return chatCompliance.evaluateMessage(tenantId, message); }
+  chatComplianceViolations(tenantId: string, opts: any) { return chatCompliance.listViolations(tenantId, opts); }
+  chatComplianceResolve(tenantId: string, violationId: string, action: string) { return chatCompliance.resolveViolation(tenantId, violationId, action); }
+  chatComplianceAudit(tenantId: string, query: string, opts: any) { return chatCompliance.searchAudit(tenantId, query, opts); }
+  chatComplianceHolds(tenantId: string) { return chatCompliance.legalHolds(tenantId); }
+  chatCompliancePlaceHold(tenantId: string, input: any) { return chatCompliance.placeHold(tenantId, input); }
+  chatComplianceReleaseHold(tenantId: string, holdId: string) { return chatCompliance.releaseHold(tenantId, holdId); }
+  chatComplianceOverview(tenantId: string) { return chatCompliance.complianceOverview(tenantId); }
+
+  chatAnalyticsVolume(tenantId: string, opts: any) { return chatAnalytics.messageVolume(tenantId, opts); }
+  chatAnalyticsTopRooms(tenantId: string, opts: any) { return chatAnalytics.topRooms(tenantId, opts); }
+  chatAnalyticsUsers(tenantId: string, opts: any) { return chatAnalytics.userActivity(tenantId, opts); }
+  chatAnalyticsResponse(tenantId: string) { return chatAnalytics.avgResponseTime(tenantId); }
+  chatAnalyticsSentiment(tenantId: string, opts: any) { return chatAnalytics.sentimentTrend(tenantId, opts); }
+  chatAnalyticsReport(tenantId: string) { return chatAnalytics.report(tenantId); }
+  chatAnalyticsDashboard(tenantId: string) { return chatAnalytics.dashboard(tenantId); }
+
+  chatCommandsList() { return chatCommandCenter.listCommands(); }
+  chatCommandRun(tenantId: string, userId: string, command: string, payload: any) { return chatCommandCenter.runQuickAction(tenantId, userId, command, payload); }
+  chatRoomsDiscover(tenantId: string, userId: string) { return chatCommandCenter.discoverRooms(tenantId, userId); }
+
+  chatAdminAssign(tenantId: string, userId: string, role: string, input: any) { return chatAdmin.assignAdmin(tenantId, userId, role, input); }
+  chatAdminList(tenantId: string) { return chatAdmin.listAdmins(tenantId); }
+  chatAdminSettings(tenantId: string) { return chatAdmin.workspaceSettings(tenantId); }
+  chatAdminUpdateSettings(tenantId: string, patch: any) { return chatAdmin.updateSettings(tenantId, patch); }
+  chatAdminMemberAccess(tenantId: string, userId: string) { return chatAdmin.memberAccess(tenantId, userId); }
+  chatAdminExportAudit(tenantId: string, opts: any) { return chatAdmin.exportAudit(tenantId, opts); }
+  chatAdminSuspend(tenantId: string, userId: string, input: any) { return chatAdmin.suspendUser(tenantId, userId, input); }
+  chatAdminRestore(tenantId: string, userId: string) { return chatAdmin.restoreUser(tenantId, userId); }
+  chatAdminDashboard(tenantId: string) { return chatAdmin.adminDashboard(tenantId); }
+
+  chatSetIO(io: any) { chatRealtime.setIO(io); }
+  chatRealtimeOverview(tenantId: string) { return chatRealtime.realtimeOverview(tenantId); }
+  chatRealtimeLog(tenantId: string, limit?: number) { return chatRealtime.realtimeLog(tenantId, limit); }
+  chatRealtimeEmit(tenantId: string, event: string, payload: any) { return chatRealtime.emit(event, tenantId, payload); }
 }
 
 export const adsMarketingModule = new AdsMarketingModuleService();

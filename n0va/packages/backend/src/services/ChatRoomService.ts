@@ -210,8 +210,8 @@ export class ChatRoomService {
     const name = input.name || `${tpl.name.toLowerCase().replace(/\s+/g, "_")}_${hashStr(tenantId + templateId).toString(36).slice(0, 4)}`;
     const type = input.type || "private_channel";
     const room = this.createRoom(tenantId, { ...input, name, type, description: input.description || tpl.description });
-    const updated = DataStore.mem().update("chat_rooms", (r: any) => r.roomId === room.room.roomId && r.tenantId === tenantId, { template: templateId, template_features: tpl.features });
-    return { room: this.decorate(updated), template: tpl, applied: tpl.features, summary: `Instantiated template "${tpl.name}" as #${name}` };
+    const updated = DataStore.mem().update("chat_rooms", (r: any) => r.roomId === room.room.roomId && r.tenantId === tenantId, { template: templateId, template_features: tpl.actions });
+    return { room: this.decorate(updated), template: tpl, applied: tpl.actions, summary: `Instantiated template "${tpl.name}" as #${name}` };
   }
 
   autoArchiveSweep(tenantId: string) {

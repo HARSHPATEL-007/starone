@@ -301,9 +301,9 @@ export class ChatMessageService {
     }
     const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([w]) => w);
     const sentiment = bodies.reduce((s, b) => s + (this.analyze(b, "user").sentiment), 0) / Math.max(1, bodies.length);
-    const summary = thread.reply_count === 0
+    const summary = thread.thread_info.reply_count === 0
       ? `No replies yet — ${thread.parent.content.body.slice(0, 80)}`
-      : `${thread.reply_count} replies across ${thread.thread_info.participant_count} participants. Key topics: ${top.join(", ") || "general discussion"}. ${sentiment > 0.1 ? "Positive" : sentiment < -0.1 ? "Mixed/negative tone flagged" : "Neutral"} sentiment.`;
+      : `${thread.thread_info.reply_count} replies across ${thread.thread_info.participant_count} participants. Key topics: ${top.join(", ") || "general discussion"}. ${sentiment > 0.1 ? "Positive" : sentiment < -0.1 ? "Mixed/negative tone flagged" : "Neutral"} sentiment.`;
     DataStore.mem().update("chat_messages", (m: any) => m.messageId === messageId && m.tenantId === tenantId, { "thread_info.summary": summary, "thread_info.is_resolved": false });
     return { messageId, summary, topics: top, sentiment: parseFloat(sentiment.toFixed(2)), wordCount: words.length };
   }

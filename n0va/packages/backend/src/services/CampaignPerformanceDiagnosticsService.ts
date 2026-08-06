@@ -88,6 +88,15 @@ interface RemediationRecord {
   effective: boolean;
 }
 
+interface MetricHealthSnapshot {
+  metric: string;
+  overallScore: number;
+  campaignCount: number;
+  atRisk: number;
+  trend: "improving" | "declining" | "stable";
+  benchmarkDeviation: number;
+}
+
 interface RecoveryPlan {
   campaignId: string;
   campaignName: string;

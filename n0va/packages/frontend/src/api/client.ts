@@ -3795,6 +3795,161 @@ export const api = {
       request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}`),
     n0va1oMigrationDelete: (migrationId: string) =>
       request<any>(`/ads-marketing-module/n0va1o/migrations/${encodeURIComponent(migrationId)}`, { method: "DELETE" }),
+    chat: {
+      overview: (userId?: string) => request<any>(`/ads-marketing-module/chat/overview${userId ? `?userId=${encodeURIComponent(userId)}` : ""}`),
+      rooms: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/rooms${q ? `?${q}` : ""}`);
+      },
+      myRooms: (userId?: string) => request<any>(`/ads-marketing-module/chat/rooms/my${userId ? `?userId=${encodeURIComponent(userId)}` : ""}`),
+      roomTemplates: () => request<any>("/ads-marketing-module/chat/rooms/templates"),
+      instantiateTemplate: (templateId: string, input?: Record<string, any>) =>
+        request<any>("/ads-marketing-module/chat/rooms/templates/instantiate", { method: "POST", body: JSON.stringify({ templateId, ...(input || {}) }) }),
+      room: (roomId: string) => request<any>(`/ads-marketing-module/chat/room/${roomId}`),
+      createRoom: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/rooms", { method: "POST", body: JSON.stringify(input) }),
+      updateRoom: (roomId: string, patch: Record<string, any>) => request<any>(`/ads-marketing-module/chat/room/${roomId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      archiveRoom: (roomId: string, opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/room/${roomId}/archive${q ? `?${q}` : ""}`, { method: "POST" });
+      },
+      restoreRoom: (roomId: string) => request<any>(`/ads-marketing-module/chat/room/${roomId}/restore`, { method: "POST" }),
+      addMember: (roomId: string, userId: string, role?: string) =>
+        request<any>(`/ads-marketing-module/chat/room/${roomId}/members`, { method: "POST", body: JSON.stringify({ userId, role }) }),
+      removeMember: (roomId: string, userId: string) => request<any>(`/ads-marketing-module/chat/room/${roomId}/members/${userId}`, { method: "DELETE" }),
+      setMemberRole: (roomId: string, userId: string, role: string) =>
+        request<any>(`/ads-marketing-module/chat/room/${roomId}/members/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) }),
+      markRoomRead: (roomId: string, userId?: string) => request<any>(`/ads-marketing-module/chat/room/${roomId}/read${userId ? `?userId=${encodeURIComponent(userId)}` : ""}`, { method: "POST" }),
+      archiveSweep: () => request<any>("/ads-marketing-module/chat/rooms/sweep", { method: "POST" }),
+      hyperContext: (roomId: string) => request<any>(`/ads-marketing-module/chat/room/${roomId}/hyper-context`),
+      messages: (roomId: string, opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/room/${roomId}/messages${q ? `?${q}` : ""}`);
+      },
+      sendMessage: (roomId: string, input: Record<string, any>) => request<any>(`/ads-marketing-module/chat/room/${roomId}/messages`, { method: "POST", body: JSON.stringify(input) }),
+      message: (messageId: string) => request<any>(`/ads-marketing-module/chat/message/${messageId}`),
+      editMessage: (messageId: string, patch: Record<string, any>) => request<any>(`/ads-marketing-module/chat/message/${messageId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      deleteMessage: (messageId: string, opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/message/${messageId}${q ? `?${q}` : ""}`, { method: "DELETE" });
+      },
+      react: (messageId: string, emoji: string, userId?: string) => request<any>(`/ads-marketing-module/chat/message/${messageId}/reactions`, { method: "POST", body: JSON.stringify({ emoji, userId }) }),
+      unreact: (messageId: string, emoji: string, userId?: string) => request<any>(`/ads-marketing-module/chat/message/${messageId}/reactions/${encodeURIComponent(emoji)}`, { method: "DELETE", body: JSON.stringify({ userId }) }),
+      replyThread: (messageId: string, input: Record<string, any>) => request<any>(`/ads-marketing-module/chat/message/${messageId}/thread`, { method: "POST", body: JSON.stringify(input) }),
+      thread: (messageId: string, opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/message/${messageId}/thread${q ? `?${q}` : ""}`);
+      },
+      threadSummary: (messageId: string) => request<any>(`/ads-marketing-module/chat/message/${messageId}/thread-summary`),
+      resolveThread: (messageId: string, resolved?: boolean) => request<any>(`/ads-marketing-module/chat/message/${messageId}/thread-resolve`, { method: "POST", body: JSON.stringify({ resolved }) }),
+      markDecision: (messageId: string, opts?: Record<string, any>) => request<any>(`/ads-marketing-module/chat/message/${messageId}/decision`, { method: "POST", body: JSON.stringify(opts || {}) }),
+      pin: (messageId: string, pinned?: boolean) => request<any>(`/ads-marketing-module/chat/message/${messageId}/pin`, { method: "POST", body: JSON.stringify({ pinned }) }),
+      pinned: (roomId?: string) => request<any>(`/ads-marketing-module/chat/pinned${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`),
+      presence: (userId: string) => request<any>(`/ads-marketing-module/chat/presence/${userId}`),
+      presenceList: (userIds?: string[]) => request<any>(`/ads-marketing-module/chat/presence${userIds?.length ? `?userIds=${userIds.map(encodeURIComponent).join(",")}` : ""}`),
+      updatePresence: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/presence/update", { method: "POST", body: JSON.stringify(input) }),
+      setCustomStatus: (userId: string, statusText: string | null) => request<any>("/ads-marketing-module/chat/presence/custom-status", { method: "POST", body: JSON.stringify({ userId, statusText }) }),
+      registerDevice: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/presence/devices", { method: "POST", body: JSON.stringify(input) }),
+      focusMode: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/presence/focus", { method: "POST", body: JSON.stringify(input) }),
+      calendarStatus: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/presence/calendar", { method: "POST", body: JSON.stringify(input) }),
+      presenceDashboard: () => request<any>("/ads-marketing-module/chat/presence/dashboard"),
+      search: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/search${q ? `?${q}` : ""}`);
+      },
+      searchOperators: (q?: string) => request<any>(`/ads-marketing-module/chat/search/operators${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+      semanticSearch: (q: string, opts?: Record<string, any>) => {
+        const qs = new URLSearchParams({ q, ...(opts || {}) } as any).toString();
+        return request<any>(`/ads-marketing-module/chat/search/semantic?${qs}`);
+      },
+      saveSearch: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/search/saved", { method: "POST", body: JSON.stringify(input) }),
+      savedSearches: () => request<any>("/ads-marketing-module/chat/search/saved"),
+      deleteSavedSearch: (savedId: string) => request<any>(`/ads-marketing-module/chat/search/saved/${savedId}`, { method: "DELETE" }),
+      searchStats: () => request<any>("/ads-marketing-module/chat/search/stats"),
+      huddles: (roomId?: string) => request<any>(`/ads-marketing-module/chat/huddles${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`),
+      startHuddle: (roomId: string, input?: Record<string, any>) => request<any>("/ads-marketing-module/chat/huddles", { method: "POST", body: JSON.stringify({ roomId, ...(input || {}) }) }),
+      huddle: (huddleId: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}`),
+      joinHuddle: (huddleId: string, userId?: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}/join`, { method: "POST", body: JSON.stringify({ userId }) }),
+      leaveHuddle: (huddleId: string, userId?: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}/leave`, { method: "POST", body: JSON.stringify({ userId }) }),
+      endHuddle: (huddleId: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}/end`, { method: "POST" }),
+      startRecording: (huddleId: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}/recording/start`, { method: "POST" }),
+      stopRecording: (huddleId: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}/recording/stop`, { method: "POST" }),
+      recording: (huddleId: string) => request<any>(`/ads-marketing-module/chat/huddle/${huddleId}/recording`),
+      huddleWall: () => request<any>("/ads-marketing-module/chat/huddles/wall"),
+      bots: () => request<any>("/ads-marketing-module/chat/bots"),
+      bot: (botId: string) => request<any>(`/ads-marketing-module/chat/bot/${botId}`),
+      createBot: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/bots", { method: "POST", body: JSON.stringify(input) }),
+      updateBot: (botId: string, patch: Record<string, any>) => request<any>(`/ads-marketing-module/chat/bot/${botId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      toggleBot: (botId: string, enabled?: boolean) => request<any>(`/ads-marketing-module/chat/bot/${botId}/toggle`, { method: "POST", body: JSON.stringify({ enabled }) }),
+      deleteBot: (botId: string) => request<any>(`/ads-marketing-module/chat/bot/${botId}`, { method: "DELETE" }),
+      botCommands: () => request<any>("/ads-marketing-module/chat/bot/commands"),
+      dispatchCommand: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/bot/dispatch", { method: "POST", body: JSON.stringify(input) }),
+      botsDashboard: () => request<any>("/ads-marketing-module/chat/bots/dashboard"),
+      notifications: () => request<any>("/ads-marketing-module/chat/notifications"),
+      createNotificationRule: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/notifications", { method: "POST", body: JSON.stringify(input) }),
+      updateNotificationRule: (ruleId: string, patch: Record<string, any>) => request<any>(`/ads-marketing-module/chat/notifications/${ruleId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      toggleNotificationRule: (ruleId: string, enabled?: boolean) => request<any>(`/ads-marketing-module/chat/notifications/${ruleId}/toggle`, { method: "POST", body: JSON.stringify({ enabled }) }),
+      deleteNotificationRule: (ruleId: string) => request<any>(`/ads-marketing-module/chat/notifications/${ruleId}`, { method: "DELETE" }),
+      evaluateNotifications: (message: Record<string, any>) => request<any>("/ads-marketing-module/chat/notifications/evaluate", { method: "POST", body: JSON.stringify({ message }) }),
+      digest: (input?: Record<string, any>) => request<any>("/ads-marketing-module/chat/notifications/digest", { method: "POST", body: JSON.stringify(input || {}) }),
+      notificationSettings: () => request<any>("/ads-marketing-module/chat/notifications/settings"),
+      updateNotificationSettings: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/notifications/settings", { method: "PATCH", body: JSON.stringify(input) }),
+      priorityInbox: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/notifications/inbox${q ? `?${q}` : ""}`);
+      },
+      policies: () => request<any>("/ads-marketing-module/chat/compliance/policies"),
+      policy: (policyId: string) => request<any>(`/ads-marketing-module/chat/compliance/policy/${policyId}`),
+      updatePolicy: (policyId: string, patch: Record<string, any>) => request<any>(`/ads-marketing-module/chat/compliance/policy/${policyId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      evaluateCompliance: (message: Record<string, any>) => request<any>("/ads-marketing-module/chat/compliance/evaluate", { method: "POST", body: JSON.stringify({ message }) }),
+      violations: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/compliance/violations${q ? `?${q}` : ""}`);
+      },
+      resolveViolation: (violationId: string, action?: string) => request<any>(`/ads-marketing-module/chat/compliance/violations/${violationId}/resolve`, { method: "POST", body: JSON.stringify({ action }) }),
+      auditLogs: (q?: string, opts?: Record<string, any>) => {
+        const qs = new URLSearchParams({ ...(opts || {}), q: q || "" } as any).toString();
+        return request<any>(`/ads-marketing-module/chat/compliance/audit?${qs}`);
+      },
+      legalHolds: () => request<any>("/ads-marketing-module/chat/compliance/holds"),
+      placeHold: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/compliance/holds", { method: "POST", body: JSON.stringify(input) }),
+      releaseHold: (holdId: string) => request<any>(`/ads-marketing-module/chat/compliance/holds/${holdId}/release`, { method: "POST" }),
+      complianceOverview: () => request<any>("/ads-marketing-module/chat/compliance/overview"),
+      analyticsVolume: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/analytics/volume${q ? `?${q}` : ""}`);
+      },
+      analyticsTopRooms: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/analytics/top-rooms${q ? `?${q}` : ""}`);
+      },
+      analyticsUsers: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/analytics/users${q ? `?${q}` : ""}`);
+      },
+      analyticsResponseTime: () => request<any>("/ads-marketing-module/chat/analytics/response-time"),
+      analyticsSentiment: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/analytics/sentiment${q ? `?${q}` : ""}`);
+      },
+      analyticsReport: () => request<any>("/ads-marketing-module/chat/analytics/report"),
+      analyticsDashboard: () => request<any>("/ads-marketing-module/chat/analytics/dashboard"),
+      commands: () => request<any>("/ads-marketing-module/chat/commands"),
+      runCommand: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/commands/run", { method: "POST", body: JSON.stringify(input) }),
+      admins: () => request<any>("/ads-marketing-module/chat/admin"),
+      assignAdmin: (input: Record<string, any>) => request<any>("/ads-marketing-module/chat/admin/assign", { method: "POST", body: JSON.stringify(input) }),
+      adminSettings: () => request<any>("/ads-marketing-module/chat/admin/settings"),
+      updateAdminSettings: (patch: Record<string, any>) => request<any>("/ads-marketing-module/chat/admin/settings", { method: "PATCH", body: JSON.stringify(patch) }),
+      memberAccess: (userId: string) => request<any>(`/ads-marketing-module/chat/admin/member/${userId}/access`),
+      exportAudit: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/chat/admin/export${q ? `?${q}` : ""}`);
+      },
+      suspendUser: (userId: string, input?: Record<string, any>) => request<any>(`/ads-marketing-module/chat/admin/users/${userId}/suspend`, { method: "POST", body: JSON.stringify(input || {}) }),
+      restoreUser: (userId: string) => request<any>(`/ads-marketing-module/chat/admin/users/${userId}/restore`, { method: "POST" }),
+      adminDashboard: () => request<any>("/ads-marketing-module/chat/admin/dashboard"),
+      realtimeOverview: () => request<any>("/ads-marketing-module/chat/realtime/overview"),
+      realtimeLog: (limit?: number) => request<any>(`/ads-marketing-module/chat/realtime/log${limit ? `?limit=${limit}` : ""}`),
+    },
   },
 
   agentSwarm: {

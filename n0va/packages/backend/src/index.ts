@@ -13,6 +13,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { schedulerService } from "./services/SchedulerService";
 import { setRuleEngineIO } from "./services/RuleEngineService";
 import { mailRealtime } from "./services/MailRealtimeService";
+import { chatRealtime } from "./services/ChatRealtimeService";
 
 import authRoutes from "./routes/auth";
 import campaignRoutes from "./routes/campaigns";
@@ -161,6 +162,7 @@ const io = new Server(httpServer, {
 
 setRuleEngineIO(io);
 mailRealtime.setIO(io);
+chatRealtime.setIO(io);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.corsOrigin }));

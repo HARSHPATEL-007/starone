@@ -57,6 +57,15 @@ const MailResidency = lazy(() => import("./pages/MailResidency"));
 const MailBranding = lazy(() => import("./pages/MailBranding"));
 const MailMarketplace = lazy(() => import("./pages/MailMarketplace"));
 const MailDevCenter = lazy(() => import("./pages/MailDevCenter"));
+const ChatHome = lazy(() => import("./pages/ChatHome"));
+const ChatSearch = lazy(() => import("./pages/ChatSearch"));
+const ChatBots = lazy(() => import("./pages/ChatBots"));
+const ChatHuddles = lazy(() => import("./pages/ChatHuddles"));
+const ChatNotifications = lazy(() => import("./pages/ChatNotifications"));
+const ChatCompliance = lazy(() => import("./pages/ChatCompliance"));
+const ChatAnalytics = lazy(() => import("./pages/ChatAnalytics"));
+const ChatAdmin = lazy(() => import("./pages/ChatAdmin"));
+const ChatPresence = lazy(() => import("./pages/ChatPresence"));
 const N0VA1OOverview = lazy(() => import("./pages/N0VA1OOverview"));
 const N0VA1OCatalog = lazy(() => import("./pages/N0VA1OCatalog"));
 const N0VA1OConnections = lazy(() => import("./pages/N0VA1OConnections"));
@@ -283,6 +292,15 @@ export default function App() {
                 <Route path="/mail/branding" element={<MailBranding />} />
                 <Route path="/mail/marketplace" element={<MailMarketplace />} />
                 <Route path="/mail/dev" element={<MailDevCenter />} />
+                <Route path="/chat" element={<ChatHome />} />
+                <Route path="/chat/search" element={<ChatSearch />} />
+                <Route path="/chat/bots" element={<ChatBots />} />
+                <Route path="/chat/huddles" element={<ChatHuddles />} />
+                <Route path="/chat/notifications" element={<ChatNotifications />} />
+                <Route path="/chat/compliance" element={<ChatCompliance />} />
+                <Route path="/chat/analytics" element={<ChatAnalytics />} />
+                <Route path="/chat/admin" element={<ChatAdmin />} />
+                <Route path="/chat/presence" element={<ChatPresence />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

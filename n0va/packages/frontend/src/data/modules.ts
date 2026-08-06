@@ -145,7 +145,8 @@ export const MODULES: ModuleDef[] = [
     short: "Chat",
     category: "Communication",
     icon: MessagesSquare,
-    status: "planned",
+    status: "live",
+    path: "/chat",
     tagline: "Team & AI messaging",
     description:
       "Channels, threads and direct messages with N0VA ANI in every conversation, plus bridges to external chat platforms.",

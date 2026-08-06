@@ -4935,4 +4935,336 @@ router.delete("/n0va1o/migrations/:migrationId", asyncHandler(async (req, res) =
   sendSuccess(res, adsMarketingModule.n0va1oMigrationDelete(req.user!.tenantId, req.params.migrationId));
 }));
 
+// ---- N0VA CHAT ----
+const tenant = (req: Request) => req.user!.tenantId;
+const uid = (req: Request) => (req.query.userId as string) || req.user?.userId || "user_001";
+
+router.get("/chat/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatOverview(tenant(req), uid(req)));
+}));
+
+router.get("/chat/rooms", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatListRooms(tenant(req), req.query));
+}));
+router.get("/chat/rooms/my", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatMyRooms(tenant(req), uid(req)));
+}));
+router.get("/chat/rooms/templates", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRoomTemplates(tenant(req)));
+}));
+router.post("/chat/rooms/templates/instantiate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatInstantiateTemplate(tenant(req), req.body.templateId, req.body));
+}));
+router.get("/chat/room/:roomId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRoom(tenant(req), req.params.roomId));
+}));
+router.post("/chat/rooms", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCreateRoom(tenant(req), req.body));
+}));
+router.patch("/chat/room/:roomId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatUpdateRoom(tenant(req), req.params.roomId, req.body));
+}));
+router.post("/chat/room/:roomId/archive", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatArchiveRoom(tenant(req), req.params.roomId, req.query));
+}));
+router.post("/chat/room/:roomId/restore", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRestoreRoom(tenant(req), req.params.roomId));
+}));
+router.post("/chat/room/:roomId/members", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAddMember(tenant(req), req.params.roomId, req.body.userId, req.body.role || "member"));
+}));
+router.delete("/chat/room/:roomId/members/:userId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRemoveMember(tenant(req), req.params.roomId, req.params.userId));
+}));
+router.patch("/chat/room/:roomId/members/:userId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSetMemberRole(tenant(req), req.params.roomId, req.params.userId, req.body.role));
+}));
+router.post("/chat/room/:roomId/read", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatMarkRoomRead(tenant(req), req.params.roomId, uid(req)));
+}));
+router.post("/chat/rooms/sweep", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatArchiveSweep(tenant(req)));
+}));
+router.get("/chat/room/:roomId/hyper-context", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRoomHyperContext(tenant(req), req.params.roomId));
+}));
+
+router.get("/chat/room/:roomId/messages", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatMessages(tenant(req), req.params.roomId, req.query));
+}));
+router.post("/chat/room/:roomId/messages", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSendMessage(tenant(req), req.params.roomId, { ...req.body, userId: req.body.userId || uid(req) }));
+}));
+router.get("/chat/message/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatMessage(tenant(req), req.params.messageId));
+}));
+router.patch("/chat/message/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatEditMessage(tenant(req), req.params.messageId, req.body));
+}));
+router.delete("/chat/message/:messageId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatDeleteMessage(tenant(req), req.params.messageId, req.query));
+}));
+router.post("/chat/message/:messageId/reactions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatReact(tenant(req), req.params.messageId, req.body.emoji, req.body.userId || uid(req)));
+}));
+router.delete("/chat/message/:messageId/reactions/:emoji", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatUnreact(tenant(req), req.params.messageId, req.params.emoji, req.body.userId || uid(req)));
+}));
+router.post("/chat/message/:messageId/thread", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatReplyThread(tenant(req), req.params.messageId, req.body));
+}));
+router.get("/chat/message/:messageId/thread", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatThread(tenant(req), req.params.messageId, req.query));
+}));
+router.get("/chat/message/:messageId/thread-summary", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatThreadSummary(tenant(req), req.params.messageId));
+}));
+router.post("/chat/message/:messageId/thread-resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatThreadResolve(tenant(req), req.params.messageId, req.body.resolved !== false));
+}));
+router.post("/chat/message/:messageId/decision", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatMarkDecision(tenant(req), req.params.messageId, req.body));
+}));
+router.post("/chat/message/:messageId/pin", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatPin(tenant(req), req.params.messageId, req.body.pinned !== false));
+}));
+router.get("/chat/pinned", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatPinned(tenant(req), req.query.roomId as string | undefined));
+}));
+
+router.get("/chat/presence/:userId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatPresence(tenant(req), req.params.userId));
+}));
+router.get("/chat/presence", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatPresenceList(tenant(req), req.query.userIds ? String(req.query.userIds).split(",") : undefined));
+}));
+router.post("/chat/presence/update", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatUpdatePresence(tenant(req), req.body.userId || uid(req), req.body));
+}));
+router.post("/chat/presence/custom-status", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCustomStatus(tenant(req), req.body.userId || uid(req), req.body.statusText));
+}));
+router.post("/chat/presence/devices", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRegisterDevice(tenant(req), req.body.userId || uid(req), req.body.device));
+}));
+router.post("/chat/presence/focus", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatFocusMode(tenant(req), req.body.userId || uid(req), req.body));
+}));
+router.post("/chat/presence/calendar", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCalendarStatus(tenant(req), req.body.userId || uid(req), req.body));
+}));
+router.get("/chat/presence/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatPresenceDashboard(tenant(req)));
+}));
+
+router.get("/chat/search", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSearch(tenant(req), req.query));
+}));
+router.get("/chat/search/operators", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatParseQuery(req.query.q as string || ""));
+}));
+router.get("/chat/search/semantic", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSemanticSearch(tenant(req), req.query.q as string || "", req.query));
+}));
+router.post("/chat/search/saved", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSaveSearch(tenant(req), req.body));
+}));
+router.get("/chat/search/saved", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSavedSearches(tenant(req)));
+}));
+router.delete("/chat/search/saved/:savedId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatDeleteSavedSearch(tenant(req), req.params.savedId));
+}));
+router.get("/chat/search/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatSearchStats(tenant(req)));
+}));
+
+router.get("/chat/huddles", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatHuddles(tenant(req), req.query.roomId as string | undefined));
+}));
+router.post("/chat/huddles", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatStartHuddle(tenant(req), req.body.roomId, req.body));
+}));
+router.get("/chat/huddle/:huddleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatHuddle(tenant(req), req.params.huddleId));
+}));
+router.post("/chat/huddle/:huddleId/join", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatJoinHuddle(tenant(req), req.params.huddleId, req.body.userId || uid(req)));
+}));
+router.post("/chat/huddle/:huddleId/leave", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatLeaveHuddle(tenant(req), req.params.huddleId, req.body.userId || uid(req)));
+}));
+router.post("/chat/huddle/:huddleId/end", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatEndHuddle(tenant(req), req.params.huddleId));
+}));
+router.post("/chat/huddle/:huddleId/recording/start", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatStartRecording(tenant(req), req.params.huddleId));
+}));
+router.post("/chat/huddle/:huddleId/recording/stop", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatStopRecording(tenant(req), req.params.huddleId));
+}));
+router.get("/chat/huddle/:huddleId/recording", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRecording(tenant(req), req.params.huddleId));
+}));
+router.get("/chat/huddles/wall", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatHuddleWall(tenant(req)));
+}));
+
+router.get("/chat/bots", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatListBots(tenant(req)));
+}));
+router.get("/chat/bot/:botId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatGetBot(tenant(req), req.params.botId));
+}));
+router.post("/chat/bots", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCreateBot(tenant(req), req.body));
+}));
+router.patch("/chat/bot/:botId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatUpdateBot(tenant(req), req.params.botId, req.body));
+}));
+router.post("/chat/bot/:botId/toggle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatToggleBot(tenant(req), req.params.botId, req.body.enabled !== false));
+}));
+router.delete("/chat/bot/:botId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatDeleteBot(tenant(req), req.params.botId));
+}));
+router.get("/chat/bot/commands", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatBotCommands());
+}));
+router.post("/chat/bot/dispatch", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatBotDispatch(tenant(req), req.body.roomId, req.body.userId || uid(req), req.body.command));
+}));
+router.get("/chat/bots/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatBotDashboard(tenant(req)));
+}));
+
+router.get("/chat/notifications", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsList(tenant(req)));
+}));
+router.post("/chat/notifications", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsCreate(tenant(req), req.body));
+}));
+router.patch("/chat/notifications/:ruleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsUpdate(tenant(req), req.params.ruleId, req.body));
+}));
+router.post("/chat/notifications/:ruleId/toggle", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsToggle(tenant(req), req.params.ruleId, req.body.enabled !== false));
+}));
+router.delete("/chat/notifications/:ruleId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsDelete(tenant(req), req.params.ruleId));
+}));
+router.post("/chat/notifications/evaluate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsEvaluateAll(tenant(req), req.body.message));
+}));
+router.post("/chat/notifications/digest", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsDigest(tenant(req), req.body.userId || uid(req), req.body));
+}));
+router.get("/chat/notifications/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsSettings(tenant(req), uid(req)));
+}));
+router.patch("/chat/notifications/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsUpdateSettings(tenant(req), req.body.userId || uid(req), req.body));
+}));
+router.get("/chat/notifications/inbox", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatNotificationsInbox(tenant(req), uid(req), req.query));
+}));
+
+router.get("/chat/compliance/policies", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCompliancePolicies(tenant(req)));
+}));
+router.get("/chat/compliance/policy/:policyId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCompliancePolicy(tenant(req), req.params.policyId));
+}));
+router.patch("/chat/compliance/policy/:policyId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceUpdatePolicy(tenant(req), req.params.policyId, req.body));
+}));
+router.post("/chat/compliance/evaluate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceEvaluate(tenant(req), req.body.message));
+}));
+router.get("/chat/compliance/violations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceViolations(tenant(req), req.query));
+}));
+router.post("/chat/compliance/violations/:violationId/resolve", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceResolve(tenant(req), req.params.violationId, req.body.action || "manual"));
+}));
+router.get("/chat/compliance/audit", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceAudit(tenant(req), req.query.q as string || "", req.query));
+}));
+router.get("/chat/compliance/holds", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceHolds(tenant(req)));
+}));
+router.post("/chat/compliance/holds", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCompliancePlaceHold(tenant(req), req.body));
+}));
+router.post("/chat/compliance/holds/:holdId/release", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceReleaseHold(tenant(req), req.params.holdId));
+}));
+router.get("/chat/compliance/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatComplianceOverview(tenant(req)));
+}));
+
+router.get("/chat/analytics/volume", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsVolume(tenant(req), req.query));
+}));
+router.get("/chat/analytics/top-rooms", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsTopRooms(tenant(req), req.query));
+}));
+router.get("/chat/analytics/users", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsUsers(tenant(req), req.query));
+}));
+router.get("/chat/analytics/response-time", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsResponse(tenant(req)));
+}));
+router.get("/chat/analytics/sentiment", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsSentiment(tenant(req), req.query));
+}));
+router.get("/chat/analytics/report", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsReport(tenant(req)));
+}));
+router.get("/chat/analytics/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAnalyticsDashboard(tenant(req)));
+}));
+
+router.get("/chat/commands", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCommandsList());
+}));
+router.post("/chat/commands/run", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatCommandRun(tenant(req), req.body.userId || uid(req), req.body.command, req.body));
+}));
+
+router.get("/chat/admin", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminList(tenant(req)));
+}));
+router.post("/chat/admin/assign", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminAssign(tenant(req), req.body.userId, req.body.role, req.body));
+}));
+router.get("/chat/admin/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminSettings(tenant(req)));
+}));
+router.patch("/chat/admin/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminUpdateSettings(tenant(req), req.body));
+}));
+router.get("/chat/admin/member/:userId/access", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminMemberAccess(tenant(req), req.params.userId));
+}));
+router.get("/chat/admin/export", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminExportAudit(tenant(req), req.query));
+}));
+router.post("/chat/admin/users/:userId/suspend", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminSuspend(tenant(req), req.params.userId, req.body));
+}));
+router.post("/chat/admin/users/:userId/restore", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminRestore(tenant(req), req.params.userId));
+}));
+router.get("/chat/admin/dashboard", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatAdminDashboard(tenant(req)));
+}));
+
+router.get("/chat/realtime/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRealtimeOverview(tenant(req)));
+}));
+router.get("/chat/realtime/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.chatRealtimeLog(tenant(req), req.query.limit ? parseInt(req.query.limit as string, 10) : 25));
+}));
+
 export default router;
