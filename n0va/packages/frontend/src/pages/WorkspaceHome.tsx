@@ -52,7 +52,7 @@ export default function WorkspaceHome() {
         </div>
         <h1 className="text-2xl md:text-3xl font-bold text-white mt-2">One system. Every module. Built in-house.</h1>
         <p className="text-gray-400 mt-2 max-w-2xl">
-          N0VA is a single modular enterprise suite — AI, communication, content, business and
+          N0VA is a single modular enterprise suite â€” AI, communication, content, business and
           security come together with shared data, identity and governance. Three modules are live
           today; the rest are queued for execution.
         </p>
@@ -62,16 +62,16 @@ export default function WorkspaceHome() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search modules, categories, features..."
-            className="w-full bg-gray-900/80 border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-n0-500"
+            className="w-full bg-gray-900/80 border border-gray-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-n0va-500"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Total modules" value={counts.total} accent="text-white" />
-        <StatCard label="Live & operating" value={counts.live} accent="text-n0-400" />
+        <StatCard label="Live & operating" value={counts.live} accent="text-n0va-400" />
         <StatCard label="Planned" value={counts.planned} accent="text-gray-400" />
-        <StatCard label="One system" value="In-house" accent="text-n0-400" />
+        <StatCard label="One system" value="In-house" accent="text-n0va-400" />
       </div>
 
       {Object.entries(grouped).map(([cat, mods]) =>
@@ -90,18 +90,18 @@ export default function WorkspaceHome() {
                   <Link
                     key={m.id}
                     to={planned ? `/workspace/module/${m.id}` : (m.path || `/workspace/module/${m.id}`)}
-                    className="group rounded-xl bg-gray-900/80 border border-gray-800 hover:border-n0-500/50 p-4 flex flex-col gap-3 transition-colors"
+                    className="group rounded-xl bg-gray-900/80 border border-gray-800 hover:border-n0va-500/50 p-4 flex flex-col gap-3 transition-colors"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="w-10 h-10 rounded-lg bg-n0-900/60 border border-n0-700/40 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-n0-400" />
+                      <div className="w-10 h-10 rounded-lg bg-n0va-900/60 border border-n0va-700/40 flex items-center justify-center">
+                        <Icon className="w-5 h-5 text-n0va-400" />
                       </div>
                       {planned ? (
                         <span className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
                           <Clock3 className="w-3 h-3" /> Planned
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-[11px] font-medium text-n0-400">
+                        <span className="flex items-center gap-1 text-[11px] font-medium text-n0va-400">
                           <CheckCircle2 className="w-3 h-3" /> Live
                         </span>
                       )}
