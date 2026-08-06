@@ -109,6 +109,7 @@ import {
   PenLine,
   MapPin,
   Store,
+  Radio,
 } from "lucide-react";
 import { useRecentItems, RecentItem } from "../hooks/useRecentItems";
 
@@ -168,6 +169,15 @@ const navItems = [
     { to: "/mail/branding", icon: Palette, label: "White Label" },
     { to: "/mail/marketplace", icon: Store, label: "Marketplace" },
     { to: "/mail/dev", icon: Code2, label: "Dev Center" },
+  { to: "/chat", icon: MessagesSquare, label: "Chat" },
+  { to: "/chat/search", icon: Search, label: "Chat Search" },
+  { to: "/chat/bots", icon: Bot, label: "Chat Bots" },
+  { to: "/chat/huddles", icon: Radio, label: "Chat Huddles" },
+  { to: "/chat/notifications", icon: Bell, label: "Chat Alerts" },
+  { to: "/chat/compliance", icon: Shield, label: "Chat Compliance" },
+  { to: "/chat/analytics", icon: BarChart3, label: "Chat Analytics" },
+  { to: "/chat/admin", icon: ShieldCheck, label: "Chat Admin" },
+  { to: "/chat/presence", icon: Activity, label: "Chat Presence" },
   { to: "/custom-dashboards", icon: LayoutDashboard, label: "Custom Dashboards" },
   { to: "/campaigns", icon: Megaphone, label: "Campaigns" },
   { to: "/campaign-archive", icon: Archive, label: "Campaign Archive" },
