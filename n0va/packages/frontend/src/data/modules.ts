@@ -78,7 +78,8 @@ export const MODULES: ModuleDef[] = [
     short: "ANI",
     category: "AI & Core",
     icon: Sparkles,
-    status: "planned",
+    status: "live",
+    path: "/ani",
     tagline: "Personal AI assistant",
     description:
       "Your ambient AI companion - unified memory, voice commands, proactive suggestions and one-tap automation across every N0VA module.",

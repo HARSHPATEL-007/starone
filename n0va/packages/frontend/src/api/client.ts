@@ -3950,6 +3950,39 @@ export const api = {
       realtimeOverview: () => request<any>("/ads-marketing-module/chat/realtime/overview"),
       realtimeLog: (limit?: number) => request<any>(`/ads-marketing-module/chat/realtime/log${limit ? `?limit=${limit}` : ""}`),
     },
+
+    ani: {
+      overview: (userId?: string) => request<any>(`/ads-marketing-module/ani/overview${userId ? `?userId=${encodeURIComponent(userId)}` : ""}`),
+      chat: (message: string, opts?: Record<string, any>) => request<any>("/ads-marketing-module/ani/chat", { method: "POST", body: JSON.stringify({ message, opts }) }),
+      conversations: (opts?: Record<string, any>) => {
+        const q = new URLSearchParams(opts || {} as any).toString();
+        return request<any>(`/ads-marketing-module/ani/conversations${q ? `?${q}` : ""}`);
+      },
+      memory: (opts?: Record<string, any>) => request<any>("/ads-marketing-module/ani/memory"),
+      memorySearch: (q: string) => request<any>(`/ads-marketing-module/ani/memory/search?q=${encodeURIComponent(q)}`),
+      saveMemory: (input: Record<string, any>) => request<any>("/ads-marketing-module/ani/memory", { method: "POST", body: JSON.stringify(input) }),
+      deleteMemory: (memoryId: string) => request<any>(`/ads-marketing-module/ani/memory/${memoryId}`, { method: "DELETE" }),
+      memoryStats: () => request<any>("/ads-marketing-module/ani/memory/stats"),
+      briefings: () => request<any>("/ads-marketing-module/ani/briefings"),
+      generateBriefing: (type: string) => request<any>("/ads-marketing-module/ani/briefings/generate", { method: "POST", body: JSON.stringify({ type }) }),
+      briefing: (briefingId: string) => request<any>(`/ads-marketing-module/ani/briefings/${briefingId}`),
+      automations: () => request<any>("/ads-marketing-module/ani/automations"),
+      createAutomation: (input: Record<string, any>) => request<any>("/ads-marketing-module/ani/automations", { method: "POST", body: JSON.stringify(input) }),
+      toggleAutomation: (automationId: string, enabled: boolean) =>
+        request<any>(`/ads-marketing-module/ani/automations/${automationId}`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
+      runAutomation: (automationId: string, opts?: Record<string, any>) =>
+        request<any>(`/ads-marketing-module/ani/automations/${automationId}/run`, { method: "POST", body: JSON.stringify(opts || {}) }),
+      automationRuns: () => request<any>("/ads-marketing-module/ani/automations/runs"),
+      voice: () => request<any>("/ads-marketing-module/ani/voice"),
+      executeVoice: (text: string) => request<any>("/ads-marketing-module/ani/voice/execute", { method: "POST", body: JSON.stringify({ text }) }),
+      voiceLog: () => request<any>("/ads-marketing-module/ani/voice/log"),
+      suggestions: () => request<any>("/ads-marketing-module/ani/suggestions"),
+      dismissSuggestion: (suggestionId: string) => request<any>(`/ads-marketing-module/ani/suggestions/${suggestionId}/dismiss`, { method: "POST" }),
+      acceptSuggestion: (suggestionId: string) => request<any>(`/ads-marketing-module/ani/suggestions/${suggestionId}/accept`, { method: "POST" }),
+      settings: () => request<any>("/ads-marketing-module/ani/settings"),
+      updateSettings: (patch: Record<string, any>) => request<any>("/ads-marketing-module/ani/settings", { method: "PATCH", body: JSON.stringify(patch) }),
+      stats: () => request<any>("/ads-marketing-module/ani/stats"),
+    },
   },
 
   agentSwarm: {

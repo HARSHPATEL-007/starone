@@ -143,6 +143,7 @@ import { chatAnalytics } from "./ChatAnalyticsService";
 import { chatCommandCenter } from "./ChatCommandCenterService";
 import { chatAdmin } from "./ChatAdminService";
 import { chatRealtime } from "./ChatRealtimeService";
+import { aniService } from "./AniService";
 const campaignSummaryService = new CampaignSummaryService();
 
 interface ModuleHealthCheck {
@@ -7288,6 +7289,35 @@ export class AdsMarketingModuleService {
   chatRealtimeOverview(tenantId: string) { return chatRealtime.realtimeOverview(tenantId); }
   chatRealtimeLog(tenantId: string, limit?: number) { return chatRealtime.realtimeLog(tenantId, limit); }
   chatRealtimeEmit(tenantId: string, event: string, payload: any) { return chatRealtime.emit(event, tenantId, payload); }
+
+  // ---- N0VA ANI ----
+
+  aniHealth() { return aniService.moduleHealth(); }
+  aniOverview(tenantId: string, userId: string) { return aniService.overview(tenantId, userId); }
+  aniChat(tenantId: string, userId: string, message: string, opts: any) { return aniService.chat(tenantId, userId, message, opts); }
+  aniConversations(tenantId: string, userId: string, opts: any) { return aniService.conversations(tenantId, userId, opts); }
+  aniMemory(tenantId: string, userId: string, opts: any) { return aniService.memory(tenantId, userId, opts); }
+  aniMemorySearch(tenantId: string, query: string, opts: any) { return aniService.memorySearch(tenantId, query, opts); }
+  aniSaveMemory(tenantId: string, userId: string, input: any) { return aniService.saveMemory(tenantId, userId, input); }
+  aniDeleteMemory(tenantId: string, memoryId: string) { return aniService.deleteMemory(tenantId, memoryId); }
+  aniMemoryStats(tenantId: string) { return aniService.memoryStats(tenantId); }
+  aniListBriefings(tenantId: string, userId: string) { return aniService.listBriefings(tenantId, userId); }
+  aniGenerateBriefing(tenantId: string, userId: string, type: string) { return aniService.generateBriefing(tenantId, userId, type); }
+  aniBriefing(tenantId: string, briefingId: string) { return aniService.briefing(tenantId, briefingId); }
+  aniAutomations(tenantId: string, userId: string) { return aniService.automations(tenantId, userId); }
+  aniCreateAutomation(tenantId: string, userId: string, input: any) { return aniService.createAutomation(tenantId, userId, input); }
+  aniToggleAutomation(tenantId: string, automationId: string, enabled: boolean) { return aniService.toggleAutomation(tenantId, automationId, enabled); }
+  aniRunAutomation(tenantId: string, userId: string, automationId: string, opts: any) { return aniService.runAutomation(tenantId, userId, automationId, opts); }
+  aniAutomationRuns(tenantId: string, opts: any) { return aniService.automationRuns(tenantId, opts); }
+  aniVoiceCatalog(tenantId: string) { return aniService.voiceCatalog(tenantId); }
+  aniExecuteVoice(tenantId: string, userId: string, text: string) { return aniService.executeVoiceCommand(tenantId, userId, text); }
+  aniVoiceLog(tenantId: string, opts: any) { return aniService.voiceLog(tenantId, opts); }
+  aniSuggestions(tenantId: string, userId: string) { return aniService.suggestions(tenantId, userId); }
+  aniDismissSuggestion(tenantId: string, suggestionId: string) { return aniService.dismissSuggestion(tenantId, suggestionId); }
+  aniAcceptSuggestion(tenantId: string, suggestionId: string) { return aniService.acceptSuggestion(tenantId, suggestionId); }
+  aniSettings(tenantId: string, userId: string) { return aniService.settings(tenantId, userId); }
+  aniUpdateSettings(tenantId: string, userId: string, patch: any) { return aniService.updateSettings(tenantId, userId, patch); }
+  aniStats(tenantId: string) { return aniService.stats(tenantId); }
 }
 
 export const adsMarketingModule = new AdsMarketingModuleService();

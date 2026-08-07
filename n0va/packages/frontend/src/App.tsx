@@ -66,6 +66,11 @@ const ChatCompliance = lazy(() => import("./pages/ChatCompliance"));
 const ChatAnalytics = lazy(() => import("./pages/ChatAnalytics"));
 const ChatAdmin = lazy(() => import("./pages/ChatAdmin"));
 const ChatPresence = lazy(() => import("./pages/ChatPresence"));
+const AniHome = lazy(() => import("./pages/AniHome"));
+const AniMemory = lazy(() => import("./pages/AniMemory"));
+const AniBriefings = lazy(() => import("./pages/AniBriefings"));
+const AniAutomations = lazy(() => import("./pages/AniAutomations"));
+const AniVoice = lazy(() => import("./pages/AniVoice"));
 const N0VA1OOverview = lazy(() => import("./pages/N0VA1OOverview"));
 const N0VA1OCatalog = lazy(() => import("./pages/N0VA1OCatalog"));
 const N0VA1OConnections = lazy(() => import("./pages/N0VA1OConnections"));
@@ -301,6 +306,11 @@ export default function App() {
                 <Route path="/chat/analytics" element={<ChatAnalytics />} />
                 <Route path="/chat/admin" element={<ChatAdmin />} />
                 <Route path="/chat/presence" element={<ChatPresence />} />
+                <Route path="/ani" element={<AniHome />} />
+                <Route path="/ani/memory" element={<AniMemory />} />
+                <Route path="/ani/briefings" element={<AniBriefings />} />
+                <Route path="/ani/automations" element={<AniAutomations />} />
+                <Route path="/ani/voice" element={<AniVoice />} />
                 <Route path="/campaigns" element={<Campaigns />} />
                 <Route path="/campaigns/new" element={<CampaignWizard />} />
                 <Route path="/campaigns/:id" element={<CampaignDetail />} />

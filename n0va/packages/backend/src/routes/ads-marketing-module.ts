@@ -5267,4 +5267,85 @@ router.get("/chat/realtime/log", asyncHandler(async (req, res) => {
   sendSuccess(res, adsMarketingModule.chatRealtimeLog(tenant(req), req.query.limit ? parseInt(req.query.limit as string, 10) : 25));
 }));
 
+// ---- N0VA ANI ----
+
+router.get("/ani/overview", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniOverview(tenant(req), uid(req)));
+}));
+router.post("/ani/chat", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniChat(tenant(req), uid(req), req.body.message || "", req.body.opts || {}));
+}));
+router.get("/ani/conversations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniConversations(tenant(req), uid(req), req.query));
+}));
+router.get("/ani/memory", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniMemory(tenant(req), uid(req), req.query));
+}));
+router.get("/ani/memory/search", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniMemorySearch(tenant(req), (req.query.q as string) || "", req.query));
+}));
+router.post("/ani/memory", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniSaveMemory(tenant(req), uid(req), req.body || {}));
+}));
+router.delete("/ani/memory/:memoryId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniDeleteMemory(tenant(req), req.params.memoryId));
+}));
+router.get("/ani/memory/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniMemoryStats(tenant(req)));
+}));
+router.get("/ani/briefings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniListBriefings(tenant(req), uid(req)));
+}));
+router.post("/ani/briefings/generate", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniGenerateBriefing(tenant(req), uid(req), req.body.type || "daily"));
+}));
+router.get("/ani/briefings/:briefingId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniBriefing(tenant(req), req.params.briefingId));
+}));
+router.get("/ani/automations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniAutomations(tenant(req), uid(req)));
+}));
+router.post("/ani/automations", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniCreateAutomation(tenant(req), uid(req), req.body || {}));
+}));
+router.patch("/ani/automations/:automationId", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniToggleAutomation(tenant(req), req.params.automationId, req.body.enabled !== false));
+}));
+router.post("/ani/automations/:automationId/run", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniRunAutomation(tenant(req), uid(req), req.params.automationId, req.body || {}));
+}));
+router.get("/ani/automations/runs", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniAutomationRuns(tenant(req), req.query));
+}));
+router.get("/ani/voice", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniVoiceCatalog(tenant(req)));
+}));
+router.post("/ani/voice/execute", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniExecuteVoice(tenant(req), uid(req), req.body.text || ""));
+}));
+router.get("/ani/voice/log", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniVoiceLog(tenant(req), req.query));
+}));
+router.get("/ani/suggestions", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniSuggestions(tenant(req), uid(req)));
+}));
+router.post("/ani/suggestions/:suggestionId/dismiss", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniDismissSuggestion(tenant(req), req.params.suggestionId));
+}));
+router.post("/ani/suggestions/:suggestionId/accept", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniAcceptSuggestion(tenant(req), req.params.suggestionId));
+}));
+router.get("/ani/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniSettings(tenant(req), uid(req)));
+}));
+router.patch("/ani/settings", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniUpdateSettings(tenant(req), uid(req), req.body || {}));
+}));
+router.get("/ani/stats", asyncHandler(async (req, res) => {
+  sendSuccess(res, adsMarketingModule.aniStats(tenant(req)));
+}));
+router.get("/ani/health", asyncHandler(async (_req, res) => {
+  sendSuccess(res, adsMarketingModule.aniHealth());
+}));
+
 export default router;
